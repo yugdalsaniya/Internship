@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import logo from '../../assets/Navbar/logo.png'; 
+import { Link } from "react-router-dom"; // Import Link from react-router-dom
+
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -30,18 +32,18 @@ const Navbar = () => {
 
         {/* Center: Navigation Links (Desktop) */}
         <div className="hidden md:flex space-x-8">
-          <a href="#" className="text-gray-800 hover:text-blue-600 text-sm font-medium">
+          <Link to="/" className="text-gray-800 hover:text-blue-600 text-sm font-medium">
             Home
-          </a>
-          <a href="#" className="text-gray-800 hover:text-blue-600 text-sm font-medium">
+          </Link>
+          <Link to="/internship" className="text-gray-800 hover:text-blue-600 text-sm font-medium">
             Internships
-          </a>
-          <a href="#" className="text-gray-800 hover:text-blue-600 text-sm font-medium">
+          </Link>
+          <Link to="/" className="text-gray-800 hover:text-blue-600 text-sm font-medium">
             About Us
-          </a>
-          <a href="#" className="text-gray-800 hover:text-blue-600 text-sm font-medium">
+          </Link>
+          <Link to="/" className="text-gray-800 hover:text-blue-600 text-sm font-medium">
             Contact Us
-          </a>
+          </Link>
         </div>
 
         {/* Right Side: Buttons and Hamburger (Mobile) */}

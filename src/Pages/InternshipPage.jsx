@@ -1,72 +1,134 @@
-import React from "react";
-import { FaMapMarkerAlt, FaClock, FaRupeeSign } from "react-icons/fa";
-import backgroundImg from "../assets/Hero/banner.jpg"; // Make sure path is correct
-
-const internships = [
-  {
-    id: 1,
-    title: "Marketing",
-    company: "Allcargo Logistics Limited",
-    location: "Ahmedabad",
-    time: "Full time",
-    salary: "₹25,000 – ₹30,000",
-  },
-  {
-    id: 2,
-    title: "Graphic Designer",
-    company: "Weblinic Enterprises",
-    location: "Ahmedabad",
-    time: "Full time",
-    salary: "₹15,000 – ₹25,000",
-  },
-  {
-    id: 3,
-    title: "Ui/Ux Designer",
-    company: "Weblinic Enterprises",
-    location: "Ahmedabad",
-    time: "Full time",
-    salary: "₹25,000 – ₹30,000",
-  },
-  {
-    id: 4,
-    title: "Graphic Designer",
-    company: "Flipspaces co Limited",
-    location: "Ahmedabad",
-    time: "Full time",
-    salary: "₹25,000 – ₹30,000",
-  },
-  {
-    id: 5,
-    title: "Marketing",
-    company: "Allcargo Logistics Limited",
-    location: "Ahmedabad",
-    time: "Full time",
-    salary: "₹25,000 – ₹30,000",
-  },
-];
+import React, { useEffect, useState, useMemo } from "react";
+import { BsBookmarkPlus } from "react-icons/bs";
+import { fetchSectionData } from "../Utils/api";
+import { formatDistanceToNow, parse } from "date-fns";
+import Hero from "../Components/home/Hero";
+import backgroundImg from "../assets/Hero/banner.jpg";
 
 export default function InternshipPage() {
+  const [internships, setInternships] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [sortOption, setSortOption] = useState("latest"); // Default to latest
+  const internshipsPerPage = 6;
+
+  // Fetch internships from API
+  useEffect(() => {
+    const fetchInternships = async () => {
+      try {
+        const data = await fetchSectionData({
+          collectionName: "jobpost",
+          limit: 100,
+          query: { "sectionData.jobpost.type": "Internship" },
+          order: -1,
+          sortedBy: "createdDate",
+        });
+        console.log("InternshipPage API Response:", data); // Debug API response
+        setInternships(data);
+      } catch (err) {
+        setError("Error fetching internships");
+        console.error("InternshipPage API Error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchInternships();
+  }, []);
+
+  // Process and sort internships
+  const filteredInternships = useMemo(() => {
+    const processedInternships = internships
+      .filter((job) => job.sectionData?.jobpost?.type === "Internship")
+      .map((job) => {
+        let relativeTime = "Just now";
+        try {
+          const parsedDate = parse(
+            job.createdDate,
+            "dd/MM/yyyy, h:mm:ss a",
+            new Date()
+          );
+          relativeTime = formatDistanceToNow(parsedDate, { addSuffix: true })
+            .replace("about ", "")
+            .replace("hours", "hrs")
+            .replace("minutes", "min");
+        } catch (err) {
+          console.error("Error parsing date for job", job._id, err);
+        }
+
+        return {
+          id: job._id,
+          role: job.sectionData?.jobpost?.title || "Unknown Role",
+          company: job.sectionData?.jobpost?.company || "Unknown Company",
+          time: relativeTime,
+          type: job.sectionData?.jobpost?.time || "Unknown",
+          salary: job.sectionData?.jobpost?.salary
+            ? `₹${job.sectionData.jobpost.salary}`
+            : "Not specified",
+          location: (job.sectionData?.jobpost?.location || "Unknown").toUpperCase(),
+          logo: job.sectionData?.jobpost?.logo &&
+            job.sectionData.jobpost.logo.startsWith("http")
+            ? job.sectionData.jobpost.logo
+            : "https://placehold.co/40x40",
+          createdDate: job.createdDate,
+          salaryValue: job.sectionData?.jobpost?.salary || 0, // For sorting
+        };
+      });
+
+    // Apply sorting based on sortOption
+    return processedInternships.sort((a, b) => {
+      switch (sortOption) {
+        case "latest":
+          try {
+            const dateA = parse(a.createdDate, "dd/MM/yyyy, h:mm:ss a", new Date());
+            const dateB = parse(b.createdDate, "dd/MM/yyyy, h:mm:ss a", new Date());
+            return dateB - dateA; // Most recent first
+          } catch (err) {
+            console.error("Sorting error:", err);
+            return 0;
+          }
+        case "salary-desc":
+          return b.salaryValue - a.salaryValue; // Highest salary first
+        case "salary-asc":
+          return a.salaryValue - b.salaryValue; // Lowest salary first
+        case "title-asc":
+          return a.role.localeCompare(b.role); // Alphabetical by title
+        default:
+          return 0;
+      }
+    });
+  }, [internships, sortOption]);
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredInternships.length / internshipsPerPage);
+  const paginatedInternships = filteredInternships.slice(
+    (currentPage - 1) * internshipsPerPage,
+    currentPage * internshipsPerPage
+  );
+
+  const handlePageChange = (page) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
+
+  if (loading) return <div className="mx-12 py-4">Loading...</div>;
+  if (error) return <div className="mx-12 py-4">{error}</div>;
+  if (filteredInternships.length === 0)
+    return <div className="mx-12 py-4">No internships found.</div>;
+
   return (
     <>
       {/* Hero Section */}
-      <div
-        className="w-full h-[300px] md:h-[350px] flex items-center justify-center relative"
-        style={{
-          backgroundImage: `url(${backgroundImg})`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-r from-[#f7d7db]/90 via-white/70 to-[#c3e5df]/90"></div>
-        <div className="relative text-center px-4">
-          <h1 className="text-3xl md:text-4xl font-extrabold text-[#050748] tracking-wide">
-            Internships
-          </h1>
-          <p className="mt-2 text-sm md:text-lg font-medium text-[#1e2a60]">
-            "Empower Your Future: Unleash Limitless Career Possibilities!"
-          </p>
-        </div>
-      </div>
+      <Hero
+        title="Internships"
+        subtitle="Empower Your Future: Unleash Limitless Career Possibilities!"
+        searchFields={[]}
+        stats={[]}
+        backgroundImage={backgroundImg}
+        gradient="linear-gradient(to right, rgba(249, 220, 223, 0.8), rgba(181, 217, 211, 0.8))"
+      />
 
       {/* Main Content */}
       <div className="flex flex-col md:flex-row px-4 md:px-12 py-8 bg-[#fafafa]">
@@ -85,10 +147,28 @@ export default function InternshipPage() {
 
           {/* Filter Categories */}
           {[
-            { title: "Category", items: ["Commerce", "Telecommunications", "Hotels & Tourism", "Education", "Financial Services"] },
-            { title: "Internship Type", items: ["Full Time", "Part Time", "Freelance", "Seasonal", "Fixed-Price"] },
-            { title: "Experience Level", items: ["No-experience", "Fresher", "Intermediate", "Expert"] },
-            { title: "Date Posted", items: ["All", "Last Hour", "Last 24 Hours", "Last 7 Days", "Last 30 Days"] },
+            {
+              title: "Category",
+              items: [
+                "Commerce",
+                "Telecommunications",
+                "Hotels & Tourism",
+                "Education",
+                "Financial Services",
+              ],
+            },
+            {
+              title: "Internship Type",
+              items: ["Full Time", "Part Time", "Freelance", "Seasonal", "Fixed-Price"],
+            },
+            {
+              title: "Experience Level",
+              items: ["No-experience", "Fresher", "Intermediate", "Expert"],
+            },
+            {
+              title: "Date Posted",
+              items: ["All", "Last Hour", "Last 24 Hours", "Last 7 Days", "Last 30 Days"],
+            },
           ].map(({ title, items }) => (
             <div key={title} className="mb-4">
               <h3 className="font-medium text-sm mb-2">{title}</h3>
@@ -114,65 +194,148 @@ export default function InternshipPage() {
         {/* Internship Cards */}
         <div className="w-full md:w-3/4 md:pl-6">
           <div className="flex justify-between items-center mb-4">
-            <p className="text-sm text-gray-600">Showing 6 - 6 of 10 results</p>
-            <select className="p-2 border text-sm rounded-lg">
-              <option>Sort by latest</option>
+            <p className="text-sm text-gray-600">
+              Showing {(currentPage - 1) * internshipsPerPage + 1} -{" "}
+              {Math.min(currentPage * internshipsPerPage, filteredInternships.length)} of{" "}
+              {filteredInternships.length} results
+            </p>
+            <select
+              value={sortOption}
+              onChange={(e) => setSortOption(e.target.value)}
+              className="p-2 border text-sm rounded-lg"
+            >
+              <option value="latest">Sort by latest</option>
+              <option value="salary-desc">Sort by salary (high to low)</option>
+              <option value="salary-asc">Sort by salary (low to high)</option>
+              <option value="title-asc">Sort by title (A-Z)</option>
             </select>
           </div>
 
           <div className="space-y-4">
-            {internships.map((job) => (
+            {paginatedInternships.map((internship) => (
               <div
-                key={job.id}
-                className="bg-white p-6 rounded-xl shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center"
+                key={internship.id}
+                className="flex flex-col bg-white rounded-lg shadow-md p-4"
               >
-                <div>
-                  <span className="text-xs bg-[#e4e4e4] px-2 py-1 rounded-full text-gray-700 mb-2 inline-block">
-                    10 min ago
+                <div className="flex justify-between items-center mb-2">
+                  <span className="inline-block bg-gray-200 text-gray-800 text-xs font-medium px-2 py-0.5 rounded-full">
+                    {internship.time} (Created: {internship.createdDate})
                   </span>
-                  <h3 className="text-lg font-semibold">{job.title}</h3>
-                  <p className="text-sm text-gray-600 mb-2">{job.company}</p>
-                  <div className="flex gap-4 text-sm text-gray-700">
-                    <div className="flex items-center gap-1">
-                      <FaClock /> {job.time}
+                  <BsBookmarkPlus className="h-6 w-6" aria-label="Bookmark Plus Icon" />
+                </div>
+                <div className="flex justify-between items-center">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-4">
+                      <img
+                        src={internship.logo}
+                        alt={`${internship.company} Logo`}
+                        className="w-10 h-10 rounded-full object-contain"
+                      />
+                      <div>
+                        <h3 className="text-lg font-bold text-black">{internship.role}</h3>
+                        <p className="text-sm text-gray-500">{internship.company}</p>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <FaRupeeSign /> {job.salary}
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <FaMapMarkerAlt /> {job.location}
+                    <div className="flex flex-wrap items-center space-x-2 mt-2 text-sm text-gray-600">
+                      <span className="flex items-center">
+                        <svg
+                          className="w-4 h-4 mr-1"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                          />
+                        </svg>
+                        {internship.type}
+                      </span>
+                      <span className="flex items-center">
+                        <svg
+                          className="w-4 h-4 mr-1"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.657 0 3 .895 3 2s-1.343 2-3 2m0 0c-1.657 0-3 .895-3 2s1.343 2 3 2m-6 0V6m12 12V6"
+                          />
+                        </svg>
+                        {internship.salary}
+                      </span>
+                      <span className="flex items-center">
+                        <svg
+                          className="w-4 h-4 mr-1"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                          />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                          />
+                        </svg>
+                        {internship.location}
+                      </span>
                     </div>
                   </div>
+                  <div className="flex items-end">
+                    <button className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-medium py-2 px-4 rounded-full hover:from-blue-600 hover:to-purple-700">
+                      Internship Details
+                    </button>
+                  </div>
                 </div>
-                <button className="mt-4 md:mt-0 bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-[#443bc4] font-bold">
-                  Internship Details
-                </button>
               </div>
             ))}
           </div>
 
           {/* Pagination */}
           <div className="flex justify-between items-center mt-6">
-  {/* Center-aligned page numbers */}
-          <div className="flex gap-4 justify-center w-full">
-            <button className="w-8 h-8 flex items-center justify-center rounded-lg bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-bold">
-              1
-            </button>
-            <button className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-400 text-gray-700 hover:bg-gray-100 font-bold">
-              2
-            </button>
-          </div>
-
-  {/* Right-aligned next button */}
-          <div className="ml-auto">
-            <button className="flex items-center gap-1 px-3 py-1.5 border border-gray-400 rounded-lg text-gray-700 hover:bg-gray-100">
-              <span className="font-semibold">Next</span>
-              <span className="text-base">❯</span>
-            </button>
+            <div className="flex gap-4 justify-center w-full">
+              {Array.from({ length: totalPages }, (_, index) => (
+                <button
+                  key={index + 1}
+                  onClick={() => handlePageChange(index + 1)}
+                  className={`w-8 h-8 flex items-center justify-center rounded-lg font-bold ${
+                    currentPage === index + 1
+                      ? "bg-gradient-to-r from-indigo-500 to-purple-500 text-white"
+                      : "border border-gray-400 text-gray-700 hover:bg-gray-100"
+                  }`}
+                >
+                  {index + 1}
+                </button>
+              ))}
+            </div>
+            <div className="ml-auto">
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="flex items-center gap-1 px-3 py-1.5 border border-gray-400 rounded-lg text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+              >
+                <span className="font-semibold">Next</span>
+                <span className="text-base">❯</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
     </>
   );
 }
