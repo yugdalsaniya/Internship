@@ -1,48 +1,73 @@
-import React from 'react';
-import { BsBookmarkPlus } from 'react-icons/bs'; // Using Bootstrap Icons for BookmarkPlus
-
-
-// Sample data for internships (can be replaced with dynamic data later)
-const internships = [
-  {
-    id: 1,
-    role: 'MARKETING',
-    company: 'Alicargo Logistics Limited',
-    time: '10 min ago',
-    type: 'Full time',
-    salary: '₹25,000 - ₹30,000',
-    location: 'AHMEDABAD',
-  },
-  {
-    id: 2,
-    role: 'UI/UX DESIGNER',
-    company: 'WebFinix Enterprises',
-    time: '10 min ago',
-    type: 'Full time',
-    salary: '₹25,000 - ₹30,000',
-    location: 'AHMEDABAD',
-  },
-  {
-    id: 3,
-    role: 'GRAPHIC DESIGNER',
-    company: 'Flipspaces co Limited',
-    time: '10 min ago',
-    type: 'Full time',
-    salary: '₹25,000 - ₹30,000',
-    location: 'AHMEDABAD',
-  },
-  {
-    id: 4,
-    role: 'MARKETING',
-    company: 'Alicargo Logistics Limited',
-    time: '10 min ago',
-    type: 'Full time',
-    salary: '₹25,000 - ₹30,000',
-    location: 'AHMEDABAD',
-  },
-];
+import React, { useEffect, useState, useMemo } from 'react';
+import { BsBookmarkPlus } from 'react-icons/bs';
+import { fetchSectionData } from '../../Utils/api';
+import { formatDistanceToNow, parse } from 'date-fns';
 
 const RecentInternships = () => {
+  const [internships, setInternships] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchInternships = async () => {
+      try {
+        const data = await fetchSectionData({
+          collectionName: 'jobpost',
+          limit: 100, // As per your API body
+          query: { 'sectionData.jobpost.type': 'Internship' },
+        });
+        console.log('RecentInternships API Response:', data);
+        setInternships(data);
+      } catch (err) {
+        setError('Error fetching internships');
+        console.error('RecentInternships API Error:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchInternships();
+  }, []);
+
+  // Filter and map internships with logo fallback and relative time
+  const filteredInternships = useMemo(() => {
+    return internships
+      .filter((job) => job.sectionData?.jobpost?.type === 'Internship')
+      .map((job) => {
+        let relativeTime = 'Just now';
+        try {
+          const parsedDate = parse(
+            job.createdDate,
+            'dd/MM/yyyy, h:mm:ss a',
+            new Date()
+          );
+          relativeTime = formatDistanceToNow(parsedDate, { addSuffix: true })
+            .replace('about ', '')
+            .replace('hours', 'hrs')
+            .replace('minutes', 'min');
+        } catch (err) {
+          console.error('Error parsing date for job', job._id, err);
+        }
+
+        return {
+          id: job._id,
+          role: job.sectionData?.jobpost?.title || 'Unknown Role',
+          company: job.sectionData?.jobpost?.company || 'Unknown Company',
+          time: relativeTime,
+          type: job.sectionData?.jobpost?.time || 'Unknown',
+          salary: job.sectionData?.jobpost?.salary ? `₹${job.sectionData.jobpost.salary}` : 'Not specified',
+          location: (job.sectionData?.jobpost?.location || 'Unknown').toUpperCase(),
+          logo: job.sectionData?.jobpost?.logo && job.sectionData.jobpost.logo.startsWith('http')
+            ? job.sectionData.jobpost.logo
+            : 'https://placehold.co/40x40',
+        };
+      });
+  }, [internships]);
+
+  if (loading) return <div className="mx-12 py-4">Loading...</div>;
+  if (error) return <div className="mx-12 py-4">{error}</div>;
+  if (filteredInternships.length === 0) return <div className="mx-12 py-4">No internships found.</div>;
+
   return (
     <div className="mx-12 py-4">
       {/* Header */}
@@ -65,7 +90,7 @@ const RecentInternships = () => {
 
       {/* Internship Cards */}
       <div className="space-y-3 sm:space-y-4">
-        {internships.map((internship) => (
+        {filteredInternships.map((internship) => (
           <div
             key={internship.id}
             className="flex flex-col bg-white rounded-lg shadow-md p-4"
@@ -77,7 +102,7 @@ const RecentInternships = () => {
                 {internship.time}
               </span>
 
-              {/* Logo (replacing three-dot icon) */}
+              {/* Bookmark Icon */}
               <BsBookmarkPlus className="h-6 w-6" aria-label="Bookmark Plus Icon" />
             </div>
 
@@ -87,12 +112,12 @@ const RecentInternships = () => {
               <div className="flex-1">
                 {/* Logo and Title */}
                 <div className="flex items-center space-x-3 sm:space-x-4">
-                  {/* Icon */}
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-400 via-pink-500 to-yellow-500 flex items-center justify-center">
-                    <span className="text-white text-xs font-semibold">
-                      {internship.role.charAt(0)}
-                    </span>
-                  </div>
+                  {/* Logo */}
+                  <img
+                    src={internship.logo}
+                    alt={`${internship.company} Logo`}
+                    className="w-10 h-10 rounded-full object-contain"
+                  />
 
                   {/* Title and Company */}
                   <div>
