@@ -6,6 +6,7 @@ import Internship from "../Pages/InternshipPage"; // Import your internship page
 import InternshipDetailPage from "../Pages/InternshipDetailPage";
 import SignUpPage from "../Pages/SignUpPage";
 import OtpPage from "../Pages/OtpPage";
+import SignInPage from "../Pages/SignInPage";
 
 export default function AppRoutes() {
   return (
@@ -14,6 +15,7 @@ export default function AppRoutes() {
 
         <Route path="/signup" element={<SignUpPage />} />
         <Route path="/otp" element={<OtpPage />} />
+        <Route path="/signin" element={<SignInPage />} />
 
         <Route element={<MainLayout />}>
           <Route path="/" element={<HomePage />} /> {/* Add this for the root path */}
