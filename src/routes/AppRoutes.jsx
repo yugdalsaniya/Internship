@@ -5,6 +5,7 @@ import HomePage from "../Pages/HomePage"; // Import your homepage component
 import Internship from "../Pages/InternshipPage"; // Import your internship page component
 import InternshipDetailPage from "../Pages/InternshipDetailPage";
 import SignUpPage from "../Pages/SignUpPage";
+import OtpPage from "../Pages/OtpPage";
 
 export default function AppRoutes() {
   return (
@@ -12,6 +13,7 @@ export default function AppRoutes() {
       <Routes>
 
         <Route path="/signup" element={<SignUpPage />} />
+        <Route path="/otp" element={<OtpPage />} />
 
         <Route element={<MainLayout />}>
           <Route path="/" element={<HomePage />} /> {/* Add this for the root path */}
