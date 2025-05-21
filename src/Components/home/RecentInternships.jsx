@@ -3,45 +3,42 @@ import { BsBookmarkPlus } from "react-icons/bs";
 import { fetchSectionData } from "../../Utils/api";
 import { formatDistanceToNow, parse } from "date-fns";
 
-const RecentInternships = () => {
-  const [internships, setInternships] = useState([]);
+export default function RecentInternship() {
+  const [recentInternships, setRecentInternships] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const maxInternships = 4; // Show only 4 recent internships
 
-  // Fetch internships with polling
+  // Fetch internships from API
   useEffect(() => {
-    const fetchInternships = async () => {
+    const fetchRecentInternships = async () => {
       try {
         const data = await fetchSectionData({
           collectionName: "jobpost",
-          limit: 4, // Limit to 4 most recent internships
+          limit: 100,
           query: { "sectionData.jobpost.type": "Internship" },
-          order: -1, // Descending order for most recent
+          order: -1,
           sortedBy: "createdDate",
         });
-        console.log("RecentInternships API Response:", data); // Debug API response
-        setInternships(data);
+        setRecentInternships(data);
       } catch (err) {
-        setError("Error fetching internships");
-        console.error("RecentInternships API Error:", err);
+        setError("Error fetching recent internships");
+        console.error("RecentInternship API Error:", err);
       } finally {
         setLoading(false);
       }
     };
 
-    // Initial fetch
-    fetchInternships();
+    fetchRecentInternships();
 
-    // Poll every 30 seconds to ensure fresh data
-    const intervalId = setInterval(fetchInternships, 30000);
-
-    // Cleanup interval on component unmount
-    return () => clearInterval(intervalId);
+    // Poll for updates every 60 seconds to reflect new admin additions
+    const interval = setInterval(fetchRecentInternships, 60000);
+    return () => clearInterval(interval);
   }, []);
 
-  // Process internships
-  const filteredInternships = useMemo(() => {
-    return internships
+  // Process and sort internships
+  const processedInternships = useMemo(() => {
+    return recentInternships
       .filter((job) => job.sectionData?.jobpost?.type === "Internship")
       .map((job) => {
         let relativeTime = "Just now";
@@ -73,12 +70,10 @@ const RecentInternships = () => {
             job.sectionData.jobpost.logo.startsWith("http")
             ? job.sectionData.jobpost.logo
             : "https://placehold.co/40x40",
-          createdDate: job.createdDate, // Keep raw createdDate for sorting
-          salaryValue: job.sectionData?.jobpost?.salary || 0, // For potential sorting
+          createdDate: job.createdDate,
         };
       })
       .sort((a, b) => {
-        // Client-side sorting by createdDate (descending)
         try {
           const dateA = parse(a.createdDate, "dd/MM/yyyy, h:mm:ss a", new Date());
           const dateB = parse(b.createdDate, "dd/MM/yyyy, h:mm:ss a", new Date());
@@ -88,50 +83,32 @@ const RecentInternships = () => {
           return 0;
         }
       })
-      .slice(0, 4); // Ensure only 4 are displayed
-  }, [internships]);
+      .slice(0, maxInternships); // Limit to 4 most recent
+  }, [recentInternships]);
 
-  if (loading) return <div className="mx-12 py-4">Loading...</div>;
-  if (error) return <div className="mx-12 py-4">{error}</div>;
-  if (filteredInternships.length === 0)
-    return <div className="mx-12 py-4">No internships found.</div>;
+  if (loading) return <div className="px-4 md:px-12 py-4">Loading...</div>;
+  if (error) return <div className="px-4 md:px-12 py-4">{error}</div>;
+  if (processedInternships.length === 0)
+    return <div className="px-4 md:px-12 py-4">No recent internships found.</div>;
 
   return (
-    <div className="mx-12 py-4">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-4 sm:mb-6">
-        <div>
-          <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-[#050748]">
-            Recent Internships
-          </h2>
-          <p className="text-xs sm:text-sm text-[#6A6A8E] uppercase">
-            NEW OPPORTUNITIES, JUST POSTED!
-          </p>
-        </div>
-        <a
-          href="/internships"
-          className="text-[#6A6A8E] text-xs sm:text-sm md:text-base font-medium hover:underline"
-        >
-          View all
-        </a>
-      </div>
-
-      {/* Internship Cards */}
-      <div className="space-y-3 sm:space-y-4">
-        {filteredInternships.map((internship) => (
+    <div className="px-4 md:px-12 py-8 bg-[#fafafa]">
+      <h2 className="text-2xl font-bold mb-4">Recent Internships</h2>
+      <div className="space-y-4">
+        {processedInternships.map((internship) => (
           <div
             key={internship.id}
             className="flex flex-col bg-white rounded-lg shadow-md p-4"
           >
             <div className="flex justify-between items-center mb-2">
               <span className="inline-block bg-gray-200 text-gray-800 text-xs font-medium px-2 py-0.5 rounded-full">
-                {internship.time} (Created: {internship.createdDate})
+                {internship.time}
               </span>
               <BsBookmarkPlus className="h-6 w-6" aria-label="Bookmark Plus Icon" />
             </div>
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-center flex-col md:flex-row">
               <div className="flex-1">
-                <div className="flex items-center space-x-3 sm:space-x-4">
+                <div className="flex items-center space-x-4">
                   <img
                     src={internship.logo}
                     alt={`${internship.company} Logo`}
@@ -202,7 +179,7 @@ const RecentInternships = () => {
                   </span>
                 </div>
               </div>
-              <div className="flex items-end">
+              <div className="flex items-end mt-4 md:mt-0">
                 <button className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-medium py-2 px-4 rounded-full hover:from-blue-600 hover:to-purple-700">
                   Internship Details
                 </button>
@@ -213,6 +190,4 @@ const RecentInternships = () => {
       </div>
     </div>
   );
-};
-
-export default RecentInternships;
+}

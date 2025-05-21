@@ -1,19 +1,19 @@
 import React, { useEffect, useState, useMemo } from "react";
-import { BsBookmarkPlus } from "react-icons/bs";
+import { BsBookmarkPlus,BsSearch, BsGeoAlt } from "react-icons/bs";
 import { fetchSectionData } from "../Utils/api";
 import { formatDistanceToNow, parse } from "date-fns";
 import Hero from "../Components/home/Hero";
 import backgroundImg from "../assets/Hero/banner.jpg";
+
 
 export default function InternshipPage() {
   const [internships, setInternships] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [sortOption, setSortOption] = useState("latest"); // Default to latest
+  const [sortOption, setSortOption] = useState("latest");
   const internshipsPerPage = 6;
 
-  // Fetch internships from API
   useEffect(() => {
     const fetchInternships = async () => {
       try {
@@ -24,7 +24,6 @@ export default function InternshipPage() {
           order: -1,
           sortedBy: "createdDate",
         });
-        console.log("InternshipPage API Response:", data); // Debug API response
         setInternships(data);
       } catch (err) {
         setError("Error fetching internships");
@@ -37,9 +36,8 @@ export default function InternshipPage() {
     fetchInternships();
   }, []);
 
-  // Process and sort internships
   const filteredInternships = useMemo(() => {
-    const processedInternships = internships
+    return internships
       .filter((job) => job.sectionData?.jobpost?.type === "Internship")
       .map((job) => {
         let relativeTime = "Just now";
@@ -61,7 +59,7 @@ export default function InternshipPage() {
           id: job._id,
           role: job.sectionData?.jobpost?.title || "Unknown Role",
           company: job.sectionData?.jobpost?.company || "Unknown Company",
-          time: relativeTime,
+          time: relativeTime, // Only relative time (e.g., "10 min ago")
           type: job.sectionData?.jobpost?.time || "Unknown",
           salary: job.sectionData?.jobpost?.salary
             ? `₹${job.sectionData.jobpost.salary}`
@@ -71,36 +69,33 @@ export default function InternshipPage() {
             job.sectionData.jobpost.logo.startsWith("http")
             ? job.sectionData.jobpost.logo
             : "https://placehold.co/40x40",
-          createdDate: job.createdDate,
-          salaryValue: job.sectionData?.jobpost?.salary || 0, // For sorting
+          createdDate: job.createdDate, // Keep for sorting
+          salaryValue: job.sectionData?.jobpost?.salary || 0,
         };
-      });
-
-    // Apply sorting based on sortOption
-    return processedInternships.sort((a, b) => {
-      switch (sortOption) {
-        case "latest":
-          try {
-            const dateA = parse(a.createdDate, "dd/MM/yyyy, h:mm:ss a", new Date());
-            const dateB = parse(b.createdDate, "dd/MM/yyyy, h:mm:ss a", new Date());
-            return dateB - dateA; // Most recent first
-          } catch (err) {
-            console.error("Sorting error:", err);
+      })
+      .sort((a, b) => {
+        switch (sortOption) {
+          case "latest":
+            try {
+              const dateA = parse(a.createdDate, "dd/MM/yyyy, h:mm:ss a", new Date());
+              const dateB = parse(b.createdDate, "dd/MM/yyyy, h:mm:ss a", new Date());
+              return dateB - dateA;
+            } catch (err) {
+              console.error("Sorting error:", err);
+              return 0;
+            }
+          case "salary-desc":
+            return b.salaryValue - a.salaryValue;
+          case "salary-asc":
+            return a.salaryValue - b.salaryValue;
+          case "title-asc":
+            return a.role.localeCompare(b.role);
+          default:
             return 0;
-          }
-        case "salary-desc":
-          return b.salaryValue - a.salaryValue; // Highest salary first
-        case "salary-asc":
-          return a.salaryValue - b.salaryValue; // Lowest salary first
-        case "title-asc":
-          return a.role.localeCompare(b.role); // Alphabetical by title
-        default:
-          return 0;
-      }
-    });
+        }
+      });
   }, [internships, sortOption]);
 
-  // Pagination logic
   const totalPages = Math.ceil(filteredInternships.length / internshipsPerPage);
   const paginatedInternships = filteredInternships.slice(
     (currentPage - 1) * internshipsPerPage,
@@ -120,7 +115,6 @@ export default function InternshipPage() {
 
   return (
     <>
-      {/* Hero Section */}
       <Hero
         title="Internships"
         subtitle="Empower Your Future: Unleash Limitless Career Possibilities!"
@@ -129,69 +123,81 @@ export default function InternshipPage() {
         backgroundImage={backgroundImg}
         gradient="linear-gradient(to right, rgba(249, 220, 223, 0.8), rgba(181, 217, 211, 0.8))"
       />
-
-      {/* Main Content */}
       <div className="flex flex-col md:flex-row px-4 md:px-12 py-8 bg-[#fafafa]">
-        {/* Sidebar */}
-        <div className="w-full md:w-1/4 bg-white shadow-md rounded-xl p-6 mb-6 md:mb-0">
-          <h2 className="text-lg font-semibold mb-4">Search by Internship Title</h2>
-          <input
-            type="text"
-            placeholder="Internship title or company"
-            className="w-full p-2 border rounded-lg mb-4 text-sm"
-          />
-          <h3 className="font-medium text-sm mb-2">Location</h3>
-          <select className="w-full p-2 border rounded-lg mb-4 text-sm">
-            <option>Choose city</option>
-          </select>
+        <div className="w-full md:w-1/4 bg-gradient-to-b from-[#FFFCF2] to-[#FEEFF4] shadow-md rounded-xl p-6 mb-6 md:mb-0">
+      {/* Search by Internship Title */}
+      <h2 className="text-lg font-semibold mb-4">Search by Internship Title</h2>
+      <div className="relative mb-4">
+        <BsSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" />
+        <input
+          type="text"
+          placeholder="Internship title or company"
+          className="w-full pl-10 p-2 border rounded-lg text-sm"
+        />
+      </div>
 
-          {/* Filter Categories */}
-          {[
-            {
-              title: "Category",
-              items: [
-                "Commerce",
-                "Telecommunications",
-                "Hotels & Tourism",
-                "Education",
-                "Financial Services",
-              ],
-            },
-            {
-              title: "Internship Type",
-              items: ["Full Time", "Part Time", "Freelance", "Seasonal", "Fixed-Price"],
-            },
-            {
-              title: "Experience Level",
-              items: ["No-experience", "Fresher", "Intermediate", "Expert"],
-            },
-            {
-              title: "Date Posted",
-              items: ["All", "Last Hour", "Last 24 Hours", "Last 7 Days", "Last 30 Days"],
-            },
-          ].map(({ title, items }) => (
-            <div key={title} className="mb-4">
-              <h3 className="font-medium text-sm mb-2">{title}</h3>
-              {items.map((item) => (
-                <label key={item} className="block text-sm text-gray-700">
-                  <input type="checkbox" className="mr-2" /> {item}
-                </label>
-              ))}
-            </div>
+      {/* Location */}
+      <h3 className="font-medium text-sm mb-2">Location</h3>
+      <div className="relative mb-4">
+        <BsGeoAlt className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" />
+        <select className="w-full pl-10 p-2 border rounded-lg text-sm">
+          <option>Choose city</option>
+        </select>
+      </div>
+
+      {/* Filter Categories */}
+      {[
+        {
+          title: "Category",
+          items: [
+            "Commerce",
+            "Telecommunications",
+            "Hotels & Tourism",
+            "Education",
+            "Financial Services",
+          ],
+        },
+        {
+          title: "Internship Type",
+          items: ["Full Time", "Part Time", "Freelance", "Seasonal", "Fixed-Price"],
+        },
+        {
+          title: "Experience Level",
+          items: ["No-experience", "Fresher", "Intermediate", "Expert"],
+        },
+        {
+          title: "Date Posted",
+          items: ["All", "Last Hour", "Last 24 Hours", "Last 7 Days", "Last 30 Days"],
+        },
+      ].map(({ title, items }, index) => (
+        <div key={title} className="mb-4">
+          <h3 className="font-medium text-sm mb-2">{title}</h3>
+          {items.map((item) => (
+            <label key={item} className="block text-sm text-gray-700">
+              <input type="checkbox" className="mr-2" /> {item}
+            </label>
           ))}
-
-          {/* Salary Filter */}
-          <div className="mb-2">
-            <h3 className="font-medium text-sm mb-2">Salary</h3>
-            <input type="range" min="0" max="100000" className="w-full" />
-            <p className="text-xs text-gray-600 mt-1">Salary: ₹0 - ₹99999</p>
-          </div>
-          <button className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white py-2 rounded-lg mt-2 text-sm font-bold">
-            Apply
-          </button>
+          {/* Show More button after Category section (first section) */}
+          {index === 0 && (
+            <button className="w-full bg-gradient-to-r from-[#6146B6] to-[#1F93EA] text-white py-2 rounded-lg mt-2 text-sm font-bold">
+              Show More
+            </button>
+          )}
         </div>
+      ))}
 
-        {/* Internship Cards */}
+      {/* Salary Filter */}
+      <div className="mb-2">
+        <h3 className="font-medium text-sm mb-2">Salary</h3>
+        <input type="range" min="0" max="100000" className="w-full" />
+        <p className="text-xs text-gray-600 mt-1">Salary: ₹0 - ₹99999</p>
+      </div>
+
+      {/* Apply Button */}
+      <button className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white py-2 rounded-lg mt-2 text-sm font-bold">
+        Apply
+      </button>
+    </div>
         <div className="w-full md:w-3/4 md:pl-6">
           <div className="flex justify-between items-center mb-4">
             <p className="text-sm text-gray-600">
@@ -210,7 +216,6 @@ export default function InternshipPage() {
               <option value="title-asc">Sort by title (A-Z)</option>
             </select>
           </div>
-
           <div className="space-y-4">
             {paginatedInternships.map((internship) => (
               <div
@@ -219,7 +224,7 @@ export default function InternshipPage() {
               >
                 <div className="flex justify-between items-center mb-2">
                   <span className="inline-block bg-gray-200 text-gray-800 text-xs font-medium px-2 py-0.5 rounded-full">
-                    {internship.time} (Created: {internship.createdDate})
+                    {internship.time} {/* Only show relative time */}
                   </span>
                   <BsBookmarkPlus className="h-6 w-6" aria-label="Bookmark Plus Icon" />
                 </div>
@@ -305,8 +310,6 @@ export default function InternshipPage() {
               </div>
             ))}
           </div>
-
-          {/* Pagination */}
           <div className="flex justify-between items-center mt-6">
             <div className="flex gap-4 justify-center w-full">
               {Array.from({ length: totalPages }, (_, index) => (

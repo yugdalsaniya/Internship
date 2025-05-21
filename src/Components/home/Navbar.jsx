@@ -84,10 +84,10 @@ const Navbar = () => {
       {/* Mobile Menu */}
       {isOpen && (
         <div className="md:hidden flex flex-col items-center space-y-4 mt-4 pb-4">
-          <a href="#" className="text-gray-800 hover:text-blue-600 text-sm font-medium">
+          <a href="/" className="text-gray-800 hover:text-blue-600 text-sm font-medium">
             Home
           </a>
-          <a href="#" className="text-gray-800 hover:text-blue-600 text-sm font-medium">
+          <a href="/internship" className="text-gray-800 hover:text-blue-600 text-sm font-medium">
             Internships
           </a>
           <a href="#" className="text-gray-800 hover:text-blue-600 text-sm font-medium">
