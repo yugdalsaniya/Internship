@@ -15,7 +15,7 @@ export default function AppRoutes() {
 
         <Route path="/signup" element={<SignUpPage />} />
         <Route path="/otp" element={<OtpPage />} />
-        <Route path="/signin" element={<SignInPage />} />
+        <Route path="/login" element={<SignInPage />} />
 
         <Route element={<MainLayout />}>
           <Route path="/" element={<HomePage />} /> {/* Add this for the root path */}

@@ -1,16 +1,80 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { MdVisibility, MdVisibilityOff } from 'react-icons/md';
 import logo from '../assets/Navbar/logo.png';
 import rightImage from '../assets/SignUp/wallpaper.jpg';
 import facebook from '../assets/SignUp/facebook.png';
 import linkedin from '../assets/SignUp/linkedin.png';
+import { login } from '../Utils/api';
 
 const SignIn = () => {
+  const [formData, setFormData] = useState({ email: '', password: '' });
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      const response = await login({
+        username: formData.email.toLowerCase().trim(),
+        password: formData.password,
+      });
+      console.log('Login response:', response);
+      if (response.success) {
+        console.log('Storing user data:', {
+          legalname: response.user.legalname || response.user.email,
+          email: response.user.email,
+          role: response.user.role?.role || '',
+        });
+        localStorage.setItem('user', JSON.stringify({
+          legalname: response.user.legalname || response.user.email,
+          email: response.user.email,
+          role: response.user.role?.role || '',
+        }));
+        localStorage.setItem('accessToken', response.accessToken);
+        localStorage.setItem('refreshToken', response.refreshToken);
+        navigate('/');
+      } else {
+        setError(response.message || 'Login failed');
+      }
+    } catch (err) {
+      console.error('Login error:', {
+        message: err.message,
+        response: err.response?.data,
+        status: err.response?.status,
+        headers: err.response?.headers,
+      });
+      const errorMessage = err.response?.data?.message || err.message || 'Invalid email or password';
+      if (errorMessage.includes('OTP not verified')) {
+        setError('Please verify your email with OTP before logging in.');
+      } else if (errorMessage.includes('Invalid credentials')) {
+        setError('Incorrect email or password. Please try again.');
+      } else if (err.response?.status === 401) {
+        setError('Unauthorized access. Please check your credentials.');
+      } else {
+        setError(`${errorMessage}. Please try again or contact support@conscor.com.`);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="flex h-screen font-sans overflow-hidden">
-      {/* Left Side */}
       <div className="w-full lg:w-1/2 flex flex-col justify-center items-center px-6 py-4">
         <div className="flex flex-col items-center w-full max-w-xs sm:max-w-sm">
-          {/* Logo at top, now centered */}
           <div className="mb-8 flex flex-col items-center">
             <div className="flex items-center space-x-3">
               <img src={logo} alt="Logo" className="w-12 h-12" />
@@ -26,41 +90,41 @@ const SignIn = () => {
             </div>
           </div>
 
-          {/* Sign-in form */}
           <h2 className="text-2xl font-bold mb-1 text-black">Sign in</h2>
           <p className="text-sm text-gray-500 mb-6">Please login to continue to your account.</p>
+          {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
 
-          <form className="space-y-4 w-full">
+          <form className="space-y-4 w-full" onSubmit={handleSubmit}>
             <input
               type="email"
+              name="email"
               placeholder="Email"
               className="w-full px-4 py-2 border rounded-md outline-none text-sm"
+              value={formData.email}
+              onChange={handleChange}
+              required
             />
             <div className="relative">
               <input
-                type="password"
+                type={showPassword ? 'text' : 'password'}
+                name="password"
                 placeholder="Password"
                 className="w-full px-4 py-2 border rounded-md pr-10 text-sm"
+                value={formData.password}
+                onChange={handleChange}
+                required
               />
-              <svg
-                className="absolute top-1/2 right-3 transform -translate-y-1/2 text-gray-500 w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+              {showPassword ? (
+                <MdVisibility
+                  className="absolute top-1/2 right-3 transform -translate-y-1/2 text-gray-500 cursor-pointer"
+                  onClick={togglePasswordVisibility}
                 />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-.077.255-.166.504-.267.745"
+              ) : (
+                <MdVisibilityOff
+                  className="absolute top-1/2 right-3 transform -translate-y-1/2 text-gray-500 cursor-pointer"
+                  onClick={togglePasswordVisibility}
                 />
-              </svg>
+              )}
             </div>
 
             <div className="flex items-center justify-between">
@@ -68,24 +132,26 @@ const SignIn = () => {
                 <input type="checkbox" className="mr-2" />
                 Keep me logged in
               </label>
+              <Link to="/forgot-password" className="text-sm text-[#3D7EFF]">
+                Forgot Password?
+              </Link>
             </div>
 
             <button
               type="submit"
               className="w-full bg-[#3D7EFF] text-white py-2 rounded-md font-semibold text-xs"
+              disabled={loading}
             >
-              Sign in
+              {loading ? 'Signing in...' : 'Sign in'}
             </button>
           </form>
 
-          {/* Divider */}
           <div className="flex items-center my-6 w-full">
             <hr className="flex-grow border-t" />
             <span className="mx-3 text-sm text-gray-500">or</span>
             <hr className="flex-grow border-t" />
           </div>
 
-          {/* Social Buttons */}
           <div className="flex justify-center gap-6 mb-6 w-full">
             <button className="border p-2 rounded-md">
               <img
@@ -104,14 +170,13 @@ const SignIn = () => {
 
           <p className="text-sm text-center">
             Need an account?{' '}
-            <a href="#" className="text-[#3D7EFF] font-semibold">
+            <Link to="/signup" className="text-[#3D7EFF] font-semibold">
               Create one
-            </a>
+            </Link>
           </p>
         </div>
       </div>
 
-      {/* Right Side Image */}
       <div className="hidden lg:flex w-1/2 p-4">
         <div
           className="w-full h-full bg-cover bg-center rounded-3xl"
