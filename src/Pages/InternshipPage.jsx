@@ -187,6 +187,7 @@ export default function InternshipPage() {
       ))}
 
       {/* Salary Filter */}
+      
       <div className="mb-2">
         <h3 className="font-medium text-sm mb-2">Salary</h3>
         <input type="range" min="0" max="100000" className="w-full" />
@@ -194,7 +195,7 @@ export default function InternshipPage() {
       </div>
 
       {/* Apply Button */}
-      <button className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white py-2 rounded-lg mt-2 text-sm font-bold">
+      <button className="w-full bg-gradient-to-b from-[#6146B6] to-[#1F93EA] text-white py-2 rounded-lg mt-2 text-sm font-bold">
         Apply
       </button>
     </div>
