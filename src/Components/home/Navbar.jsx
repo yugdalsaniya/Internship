@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import logo from '../../assets/Navbar/logo.png'; 
-import { Link } from "react-router-dom"; // Import Link from react-router-dom
-
+import logo from '../../assets/Navbar/logo.png';
+import { Link } from 'react-router-dom';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -38,10 +37,10 @@ const Navbar = () => {
           <Link to="/internship" className="text-gray-800 hover:text-blue-600 text-sm font-medium">
             Internships
           </Link>
-          <Link to="/" className="text-gray-800 hover:text-blue-600 text-sm font-medium">
+          <Link to="/about" className="text-gray-800 hover:text-blue-600 text-sm font-medium">
             About Us
           </Link>
-          <Link to="/" className="text-gray-800 hover:text-blue-600 text-sm font-medium">
+          <Link to="/contact" className="text-gray-800 hover:text-blue-600 text-sm font-medium">
             Contact Us
           </Link>
         </div>
@@ -49,13 +48,19 @@ const Navbar = () => {
         {/* Right Side: Buttons and Hamburger (Mobile) */}
         <div className="flex items-center space-x-4 mr-4">
           {/* Desktop Buttons */}
-          <div className="hidden md:flex space-x-4">
-            <button className="text-gray-800 text-sm font-medium hover:text-blue-600">
+          <div className="hidden md:flex items-center space-x-4">
+            <Link
+              to="/login"
+              className="text-gray-800 text-sm font-medium hover:text-blue-600 flex items-center h-10"
+            >
               Login
-            </button>
-            <button className="bg-gradient-to-r from-blue-500 to-blue-700 text-white text-sm font-medium py-2 px-4 rounded-full hover:from-blue-600 hover:to-blue-800">
+            </Link>
+            <Link
+              to="/signup"
+              className="bg-gradient-to-r from-blue-500 to-blue-700 text-white text-sm font-medium py-2 px-4 rounded-full hover:from-blue-600 hover:to-blue-800 flex items-center h-10"
+            >
               Register
-            </button>
+            </Link>
           </div>
 
           {/* Hamburger Icon (Mobile) */}
@@ -84,24 +89,30 @@ const Navbar = () => {
       {/* Mobile Menu */}
       {isOpen && (
         <div className="md:hidden flex flex-col items-center space-y-4 mt-4 pb-4">
-          <a href="/" className="text-gray-800 hover:text-blue-600 text-sm font-medium">
+          <Link to="/" className="text-gray-800 hover:text-blue-600 text-sm font-medium">
             Home
-          </a>
-          <a href="/internship" className="text-gray-800 hover:text-blue-600 text-sm font-medium">
+          </Link>
+          <Link to="/internship" className="text-gray-800 hover:text-blue-600 text-sm font-medium">
             Internships
-          </a>
-          <a href="#" className="text-gray-800 hover:text-blue-600 text-sm font-medium">
+          </Link>
+          <Link to="/about" className="text-gray-800 hover:text-blue-600 text-sm font-medium">
             About Us
-          </a>
-          <a href="#" className="text-gray-800 hover:text-blue-600 text-sm font-medium">
+          </Link>
+          <Link to="/contact" className="text-gray-800 hover:text-blue-600 text-sm font-medium">
             Contact Us
-          </a>
-          <button className="text-gray-800 text-sm font-medium hover:text-blue-600">
+          </Link>
+          <Link
+            to="/login"
+            className="text-gray-800 text-sm font-medium hover:text-blue-600 w-full text-center py-2"
+          >
             Login
-          </button>
-          <button className="bg-gradient-to-r from-blue-500 to-blue-700 text-white text-sm font-medium py-2 px-4 rounded-full hover:from-blue-600 hover:to-blue-800">
+          </Link>
+          <Link
+            to="/signup"
+            className="bg-gradient-to-r from-blue-500 to-blue-700 text-white text-sm font-medium py-2 px-4 rounded-full hover:from-blue-600 hover:to-blue-800 w-full text-center"
+          >
             Register
-          </button>
+          </Link>
         </div>
       )}
     </nav>

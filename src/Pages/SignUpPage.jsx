@@ -9,7 +9,7 @@ import facebook from '../assets/SignUp/facebook.png'; // Adjust the path based o
 import company from '../assets/SignUp/company.png'; // Adjust the path based on your file location
 
 
-const SignUp = () => {
+const SignUpPage = () => {
   return (
     <div className="flex h-screen font-sans overflow-hidden">
       {/* Left Side */}
@@ -130,4 +130,4 @@ const SignUp = () => {
   );
 };
 
-export default SignUp;
+export default SignUpPage;
