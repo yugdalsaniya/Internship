@@ -73,6 +73,7 @@ export const signup = async (userData) => {
       response: error.response?.data,
       status: error.response?.status,
       headers: error.response?.headers,
+      requestData: userData, // Log the request payload
     });
     throw error.response?.data || { message: 'Signup failed' };
   }

@@ -1,9 +1,6 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { FaGoogle, FaFacebookF, FaLinkedinIn } from 'react-icons/fa';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { MdVisibility, MdVisibilityOff } from 'react-icons/md';
-import DatePicker from 'react-datepicker';
-import 'react-datepicker/dist/react-datepicker.css';
 import rightImage from '../assets/SignUp/wallpaper.jpg';
 import logo from '../assets/Navbar/logo.png';
 import student from '../assets/SignUp/student.png';
@@ -13,76 +10,149 @@ import company from '../assets/SignUp/company.png';
 import { signup } from '../Utils/api';
 
 const SignUpPage = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [role, setRole] = useState(null);
   const [formData, setFormData] = useState({
-    name: '',
-    dob: null,
+    firstName: '',
+    lastName: '',
+    companyName: '',
+    academyName: '',
+    mobile: '',
     email: '',
     password: '',
-    mobile: '',
-    role: '', // Role is no longer hardcoded
+    confirmPassword: '',
   });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
-  const navigate = useNavigate();
 
-  // Role options for selection
-  const roleOptions = [
-    { id: '1747825619417', label: 'Student' },
-    { id: 'companyRoleId', label: 'Company' }, // Replace with actual ID
-    { id: 'academyRoleId', label: 'Academy' }, // Replace with actual ID
-  ];
+  // Role IDs
+  const roleIds = {
+    student: '1747825619417',
+    company: '1747723485001',
+    academy: '1747903042943',
+    recruiter: '1747902920002',
+    mentor: '1747902955524',
+  };
+
+  // Handle role based on URL
+  useEffect(() => {
+    const path = location.pathname.split('/').pop();
+    const validRoles = ['student', 'company', 'academy', 'recruiter', 'mentor'];
+    if (validRoles.includes(path)) {
+      setRole(path);
+    } else if (location.pathname === '/signup') {
+      setRole(null);
+    } else {
+      navigate('/signup', { replace: true });
+    }
+  }, [location.pathname, navigate]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleDateChange = (date) => {
-    setFormData({ ...formData, dob: date });
   };
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
 
+  const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const validatePassword = (password) => {
+    // At least 8 characters
+    const passwordRegex = /^.{8,}$/;
+    return passwordRegex.test(password);
+  };
+
+  const validateMobile = (mobile) => {
+    // Any numeric string (digits only) or empty
+    const mobileRegex = /^\d*$/;
+    return mobileRegex.test(mobile);
+  };
+
+  // Handle role change when a role button is clicked
+  const handleRoleChange = (newRole) => {
+    setRole(newRole);
+    navigate(`/signup/${newRole}`);
+    setFormData({
+      firstName: '',
+      lastName: '',
+      companyName: '',
+      academyName: '',
+      mobile: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
+    });
+    setError('');
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
+    // Client-side validation
+    if (!formData.firstName.trim() || !formData.lastName.trim()) {
+      setError('First Name and Last Name are required.');
+      return;
+    }
+    if (!validateEmail(formData.email)) {
+      setError('Please enter a valid email address.');
+      return;
+    }
+    if (!validatePassword(formData.password)) {
+      setError('Password must be at least 8 characters long.');
+      return;
+    }
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match.');
+      return;
+    }
+    if (!validateMobile(formData.mobile)) {
+      setError('Mobile number must contain only digits or be empty.');
+      return;
+    }
+    if (role === 'company' && !formData.companyName.trim()) {
+      setError('Company Name is required.');
+      return;
+    }
+    if (role === 'academy' && !formData.academyName.trim()) {
+      setError('Academy Name is required.');
+      return;
+    }
+
     try {
-      const formattedDob = formData.dob
-        ? formData.dob.toISOString().split('T')[0]
-        : '';
       const payload = {
         appName: 'app8657281202648',
         type: 'otp',
-        legalname: formData.name.trim(),
+        name:formData.email.toLowerCase().trim() ,
         username: formData.email.toLowerCase().trim(),
         password: formData.password,
+        role: roleIds[role],
+        legalname: `${formData.firstName.trim()} ${formData.lastName.trim()}`.trim(),
+        email: formData.email.toLowerCase().trim(),
         mobile: formData.mobile.trim() || '',
-        role: "1747825619417",
-        dob: formattedDob,
+        ...(role === 'company' && { companyname: formData.companyName.trim() }),
+        ...(role === 'academy' && { academyname: formData.academyName.trim() }),
       };
-      console.log('Sending signup payload:', payload);
+      console.log('Signup Payload:', payload); // Debug payload
       const response = await signup(payload);
-      console.log('Signup response:', response);
       if (response.success) {
         localStorage.setItem('pendingUser', JSON.stringify({
-          legalname: formData.name,
+          legalname: `${formData.firstName} ${formData.lastName}`.trim(),
           email: formData.email.toLowerCase().trim(),
-          role: formData.role,
+          role,
         }));
         navigate('/otp');
       } else {
         setError(response.message || 'Signup failed');
       }
     } catch (err) {
-      console.error('Signup error:', {
-        message: err.message,
-        response: err.response?.data,
-        status: err.response?.status,
-        headers: err.response?.headers,
-      });
       const errorMessage = err.response?.data?.message || err.message || 'An error occurred during signup';
+      console.error('Signup Error Response:', err.response?.data); // Debug API response
       if (errorMessage.includes('User with this username already exists')) {
         setError('This email is already registered. Please use a different email or sign in.');
       } else {
@@ -91,143 +161,191 @@ const SignUpPage = () => {
     }
   };
 
+  // Define form fields based on role
+  const formFields = {
+    student: [
+      { name: 'firstName', placeholder: 'First Name', type: 'text', required: true },
+      { name: 'lastName', placeholder: 'Last Name', type: 'text', required: true },
+      { name: 'mobile', placeholder: 'Mobile (e.g., 9979737457)', type: 'text' },
+      { name: 'email', placeholder: 'Email', type: 'email', required: true },
+      { name: 'password', placeholder: 'Password', type: showPassword ? 'text' : 'password', required: true },
+      { name: 'confirmPassword', placeholder: 'Confirm Password', type: showPassword ? 'text' : 'password', required: true },
+    ],
+    company: [
+      { name: 'firstName', placeholder: 'First Name', type: 'text', required: true },
+      { name: 'lastName', placeholder: 'Last Name', type: 'text', required: true },
+      { name: 'companyName', placeholder: 'Company Name', type: 'text', required: true },
+      { name: 'mobile', placeholder: 'Mobile (e.g., 9979737457)', type: 'text' },
+      { name: 'email', placeholder: 'Email', type: 'email', required: true },
+      { name: 'password', placeholder: 'Password', type: showPassword ? 'text' : 'password', required: true },
+      { name: 'confirmPassword', placeholder: 'Confirm Password', type: showPassword ? 'text' : 'password', required: true },
+    ],
+    academy: [
+      { name: 'firstName', placeholder: 'First Name', type: 'text', required: true },
+      { name: 'lastName', placeholder: 'Last Name', type: 'text', required: true },
+      { name: 'academyName', placeholder: 'Academy Name', type: 'text', required: true },
+      { name: 'mobile', placeholder: 'Mobile (e.g., 9979737457)', type: 'text' },
+      { name: 'email', placeholder: 'Email', type: 'email', required: true },
+      { name: 'password', placeholder: 'Password', type: showPassword ? 'text' : 'password', required: true },
+      { name: 'confirmPassword', placeholder: 'Confirm Password', type: showPassword ? 'text' : 'password', required: true },
+    ],
+    recruiter: [
+      { name: 'firstName', placeholder: 'First Name', type: 'text', required: true },
+      { name: 'lastName', placeholder: 'Last Name', type: 'text', required: true },
+      { name: 'mobile', placeholder: 'Mobile (e.g., 9979737457)', type: 'text' },
+      { name: 'email', placeholder: 'Email', type: 'email', required: true },
+      { name: 'password', placeholder: 'Password', type: showPassword ? 'text' : 'password', required: true },
+      { name: 'confirmPassword', placeholder: 'Confirm Password', type: showPassword ? 'text' : 'password', required: true },
+    ],
+    mentor: [
+      { name: 'firstName', placeholder: 'First Name', type: 'text', required: true },
+      { name: 'lastName', placeholder: 'Last Name', type: 'text', required: true },
+      { name: 'mobile', placeholder: 'Mobile (e.g., 9979737457)', type: 'text' },
+      { name: 'email', placeholder: 'Email', type: 'email', required: true },
+      { name: 'password', placeholder: 'Password', type: showPassword ? 'text' : 'password', required: true },
+      { name: 'confirmPassword', placeholder: 'Confirm Password', type: showPassword ? 'text' : 'password', required: true },
+    ],
+  };
+
   return (
     <div className="flex h-screen font-sans overflow-hidden">
-      <div className="w-full lg:w-1/2 flex flex-col items-center justify-center px-6 py-4">
-        <div className="mb-8 flex flex-col items-center">
-          <div className="flex items-center space-x-3">
-            <img src={logo} alt="Logo" className="w-12 h-12" />
-            <div>
-              <h1 className="text-xl sm:text-2xl font-bold text-[#050748] tracking-wide">
-                INTERNSHIP–OJT
-              </h1>
-              <div className="w-full h-[2px] bg-[#050748] mt-1 mb-1" />
-              <p className="text-[11px] sm:text-xs text-black font-bold text-center">
-                WORK24 PHILIPPINES
+      <div className="w-full lg:w-1/2 flex flex-col justify-center px-6 py-4">
+        <div className="max-w-xs sm:max-w-sm mx-auto w-full">
+          <div className="mb-6 flex flex-col items-center">
+            <div className="flex items-center space-x-3 mb-2">
+              <img src={logo} alt="Logo" className="w-10 h-10" />
+              <div>
+                <h1 className="text-xl font-bold text-[#050748] tracking-wide">
+                  INTERNSHIP–OJT
+                </h1>
+                <div className="w-full h-[2px] bg-[#050748] mt-1 mb-1" />
+                <p className="text-xs text-black font-bold text-center">
+                  WORK24 PHILIPPINES
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Role Selection */}
+          <div className="flex justify-center gap-4 mb-6">
+            {['student', 'company', 'academy', 'recruiter', 'mentor'].map((r) => (
+              <div
+                key={r}
+                className={`flex flex-col items-center cursor-pointer ${role === r ? 'border-b-2 border-[#3D7EFF]' : ''}`}
+                onClick={() => handleRoleChange(r)}
+              >
+                <div className="p-2 rounded-xl border shadow-sm">
+                  <img
+                    src={
+                      r === 'student' ? student :
+                      r === 'company' ? company :
+                      r === 'academy' ? 'https://img.icons8.com/color/48/google-logo.png' :
+                      r === 'recruiter' ? 'https://img.icons8.com/color/48/briefcase.png' :
+                      'https://img.icons8.com/color/48/mentor.png'
+                    }
+                    alt={r}
+                    className="w-8 h-8"
+                  />
+                </div>
+                <span className="text-xs mt-1 font-medium capitalize">{r}</span>
+              </div>
+            ))}
+          </div>
+
+          {role && (
+            <div className="w-full">
+              <h2 className="text-xl font-bold mb-1 text-black">Sign up</h2>
+              <p className="text-xs text-gray-500 mb-4">Sign up to enjoy the feature of Revolutie</p>
+              {error && <p className="text-red-500 text-xs mb-3">{error}</p>}
+
+              <form className="space-y-3" onSubmit={handleSubmit}>
+                <div className="flex gap-3">
+                  <div className="flex-1 relative">
+                    <input
+                      type="text"
+                      name="firstName"
+                      placeholder="First Name"
+                      className="w-full px-3 py-2 border rounded-md outline-none text-xs"
+                      value={formData.firstName}
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
+                  <div className="flex-1 relative">
+                    <input
+                      type="text"
+                      name="lastName"
+                      placeholder="Last Name"
+                      className="w-full px-3 py-2 border rounded-md outline-none text-xs"
+                      value={formData.lastName}
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
+                </div>
+
+                {formFields[role].filter(field => field.name !== 'firstName' && field.name !== 'lastName').map((field) => (
+                  <div key={field.name} className="relative">
+                    <input
+                      type={field.type}
+                      name={field.name}
+                      placeholder={field.placeholder}
+                      className="w-full px-3 py-2 border rounded-md outline-none text-xs"
+                      value={formData[field.name]}
+                      onChange={handleChange}
+                      required={field.required}
+                    />
+                    {(field.name === 'password' || field.name === 'confirmPassword') && (
+                      showPassword ? (
+                        <MdVisibility
+                          className="absolute top-1/2 right-2 transform -translate-y-1/2 text-gray-500 cursor-pointer text-sm"
+                          onClick={togglePasswordVisibility}
+                        />
+                      ) : (
+                        <MdVisibilityOff
+                          className="absolute top-1/2 right-2 transform -translate-y-1/2 text-gray-500 cursor-pointer text-sm"
+                          onClick={togglePasswordVisibility}
+                        />
+                      )
+                    )}
+                  </div>
+                ))}
+                <button
+                  type="submit"
+                  className="w-full bg-[#3D7EFF] text-white py-2 rounded-md font-semibold text-xs"
+                >
+                  Sign up
+                </button>
+              </form>
+
+              {role !== 'company' && (
+                <>
+                  <div className="flex items-center my-4">
+                    <hr className="flex-grow border-t" />
+                    <span className="mx-2 text-xs text-gray-500">or</span>
+                    <hr className="flex-grow border-t" />
+                  </div>
+
+                  <div className="flex justify-center gap-4 mb-4">
+                    <button className="border p-1 rounded-md">
+                      <img src="https://img.icons8.com/color/48/google-logo.png" alt="Google" className="w-5 h-5" />
+                    </button>
+                    <button className="border p-1 rounded-md">
+                      <img src={facebook} alt="Facebook" className="w-5 h-5" />
+                    </button>
+                    <button className="border p-1 rounded-md">
+                      <img src={linkedin} alt="LinkedIn" className="w-5 h-5" />
+                    </button>
+                  </div>
+                </>
+              )}
+
+              <p className="text-xs text-center">
+                Already have an account?{' '}
+                <Link to="/login" className="text-[#3D7EFF] font-semibold">Sign in</Link>
               </p>
             </div>
-          </div>
-        </div>
-
-        <div className="flex gap-10 mb-10">
-          <div className="flex flex-col items-center">
-            <div className="p-3 rounded-xl border shadow-sm">
-              <img src={student} alt="Student" className="w-10 h-10" />
-            </div>
-            <span className="text-sm mt-2 font-medium">Student</span>
-          </div>
-          <div className="flex flex-col items-center">
-            <div className="p-3 rounded-xl border shadow-sm">
-              <img src={company} alt="Company" className="w-10 h-10" />
-            </div>
-            <span className="text-sm mt-2 font-medium">Company</span>
-          </div>
-          <div className="flex flex-col items-center">
-            <div className="p-3 rounded-xl border shadow-sm">
-              <img src="https://img.icons8.com/color/48/google-logo.png" alt="Academy" className="w-10 h-10" />
-            </div>
-            <span className="text-sm mt-2 font-medium">Academy</span>
-          </div>
-        </div>
-
-        <div className="w-full max-w-xs sm:max-w-sm">
-          <h2 className="text-2xl font-bold mb-1 text-black">Sign up</h2>
-          <p className="text-sm text-gray-500 mb-6">Sign up to enjoy the feature of Revolutie</p>
-          {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
-
-          <form className="space-y-4" onSubmit={handleSubmit}>
-            <input
-              type="text"
-              name="name"
-              placeholder="Name"
-              className="w-full px-4 py-2 border rounded-md outline-none text-sm"
-              value={formData.name}
-              onChange={handleChange}
-              required
-            />
-            <div className="relative">
-              <DatePicker
-                selected={formData.dob}
-                onChange={handleDateChange}
-                placeholderText="Date of Birth"
-                className="w-full px-4 py-2 border rounded-md outline-none text-sm"
-                dateFormat="yyyy-MM-dd"
-                showYearDropdown
-                scrollableYearDropdown
-                yearDropdownItemNumber={100}
-                maxDate={new Date()}
-              />
-            </div>
-            <input
-              type="email"
-              name="email"
-              placeholder="Email"
-              className="w-full px-4 py-2 border rounded-md outline-none text-sm"
-              value={formData.email}
-              onChange={handleChange}
-              required
-            />
-            <input
-              type="text"
-              name="mobile"
-              placeholder="Mobile"
-              className="w-full px-4 py-2 border rounded-md outline-none text-sm"
-              value={formData.mobile}
-              onChange={handleChange}
-            />
-           
-            <div className="relative">
-              <input
-                type={showPassword ? 'text' : 'password'}
-                name="password"
-                placeholder="Password"
-                className="w-full px-4 py-2 border rounded-md pr-10 text-sm"
-                value={formData.password}
-                onChange={handleChange}
-                required
-              />
-              {showPassword ? (
-                <MdVisibility
-                  className="absolute top-1/2 right-3 transform -translate-y-1/2 text-gray-500 cursor-pointer"
-                  onClick={togglePasswordVisibility}
-                />
-              ) : (
-                <MdVisibilityOff
-                  className="absolute top-1/2 right-3 transform -translate-y-1/2 text-gray-500 cursor-pointer"
-                  onClick={togglePasswordVisibility}
-                />
-              )}
-            </div>
-            <button
-              type="submit"
-              className="w-full bg-[#3D7EFF] text-white py-2 rounded-md font-semibold text-xs"
-            >
-              Sign up
-            </button>
-          </form>
-
-          <div className="flex items-center my-6">
-            <hr className="flex-grow border-t" />
-            <span className="mx-3 text-sm text-gray-500">or</span>
-            <hr className="flex-grow border-t" />
-          </div>
-
-          <div className="flex justify-center gap-6 mb-6">
-            <button className="border p-2 rounded-md">
-              <img src="https://img.icons8.com/color/48/google-logo.png" alt="Google" className="w-6 h-6" />
-            </button>
-            <button className="border p-2 rounded-md">
-              <img src={facebook} alt="Facebook" className="w-6 h-6" />
-            </button>
-            <button className="border p-2 rounded-md">
-              <img src={linkedin} alt="LinkedIn" className="w-6 h-6" />
-            </button>
-          </div>
-
-          <p className="text-sm text-center">
-            Already have an account?{' '}
-            <Link to="/login" className="text-[#3D7EFF] font-semibold">Sign in</Link>
-          </p>
+          )}
         </div>
       </div>
 
