@@ -7,7 +7,10 @@ import student from '../assets/SignUp/student.png';
 import linkedin from '../assets/SignUp/linkedin.png';
 import facebook from '../assets/SignUp/facebook.png';
 import company from '../assets/SignUp/company.png';
-import { signup } from '../Utils/api';
+import academy from '../assets/SignUp/academy.png';
+import recruiter from '../assets/SignUp/recruiter.png';
+import mentor from '../assets/SignUp/mentor.png';
+import { signup, signupCompany } from '../Utils/api';
 
 const SignUpPage = () => {
   const location = useLocation();
@@ -62,18 +65,15 @@ const SignUpPage = () => {
   };
 
   const validatePassword = (password) => {
-    // At least 8 characters
-    const passwordRegex = /^.{8,}$/;
+    const passwordRegex = /^.{6,}$/;
     return passwordRegex.test(password);
   };
 
   const validateMobile = (mobile) => {
-    // Any numeric string (digits only) or empty
     const mobileRegex = /^\d*$/;
     return mobileRegex.test(mobile);
   };
 
-  // Handle role change when a role button is clicked
   const handleRoleChange = (newRole) => {
     setRole(newRole);
     navigate(`/signup/${newRole}`);
@@ -94,7 +94,6 @@ const SignUpPage = () => {
     e.preventDefault();
     setError('');
 
-    // Client-side validation
     if (!formData.firstName.trim() || !formData.lastName.trim()) {
       setError('First Name and Last Name are required.');
       return;
@@ -104,7 +103,7 @@ const SignUpPage = () => {
       return;
     }
     if (!validatePassword(formData.password)) {
-      setError('Password must be at least 8 characters long.');
+      setError('Password must be at least 6 characters long.');
       return;
     }
     if (formData.password !== formData.confirmPassword) {
@@ -125,35 +124,72 @@ const SignUpPage = () => {
     }
 
     try {
-      const payload = {
-        appName: 'app8657281202648',
-        type: 'otp',
-        name:formData.email.toLowerCase().trim() ,
-        username: formData.email.toLowerCase().trim(),
-        password: formData.password,
-        role: roleIds[role],
-        legalname: `${formData.firstName.trim()} ${formData.lastName.trim()}`.trim(),
-        email: formData.email.toLowerCase().trim(),
-        mobile: formData.mobile.trim() || '',
-        ...(role === 'company' && { companyname: formData.companyName.trim() }),
-        ...(role === 'academy' && { academyname: formData.academyName.trim() }),
-      };
-      console.log('Signup Payload:', payload); // Debug payload
-      const response = await signup(payload);
-      if (response.success) {
-        localStorage.setItem('pendingUser', JSON.stringify({
-          legalname: `${formData.firstName} ${formData.lastName}`.trim(),
+      let payload;
+      let response;
+
+      if (role === 'company') {
+        payload = {
+          appName: 'app8657281202648',
+          companyName: formData.companyName.trim(),
+          mobile: formData.mobile.trim() || '',
+          legalname: `${formData.firstName.trim()} ${formData.lastName.trim()}`.trim(),
+          role: roleIds[role],
           email: formData.email.toLowerCase().trim(),
-          role,
-        }));
-        navigate('/otp');
+          password: formData.password,
+        };
+        console.log('Company Signup Payload:', payload);
+        response = await signupCompany(payload);
+      } else {
+        payload = {
+          appName: 'app8657281202648',
+          type: 'otp',
+          name: formData.email.toLowerCase().trim(),
+          username: formData.email.toLowerCase().trim(),
+          password: formData.password,
+          role: roleIds[role],
+          legalname: `${formData.firstName.trim()} ${formData.lastName.trim()}`.trim(),
+          email: formData.email.toLowerCase().trim(),
+          mobile: formData.mobile.trim() || '',
+          ...(role === 'academy' && { academyname: formData.academyName.trim() }),
+        };
+        console.log('Signup Payload:', payload);
+        response = await signup(payload);
+      }
+
+      if (response.success) {
+        if (role === 'company') {
+          setFormData({
+            firstName: '',
+            lastName: '',
+            companyName: '',
+            academyName: '',
+            mobile: '',
+            email: '',
+            password: '',
+            confirmPassword: '',
+          });
+          localStorage.setItem('user', JSON.stringify({
+            legalname: `${formData.firstName} ${formData.lastName}`.trim(),
+            role: roleIds[role],
+            email: formData.email.toLowerCase().trim(),
+          }));
+          navigate('/');
+        } else {
+          localStorage.setItem('pendingUser', JSON.stringify({
+            legalname: `${formData.firstName} ${formData.lastName}`.trim(),
+            email: formData.email.toLowerCase().trim(),
+            role,
+            ...(role === 'academy' && { academyname: formData.academyName.trim() }),
+          }));
+          navigate('/otp');
+        }
       } else {
         setError(response.message || 'Signup failed');
       }
     } catch (err) {
       const errorMessage = err.response?.data?.message || err.message || 'An error occurred during signup';
-      console.error('Signup Error Response:', err.response?.data); // Debug API response
-      if (errorMessage.includes('User with this username already exists')) {
+      console.error('Signup Error Response:', err.response?.data);
+      if (errorMessage.includes('User with this username already exists') || errorMessage.includes('User with this email already exists')) {
         setError('This email is already registered. Please use a different email or sign in.');
       } else {
         setError(`${errorMessage}. Please try again or contact support@conscor.com.`);
@@ -161,7 +197,6 @@ const SignUpPage = () => {
     }
   };
 
-  // Define form fields based on role
   const formFields = {
     student: [
       { name: 'firstName', placeholder: 'First Name', type: 'text', required: true },
@@ -208,18 +243,18 @@ const SignUpPage = () => {
   };
 
   return (
-    <div className="flex h-screen font-sans overflow-hidden">
-      <div className="w-full lg:w-1/2 flex flex-col justify-center px-6 py-4">
-        <div className="max-w-xs sm:max-w-sm mx-auto w-full">
-          <div className="mb-6 flex flex-col items-center">
+    <div className="flex min-h-screen font-sans lg:overflow-hidden">
+      <div className="w-full lg:w-1/2 flex flex-col justify-center px-4 py-4 sm:px-6 md:px-8 lg:h-screen lg:overflow-hidden">
+        <div className="w-full max-w-md mx-auto lg:flex lg:flex-col lg:justify-center lg:min-h-[600px]">
+          <div className="flex flex-col items-center mb-4">
             <div className="flex items-center space-x-3 mb-2">
-              <img src={logo} alt="Logo" className="w-10 h-10" />
+              <img src={logo} alt="Logo" className="w-8 h-8 sm:w-10 sm:h-10" />
               <div>
-                <h1 className="text-xl font-bold text-[#050748] tracking-wide">
+                <h1 className="text-base sm:text-lg font-bold text-[#050748] tracking-wide">
                   INTERNSHIP–OJT
                 </h1>
                 <div className="w-full h-[2px] bg-[#050748] mt-1 mb-1" />
-                <p className="text-xs text-black font-bold text-center">
+                <p className="text-xs sm:text-sm text-black font-bold text-center">
                   WORK24 PHILIPPINES
                 </p>
               </div>
@@ -227,45 +262,48 @@ const SignUpPage = () => {
           </div>
 
           {/* Role Selection */}
-          <div className="flex justify-center gap-4 mb-6">
+          <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mb-4">
             {['student', 'company', 'academy', 'recruiter', 'mentor'].map((r) => (
               <div
                 key={r}
-                className={`flex flex-col items-center cursor-pointer ${role === r ? 'border-b-2 border-[#3D7EFF]' : ''}`}
+                className={`flex flex-col items-center cursor-pointer p-1.5 ${
+                  role === r ? 'border-b-2 border-[#3D7EFF]' : ''
+                }`}
                 onClick={() => handleRoleChange(r)}
               >
-                <div className="p-2 rounded-xl border shadow-sm">
+                <div className="p-1.5 rounded-lg border shadow-sm">
                   <img
                     src={
                       r === 'student' ? student :
                       r === 'company' ? company :
-                      r === 'academy' ? 'https://img.icons8.com/color/48/google-logo.png' :
-                      r === 'recruiter' ? 'https://img.icons8.com/color/48/briefcase.png' :
-                      'https://img.icons8.com/color/48/mentor.png'
+                      r === 'academy' ? academy :
+                      r === 'recruiter' ? recruiter :
+                      r === 'mentor' ? mentor :
+                      'https://img.icons8.com/ios-filled/50/000000/user-male.png'
                     }
                     alt={r}
-                    className="w-8 h-8"
+                    className="w-5 h-5 sm:w-6 sm:h-6"
                   />
                 </div>
-                <span className="text-xs mt-1 font-medium capitalize">{r}</span>
+                <span className="text-xs font-medium capitalize">{r}</span>
               </div>
             ))}
           </div>
 
           {role && (
-            <div className="w-full">
-              <h2 className="text-xl font-bold mb-1 text-black">Sign up</h2>
-              <p className="text-xs text-gray-500 mb-4">Sign up to enjoy the feature of Revolutie</p>
-              {error && <p className="text-red-500 text-xs mb-3">{error}</p>}
+            <div className="w-full min-h-[350px] lg:min-h-[400px]">
+              <h2 className="text-base sm:text-lg font-bold mb-1 text-black">Sign up</h2>
+              <p className="text-xs text-gray-500 mb-3">Sign up to enjoy the feature of Revolutie</p>
+              {error && <p className="text-red-500 text-xs mb-2">{error}</p>}
 
-              <form className="space-y-3" onSubmit={handleSubmit}>
-                <div className="flex gap-3">
+              <form className="space-y-2" onSubmit={handleSubmit}>
+                <div className="flex flex-col sm:flex-row gap-2">
                   <div className="flex-1 relative">
                     <input
                       type="text"
                       name="firstName"
                       placeholder="First Name"
-                      className="w-full px-3 py-2 border rounded-md outline-none text-xs"
+                      className="w-full px-3 py-1.5 border rounded-md outline-none text-xs"
                       value={formData.firstName}
                       onChange={handleChange}
                       required
@@ -276,7 +314,7 @@ const SignUpPage = () => {
                       type="text"
                       name="lastName"
                       placeholder="Last Name"
-                      className="w-full px-3 py-2 border rounded-md outline-none text-xs"
+                      className="w-full px-3 py-1.5 border rounded-md outline-none text-xs"
                       value={formData.lastName}
                       onChange={handleChange}
                       required
@@ -290,7 +328,7 @@ const SignUpPage = () => {
                       type={field.type}
                       name={field.name}
                       placeholder={field.placeholder}
-                      className="w-full px-3 py-2 border rounded-md outline-none text-xs"
+                      className="w-full px-3 py-1.5 border rounded-md outline-none text-xs"
                       value={formData[field.name]}
                       onChange={handleChange}
                       required={field.required}
@@ -312,38 +350,44 @@ const SignUpPage = () => {
                 ))}
                 <button
                   type="submit"
-                  className="w-full bg-[#3D7EFF] text-white py-2 rounded-md font-semibold text-xs"
+                  className="w-full bg-[#3D7EFF] text-white py-1.5 rounded-md font-semibold text-xs"
                 >
                   Sign up
                 </button>
+                {role === 'company' && (
+                  <p className="text-xs text-center mt-2">
+                    Already have an account?{' '}
+                    <Link to="/login" className="text-[#3D7EFF] font-semibold">Sign in</Link>
+                  </p>
+                )}
               </form>
 
               {role !== 'company' && (
                 <>
-                  <div className="flex items-center my-4">
+                  <div className="flex items-center my-3 min-h-[24px]">
                     <hr className="flex-grow border-t" />
                     <span className="mx-2 text-xs text-gray-500">or</span>
                     <hr className="flex-grow border-t" />
                   </div>
 
-                  <div className="flex justify-center gap-4 mb-4">
+                  <div className="flex justify-center gap-3 mb-3 min-h-[28px]">
                     <button className="border p-1 rounded-md">
-                      <img src="https://img.icons8.com/color/48/google-logo.png" alt="Google" className="w-5 h-5" />
+                      <img src="https://img.icons8.com/color/48/google-logo.png" alt="Google" className="w-4 h-4" />
                     </button>
                     <button className="border p-1 rounded-md">
-                      <img src={facebook} alt="Facebook" className="w-5 h-5" />
+                      <img src={facebook} alt="Facebook" className="w-4 h-4" />
                     </button>
                     <button className="border p-1 rounded-md">
-                      <img src={linkedin} alt="LinkedIn" className="w-5 h-5" />
+                      <img src={linkedin} alt="LinkedIn" className="w-4 h-4" />
                     </button>
                   </div>
+
+                  <p className="text-xs text-center">
+                    Already have an account?{' '}
+                    <Link to="/login" className="text-[#3D7EFF] font-semibold">Sign in</Link>
+                  </p>
                 </>
               )}
-
-              <p className="text-xs text-center">
-                Already have an account?{' '}
-                <Link to="/login" className="text-[#3D7EFF] font-semibold">Sign in</Link>
-              </p>
             </div>
           )}
         </div>

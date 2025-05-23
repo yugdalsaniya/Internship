@@ -1,15 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import logo from '../assets/Navbar/logo.png';
 import otpImage from '../assets/SignUp/otp.jpg';
 import rightImage from '../assets/SignUp/wallpaper.jpg';
-import { verifyOtp } from '../Utils/api';
+import { verifyOtp, signup } from '../Utils/api';
 
 const OtpVerification = () => {
   const [otp, setOtp] = useState(['', '', '', '']);
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [verifyLoading, setVerifyLoading] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
   const navigate = useNavigate();
+  const formRef = useRef(null);
 
   const handleChange = (index, value) => {
     if (/^\d?$/.test(value)) {
@@ -24,19 +26,22 @@ const OtpVerification = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    e.stopPropagation();
+    console.log('handleSubmit called', { target: e.target, type: e.type });
     setError('');
-    setLoading(true);
+    setVerifyLoading(true);
+    
     const otpCode = otp.join('');
     if (otpCode.length !== 4) {
       setError('Please enter a 4-digit OTP');
-      setLoading(false);
+      setVerifyLoading(false);
       return;
     }
 
     const pendingUser = JSON.parse(localStorage.getItem('pendingUser'));
     if (!pendingUser) {
       setError('No pending user data found. Please sign up again.');
-      setLoading(false);
+      setVerifyLoading(false);
       return;
     }
 
@@ -47,6 +52,7 @@ const OtpVerification = () => {
         type: 'email',
         otp: otpCode,
       };
+      console.log('OTP Verification Payload:', otpPayload);
       const response = await verifyOtp(otpPayload);
       if (response.success) {
         localStorage.setItem('user', JSON.stringify({
@@ -60,6 +66,7 @@ const OtpVerification = () => {
         setError(response.message || 'OTP verification failed');
       }
     } catch (err) {
+      console.error('OTP Verification Error:', err.response?.data || err);
       const errorMessage = err.response?.data?.message || err.message || 'An error occurred during OTP verification';
       if (errorMessage.includes('Role not found')) {
         setError('Role not found for this user. Please contact support@conscor.com to verify your role.');
@@ -69,46 +76,49 @@ const OtpVerification = () => {
         setError(`${errorMessage}. Please try again or contact support@conscor.com.`);
       }
     } finally {
-      setLoading(false);
+      setVerifyLoading(false);
     }
   };
 
-  const handleResend = async () => {
+  const handleResend = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log('handleResend called', { target: e.target, type: e.type });
     setError('');
-    setLoading(true);
+    setResendLoading(true);
+    
     const pendingUser = JSON.parse(localStorage.getItem('pendingUser'));
     if (!pendingUser) {
       setError('No pending user data found. Please sign up again.');
-      setLoading(false);
+      setResendLoading(false);
       return;
     }
+
     try {
-      const response = await fetch('https://crmapi.conscor.com/api/v1/auth/signup/otp', {
-        method: 'POST',
-        headers: {
-          'x-api-key': 'LHCHoE0IlCOuESA4VQuJ',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          appName: 'app8657281202648',
-          type: 'otp',
-          legalname: pendingUser.legalname,
-          username: pendingUser.email.toLowerCase().trim(),
-          password: '', // Password not required for resend
-          mobile: '',
-          role: pendingUser.role,
-        }),
-      });
-      const data = await response.json();
-      if (data.success) {
+      const resendPayload = {
+        appName: 'app8657281202648',
+        type: 'otp',
+        name: pendingUser.email.toLowerCase().trim(),
+        username: pendingUser.email.toLowerCase().trim(),
+        password: '',
+        role: pendingUser.role,
+        legalname: pendingUser.legalname,
+        email: pendingUser.email.toLowerCase().trim(),
+        mobile: '',
+        ...(pendingUser.academyname && { academyname: pendingUser.academyname }),
+      };
+      console.log('Resend OTP Payload:', resendPayload);
+      const response = await signup(resendPayload);
+      if (response.success) {
         setError('OTP resent successfully. Check your email.');
       } else {
-        setError(data.message || 'Failed to resend OTP');
+        setError(response.message || 'Failed to resend OTP');
       }
     } catch (err) {
+      console.error('Resend OTP Error:', err.response?.data || err);
       setError('Error resending OTP. Please try again or contact support@conscor.com.');
     } finally {
-      setLoading(false);
+      setResendLoading(false);
     }
   };
 
@@ -138,43 +148,51 @@ const OtpVerification = () => {
             <img src={otpImage} alt="OTP Verification" className="w-40" />
           </div>
 
-          {/* Form Section */}
-          <div className="w-full text-center">
-            <h2 className="text-xl font-bold mb-1 text-black">Verify Your Email Address</h2>
-            <p className="text-xs text-gray-500 mb-4">Verify your email with the OTP sent</p>
-            {error && <p className="text-red-500 text-xs mb-3">{error}</p>}
+          <div className="w-full">
+            <div className="text-center">
+              <h2 className="text-xl font-bold mb-1 text-black">Verify Your Email Address</h2>
+              <p className="text-xs text-gray-500 mb-4">Verify your email with the OTP sent</p>
+              {error && <p className="text-red-500 text-xs mb-3">{error}</p>}
 
-            <form className="space-y-4" onSubmit={handleSubmit}>
-              <div className="flex justify-between gap-2">
-                {otp.map((digit, index) => (
-                  <input
-                    key={index}
-                    id={`otp-${index}`}
-                    type="text"
-                    maxLength="1"
-                    value={digit}
-                    onChange={(e) => handleChange(index, e.target.value)}
-                    className="w-10 h-10 border rounded-md text-center text-sm outline-none"
-                  />
-                ))}
+              <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
+                <div className="flex justify-between gap-2">
+                  {otp.map((digit, index) => (
+                    <input
+                      key={index}
+                      id={`otp-${index}`}
+                      type="text"
+                      maxLength="1"
+                      value={digit}
+                      onChange={(e) => handleChange(index, e.target.value)}
+                      className="w-10 h-10 border rounded-md text-center text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  ))}
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={verifyLoading || resendLoading}
+                  className={`w-full bg-[#3D7EFF] text-white py-2 rounded-md font-semibold text-xs hover:bg-blue-600 transition-colors ${
+                    verifyLoading || resendLoading ? 'opacity-70 cursor-not-allowed pointer-events-none' : ''
+                  }`}
+                >
+                  {verifyLoading ? 'Verifying...' : 'Verify OTP'}
+                </button>
+              </form>
+
+              <div className="mt-4">
+                <button
+                  type="button"
+                  onClick={handleResend}
+                  disabled={verifyLoading || resendLoading}
+                  className={`text-xs text-[#3D7EFF] font-medium hover:text-blue-600 transition-colors ${
+                    verifyLoading || resendLoading ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''
+                  }`}
+                >
+                  {resendLoading ? 'Resending...' : 'Resend OTP'}
+                </button>
               </div>
-
-              <button
-                type="submit"
-                className="w-full bg-[#3D7EFF] text-white py-2 rounded-md font-semibold text-xs"
-                disabled={loading}
-              >
-                {loading ? 'Verifying...' : 'Verify OTP'}
-              </button>
-            </form>
-
-            <button
-              onClick={handleResend}
-              className="text-xs text-[#3D7EFF] font-medium mt-3"
-              disabled={loading}
-            >
-              {loading ? 'Resending...' : 'Resend OTP'}
-            </button>
+            </div>
           </div>
         </div>
       </div>

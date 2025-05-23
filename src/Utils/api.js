@@ -73,9 +73,39 @@ export const signup = async (userData) => {
       response: error.response?.data,
       status: error.response?.status,
       headers: error.response?.headers,
-      requestData: userData, // Log the request payload
+      requestData: userData,
     });
     throw error.response?.data || { message: 'Signup failed' };
+  }
+};
+
+export const signupCompany = async (userData) => {
+  try {
+    const accessToken = localStorage.getItem(`${userData.appName}_accessToken`);
+    const response = await axios.post(
+      'https://crmapi.conscor.com/api/v1/auth/hana/signup',
+      userData,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+    console.log('Company Signup API response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error during company signup:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status,
+      headers: error.response?.headers,
+      requestData: userData,
+    });
+    if (error.response && error.response.status === 400) {
+      throw error.response.data || { message: 'User with this email already exists.' };
+    }
+    throw error.response?.data || { message: 'Company signup failed' };
   }
 };
 
