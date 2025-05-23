@@ -156,7 +156,7 @@ const SignIn = () => {
                   <input type="checkbox" className="mr-2" />
                   Keep me logged in
                 </label>
-                <Link to="/forgot-password" className="text-[#3D7EFF]">
+                <Link to="/forgotpassword" className="text-[#3D7EFF]">
                   Forgot Password?
                 </Link>
               </div>

@@ -27,10 +27,9 @@ const OtpVerification = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     e.stopPropagation();
-    console.log('handleSubmit called', { target: e.target, type: e.type });
     setError('');
     setVerifyLoading(true);
-    
+
     const otpCode = otp.join('');
     if (otpCode.length !== 4) {
       setError('Please enter a 4-digit OTP');
@@ -45,19 +44,19 @@ const OtpVerification = () => {
       return;
     }
 
+    const email = pendingUser.email.toLowerCase().trim();
     try {
       const otpPayload = {
         appName: 'app8657281202648',
-        username: pendingUser.email.toLowerCase().trim(),
+        username: email,
         type: 'email',
         otp: otpCode,
       };
-      console.log('OTP Verification Payload:', otpPayload);
       const response = await verifyOtp(otpPayload);
       if (response.success) {
         localStorage.setItem('user', JSON.stringify({
           legalname: pendingUser.legalname,
-          email: pendingUser.email.toLowerCase().trim(),
+          email,
           role: pendingUser.role,
         }));
         localStorage.removeItem('pendingUser');
@@ -68,8 +67,10 @@ const OtpVerification = () => {
     } catch (err) {
       console.error('OTP Verification Error:', err.response?.data || err);
       const errorMessage = err.response?.data?.message || err.message || 'An error occurred during OTP verification';
-      if (errorMessage.includes('Role not found')) {
-        setError('Role not found for this user. Please contact support@conscor.com to verify your role.');
+      if (errorMessage.includes('Invalid OTP') || errorMessage.includes('expired')) {
+        setError('Invalid or expired OTP. Please request a new OTP.');
+      } else if (errorMessage.includes('Role not found')) {
+        setError('Role not found for this user. Please contact support@conscor.com.');
       } else if (err.response?.status === 404) {
         setError('OTP verification service unavailable. Please try again later or contact support@conscor.com.');
       } else {
@@ -83,10 +84,9 @@ const OtpVerification = () => {
   const handleResend = async (e) => {
     e.preventDefault();
     e.stopPropagation();
-    console.log('handleResend called', { target: e.target, type: e.type });
     setError('');
     setResendLoading(true);
-    
+
     const pendingUser = JSON.parse(localStorage.getItem('pendingUser'));
     if (!pendingUser) {
       setError('No pending user data found. Please sign up again.');
@@ -107,7 +107,6 @@ const OtpVerification = () => {
         mobile: '',
         ...(pendingUser.academyname && { academyname: pendingUser.academyname }),
       };
-      console.log('Resend OTP Payload:', resendPayload);
       const response = await signup(resendPayload);
       if (response.success) {
         setError('OTP resent successfully. Check your email.');

@@ -162,3 +162,64 @@ export const login = async (credentials) => {
     throw error.response?.data || { message: 'Invalid email or password' };
   }
 };
+
+export const forgotPassword = async (username, appName) => {
+  try {
+    const response = await axios.post(
+      `${API_URL}/v1/auth/forgot-password`,
+      {
+        appName,
+        username,
+      },
+      {
+        headers: {
+          'x-api-key': API_KEY,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    if (response.data.success) {
+      return response.data.message;
+    }
+  } catch (error) {
+    console.error('Error during forgot password:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status,
+      headers: error.response?.headers,
+    });
+    throw error.response?.data || { message: 'Failed to initiate password reset.' };
+  }
+};
+
+export const resetPassword = async (token, newPassword, appName) => {
+  try {
+    const response = await axios.post(
+      `${API_URL}/v1/auth/reset-password`,
+      {
+        appName,
+        token,
+        newPassword,
+      },
+      {
+        headers: {
+          'x-api-key': API_KEY,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    if (response.data.success) {
+      return response.data.message;
+    }
+  } catch (error) {
+    console.error('Error during reset password:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status,
+      headers: error.response?.headers,
+    });
+    throw error.response?.data || { message: 'Failed to reset password.' };
+  }
+};

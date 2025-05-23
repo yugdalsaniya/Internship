@@ -7,6 +7,7 @@ import InternshipDetailPage from "../Pages/InternshipDetailPage";
 import SignUpPage from "../Pages/SignUpPage";
 import OtpPage from "../Pages/OtpPage";
 import SignInPage from "../Pages/SignInPage";
+import ForgotPassword from "../Pages/ForgotPasswordPage";
 
 export default function AppRoutes() {
   return (
@@ -15,6 +16,7 @@ export default function AppRoutes() {
         <Route path="/signup" element={<SignUpPage />} />
         <Route path="/signup/:role" element={<SignUpPage />} />
         <Route path="/otp" element={<OtpPage />} />
+        <Route path="/forgotpassword" element={<ForgotPassword/>} />
         <Route path="/login" element={<SignInPage />} />
         <Route element={<MainLayout />}>
           <Route path="/" element={<HomePage />} />
