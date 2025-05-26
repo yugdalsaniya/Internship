@@ -8,6 +8,7 @@ import SignUpPage from "../Pages/SignUpPage";
 import OtpPage from "../Pages/OtpPage";
 import SignInPage from "../Pages/SignInPage";
 import ForgotPassword from "../Pages/ForgotPasswordPage";
+import ProfileEditPage from "../Pages/ProfileEditPage";
 
 export default function AppRoutes() {
   return (
@@ -18,6 +19,7 @@ export default function AppRoutes() {
         <Route path="/otp" element={<OtpPage />} />
         <Route path="/forgotpassword" element={<ForgotPassword/>} />
         <Route path="/login" element={<SignInPage />} />
+        <Route path="/editprofile/*" element={<ProfileEditPage />} />
         <Route element={<MainLayout />}>
           <Route path="/" element={<HomePage />} />
           <Route path="/internship" element={<Internship />} />
