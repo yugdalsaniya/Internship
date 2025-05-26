@@ -13,6 +13,16 @@ const SignIn = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const user = JSON.parse(localStorage.getItem('user')) || {};
+
+  // Role IDs to names mapping
+  const roleNames = {
+    '1747825619417': 'student',
+    '1747723485001': 'company',
+    '1747903042943': 'academy',
+    '1747902920002': 'recruiter',
+    '1747902955524': 'mentor',
+  };
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -22,40 +32,49 @@ const SignIn = () => {
     setShowPassword(!showPassword);
   };
 
+  const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
+
+    // Client-side email validation
+    if (!validateEmail(formData.email)) {
+      setError('Please enter a valid email address.');
+      setLoading(false);
+      return;
+    }
+
     try {
       const response = await login({
+        appName: 'app8657281202648',
         username: formData.email.toLowerCase().trim(),
         password: formData.password,
       });
-      console.log('Login response:', response);
       if (response.success) {
-        console.log('Storing user data:', {
-          legalname: response.user.legalname || response.user.email,
-          email: response.user.email,
-          role: response.user.role?.role || '',
-        });
+        const roleName = roleNames[response.user.role?.role] || '';
         localStorage.setItem('user', JSON.stringify({
           legalname: response.user.legalname || response.user.email,
           email: response.user.email,
-          role: response.user.role?.role || '',
+          role: roleName, // Store role name instead of ID
         }));
         localStorage.setItem('accessToken', response.accessToken);
         localStorage.setItem('refreshToken', response.refreshToken);
-        navigate('/');
+
+        // Role-based redirection (customize as needed)
+        if (roleName === 'company') {
+          navigate('/company-dashboard'); // Example: Company-specific dashboard
+        } else {
+          navigate('/'); // Default redirect
+        }
       } else {
         setError(response.message || 'Login failed');
       }
     } catch (err) {
-      console.error('Login error:', {
-        message: err.message,
-        response: err.response?.data,
-        status: err.response?.status,
-        headers: err.response?.headers,
-      });
       const errorMessage = err.response?.data?.message || err.message || 'Invalid email or password';
       if (errorMessage.includes('OTP not verified')) {
         setError('Please verify your email with OTP before logging in.');
@@ -73,110 +92,121 @@ const SignIn = () => {
 
   return (
     <div className="flex h-screen font-sans overflow-hidden">
-      <div className="w-full lg:w-1/2 flex flex-col justify-center items-center px-6 py-4">
-        <div className="flex flex-col items-center w-full max-w-xs sm:max-w-sm">
-          <div className="mb-8 flex flex-col items-center">
-            <div className="flex items-center space-x-3">
-              <img src={logo} alt="Logo" className="w-12 h-12" />
+      {/* Left Side - Form */}
+      <div className="w-full lg:w-1/2 flex flex-col justify-center px-6 py-4">
+        <div className="max-w-xs sm:max-w-sm mx-auto w-full">
+          {/* Logo Section */}
+          <div className="mb-6 flex flex-col items-center">
+            <div className="flex items-center space-x-3 mb-2">
+              <img src={logo} alt="Logo" className="w-10 h-10" />
               <div>
-                <h1 className="text-xl sm:text-2xl font-bold text-[#050748] tracking-wide">
+                <h1 className="text-xl font-bold text-[#050748] tracking-wide">
                   INTERNSHIP–OJT
                 </h1>
                 <div className="w-full h-[2px] bg-[#050748] mt-1 mb-1" />
-                <p className="text-[11px] sm:text-xs text-black font-bold text-center">
+                <p className="text-xs text-black font-bold text-center">
                   WORK24 PHILIPPINES
                 </p>
               </div>
             </div>
           </div>
 
-          <h2 className="text-2xl font-bold mb-1 text-black">Sign in</h2>
-          <p className="text-sm text-gray-500 mb-6">Please login to continue to your account.</p>
-          {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
+          {/* Form Section */}
+          <div className="w-full">
+            <h2 className="text-xl font-bold mb-1 text-black">Sign in</h2>
+            <p className="text-xs text-gray-500 mb-4">Please login to continue to your account.</p>
+            {error && <p className="text-red-500 text-xs mb-3">{error}</p>}
 
-          <form className="space-y-4 w-full" onSubmit={handleSubmit}>
-            <input
-              type="email"
-              name="email"
-              placeholder="Email"
-              className="w-full px-4 py-2 border rounded-md outline-none text-sm"
-              value={formData.email}
-              onChange={handleChange}
-              required
-            />
-            <div className="relative">
+            <form className="space-y-3" onSubmit={handleSubmit}>
               <input
-                type={showPassword ? 'text' : 'password'}
-                name="password"
-                placeholder="Password"
-                className="w-full px-4 py-2 border rounded-md pr-10 text-sm"
-                value={formData.password}
+                type="email"
+                name="email"
+                placeholder="Email"
+                className="w-full px-3 py-2 border rounded-md outline-none text-xs"
+                value={formData.email}
                 onChange={handleChange}
                 required
               />
-              {showPassword ? (
-                <MdVisibility
-                  className="absolute top-1/2 right-3 transform -translate-y-1/2 text-gray-500 cursor-pointer"
-                  onClick={togglePasswordVisibility}
+              
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  name="password"
+                  placeholder="Password"
+                  className="w-full px-3 py-2 border rounded-md pr-8 text-xs"
+                  value={formData.password}
+                  onChange={handleChange}
+                  required
                 />
-              ) : (
-                <MdVisibilityOff
-                  className="absolute top-1/2 right-3 transform -translate-y-1/2 text-gray-500 cursor-pointer"
-                  onClick={togglePasswordVisibility}
-                />
-              )}
-            </div>
+                {showPassword ? (
+                  <MdVisibility
+                    className="absolute top-1/2 right-2 transform -translate-y-1/2 text-gray-500 cursor-pointer text-sm"
+                    onClick={togglePasswordVisibility}
+                  />
+                ) : (
+                  <MdVisibilityOff
+                    className="absolute top-1/2 right-2 transform -translate-y-1/2 text-gray-500 cursor-pointer text-sm"
+                    onClick={togglePasswordVisibility}
+                  />
+                )}
+              </div>
 
-            <div className="flex items-center justify-between">
-              <label className="text-sm flex items-center">
-                <input type="checkbox" className="mr-2" />
-                Keep me logged in
-              </label>
-              <Link to="/forgot-password" className="text-sm text-[#3D7EFF]">
-                Forgot Password?
+              <div className="flex items-center justify-between text-xs">
+                <label className="flex items-center">
+                  <input type="checkbox" className="mr-2" />
+                  Keep me logged in
+                </label>
+                <Link to="/forgotpassword" className="text-[#3D7EFF]">
+                  Forgot Password?
+                </Link>
+              </div>
+
+              <button
+                type="submit"
+                className="w-full bg-[#3D7EFF] text-white py-2 rounded-md font-semibold text-xs"
+                disabled={loading}
+              >
+                {loading ? 'Signing in...' : 'Sign in'}
+              </button>
+            </form>
+
+            {user.role !== 'company' && (
+              <>
+                <div className="flex items-center my-4">
+                  <hr className="flex-grow border-t" />
+                  <span className="mx-2 text-xs text-gray-500">or</span>
+                  <hr className="flex-grow border-t" />
+                </div>
+
+                <div className="flex justify-center gap-4 mb-4">
+                  <button className="border p-1 rounded-md">
+                    <img
+                      src="https://img.icons8.com/color/48/google-logo.png"
+                      alt="Google"
+                      className="w-5 h-5"
+                    />
+                  </button>
+                  <button className="border p-1 rounded-md">
+                    <img src={facebook} alt="Facebook" className="w-5 h-5" />
+                  </button>
+                  <button className="border p-1 rounded-md">
+                    <img src={linkedin} alt="LinkedIn" className="w-5 h-5" />
+                  </button>
+                </div>
+              </>
+            )}
+
+            <p className="text-xs text-center">
+              Need an account?{' '}
+              <Link to="/signup" className="text-[#3D7EFF] font-semibold">
+                Create one
               </Link>
-            </div>
-
-            <button
-              type="submit"
-              className="w-full bg-[#3D7EFF] text-white py-2 rounded-md font-semibold text-xs"
-              disabled={loading}
-            >
-              {loading ? 'Signing in...' : 'Sign in'}
-            </button>
-          </form>
-
-          <div className="flex items-center my-6 w-full">
-            <hr className="flex-grow border-t" />
-            <span className="mx-3 text-sm text-gray-500">or</span>
-            <hr className="flex-grow border-t" />
+            </p>
           </div>
-
-          <div className="flex justify-center gap-6 mb-6 w-full">
-            <button className="border p-2 rounded-md">
-              <img
-                src="https://img.icons8.com/color/48/google-logo.png"
-                alt="Google"
-                className="w-6 h-6"
-              />
-            </button>
-            <button className="border p-2 rounded-md">
-              <img src={facebook} alt="Facebook" className="w-6 h-6" />
-            </button>
-            <button className="border p-2 rounded-md">
-              <img src={linkedin} alt="LinkedIn" className="w-6 h-6" />
-            </button>
-          </div>
-
-          <p className="text-sm text-center">
-            Need an account?{' '}
-            <Link to="/signup" className="text-[#3D7EFF] font-semibold">
-              Create one
-            </Link>
-          </p>
         </div>
       </div>
 
+      {/* Right Side - Image */}
       <div className="hidden lg:flex w-1/2 p-4">
         <div
           className="w-full h-full bg-cover bg-center rounded-3xl"

@@ -74,6 +74,13 @@ const Navbar = () => {
                     <p className="text-sm font-medium text-gray-800">{user.legalname}</p>
                     <p className="text-xs text-gray-500">{user.email}</p>
                   </div>
+                   <Link
+    to="/editprofile"
+    onClick={() => setDropdownOpen(false)}
+    className="block px-4 py-2 text-sm text-gray-800 hover:bg-gray-100"
+  >
+    Edit Profile
+  </Link>
                   <button
                     onClick={handleLogout}
                     className="w-full text-left px-4 py-2 text-sm text-gray-800 hover:bg-gray-100"

@@ -73,8 +73,39 @@ export const signup = async (userData) => {
       response: error.response?.data,
       status: error.response?.status,
       headers: error.response?.headers,
+      requestData: userData,
     });
     throw error.response?.data || { message: 'Signup failed' };
+  }
+};
+
+export const signupCompany = async (userData) => {
+  try {
+    const accessToken = localStorage.getItem(`${userData.appName}_accessToken`);
+    const response = await axios.post(
+      'https://crmapi.conscor.com/api/v1/auth/hana/signup',
+      userData,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+    console.log('Company Signup API response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error during company signup:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status,
+      headers: error.response?.headers,
+      requestData: userData,
+    });
+    if (error.response && error.response.status === 400) {
+      throw error.response.data || { message: 'User with this email already exists.' };
+    }
+    throw error.response?.data || { message: 'Company signup failed' };
   }
 };
 
@@ -129,5 +160,66 @@ export const login = async (credentials) => {
       headers: error.response?.headers,
     });
     throw error.response?.data || { message: 'Invalid email or password' };
+  }
+};
+
+export const forgotPassword = async (username, appName) => {
+  try {
+    const response = await axios.post(
+      `${API_URL}/v1/auth/forgot-password`,
+      {
+        appName,
+        username,
+      },
+      {
+        headers: {
+          'x-api-key': API_KEY,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    if (response.data.success) {
+      return response.data.message;
+    }
+  } catch (error) {
+    console.error('Error during forgot password:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status,
+      headers: error.response?.headers,
+    });
+    throw error.response?.data || { message: 'Failed to initiate password reset.' };
+  }
+};
+
+export const resetPassword = async (token, newPassword, appName) => {
+  try {
+    const response = await axios.post(
+      `${API_URL}/v1/auth/reset-password`,
+      {
+        appName,
+        token,
+        newPassword,
+      },
+      {
+        headers: {
+          'x-api-key': API_KEY,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    if (response.data.success) {
+      return response.data.message;
+    }
+  } catch (error) {
+    console.error('Error during reset password:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status,
+      headers: error.response?.headers,
+    });
+    throw error.response?.data || { message: 'Failed to reset password.' };
   }
 };
