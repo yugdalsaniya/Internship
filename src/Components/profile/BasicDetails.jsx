@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from "react";
 import {
   FaMale,
   FaFemale,
@@ -14,38 +14,93 @@ import {
   FaTrophy,
   FaBullhorn,
   FaUsers,
-} from 'react-icons/fa';
-import { FaEye, FaRegLightbulb } from 'react-icons/fa';
+} from "react-icons/fa";
+import { FaEye, FaRegLightbulb } from "react-icons/fa6";
 
 const userTypes = [
-  { label: 'College Students', icon: <FaGraduationCap /> },
-  { label: 'Professional', icon: <FaBriefcase /> },
-  { label: 'School Student', icon: <FaCalendarAlt /> },
-  { label: 'Fresher', icon: <FaUserGraduate /> },
+  { label: "College Students", icon: <FaGraduationCap /> },
+  { label: "Professional", icon: <FaBriefcase /> },
+  { label: "School Student", icon: <FaCalendarAlt /> },
+  { label: "Fresher", icon: <FaUserGraduate /> },
+];
+
+const gradeOptions = [
+  { label: "1" },
+  { label: "2" },
+  { label: "3" },
+  { label: "4" },
+  { label: "5" },
+  { label: "6" },
+  { label: "7" },
+  { label: "8" },
+  { label: "9" },
+  { label: "10" },
+  { label: "11" },
+  { label: "12" },
 ];
 
 const purposes = [
-  { label: 'To find a Job', icon: <FaSearch /> },
-  { label: 'Compete & Upskill', icon: <FaTrophy /> },
-  { label: 'To Host an Event', icon: <FaBullhorn /> },
-  { label: 'To be a Mentor', icon: <FaUsers /> },
+  { label: "To find a Job", icon: <FaSearch /> },
+  { label: "Compete & Upskill", icon: <FaTrophy /> },
+  { label: "To Host an Event", icon: <FaBullhorn /> },
+  { label: "To be a Mentor", icon: <FaUsers /> },
+];
+
+const designationOptions = [
+  "Software Engineer",
+  "Product Manager",
+  "Data Scientist",
+  "Marketing Manager",
+  "Other",
+];
+
+const workExperienceOptions = [
+  "Full-time",
+  "Part-time",
+  "Contract",
+  "Freelance",
+  "Internship",
 ];
 
 function BasicDetails() {
-  const [firstName, setFirstName] = useState('Yug');
-  const [lastName, setLastName] = useState('Dalsaniya');
-  const [email, setEmail] = useState('yugpatel231078@gmail.com');
-  const [mobile, setMobile] = useState('9979737457');
-  const [gender, setGender] = useState('Male');
-  const [userType, setUserType] = useState('College Students');
-  const [location, setLocation] = useState('');
-  const [course, setCourse] = useState('');
-  const [specialization, setSpecialization] = useState('');
-  const [college, setCollege] = useState('');
-  const [startYear, setStartYear] = useState('');
-  const [endYear, setEndYear] = useState('');
-  const [selectedPurpose, setSelectedPurpose] = useState('');
-  const [careerGoal, setCareerGoal] = useState('');
+  const [firstName, setFirstName] = useState("Yug");
+  const [lastName, setLastName] = useState("Dalsaniya");
+  const [email, setEmail] = useState("yugpatel231078@gmail.com");
+  const [mobile, setMobile] = useState("9979737457");
+  const [gender, setGender] = useState("Male");
+  const [userType, setUserType] = useState("College Students");
+  const [location, setLocation] = useState("");
+  const [course, setCourse] = useState("");
+  const [specialization, setSpecialization] = useState("");
+  const [college, setCollege] = useState("");
+  const [startYear, setStartYear] = useState("");
+  const [endYear, setEndYear] = useState("");
+  const [selectedPurpose, setSelectedPurpose] = useState("");
+  const [careerGoal, setCareerGoal] = useState("");
+  const [designation, setDesignation] = useState("");
+  const [workExperienceType, setWorkExperienceType] = useState("");
+  const [isCurrentlyWorking, setIsCurrentlyWorking] = useState(false);
+  const [grade, setGrade] = useState("");
+  const [schoolName, setSchoolName] = useState("");
+
+  useEffect(() => {
+    if (userType !== "Professional") {
+      setDesignation("");
+      setWorkExperienceType("");
+      setIsCurrentlyWorking(false);
+    }
+    if (userType !== "School Student") {
+      setGrade("");
+      setSchoolName("");
+    }
+    if (userType !== "College Students") {
+      setCourse("");
+      setSpecialization("");
+      setCollege("");
+      setStartYear("");
+      setEndYear("");
+    }
+  }, [userType]);
 
   const handleSave = () => {
     const data = {
@@ -63,8 +118,17 @@ function BasicDetails() {
       endYear,
       selectedPurpose,
       careerGoal,
+      ...(userType === "Professional" && {
+        designation,
+        workExperienceType,
+        isCurrentlyWorking,
+      }),
+      ...(userType === "School Student" && {
+        grade,
+        schoolName,
+      }),
     };
-    console.log('Saved data:', data);
+    console.log("Saved data:", data);
   };
 
   return (
@@ -82,20 +146,20 @@ function BasicDetails() {
       </div>
 
       {/* Scrollable Content */}
-      <div className="p-6 space-y-6">
+      <div className="p-4 sm:p-6 space-y-6">
         {/* Avatar and Name */}
-        <div className="flex items-center gap-6 mb-6">
+        <div className="flex flex-col sm:flex-row items-center gap-6 mb-6">
           <div className="w-24 h-24 bg-orange-400 rounded-full flex items-center justify-center">
             <span className="text-4xl">👨‍🦱</span>
           </div>
-          <div className="grid grid-cols-2 gap-4 w-full">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
             <div>
               <label className="text-sm font-medium">First Name *</label>
               <input
                 type="text"
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
-                className="w-full border rounded-lg p-2 mt-1"
+                className="w-full border rounded-lg p-2 mt-1 h-10"
               />
             </div>
             <div>
@@ -104,7 +168,7 @@ function BasicDetails() {
                 type="text"
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
-                className="w-full border rounded-lg p-2 mt-1"
+                className="w-full border rounded-lg p-2 mt-1 h-10"
               />
             </div>
           </div>
@@ -117,7 +181,7 @@ function BasicDetails() {
             type="text"
             value="yugpatel0631"
             disabled
-            className="w-full bg-gray-100 text-gray-500 border rounded-lg p-2 mt-1"
+            className="w-full bg-gray-100 text-gray-500 border rounded-lg p-2 mt-1 h-10"
           />
         </div>
 
@@ -134,7 +198,7 @@ function BasicDetails() {
             <input
               type="email"
               value={email}
-              className="w-full bg-gray-100 text-gray-500 border rounded-lg p-2 mt-1 pr-10"
+              className="w-full bg-gray-100 text-gray-500 border rounded-lg p-2 mt-1 pr-10 h-10"
             />
             <FaCheckCircle className="absolute right-3 top-1/2 transform -translate-y-1/2 text-green-500" />
           </div>
@@ -143,8 +207,8 @@ function BasicDetails() {
         {/* Mobile */}
         <div className="mb-4">
           <label className="text-sm font-medium">Mobile *</label>
-          <div className="flex gap-2 mt-1">
-            <select className="border rounded-lg p-2 bg-white">
+          <div className="flex gap-1 sm:gap-2 mt-1 overflow-hidden">
+            <select className="border rounded-lg p-2 bg-white w-16 sm:w-24 h-10 text-sm">
               <option value="+91">+91</option>
               <option value="+1">+1</option>
             </select>
@@ -152,9 +216,11 @@ function BasicDetails() {
               type="tel"
               value={mobile}
               onChange={(e) => setMobile(e.target.value)}
-              className="flex-1 border rounded-lg p-2"
+              className="flex-1 border rounded-lg p-2 h-10 min-w-0 text-sm"
             />
-            <button className="bg-blue-600 text-white px-4 rounded-lg text-sm">
+            <button
+              className="bg-blue-600 text-white px-2 py-2 rounded-lg text-sm min-w-[70px] h-10 hover:bg-blue-700 transition touch-action-manipulation"
+            >
               Verify
             </button>
           </div>
@@ -163,20 +229,20 @@ function BasicDetails() {
         {/* Gender */}
         <div className="mb-4">
           <label className="text-sm font-medium">Gender *</label>
-          <div className="flex gap-2 mt-1">
-            {['Male', 'Female', 'More Options'].map((g) => (
+          <div className="flex flex-wrap gap-2 mt-1">
+            {["Male", "Female", "More Options"].map((g) => (
               <button
                 key={g}
                 onClick={() => setGender(g)}
-                className={`flex items-center gap-1 px-4 py-2 rounded-full border text-sm ${
+                className={`flex items-center gap-1 px-4 py-2 rounded-full border text-sm min-w-fit ${
                   gender === g
-                    ? 'bg-blue-100 border-blue-500 text-blue-700'
-                    : 'bg-white border-gray-300 text-gray-700'
-                }`}
+                    ? "bg-blue-100 border-blue-500 text-blue-700"
+                    : "bg-white border-gray-300 text-gray-700"
+                } touch-action-manipulation`}
               >
-                {g === 'Male' && <FaMale />}
-                {g === 'Female' && <FaFemale />}
-                {g === 'More Options' && <FaUser />}
+                {g === "Male" && <FaMale />}
+                {g === "Female" && <FaFemale />}
+                {g === "More Options" && <FaUser />}
                 {g}
               </button>
             ))}
@@ -192,11 +258,11 @@ function BasicDetails() {
             {userTypes.map(({ label, icon }) => (
               <button
                 key={label}
-                className={`flex items-center gap-2 border rounded-full px-4 py-2 ${
+                className={`flex items-center gap-2 border rounded-full px-4 py-2 min-w-fit ${
                   userType === label
-                    ? 'border-blue-600 text-blue-600 font-medium bg-blue-50'
-                    : 'border-gray-300 text-gray-700'
-                }`}
+                    ? "border-blue-600 text-blue-600 font-medium bg-blue-50"
+                    : "border-gray-300 text-gray-700"
+                } touch-action-manipulation`}
                 onClick={() => setUserType(label)}
               >
                 {icon} {label}
@@ -205,79 +271,206 @@ function BasicDetails() {
           </div>
         </div>
 
-        {/* Course */}
-        <div className="mb-4">
-          <label className="text-sm font-medium block mb-1">
-            Course <span className="text-red-500">*</span>
-          </label>
-          <select
-            className="w-full border rounded-lg p-2"
-            value={course}
-            onChange={(e) => setCourse(e.target.value)}
-          >
-            <option value="">Select Course</option>
-            <option value="B.Tech">B.Tech</option>
-            <option value="M.Tech">M.Tech</option>
-            <option value="MBA">MBA</option>
-          </select>
-        </div>
+        {/* Conditional Fields based on User Type */}
+        {userType === "Professional" ? (
+          <>
+            {/* Designation */}
+            <div className="mb-4">
+              <label className="text-sm font-medium block mb-1">
+                Designation <span className="text-red-500">*</span>
+              </label>
+              <select
+                className="w-full border rounded-lg p-2 h-10"
+                value={designation}
+                onChange={(e) => setDesignation(e.target.value)}
+              >
+                <option value="">Select Designation</option>
+                {designationOptions.map((designation) => (
+                  <option key={designation} value={designation}>
+                    {designation}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-        {/* Specialization */}
-        <div className="mb-4">
-          <label className="text-sm font-medium block mb-1">
-            Course Specialization <span className="text-red-500">*</span>
-          </label>
-          <select
-            className="w-full border rounded-lg p-2"
-            value={specialization}
-            onChange={(e) => setSpecialization(e.target.value)}
-          >
-            <option value="">Select Specialization</option>
-            <option value="Computer Science">Computer Science</option>
-            <option value="Mechanical">Mechanical</option>
-            <option value="Marketing">Marketing</option>
-          </select>
-        </div>
+            {/* Work Experience */}
+            <div className="mb-4">
+              <label className="text-sm font-medium block mb-1">
+                Work Experience <span className="text-red-500">*</span>
+              </label>
+              <select
+                className="w-full border rounded-lg p-2 h-10"
+                value={workExperienceType}
+                onChange={(e) => setWorkExperienceType(e.target.value)}
+              >
+                <option value="">Select Work Experience Type</option>
+                {workExperienceOptions.map((experience) => (
+                  <option key={experience} value={experience}>
+                    {experience}
+                  </option>
+                ))}
+              </select>
+              <div className="mt-2">
+                <label className="flex items-center text-sm text-gray-700">
+                  <input
+                    type="checkbox"
+                    checked={isCurrentlyWorking}
+                    onChange={(e) => setIsCurrentlyWorking(e.target.checked)}
+                    className="mr-2"
+                  />
+                  Currently working in this role
+                </label>
+              </div>
+            </div>
 
-        {/* Duration */}
-        <div className="mb-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="text-sm font-medium block mb-1">Start Year</label>
-            <input
-              type="text"
-              placeholder="Start Year"
-              className="w-full border rounded-lg p-2"
-              value={startYear}
-              onChange={(e) => setStartYear(e.target.value)}
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium block mb-1">End Year</label>
-            <input
-              type="text"
-              placeholder="End Year"
-              className="w-full border rounded-lg p-2"
-              value={endYear}
-              onChange={(e) => setEndYear(e.target.value)}
-            />
-          </div>
-        </div>
+            {/* Duration */}
+            <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium block mb-1">
+                  Start Year
+                </label>
+                <input
+                  type="text"
+                  placeholder="Start Year"
+                  className="w-full border rounded-lg p-2 h-10"
+                  value={startYear}
+                  onChange={(e) => setStartYear(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium block mb-1">
+                  End Year
+                </label>
+                <input
+                  type="text"
+                  placeholder="End Year"
+                  className="w-full border rounded-lg p-2 h-10"
+                  value={endYear}
+                  onChange={(e) => setEndYear(e.target.value)}
+                  disabled={isCurrentlyWorking}
+                />
+              </div>
+            </div>
+          </>
+        ) : userType === "School Student" ? (
+          <>
+            {/* Grade/Class */}
+            <div className="mb-4">
+              <label className="block font-medium mb-2 text-sm text-gray-700">
+                Class <span className="text-red-500">*</span>
+              </label>
+              <div className="flex flex-wrap gap-3">
+                {gradeOptions.map((g) => (
+                  <button
+                    key={g.label}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-full border text-sm min-w-[60px] text-center justify-center ${
+                      grade === g.label
+                        ? "bg-blue-100 border-blue-500 text-blue-700 font-medium"
+                        : "border-gray-300 text-gray-600 hover:border-blue-400"
+                    } touch-action-manipulation`}
+                    onClick={() => setGrade(g.label)}
+                  >
+                    {g.label}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-        {/* College */}
-        <div className="mb-4">
-          <label className="text-sm font-medium block mb-1">
-            Organisation/College <span className="text-red-500">*</span>
-          </label>
-          <select
-            className="w-full border rounded-lg p-2"
-            value={college}
-            onChange={(e) => setCollege(e.target.value)}
-          >
-            <option value="">Select College</option>
-            <option value="ABC University">ABC University</option>
-            <option value="XYZ Institute">XYZ Institute</option>
-          </select>
-        </div>
+            {/* School Name */}
+            <div className="mb-4">
+              <label className="text-sm font-medium block mb-1">
+                School Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={schoolName}
+                onChange={(e) => setSchoolName(e.target.value)}
+                className="w-full border rounded-lg p-2 h-10"
+                placeholder="Enter your school name"
+              />
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Course (College Students and Fresher) */}
+            <div className="mb-4">
+              <label className="text-sm font-medium block mb-1">
+                Course <span className="text-red-500">*</span>
+              </label>
+              <select
+                className="w-full border rounded-lg p-2 h-10"
+                value={course}
+                onChange={(e) => setCourse(e.target.value)}
+              >
+                <option value="">Select Course</option>
+                <option value="B.Tech">B.Tech</option>
+                <option value="M.Tech">M.Tech</option>
+                <option value="MBA">MBA</option>
+              </select>
+            </div>
+
+            {/* Specialization */}
+            <div className="mb-4">
+              <label className="text-sm font-medium block mb-1">
+                Course Specialization <span className="text-red-500">*</span>
+              </label>
+              <select
+                className="w-full border rounded-lg p-2 h-10"
+                value={specialization}
+                onChange={(e) => setSpecialization(e.target.value)}
+              >
+                <option value="">Select Specialization</option>
+                <option value="Computer Science">Computer Science</option>
+                <option value="Mechanical">Mechanical</option>
+                <option value="Marketing">Marketing</option>
+              </select>
+            </div>
+
+            {/* Duration */}
+            <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium block mb-1">
+                  Start Year
+                </label>
+                <input
+                  type="text"
+                  placeholder="Start Year"
+                  className="w-full border rounded-lg p-2 h-10"
+                  value={startYear}
+                  onChange={(e) => setStartYear(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium block mb-1">
+                  End Year
+                </label>
+                <input
+                  type="text"
+                  placeholder="End Year"
+                  className="w-full border rounded-lg p-2 h-10"
+                  value={endYear}
+                  onChange={(e) => setEndYear(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* College */}
+            <div className="mb-4">
+              <label className="text-sm font-medium block mb-1">
+                Organisation/College <span className="text-red-500">*</span>
+              </label>
+              <select
+                className="w-full border rounded-lg p-2 h-10"
+                value={college}
+                onChange={(e) => setCollege(e.target.value)}
+              >
+                <option value="">Select College</option>
+                <option value="ABC University">ABC University</option>
+                <option value="XYZ Institute">XYZ Institute</option>
+              </select>
+            </div>
+          </>
+        )}
 
         {/* Purpose */}
         <div className="mb-6">
@@ -288,11 +481,11 @@ function BasicDetails() {
             {purposes.map((p) => (
               <button
                 key={p.label}
-                className={`flex items-center gap-2 px-4 py-2 rounded-full border text-sm transition-all ${
+                className={`flex items-center gap-2 px-4 py-2 rounded-full border text-sm min-w-fit ${
                   selectedPurpose === p.label
-                    ? 'bg-blue-100 border-blue-500 text-blue-700 font-medium'
-                    : 'border-gray-300 text-gray-600 hover:border-blue-400'
-                }`}
+                    ? "bg-blue-100 border-blue-500 text-blue-700 font-medium"
+                    : "border-gray-300 text-gray-600 hover:border-blue-400"
+                } touch-action-manipulation`}
                 onClick={() => setSelectedPurpose(p.label)}
               >
                 {p.icon} {p.label}
@@ -312,8 +505,8 @@ function BasicDetails() {
                 type="radio"
                 name="career"
                 className="mr-3"
-                checked={careerGoal === 'current'}
-                onChange={() => setCareerGoal('current')}
+                checked={careerGoal === "current"}
+                onChange={() => setCareerGoal("current")}
               />
               Grow in my current career
             </label>
@@ -322,8 +515,8 @@ function BasicDetails() {
                 type="radio"
                 name="career"
                 className="mr-3"
-                checked={careerGoal === 'new'}
-                onChange={() => setCareerGoal('new')}
+                checked={careerGoal === "new"}
+                onChange={() => setCareerGoal("new")}
               />
               Transition into a new career
             </label>
@@ -340,9 +533,9 @@ function BasicDetails() {
               type="text"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
-              className="w-full border rounded-lg px-4 py-2 pr-10"
+              className="w-full border rounded-lg px-4 py-2 pr-10 h-10"
             />
-            <FaCrosshairs className="absolute right-3 top-3 text-gray-500" />
+            <FaCrosshairs className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500" />
           </div>
         </div>
       </div>
@@ -352,7 +545,7 @@ function BasicDetails() {
         <div className="flex justify-end">
           <button
             onClick={handleSave}
-            className="bg-blue-600 text-white px-6 py-2 rounded-full flex items-center gap-2 text-sm font-medium hover:bg-blue-700 transition"
+            className="bg-blue-600 text-white px-6 py-2 rounded-full flex items-center gap-2 text-sm font-medium hover:bg-blue-700 transition touch-action-manipulation"
           >
             <span className="text-lg">✓</span> Save
           </button>
