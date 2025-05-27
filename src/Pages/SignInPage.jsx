@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { MdVisibility, MdVisibilityOff } from 'react-icons/md';
+import { jwtDecode } from 'jwt-decode'; // Use named export
 import logo from '../assets/Navbar/logo.png';
 import rightImage from '../assets/SignUp/wallpaper.jpg';
 import facebook from '../assets/SignUp/facebook.png';
@@ -42,7 +43,6 @@ const SignIn = () => {
     setError('');
     setLoading(true);
 
-    // Client-side email validation
     if (!validateEmail(formData.email)) {
       setError('Please enter a valid email address.');
       setLoading(false);
@@ -55,27 +55,47 @@ const SignIn = () => {
         username: formData.email.toLowerCase().trim(),
         password: formData.password,
       });
+
       if (response.success) {
-        const roleName = roleNames[response.user.role?.role] || '';
-        localStorage.setItem('user', JSON.stringify({
+        console.log('API Response User:', response.user);
+        // Use roleId from response.user.role.role (normalized by api.js)
+        const roleId = response.user.role?.role || '';
+        const roleName = roleNames[roleId] || '';
+
+        // Verify roleId with JWT as a fallback
+        const decodedToken = jwtDecode(response.accessToken);
+        if (decodedToken.roleId !== roleId) {
+          console.warn('Role ID mismatch between API response and JWT:', { apiRoleId: roleId, jwtRoleId: decodedToken.roleId });
+        }
+
+        if (!roleName) {
+          setError('Invalid or unrecognized role. Please contact support@conscor.com.');
+          setLoading(false);
+          return;
+        }
+
+        const userData = {
           legalname: response.user.legalname || response.user.email,
           email: response.user.email,
-          role: roleName, // Store role name instead of ID
-        }));
+          role: roleName, // e.g., 'student'
+          roleId: roleId, // e.g., '1747825619417'
+        };
+
+        localStorage.setItem('user', JSON.stringify(userData));
         localStorage.setItem('accessToken', response.accessToken);
         localStorage.setItem('refreshToken', response.refreshToken);
 
-        // Role-based redirection (customize as needed)
         if (roleName === 'company') {
-          navigate('/company-dashboard'); // Example: Company-specific dashboard
+          navigate('/');
         } else {
-          navigate('/'); // Default redirect
+          navigate('/');
         }
       } else {
         setError(response.message || 'Login failed');
       }
     } catch (err) {
       const errorMessage = err.response?.data?.message || err.message || 'Invalid email or password';
+      console.error('Login Error:', err.response?.data);
       if (errorMessage.includes('OTP not verified')) {
         setError('Please verify your email with OTP before logging in.');
       } else if (errorMessage.includes('Invalid credentials')) {
@@ -92,10 +112,8 @@ const SignIn = () => {
 
   return (
     <div className="flex h-screen font-sans overflow-hidden">
-      {/* Left Side - Form */}
       <div className="w-full lg:w-1/2 flex flex-col justify-center px-6 py-4">
         <div className="max-w-xs sm:max-w-sm mx-auto w-full">
-          {/* Logo Section */}
           <div className="mb-6 flex flex-col items-center">
             <div className="flex items-center space-x-3 mb-2">
               <img src={logo} alt="Logo" className="w-10 h-10" />
@@ -110,13 +128,10 @@ const SignIn = () => {
               </div>
             </div>
           </div>
-
-          {/* Form Section */}
           <div className="w-full">
             <h2 className="text-xl font-bold mb-1 text-black">Sign in</h2>
             <p className="text-xs text-gray-500 mb-4">Please login to continue to your account.</p>
             {error && <p className="text-red-500 text-xs mb-3">{error}</p>}
-
             <form className="space-y-3" onSubmit={handleSubmit}>
               <input
                 type="email"
@@ -127,7 +142,6 @@ const SignIn = () => {
                 onChange={handleChange}
                 required
               />
-              
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
@@ -150,7 +164,6 @@ const SignIn = () => {
                   />
                 )}
               </div>
-
               <div className="flex items-center justify-between text-xs">
                 <label className="flex items-center">
                   <input type="checkbox" className="mr-2" />
@@ -160,7 +173,6 @@ const SignIn = () => {
                   Forgot Password?
                 </Link>
               </div>
-
               <button
                 type="submit"
                 className="w-full bg-[#3D7EFF] text-white py-2 rounded-md font-semibold text-xs"
@@ -169,7 +181,6 @@ const SignIn = () => {
                 {loading ? 'Signing in...' : 'Sign in'}
               </button>
             </form>
-
             {user.role !== 'company' && (
               <>
                 <div className="flex items-center my-4">
@@ -177,7 +188,6 @@ const SignIn = () => {
                   <span className="mx-2 text-xs text-gray-500">or</span>
                   <hr className="flex-grow border-t" />
                 </div>
-
                 <div className="flex justify-center gap-4 mb-4">
                   <button className="border p-1 rounded-md">
                     <img
@@ -195,7 +205,6 @@ const SignIn = () => {
                 </div>
               </>
             )}
-
             <p className="text-xs text-center">
               Need an account?{' '}
               <Link to="/signup" className="text-[#3D7EFF] font-semibold">
@@ -205,8 +214,6 @@ const SignIn = () => {
           </div>
         </div>
       </div>
-
-      {/* Right Side - Image */}
       <div className="hidden lg:flex w-1/2 p-4">
         <div
           className="w-full h-full bg-cover bg-center rounded-3xl"

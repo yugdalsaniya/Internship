@@ -74,24 +74,25 @@ const Hero = ({
 
         {/* Search Bar */}
         {searchFields.length > 0 && (
-          <div className="bg-white rounded-lg shadow-md flex flex-col md:flex-row items-center w-full max-w-3xl p-3 space-y-3 md:space-y-0 md:space-x-3">
+          <div className="bg-white rounded-lg shadow-md flex flex-col md:flex-row  items-center w-full max-w-3xl p-3 space-y-3 md:space-y-0 md:space-x-3">
             {searchFields.map((field, index) => (
-              <React.Fragment key={index}>
-                {field.type === 'input' ? (
-                  <input
-                    type="text"
-                    placeholder={field.placeholder}
-                    className="flex-1 border border-gray-300 rounded-md p-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                ) : (
-                  <select className="flex-1 border border-gray-300 rounded-md p-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    {field.options.map((option, optIndex) => (
-                      <option key={optIndex}>{option}</option>
-                    ))}
-                  </select>
-                )}
-              </React.Fragment>
-            ))}
+  <React.Fragment key={index}>
+    {field.type === 'input' ? (
+      <input
+        type="text"
+        placeholder={field.placeholder}
+        className="w-full md:flex-1 border border-gray-300 rounded-md p-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
+    ) : (
+      <select className="w-full md:flex-1 border border-gray-300 rounded-md p-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
+        {field.options.map((option, optIndex) => (
+          <option key={optIndex}>{option}</option>
+        ))}
+      </select>
+    )}
+  </React.Fragment>
+))}
+
             <button className="bg-blue-600 text-white rounded-md py-2 px-4 text-xs hover:bg-blue-700 transition-colors">
               Search
             </button>

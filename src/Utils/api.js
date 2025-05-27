@@ -1,8 +1,18 @@
 import axios from 'axios';
+import { jwtDecode } from 'jwt-decode';
 
 const API_URL = 'https://crmapi.conscor.com/api';
 const DB_NAME = 'internph';
 const API_KEY = 'LHCHoE0IlCOuESA4VQuJ';
+
+// Role ID to name mapping (for normalizing login response)
+const roleNames = {
+  '1747825619417': 'student',
+  '1747723485001': 'company',
+  '1747903042943': 'academy',
+  '1747902920002': 'recruiter',
+  '1747902955524': 'mentor',
+};
 
 export const fetchSectionData = async (params) => {
   const {
@@ -50,6 +60,81 @@ export const fetchSectionData = async (params) => {
       headers: error.response?.headers,
     });
     return [];
+  }
+};
+
+export const addGeneralData = async ({ dbName, collectionName, data }) => {
+  try {
+    const accessToken = localStorage.getItem('accessToken');
+    const response = await axios.post(
+      `${API_URL}/general/adddata`,
+      {
+        dbName,
+        collectionName,
+        data,
+      },
+      {
+        headers: {
+          'x-api-key': API_KEY,
+          'Content-Type': 'application/json',
+          Authorization: accessToken ? `Bearer ${accessToken}` : undefined,
+        },
+      }
+    );
+
+    console.log('addGeneralData API Response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error while calling the adddata API:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status,
+      headers: error.response?.headers,
+    });
+    throw error.response?.data || { message: 'Failed to add data' };
+  }
+};
+
+export const uploadAndStoreFile = async ({ appName, moduleName, file, userId }) => {
+  try {
+    if (!file) {
+      throw new Error('No file provided for upload.');
+    }
+
+    const formData = new FormData();
+    formData.append('file', file, file.name);
+    formData.append('user_id', userId);
+    formData.append('folderName', moduleName);
+
+    console.log('Uploading File:', file.name);
+
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      throw new Error('Authorization token is missing. Please log in again.');
+    }
+
+    const response = await axios.post(
+      `${API_URL}/v1/dynamic/uploadAndStore/upload/${appName}/${moduleName}`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'x-api-key': API_KEY,
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    console.log('Upload Response (Raw):', response.data); // Debug log
+    return response.data;
+  } catch (error) {
+    console.error('Error uploading file:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status,
+      headers: error.response?.headers,
+    });
+    throw error.response?.data || { message: error.message || 'Failed to upload file' };
   }
 };
 
@@ -150,8 +235,26 @@ export const login = async (credentials) => {
         },
       }
     );
-    console.log('Login API response:', response.data);
-    return response.data;
+
+    // Decode JWT to get roleId
+    const decodedToken = jwtDecode(response.data.accessToken);
+    const roleId = decodedToken.roleId || '';
+
+    // Normalize user role
+    let normalizedUser = { ...response.data.user };
+    if (normalizedUser.role && normalizedUser.role.role === 'user' && roleId === '1747825619417') {
+      normalizedUser.role.role = '1747825619417'; // Map 'user' to student role ID
+    } else if (normalizedUser.role && roleNames[roleId]) {
+      normalizedUser.role.role = roleId; // Ensure role is the ID
+    }
+
+    const normalizedResponse = {
+      ...response.data,
+      user: normalizedUser,
+    };
+
+    console.log('Login API response:', normalizedResponse);
+    return normalizedResponse;
   } catch (error) {
     console.error('Error during login:', {
       message: error.message,

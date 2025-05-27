@@ -9,6 +9,9 @@ import OtpPage from "../Pages/OtpPage";
 import SignInPage from "../Pages/SignInPage";
 import ForgotPassword from "../Pages/ForgotPasswordPage";
 import ProfileEditPage from "../Pages/ProfileEditPage";
+import PostInternship from "../Pages/company/PostInternship";
+import PostInternshipForm from "../Pages/company/PostInternshipForm";
+import ManageInternships from "../Pages/company/ManageInternships";
 
 export default function AppRoutes() {
   return (
@@ -21,9 +24,17 @@ export default function AppRoutes() {
         <Route path="/login" element={<SignInPage />} />
         <Route path="/editprofile/*" element={<ProfileEditPage />} />
         <Route element={<MainLayout />}>
+          {/* for student pages  */}
           <Route path="/" element={<HomePage />} />
           <Route path="/internship" element={<Internship />} />
           <Route path="/internshipdetail" element={<InternshipDetailPage />} />
+
+          {/* for company pages  */}
+          <Route path="/post-internship" element={<PostInternship/>} />
+          <Route path="/post-internship/form" element={<PostInternshipForm />} />
+          <Route path="/manage-internships" element={<ManageInternships />} />
+
+
         </Route>
       </Routes>
     </Router>
