@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { MdVisibility, MdVisibilityOff } from 'react-icons/md';
+import { jwtDecode } from 'jwt-decode'; // Use named export
 import rightImage from '../assets/SignUp/wallpaper.jpg';
 import logo from '../assets/Navbar/logo.png';
 import student from '../assets/SignUp/student.png';
@@ -29,13 +30,21 @@ const SignUpPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
 
-  // Role IDs
+  // Role IDs and names
   const roleIds = {
     student: '1747825619417',
     company: '1747723485001',
     academy: '1747903042943',
     recruiter: '1747902920002',
     mentor: '1747902955524',
+  };
+
+  const roleNames = {
+    '1747825619417': 'student',
+    '1747723485001': 'company',
+    '1747903042943': 'academy',
+    '1747902920002': 'recruiter',
+    '1747902955524': 'mentor',
   };
 
   // Handle role based on URL
@@ -170,15 +179,17 @@ const SignUpPage = () => {
           });
           localStorage.setItem('user', JSON.stringify({
             legalname: `${formData.firstName} ${formData.lastName}`.trim(),
-            role: roleIds[role],
             email: formData.email.toLowerCase().trim(),
+            role: roleNames[roleIds[role]], // Store role name
+            roleId: roleIds[role], // Store role ID
           }));
           navigate('/');
         } else {
           localStorage.setItem('pendingUser', JSON.stringify({
             legalname: `${formData.firstName} ${formData.lastName}`.trim(),
             email: formData.email.toLowerCase().trim(),
-            role,
+            role: roleNames[roleIds[role]], // Store role name
+            roleId: roleIds[role], // Store role ID
             ...(role === 'academy' && { academyname: formData.academyName.trim() }),
           }));
           navigate('/otp');
@@ -260,8 +271,6 @@ const SignUpPage = () => {
               </div>
             </div>
           </div>
-
-          {/* Role Selection */}
           <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mb-4">
             {['student', 'company', 'academy', 'recruiter', 'mentor'].map((r) => (
               <div
@@ -274,12 +283,17 @@ const SignUpPage = () => {
                 <div className="p-1.5 rounded-lg border shadow-sm">
                   <img
                     src={
-                      r === 'student' ? student :
-                      r === 'company' ? company :
-                      r === 'academy' ? academy :
-                      r === 'recruiter' ? recruiter :
-                      r === 'mentor' ? mentor :
-                      'https://img.icons8.com/ios-filled/50/000000/user-male.png'
+                      r === 'student'
+                        ? student
+                        : r === 'company'
+                        ? company
+                        : r === 'academy'
+                        ? academy
+                        : r === 'recruiter'
+                        ? recruiter
+                        : r === 'mentor'
+                        ? mentor
+                        : 'https://img.icons8.com/ios-filled/50/000000/user-male.png'
                     }
                     alt={r}
                     className="w-5 h-5 sm:w-6 sm:h-6"
@@ -289,13 +303,11 @@ const SignUpPage = () => {
               </div>
             ))}
           </div>
-
           {role && (
             <div className="w-full min-h-[350px] lg:min-h-[400px]">
               <h2 className="text-base sm:text-lg font-bold mb-1 text-black">Sign up</h2>
               <p className="text-xs text-gray-500 mb-3">Sign up to enjoy the feature of Revolutie</p>
               {error && <p className="text-red-500 text-xs mb-2">{error}</p>}
-
               <form className="space-y-2" onSubmit={handleSubmit}>
                 <div className="flex flex-col sm:flex-row gap-2">
                   <div className="flex-1 relative">
@@ -321,33 +333,33 @@ const SignUpPage = () => {
                     />
                   </div>
                 </div>
-
-                {formFields[role].filter(field => field.name !== 'firstName' && field.name !== 'lastName').map((field) => (
-                  <div key={field.name} className="relative">
-                    <input
-                      type={field.type}
-                      name={field.name}
-                      placeholder={field.placeholder}
-                      className="w-full px-3 py-1.5 border rounded-md outline-none text-xs"
-                      value={formData[field.name]}
-                      onChange={handleChange}
-                      required={field.required}
-                    />
-                    {(field.name === 'password' || field.name === 'confirmPassword') && (
-                      showPassword ? (
-                        <MdVisibility
-                          className="absolute top-1/2 right-2 transform -translate-y-1/2 text-gray-500 cursor-pointer text-sm"
-                          onClick={togglePasswordVisibility}
-                        />
-                      ) : (
-                        <MdVisibilityOff
-                          className="absolute top-1/2 right-2 transform -translate-y-1/2 text-gray-500 cursor-pointer text-sm"
-                          onClick={togglePasswordVisibility}
-                        />
-                      )
-                    )}
-                  </div>
-                ))}
+                {formFields[role]
+                  .filter((field) => field.name !== 'firstName' && field.name !== 'lastName')
+                  .map((field) => (
+                    <div key={field.name} className="relative">
+                      <input
+                        type={field.type}
+                        name={field.name}
+                        placeholder={field.placeholder}
+                        className="w-full px-3 py-1.5 border rounded-md outline-none text-xs"
+                        value={formData[field.name]}
+                        onChange={handleChange}
+                        required={field.required}
+                      />
+                      {(field.name === 'password' || field.name === 'confirmPassword') &&
+                        (showPassword ? (
+                          <MdVisibility
+                            className="absolute top-1/2 right-2 transform -translate-y-1/2 text-gray-500 cursor-pointer text-sm"
+                            onClick={togglePasswordVisibility}
+                          />
+                        ) : (
+                          <MdVisibilityOff
+                            className="absolute top-1/2 right-2 transform -translate-y-1/2 text-gray-500 cursor-pointer text-sm"
+                            onClick={togglePasswordVisibility}
+                          />
+                        ))}
+                    </div>
+                  ))}
                 <button
                   type="submit"
                   className="w-full bg-[#3D7EFF] text-white py-1.5 rounded-md font-semibold text-xs"
@@ -357,11 +369,12 @@ const SignUpPage = () => {
                 {role === 'company' && (
                   <p className="text-xs text-center mt-2">
                     Already have an account?{' '}
-                    <Link to="/login" className="text-[#3D7EFF] font-semibold">Sign in</Link>
+                    <Link to="/login" className="text-[#3D7EFF] font-semibold">
+                      Sign in
+                    </Link>
                   </p>
                 )}
               </form>
-
               {role !== 'company' && (
                 <>
                   <div className="flex items-center my-3 min-h-[24px]">
@@ -369,10 +382,13 @@ const SignUpPage = () => {
                     <span className="mx-2 text-xs text-gray-500">or</span>
                     <hr className="flex-grow border-t" />
                   </div>
-
                   <div className="flex justify-center gap-3 mb-3 min-h-[28px]">
                     <button className="border p-1 rounded-md">
-                      <img src="https://img.icons8.com/color/48/google-logo.png" alt="Google" className="w-4 h-4" />
+                      <img
+                        src="https://img.icons8.com/color/48/google-logo.png"
+                        alt="Google"
+                        className="w-4 h-4"
+                      />
                     </button>
                     <button className="border p-1 rounded-md">
                       <img src={facebook} alt="Facebook" className="w-4 h-4" />
@@ -381,10 +397,11 @@ const SignUpPage = () => {
                       <img src={linkedin} alt="LinkedIn" className="w-4 h-4" />
                     </button>
                   </div>
-
                   <p className="text-xs text-center">
                     Already have an account?{' '}
-                    <Link to="/login" className="text-[#3D7EFF] font-semibold">Sign in</Link>
+                    <Link to="/login" className="text-[#3D7EFF] font-semibold">
+                      Sign in
+                    </Link>
                   </p>
                 </>
               )}
@@ -392,7 +409,6 @@ const SignUpPage = () => {
           )}
         </div>
       </div>
-
       <div className="hidden lg:flex w-1/2 p-4">
         <div
           className="w-full h-full bg-cover bg-center rounded-3xl"

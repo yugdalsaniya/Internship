@@ -6,7 +6,8 @@ const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem('user'));
+  const user = JSON.parse(localStorage.getItem('user')) || {};
+  const role = user.role || '';
 
   const toggleMenu = () => {
     setIsOpen(!isOpen);
@@ -24,6 +25,52 @@ const Navbar = () => {
     setIsOpen(false);
     navigate('/');
   };
+
+  // Define navigation links based on role
+  const navLinks = {
+    student: [
+      { to: '/', label: 'Home' },
+      { to: '/internship', label: 'Internships' },
+      { to: '/about', label: 'About Us' },
+      { to: '/contact', label: 'Contact Us' },
+    ],
+    company: [
+      { to: '/', label: 'Home' },
+      { to: '/post-internship', label: 'Post Internship' },
+      { to: '/manage-internships', label: 'Manage Internships' },
+      { to: '/about', label: 'About Us' },
+      { to: '/contact', label: 'Contact Us' },
+    ],
+    academy: [
+      { to: '/', label: 'Home' },
+      { to: '/courses', label: 'Courses' },
+      { to: '/about', label: 'About Us' },
+      { to: '/contact', label: 'Contact Us' },
+    ],
+    recruiter: [
+      { to: '/', label: 'Home' },
+      { to: '/internship-listings', label: 'Internship Listings' },
+      { to: '/candidates', label: 'Candidates' },
+      { to: '/about', label: 'About Us' },
+      { to: '/contact', label: 'Contact Us' },
+    ],
+    mentor: [
+      { to: '/', label: 'Home' },
+      { to: '/mentorship-programs', label: 'Mentorship Programs' },
+      { to: '/about', label: 'About Us' },
+      { to: '/contact', label: 'Contact Us' },
+    ],
+  };
+
+  // Fallback links for unauthenticated users or unknown roles
+  const defaultLinks = [
+    { to: '/', label: 'Home' },
+    { to: '/internship', label: 'Internships' },
+    { to: '/about', label: 'About Us' },
+    { to: '/contact', label: 'Contact Us' },
+  ];
+
+  const links = navLinks[role] || defaultLinks;
 
   return (
     <nav className="bg-white shadow-md py-4 px-12">
@@ -45,28 +92,25 @@ const Navbar = () => {
         </div>
 
         <div className="hidden md:flex space-x-8">
-          <Link to="/" className="text-gray-800 hover:text-blue-600 text-sm font-medium">
-            Home
-          </Link>
-          <Link to="/internship" className="text-gray-800 hover:text-blue-600 text-sm font-medium">
-            Internships
-          </Link>
-          <Link to="/about" className="text-gray-800 hover:text-blue-600 text-sm font-medium">
-            About Us
-          </Link>
-          <Link to="/contact" className="text-gray-800 hover:text-blue-600 text-sm font-medium">
-            Contact Us
-          </Link>
+          {links.map((link) => (
+            <Link
+              key={link.to}
+              to={link.to}
+              className="text-gray-800 hover:text-blue-600 text-sm font-medium"
+            >
+              {link.label}
+            </Link>
+          ))}
         </div>
 
         <div className="flex items-center space-x-4 mr-4">
-          {user ? (
+          {user.email ? (
             <div className="relative">
               <button
                 onClick={toggleDropdown}
                 className="w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center text-sm font-medium"
               >
-                {user.legalname[0]?.toUpperCase() || 'U'}
+                {user.legalname?.[0]?.toUpperCase() || 'U'}
               </button>
               {dropdownOpen && (
                 <div className="absolute right-0 mt-2 w-48 bg-white border rounded-md shadow-lg py-2 z-10">
@@ -74,13 +118,13 @@ const Navbar = () => {
                     <p className="text-sm font-medium text-gray-800">{user.legalname}</p>
                     <p className="text-xs text-gray-500">{user.email}</p>
                   </div>
-                   <Link
-    to="/editprofile"
-    onClick={() => setDropdownOpen(false)}
-    className="block px-4 py-2 text-sm text-gray-800 hover:bg-gray-100"
-  >
-    Edit Profile
-  </Link>
+                  <Link
+                    to="/editprofile"
+                    onClick={() => setDropdownOpen(false)}
+                    className="block px-4 py-2 text-sm text-gray-800 hover:bg-gray-100"
+                  >
+                    Edit Profile
+                  </Link>
                   <button
                     onClick={handleLogout}
                     className="w-full text-left px-4 py-2 text-sm text-gray-800 hover:bg-gray-100"
@@ -131,21 +175,26 @@ const Navbar = () => {
 
       {isOpen && (
         <div className="md:hidden flex flex-col items-center space-y-4 mt-4 pb-4">
-          <Link to="/" className="text-gray-800 hover:text-blue-600 text-sm font-medium">
-            Home
-          </Link>
-          <Link to="/internship" className="text-gray-800 hover:text-blue-600 text-sm font-medium">
-            Internships
-          </Link>
-          <Link to="/about" className="text-gray-800 hover:text-blue-600 text-sm font-medium">
-            About Us
-          </Link>
-          <Link to="/contact" className="text-gray-800 hover:text-blue-600 text-sm font-medium">
-            Contact Us
-          </Link>
-          {user ? (
+          {links.map((link) => (
+            <Link
+              key={link.to}
+              to={link.to}
+              className="text-gray-800 hover:text-blue-600 text-sm font-medium"
+              onClick={() => setIsOpen(false)}
+            >
+              {link.label}
+            </Link>
+          ))}
+          {user.email ? (
             <>
               <div className="text-sm text-gray-800 font-medium">{user.legalname}</div>
+              <Link
+                to="/editprofile"
+                className="text-gray-800 hover:text-blue-600 text-sm font-medium"
+                onClick={() => setIsOpen(false)}
+              >
+                Edit Profile
+              </Link>
               <button
                 onClick={handleLogout}
                 className="text-gray-800 text-sm font-medium hover:text-blue-600 w-full text-center py-2"
@@ -158,12 +207,14 @@ const Navbar = () => {
               <Link
                 to="/login"
                 className="text-gray-800 text-sm font-medium hover:text-blue-600 w-full text-center py-2"
+                onClick={() => setIsOpen(false)}
               >
                 Login
               </Link>
               <Link
                 to="/signup"
                 className="bg-gradient-to-r from-blue-500 to-blue-700 text-white text-sm font-medium py-2 px-4 rounded-full hover:from-blue-600 hover:to-blue-800 w-full text-center"
+                onClick={() => setIsOpen(false)}
               >
                 Register
               </Link>
