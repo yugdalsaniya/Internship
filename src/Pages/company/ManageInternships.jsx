@@ -48,12 +48,9 @@ const ManageInternships = () => {
       .filter((job) => job.sectionData?.jobpost?.type === 'Internship')
       .map((job) => {
         let relativeTime = 'Just now';
+        let parsedDate;
         try {
-          const parsedDate = parse(
-            job.createdDate,
-            'dd/MM/yyyy, h:mm:ss a',
-            new Date()
-          );
+          parsedDate = parse(job.createdDate, 'dd/MM/yyyy, h:mm:ss a', new Date());
           relativeTime = formatDistanceToNow(parsedDate, { addSuffix: true })
             .replace('about ', '')
             .replace('hours', 'hrs')
@@ -80,8 +77,10 @@ const ManageInternships = () => {
           skillsrequired: job.sectionData?.jobpost?.skillsrequired || 'None',
           applicationinstructions: job.sectionData?.jobpost?.applicationinstructions || 'None',
           description: job.sectionData?.jobpost?.description || 'No description',
+          createdDate: parsedDate, // Store parsed date for sorting
         };
-      });
+      })
+      .sort((a, b) => b.createdDate - a.createdDate); // Explicitly sort newest first
   }, [internships]);
 
   const totalPages = Math.ceil(formattedInternships.length / internshipsPerPage);
@@ -112,7 +111,7 @@ const ManageInternships = () => {
     );
 
   return (
-    <div className="min-h-screen bg-[#fafafa] font-sans">
+    <div className="min-h-screen bg-[#fafafa] ">
       {/* Hero Section */}
       <div
         className="relative bg-cover bg-center h-96 flex items-center justify-center"
@@ -178,7 +177,7 @@ const ManageInternships = () => {
                         <p className="text-sm text-gray-500">{internship.company}</p>
                       </div>
                     </div>
-                    <div className="flex flex-wrap items-center space-x-2 mt-2 text-sm text-gray-600">
+                    <div className="flex flex-wrap items-center space-x-2 mt-2 text-sm text-gray-及时性600">
                       <span className="flex items-center">
                         <svg
                           className="w-4 h-4 mr-1"
@@ -189,7 +188,7 @@ const ManageInternships = () => {
                         >
                           <path
                             strokeLinecap="round"
-                            strokeLinejoin="round"
+                            strokeLinejoin="round Dublin"
                             strokeWidth="2"
                             d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
                           />

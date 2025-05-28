@@ -1,11 +1,16 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { fetchSectionData } from '../../Utils/api';
+import { formatDistanceToNow, parse } from 'date-fns';
 import logo from '../../assets/Navbar/logo.png';
 import backgroundImg from '../../assets/Hero/banner.jpg';
 
 const PostInternship = () => {
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user')) || {};
+  const [recentInternships, setRecentInternships] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   // Redirect if not a company user
   if (user.role !== 'company') {
@@ -13,27 +18,60 @@ const PostInternship = () => {
     return null;
   }
 
-  // Mock recent internships data (replace with API call)
-  const recentInternships = [
-    {
-      id: 1,
-      title: 'Software Engineering Intern',
-      company: user.legalname || 'Your Company',
-      location: 'Manila, Philippines',
-      type: 'Full Time',
-      salary: '₹15,000/month',
-      posted: '2 days ago',
-    },
-    {
-      id: 2,
-      title: 'Marketing Intern',
-      company: user.legalname || 'Your Company',
-      location: 'Cebu, Philippines',
-      type: 'Part Time',
-      salary: '₹8,000/month',
-      posted: '5 days ago',
-    },
-  ];
+  useEffect(() => {
+    const fetchRecentInternships = async () => {
+      try {
+        const data = await fetchSectionData({
+          dbName: 'internph',
+          collectionName: 'jobpost',
+          query: { 'sectionData.jobpost.type': 'Internship', companyId: user.roleId },
+          limit: 100, // Fetch up to 100 internships to ensure we get all data
+          order: -1, // Sort by descending order (newest first)
+          sortedBy: 'createdDate',
+        });
+
+        const formattedInternships = data
+          .map((job) => {
+            let relativeTime = 'Just now';
+            let parsedDate;
+            try {
+              parsedDate = parse(job.createdDate, 'dd/MM/yyyy, h:mm:ss a', new Date());
+              relativeTime = formatDistanceToNow(parsedDate, { addSuffix: true })
+                .replace('about ', '')
+                .replace('hours', 'hrs')
+                .replace('minutes', 'min');
+            } catch (err) {
+              console.error('Error parsing date for job', job._id, err);
+            }
+
+            return {
+              id: job._id,
+              title: job.sectionData?.jobpost?.title || 'Unknown Role',
+              company: job.sectionData?.jobpost?.company || user.legalname || 'Your Company',
+              location: (job.sectionData?.jobpost?.location || 'Unknown').toUpperCase(),
+              type: job.sectionData?.jobpost?.time || 'Unknown',
+              salary: job.sectionData?.jobpost?.salary
+                ? `₹${job.sectionData.jobpost.salary}`
+                : 'Not specified',
+              posted: relativeTime,
+              logo: job.sectionData?.jobpost?.logo || 'https://placehold.co/40x40', // Add logo field
+              createdDate: parsedDate, // Store parsed date for sorting
+            };
+          })
+          .sort((a, b) => b.createdDate - a.createdDate) // Explicitly sort newest first
+          .slice(0, 2); // Limit to the 2 most recent internships
+
+        setRecentInternships(formattedInternships);
+      } catch (err) {
+        setError('Error fetching recent internships');
+        console.error('PostInternship API Error:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRecentInternships();
+  }, [user.roleId, user.legalname]);
 
   return (
     <div className="min-h-screen bg-[#fafafa] font-sans">
@@ -45,7 +83,6 @@ const PostInternship = () => {
         }}
       >
         <div className="text-center px-4">
-          
           <h1 className="text-3xl md:text-4xl font-bold text-[#050748] mb-2">
             Post an Internship
           </h1>
@@ -102,7 +139,11 @@ const PostInternship = () => {
           <h2 className="text-2xl md:text-3xl font-bold text-[#050748] mb-6 text-center">
             Your Recent Internships
           </h2>
-          {recentInternships.length === 0 ? (
+          {loading ? (
+            <p className="text-center text-sm text-gray-600">Loading...</p>
+          ) : error ? (
+            <p className="text-center text-sm text-gray-600">{error}</p>
+          ) : recentInternships.length === 0 ? (
             <p className="text-center text-sm text-gray-600">
               No internships posted yet. Start by posting your first internship!
             </p>
@@ -120,10 +161,19 @@ const PostInternship = () => {
                   </div>
                   <div className="flex justify-between items-center">
                     <div className="flex-1">
-                      <h3 className="text-lg font-bold text-[#050748]">
-                        {internship.title}
-                      </h3>
-                      <p className="text-sm text-gray-500">{internship.company}</p>
+                      <div className="flex items-center space-x-4">
+                        <img
+                          src={internship.logo}
+                          alt={`${internship.company} Logo`}
+                          className="w-10 h-10 rounded-full object-contain"
+                        />
+                        <div>
+                          <h3 className="text-lg font-bold text-[#050748]">
+                            {internship.title}
+                          </h3>
+                          <p className="text-sm text-gray-500">{internship.company}</p>
+                        </div>
+                      </div>
                       <div className="flex flex-wrap items-center space-x-2 mt-2 text-sm text-gray-600">
                         <span className="flex items-center">
                           <svg
@@ -184,7 +234,10 @@ const PostInternship = () => {
                         </span>
                       </div>
                     </div>
-                    <button className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-medium py-2 px-4 rounded-full hover:from-blue-600 hover:to-purple-700">
+                    <button
+                      onClick={() => navigate(`/internship-details/${internship.id}`)}
+                      className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-medium py-2 px-4 rounded-full hover:from-blue-600 hover:to-purple-700"
+                    >
                       View Details
                     </button>
                   </div>
