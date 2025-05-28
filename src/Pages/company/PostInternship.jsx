@@ -24,9 +24,9 @@ const PostInternship = () => {
         const data = await fetchSectionData({
           dbName: 'internph',
           collectionName: 'jobpost',
-          query: { 'sectionData.jobpost.type': 'Internship', companyId: user.roleId },
-          limit: 100, // Fetch up to 100 internships to ensure we get all data
-          order: -1, // Sort by descending order (newest first)
+          query: { 'sectionData.jobpost.type': 'Internship', companyId: user.companyId }, // Use companyId
+          limit: 100,
+          order: -1,
           sortedBy: 'createdDate',
         });
 
@@ -54,12 +54,12 @@ const PostInternship = () => {
                 ? `₹${job.sectionData.jobpost.salary}`
                 : 'Not specified',
               posted: relativeTime,
-              logo: job.sectionData?.jobpost?.logo || 'https://placehold.co/40x40', // Add logo field
-              createdDate: parsedDate, // Store parsed date for sorting
+              logo: job.sectionData?.jobpost?.logo || 'https://placehold.co/40x40',
+              createdDate: parsedDate,
             };
           })
-          .sort((a, b) => b.createdDate - a.createdDate) // Explicitly sort newest first
-          .slice(0, 2); // Limit to the 2 most recent internships
+          .sort((a, b) => b.createdDate - a.createdDate)
+          .slice(0, 2);
 
         setRecentInternships(formattedInternships);
       } catch (err) {
@@ -71,7 +71,7 @@ const PostInternship = () => {
     };
 
     fetchRecentInternships();
-  }, [user.roleId, user.legalname]);
+  }, [user.companyId, user.legalname]); // Update dependency to user.companyId
 
   return (
     <div className="min-h-screen bg-[#fafafa] font-sans">
@@ -235,7 +235,7 @@ const PostInternship = () => {
                       </div>
                     </div>
                     <button
-                      onClick={() => navigate(`/internship-details/${internship.id}`)}
+                      onClick={() => navigate(`/internshipdetail/${internship.id}`)}
                       className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-medium py-2 px-4 rounded-full hover:from-blue-600 hover:to-purple-700"
                     >
                       View Details

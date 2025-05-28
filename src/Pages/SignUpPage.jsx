@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { MdVisibility, MdVisibilityOff } from 'react-icons/md';
-import { jwtDecode } from 'jwt-decode'; // Use named export
+import { jwtDecode } from 'jwt-decode';
 import rightImage from '../assets/SignUp/wallpaper.jpg';
 import logo from '../assets/Navbar/logo.png';
 import student from '../assets/SignUp/student.png';
@@ -47,7 +47,6 @@ const SignUpPage = () => {
     '1747902955524': 'mentor',
   };
 
-  // Handle role based on URL
   useEffect(() => {
     const path = location.pathname.split('/').pop();
     const validRoles = ['student', 'company', 'academy', 'recruiter', 'mentor'];
@@ -100,113 +99,116 @@ const SignUpPage = () => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
+  e.preventDefault();
+  setError('');
 
-    if (!formData.firstName.trim() || !formData.lastName.trim()) {
-      setError('First Name and Last Name are required.');
-      return;
-    }
-    if (!validateEmail(formData.email)) {
-      setError('Please enter a valid email address.');
-      return;
-    }
-    if (!validatePassword(formData.password)) {
-      setError('Password must be at least 6 characters long.');
-      return;
-    }
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match.');
-      return;
-    }
-    if (!validateMobile(formData.mobile)) {
-      setError('Mobile number must contain only digits or be empty.');
-      return;
-    }
-    if (role === 'company' && !formData.companyName.trim()) {
-      setError('Company Name is required.');
-      return;
-    }
-    if (role === 'academy' && !formData.academyName.trim()) {
-      setError('Academy Name is required.');
-      return;
+  if (!formData.firstName.trim() || !formData.lastName.trim()) {
+    setError('First Name and Last Name are required.');
+    return;
+  }
+  if (!validateEmail(formData.email)) {
+    setError('Please enter a valid email address.');
+    return;
+  }
+  if (!validatePassword(formData.password)) {
+    setError('Password must be at least 6 characters long.');
+    return;
+  }
+  if (formData.password !== formData.confirmPassword) {
+    setError('Passwords do not match.');
+    return;
+  }
+  if (!validateMobile(formData.mobile)) {
+    setError('Mobile number must contain only digits or be empty.');
+    return;
+  }
+  if (role === 'company' && !formData.companyName.trim()) {
+    setError('Company Name is required.');
+    return;
+  }
+  if (role === 'academy' && !formData.academyName.trim()) {
+    setError('Academy Name is required.');
+    return;
+  }
+
+  try {
+    let payload;
+    let response;
+
+    if (role === 'company') {
+      payload = {
+        appName: 'app8657281202648',
+        companyName: formData.companyName.trim(),
+        mobile: formData.mobile.trim() || '',
+        legalname: `${formData.firstName.trim()} ${formData.lastName.trim()}`.trim(),
+        role: roleIds[role],
+        email: formData.email.toLowerCase().trim(),
+        password: formData.password,
+      };
+      console.log('Company Signup Payload:', payload);
+      response = await signupCompany(payload);
+    } else {
+      payload = {
+        appName: 'app8657281202648',
+        type: 'otp',
+        name: formData.email.toLowerCase().trim(),
+        username: formData.email.toLowerCase().trim(),
+        password: formData.password,
+        role: roleIds[role],
+        legalname: `${formData.firstName.trim()} ${formData.lastName.trim()}`.trim(),
+        email: formData.email.toLowerCase().trim(),
+        mobile: formData.mobile.trim() || '',
+        ...(role === 'academy' && { academyname: formData.academyName.trim() }),
+      };
+      console.log('Signup Payload:', payload);
+      response = await signup(payload);
     }
 
-    try {
-      let payload;
-      let response;
-
+    if (response.success) {
       if (role === 'company') {
-        payload = {
-          appName: 'app8657281202648',
-          companyName: formData.companyName.trim(),
-          mobile: formData.mobile.trim() || '',
-          legalname: `${formData.firstName.trim()} ${formData.lastName.trim()}`.trim(),
-          role: roleIds[role],
+        setFormData({
+          firstName: '',
+          lastName: '',
+          companyName: '',
+          academyName: '',
+          mobile: '',
+          email: '',
+          password: '',
+          confirmPassword: '',
+        });
+        // Store user data with companyId from the API response
+        const companyId = response.user?.companyId || ''; // Adjust based on actual API response structure
+        localStorage.setItem('user', JSON.stringify({
+          legalname: `${formData.firstName} ${formData.lastName}`.trim(),
           email: formData.email.toLowerCase().trim(),
-          password: formData.password,
-        };
-        console.log('Company Signup Payload:', payload);
-        response = await signupCompany(payload);
+          role: roleNames[roleIds[role]],
+          roleId: roleIds[role],
+          companyId: companyId, // Store companyId
+        }));
+        navigate('/');
       } else {
-        payload = {
-          appName: 'app8657281202648',
-          type: 'otp',
-          name: formData.email.toLowerCase().trim(),
-          username: formData.email.toLowerCase().trim(),
-          password: formData.password,
-          role: roleIds[role],
-          legalname: `${formData.firstName.trim()} ${formData.lastName.trim()}`.trim(),
+        localStorage.setItem('pendingUser', JSON.stringify({
+          legalname: `${formData.firstName} ${formData.lastName}`.trim(),
           email: formData.email.toLowerCase().trim(),
-          mobile: formData.mobile.trim() || '',
+          role: roleNames[roleIds[role]],
+          roleId: roleIds[role],
           ...(role === 'academy' && { academyname: formData.academyName.trim() }),
-        };
-        console.log('Signup Payload:', payload);
-        response = await signup(payload);
+        }));
+        navigate('/otp');
       }
-
-      if (response.success) {
-        if (role === 'company') {
-          setFormData({
-            firstName: '',
-            lastName: '',
-            companyName: '',
-            academyName: '',
-            mobile: '',
-            email: '',
-            password: '',
-            confirmPassword: '',
-          });
-          localStorage.setItem('user', JSON.stringify({
-            legalname: `${formData.firstName} ${formData.lastName}`.trim(),
-            email: formData.email.toLowerCase().trim(),
-            role: roleNames[roleIds[role]], // Store role name
-            roleId: roleIds[role], // Store role ID
-          }));
-          navigate('/');
-        } else {
-          localStorage.setItem('pendingUser', JSON.stringify({
-            legalname: `${formData.firstName} ${formData.lastName}`.trim(),
-            email: formData.email.toLowerCase().trim(),
-            role: roleNames[roleIds[role]], // Store role name
-            roleId: roleIds[role], // Store role ID
-            ...(role === 'academy' && { academyname: formData.academyName.trim() }),
-          }));
-          navigate('/otp');
-        }
-      } else {
-        setError(response.message || 'Signup failed');
-      }
-    } catch (err) {
-      const errorMessage = err.response?.data?.message || err.message || 'An error occurred during signup';
-      console.error('Signup Error Response:', err.response?.data);
-      if (errorMessage.includes('User with this username already exists') || errorMessage.includes('User with this email already exists')) {
-        setError('This email is already registered. Please use a different email or sign in.');
-      } else {
-        setError(`${errorMessage}. Please try again or contact support@conscor.com.`);
-      }
+    } else {
+      setError(response.message || 'Signup failed');
     }
-  };
+  } catch (err) {
+    const errorMessage = err.response?.data?.message || err.message || 'An error occurred during signup';
+    console.error('Signup Error Response:', err.response?.data);
+    if (errorMessage.includes('User with this username already exists') || errorMessage.includes('User with this email already exists')) {
+      setError('This email is already registered. Please use a different email or sign in.');
+    } else {
+      setError(`${errorMessage}. Please try again or contact support@conscor.com.`);
+    }
+  }
+};
 
   const formFields = {
     student: [

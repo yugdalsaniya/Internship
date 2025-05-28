@@ -26,7 +26,7 @@ const ManageInternships = () => {
         const data = await fetchSectionData({
           dbName: 'internph',
           collectionName: 'jobpost',
-          query: { 'sectionData.jobpost.type': 'Internship', companyId: user.roleId },
+          query: { 'sectionData.jobpost.type': 'Internship', companyId: user.companyId }, // Use companyId
           limit: 100,
           order: -1,
           sortedBy: 'createdDate',
@@ -41,7 +41,7 @@ const ManageInternships = () => {
     };
 
     fetchInternships();
-  }, [user.roleId]);
+  }, [user.companyId]); // Update dependency to user.companyId
 
   const formattedInternships = useMemo(() => {
     return internships
@@ -77,10 +77,10 @@ const ManageInternships = () => {
           skillsrequired: job.sectionData?.jobpost?.skillsrequired || 'None',
           applicationinstructions: job.sectionData?.jobpost?.applicationinstructions || 'None',
           description: job.sectionData?.jobpost?.description || 'No description',
-          createdDate: parsedDate, // Store parsed date for sorting
+          createdDate: parsedDate,
         };
       })
-      .sort((a, b) => b.createdDate - a.createdDate); // Explicitly sort newest first
+      .sort((a, b) => b.createdDate - a.createdDate);
   }, [internships]);
 
   const totalPages = Math.ceil(formattedInternships.length / internshipsPerPage);
@@ -177,7 +177,7 @@ const ManageInternships = () => {
                         <p className="text-sm text-gray-500">{internship.company}</p>
                       </div>
                     </div>
-                    <div className="flex flex-wrap items-center space-x-2 mt-2 text-sm text-gray-及时性600">
+                    <div className="flex flex-wrap items-center space-x-2 mt-2 text-sm text-gray-600">
                       <span className="flex items-center">
                         <svg
                           className="w-4 h-4 mr-1"
@@ -188,7 +188,7 @@ const ManageInternships = () => {
                         >
                           <path
                             strokeLinecap="round"
-                            strokeLinejoin="round Dublin"
+                            strokeLinejoin="round"
                             strokeWidth="2"
                             d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
                           />
@@ -238,7 +238,7 @@ const ManageInternships = () => {
                     </div>
                   </div>
                   <button
-                    onClick={() => navigate(`/internship-details/${internship.id}`)}
+                    onClick={() => navigate(`/internshipdetail/${internship.id}`)}
                     className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-medium py-2 px-4 rounded-full hover:from-blue-600 hover:to-purple-700"
                   >
                     View Details

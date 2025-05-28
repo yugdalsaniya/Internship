@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import logo from '../../assets/Navbar/logo.png';
 import { addGeneralData, uploadAndStoreFile } from '../../Utils/api';
+import logo from '../../assets/Navbar/logo.png';
 
 const PostInternshipForm = () => {
   const [formData, setFormData] = useState({
@@ -18,24 +18,91 @@ const PostInternshipForm = () => {
     skillsrequired: '',
     applicationinstructions: '',
     logo: null,
+    keyResponsibilities: [],
+    professionalSkills: [],
+    degree: [], // Renamed to degree (singular) to match admin panel field name
   });
+  const [newResponsibility, setNewResponsibility] = useState('');
+  const [newSkill, setNewSkill] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user')) || {};
 
-  // Redirect if not a company user
+  // List of available degree options
+  const degreeOptions = [
+    'B.Tech',
+    'B.Sc',
+    'B.Com',
+    'BBA',
+    'MBA',
+    'M.Tech',
+    'M.Sc',
+    'Ph.D',
+  ];
+
+  // Redirect if not a company user or if companyId is missing
   useEffect(() => {
-    if (user.role !== 'company') {
-      navigate('/');
+    if (user.role !== 'company' || !user.companyId) {
+      navigate('/login');
     }
-  }, [user.role, navigate]);
+  }, [user.role, user.companyId, navigate]);
 
   const handleChange = (e) => {
-    const { name, value, files } = e.target;
+    const { name, value, files, type, checked } = e.target;
+    if (name === 'degree') {
+      // Handle checkbox changes for degree
+      let updatedDegrees = [...formData.degree];
+      if (checked) {
+        // Add the degree if checked
+        updatedDegrees.push(value);
+      } else {
+        // Remove the degree if unchecked
+        updatedDegrees = updatedDegrees.filter((deg) => deg !== value);
+      }
+      setFormData({
+        ...formData,
+        degree: updatedDegrees,
+      });
+    } else {
+      setFormData({
+        ...formData,
+        [name]: files ? files[0] : value,
+      });
+    }
+  };
+
+  const addResponsibility = () => {
+    if (newResponsibility.trim()) {
+      setFormData({
+        ...formData,
+        keyResponsibilities: [...formData.keyResponsibilities, { text: newResponsibility.trim() }],
+      });
+      setNewResponsibility('');
+    }
+  };
+
+  const addSkill = () => {
+    if (newSkill.trim()) {
+      setFormData({
+        ...formData,
+        professionalSkills: [...formData.professionalSkills, { text: newSkill.trim() }],
+      });
+      setNewSkill('');
+    }
+  };
+
+  const removeResponsibility = (index) => {
     setFormData({
       ...formData,
-      [name]: files ? files[0] : value,
+      keyResponsibilities: formData.keyResponsibilities.filter((_, i) => i !== index),
+    });
+  };
+
+  const removeSkill = (index) => {
+    setFormData({
+      ...formData,
+      professionalSkills: formData.professionalSkills.filter((_, i) => i !== index),
     });
   };
 
@@ -45,6 +112,12 @@ const PostInternshipForm = () => {
     setLoading(true);
 
     // Validation
+    if (!user.companyId) {
+      setError('Company ID is missing. Please log in again.');
+      setLoading(false);
+      navigate('/login');
+      return;
+    }
     if (!formData.title.trim()) {
       setError('Internship title is required.');
       setLoading(false);
@@ -85,6 +158,21 @@ const PostInternshipForm = () => {
       setLoading(false);
       return;
     }
+    if (formData.keyResponsibilities.length === 0) {
+      setError('At least one key responsibility is required.');
+      setLoading(false);
+      return;
+    }
+    if (formData.professionalSkills.length === 0) {
+      setError('At least one professional skill is required.');
+      setLoading(false);
+      return;
+    }
+    if (formData.degree.length === 0) {
+      setError('At least one degree is required.');
+      setLoading(false);
+      return;
+    }
 
     try {
       // Handle logo upload
@@ -94,9 +182,9 @@ const PostInternshipForm = () => {
           appName: 'app8657281202648',
           moduleName: 'jobpost',
           file: formData.logo,
-          userId: user.roleId,
+          userId: user.companyId,
         });
-        console.log('Full Upload Response:', uploadResponse); // Debug log
+        console.log('Full Upload Response:', uploadResponse);
         logoUrl = uploadResponse?.filePath;
         if (!logoUrl) {
           throw new Error('Failed to retrieve logo URL from upload response.');
@@ -122,10 +210,13 @@ const PostInternshipForm = () => {
             applicationinstructions: formData.applicationinstructions || '',
             description: formData.description,
             logo: logoUrl || undefined,
+            keyResponsibilities: formData.keyResponsibilities,
+            professionalSkills: formData.professionalSkills,
+            degree: formData.degree, // Use degree (singular) to match admin panel field name
           },
         },
-        createdBy: user.roleId,
-        companyId: user.roleId, // Adjust if companyId is different
+        createdBy: user.companyId,
+        companyId: user.companyId,
         createdDate: new Date().toLocaleString('en-GB', {
           day: '2-digit',
           month: '2-digit',
@@ -146,7 +237,7 @@ const PostInternshipForm = () => {
 
       if (response.success) {
         alert('Internship posted successfully!');
-        navigate('/manage-internships');
+        navigate('/');
       } else {
         setError(response.message || 'Failed to post internship.');
       }
@@ -158,204 +249,305 @@ const PostInternshipForm = () => {
     }
   };
 
-  // Render only if user is a company
-  if (user.role !== 'company') {
+  if (user.role !== 'company' || !user.companyId) {
     return null;
   }
 
   return (
-    <div className="min-h-screen bg-[#fafafa] font-sans flex items-center justify-center px-4 py-8">
-      <div className="max-w-2xl w-full bg-white rounded-lg shadow-md p-6">
+    <div className="min-h-screen bg-[#fafafa] flex items-center justify-center px-4 py-8">
+      <div className="max-w-4xl w-full bg-white rounded-lg shadow-md p-6">
         <div className="flex justify-center items-center mb-6">
           <img src={logo} alt="Logo" className="w-10 h-10 mr-2" />
           <div>
-            <h1 className="text-2xl font-bold text-[#050748] tracking-wide">
+            <h1 className="text-2xl md:text-3xl font-bold text-[#050748] tracking-wide">
               INTERNSHIP–OJT
             </h1>
-            <div className="w-full h-[2px] bg-[#050748] mt-1 mb-1" />
-            <p className="text-sm text-black font-bold text-center">WORK24 PHILIPPINES</p>
+            <div className="w-full h-4 bg-[#050748] mt-1 mb-1" />
+            <p className="text-sm text-black font-semibold text-center">Work 24 Philippines</p>
           </div>
         </div>
         <h2 className="text-xl md:text-2xl font-bold text-[#050748] mb-4 text-center">
           Post Internship Form
         </h2>
         {error && <p className="text-red-500 text-sm mb-4 text-center">{error}</p>}
-        <form className="space-y-4" onSubmit={handleSubmit}>
+        <form className="space-y-6" onSubmit={handleSubmit}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Internship Title <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                name="title"
+                value={formData.title}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="e.g., Software Engineering Intern"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Company Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                name="company"
+                value={formData.company}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="e.g., WORK24 Philippines"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Location <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                name="location"
+                value={formData.location}
+                onChange={handleChange}
+                className="w-full px-4 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="e.g., Manila, Philippines"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Internship Type <span className="text-red-500">*</span>
+              </label>
+              <select
+                name="time"
+                value={formData.time}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              >
+                <option value="Full Time">Full Time</option>
+                <option value="Part Time">Part Time</option>
+                <option value="Freelance">Freelance</option>
+                <option value="Seasonal">Seasonal</option>
+                <option value="Fixed-Price">Fixed-Price</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Salary (Optional)
+              </label>
+              <input
+                type="text"
+                name="salary"
+                value={formData.salary}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="e.g., ₹10,000/month"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Category <span className="text-red-500">*</span>
+              </label>
+              <select
+                name="subtype"
+                value={formData.subtype}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              >
+                <option value="">Select Category</option>
+                <option value="Commerce">Commerce</option>
+                <option value="Telecommunications">Telecommunications</option>
+                <option value="Hotels & Tourism">Hotels & Tourism</option>
+                <option value="Education">Education</option>
+                <option value="Financial Services">Financial Services</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Experience Level <span className="text-red-500">*</span>
+              </label>
+              <select
+                name="experiencelevel"
+                value={formData.experiencelevel}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              >
+                <option value="">Select Experience Level</option>
+                <option value="No-experience">No Experience</option>
+                <option value="Fresher">Fresher</option>
+                <option value="Intermediate">Intermediate</option>
+                <option value="Expert">Expert</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Application Deadline <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="date"
+                name="applicationdeadline"
+                value={formData.applicationdeadline}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Internship Duration <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                name="internshipduration"
+                value={formData.internshipduration}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="e.g., 3 months"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Degrees <span className="text-red-500">*</span>
+              </label>
+              <div className="flex flex-wrap gap-3 mt-2">
+                {degreeOptions.map((degree) => (
+                  <label key={degree} className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      name="degree"
+                      value={degree}
+                      checked={formData.degree.includes(degree)}
+                      onChange={handleChange}
+                      className="h-4 w-4 text-blue-500 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700">{degree}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Company Logo (Optional)
+              </label>
+              <input
+                type="file"
+                name="logo"
+                accept="image/*"
+                onChange={handleChange}
+                className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Internship Title <span className="text-red-500">*</span>
+              Key Responsibilities <span className="text-red-500">*</span>
             </label>
-            <input
-              type="text"
-              name="title"
-              value={formData.title}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="e.g., Software Engineering Intern"
-              required
-            />
+            <div className="flex items-center space-x-2 mb-2">
+              <input
+                type="text"
+                value={newResponsibility}
+                onChange={(e) => setNewResponsibility(e.target.value)}
+                className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="e.g., Conduct user research..."
+              />
+              <button
+                type="button"
+                onClick={addResponsibility}
+                className="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-600"
+              >
+                Add
+              </button>
+            </div>
+            {formData.keyResponsibilities.length > 0 && (
+              <ul className="list-disc pl-5 space-y-1 text-sm text-gray-600">
+                {formData.keyResponsibilities.map((responsibility, index) => (
+                  <li key={index} className="flex justify-between items-center">
+                    {responsibility.text}
+                    <button
+                      type="button"
+                      onClick={() => removeResponsibility(index)}
+                      className="text-red-500 hover:text-red-700 text-sm"
+                    >
+                      Remove
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Company Name <span className="text-red-500">*</span>
+              Professional Skills <span className="text-red-500">*</span>
             </label>
-            <input
-              type="text"
-              name="company"
-              value={formData.company}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="e.g., WORK24 Philippines"
-              required
-            />
+            <div className="flex items-center space-x-2 mb-2">
+              <input
+                type="text"
+                value={newSkill}
+                onChange={(e) => setNewSkill(e.target.value)}
+                className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="e.g., Proficient in Figma..."
+              />
+              <button
+                type="button"
+                onClick={addSkill}
+                className="bg-blue-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-600"
+              >
+                Add
+              </button>
+            </div>
+            {formData.professionalSkills.length > 0 && (
+              <ul className="list-disc pl-5 space-y-1 text-sm text-gray-600">
+                {formData.professionalSkills.map((skill, index) => (
+                  <li key={index} className="flex justify-between items-center">
+                    {skill.text}
+                    <button
+                      type="button"
+                      onClick={() => removeSkill(index)}
+                      className="text-red-500 hover:text-red-700 text-sm"
+                    >
+                      Remove
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Location <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              name="location"
-              value={formData.location}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="e.g., Manila, Philippines"
-              required
-            />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Skills Required (Optional)
+              </label>
+              <input
+                type="text"
+                name="skillsrequired"
+                value={formData.skillsrequired}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="e.g., JavaScript, Python, Communication"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Application Instructions (Optional)
+              </label>
+              <textarea
+                name="applicationinstructions"
+                value={formData.applicationinstructions}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                rows="3"
+                placeholder="e.g., Submit a resume and cover letter via email..."
+              />
+            </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Internship Type <span className="text-red-500">*</span>
-            </label>
-            <select
-              name="time"
-              value={formData.time}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            >
-              <option value="Full Time">Full Time</option>
-              <option value="Part Time">Part Time</option>
-              <option value="Freelance">Freelance</option>
-              <option value="Seasonal">Seasonal</option>
-              <option value="Fixed-Price">Fixed-Price</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Salary (Optional)
-            </label>
-            <input
-              type="text"
-              name="salary"
-              value={formData.salary}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="e.g., ₹10,000/month"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Category <span className="text-red-500">*</span>
-            </label>
-            <select
-              name="subtype"
-              value={formData.subtype}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            >
-              <option value="">Select Category</option>
-              <option value="Commerce">Commerce</option>
-              <option value="Telecommunications">Telecommunications</option>
-              <option value="Hotels & Tourism">Hotels & Tourism</option>
-              <option value="Education">Education</option>
-              <option value="Financial Services">Financial Services</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Experience Level <span className="text-red-500">*</span>
-            </label>
-            <select
-              name="experiencelevel"
-              value={formData.experiencelevel}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            >
-              <option value="">Select Experience Level</option>
-              <option value="No-experience">No Experience</option>
-              <option value="Fresher">Fresher</option>
-              <option value="Intermediate">Intermediate</option>
-              <option value="Expert">Expert</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Application Deadline <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="date"
-              name="applicationdeadline"
-              value={formData.applicationdeadline}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Internship Duration <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              name="internshipduration"
-              value={formData.internshipduration}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="e.g., 3 months"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Skills Required (Optional)
-            </label>
-            <input
-              type="text"
-              name="skillsrequired"
-              value={formData.skillsrequired}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="e.g., JavaScript, Python, Communication"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Application Instructions (Optional)
-            </label>
-            <textarea
-              name="applicationinstructions"
-              value={formData.applicationinstructions}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              rows="4"
-              placeholder="e.g., Submit a resume and cover letter via email..."
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Company Logo (Optional)
-            </label>
-            <input
-              type="file"
-              name="logo"
-              accept="image/*"
-              onChange={handleChange}
-              className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700">
               Description <span className="text-red-500">*</span>
@@ -365,11 +557,12 @@ const PostInternshipForm = () => {
               value={formData.description}
               onChange={handleChange}
               className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              rows="5"
+              rows="4"
               placeholder="Describe the internship role, responsibilities, and requirements..."
               required
             />
           </div>
+
           <div className="flex gap-4">
             <button
               type="submit"
@@ -381,7 +574,7 @@ const PostInternshipForm = () => {
             <button
               type="button"
               onClick={() => navigate('/post-internship')}
-              className="flex-1 border border-gray-400 text-gray-700 py-2 rounded-lg text-sm font-bold hover:bg-gray-100"
+              className="flex-1 border border-gray-400 text-gray-700 py-2 px-4 rounded-lg text-sm font-bold hover:bg-gray-100"
             >
               Cancel
             </button>

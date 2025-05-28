@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
 import Hero from "../assets/Hero/banner.jpg";
 import {
   FaMapMarkerAlt,
@@ -16,13 +17,117 @@ import {
 } from "react-icons/fa";
 import { MdWork } from "react-icons/md";
 import { PiTwitterLogoFill } from "react-icons/pi";
+import { fetchSectionData } from "../Utils/api";
+import { formatDistanceToNow, parse } from "date-fns";
 
 const InternshipDetailsPage = () => {
-  const relatedInternships = [
-    { title: "Marketing", company: "Allcargo Logistics Limited" },
-    { title: "Graphic Designer", company: "Flippspaces co Limited" },
-    { title: "Ui/Ux Designer", company: "Webfinic Enterprises" },
-  ];
+  const { id } = useParams();
+  const [internship, setInternship] = useState(null);
+  const [relatedInternships, setRelatedInternships] = useState([]);
+  const [categoryMap, setCategoryMap] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Get the logged-in user from localStorage
+  const user = JSON.parse(localStorage.getItem('user')) || {};
+
+  useEffect(() => {
+    const fetchCategoriesAndInternship = async () => {
+      try {
+        // Fetch categories
+        const categoriesData = await fetchSectionData({
+          collectionName: "category",
+          query: {},
+        });
+
+        const categoryMapping = categoriesData.reduce((map, category) => {
+          const categoryId = category._id;
+          const categoryName = category.sectionData?.category?.titleofinternship || "Unknown Category";
+          map[categoryId] = categoryName;
+          return map;
+        }, {});
+        setCategoryMap(categoryMapping);
+
+        // Fetch the specific internship
+        const internshipData = await fetchSectionData({
+          collectionName: "jobpost",
+          query: { _id: id },
+        });
+
+        if (internshipData && internshipData.length > 0) {
+          setInternship(internshipData[0]);
+
+          // Fetch related internships
+          const currentSubtype = internshipData[0]?.sectionData?.jobpost?.subtype;
+          const relatedQuery = {
+            "sectionData.jobpost.type": "Internship",
+            _id: { $ne: id },
+          };
+
+          if (currentSubtype) {
+            relatedQuery["sectionData.jobpost.subtype"] = currentSubtype;
+          }
+
+          const relatedData = await fetchSectionData({
+            collectionName: "jobpost",
+            limit: 3,
+            query: relatedQuery,
+            order: -1,
+            sortedBy: "createdDate",
+          });
+
+          setRelatedInternships(relatedData);
+        } else {
+          setError("Internship not found.");
+        }
+      } catch (err) {
+        setError("Error fetching internship details.");
+        console.error("InternshipDetailsPage API Error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCategoriesAndInternship();
+  }, [id]);
+
+  const getRelativeTime = (dateString) => {
+    try {
+      const parsedDate = parse(dateString, "dd/MM/yyyy, h:mm:ss a", new Date());
+      return formatDistanceToNow(parsedDate, { addSuffix: true })
+        .replace("about ", "")
+        .replace("hours", "hrs")
+        .replace("minutes", "min");
+    } catch (err) {
+      console.error("Error parsing date:", err);
+      return "Just now";
+    }
+  };
+
+  if (loading) return <div className="mx-12 py-4">Loading...</div>;
+  if (error) return <div className="mx-12 py-4">{error}</div>;
+
+  const jobpost = internship?.sectionData?.jobpost;
+  const relativeTime = internship?.createdDate ? getRelativeTime(internship.createdDate) : "Just now";
+  const categoryName = categoryMap[jobpost?.subtype] || jobpost?.subtype || "Unknown Category";
+
+  // Join degree array into a comma-separated string
+  const degreesList = jobpost?.degree?.length > 0 ? jobpost.degree.join(", ") : "Not specified";
+
+  const formattedRelatedInternships = relatedInternships.map((job) => ({
+    id: job._id,
+    title: job.sectionData?.jobpost?.title || "Unknown Role",
+    company: job.sectionData?.jobpost?.company || "Unknown Company",
+    time: job.sectionData?.jobpost?.time || "Unknown",
+    salary: job.sectionData?.jobpost?.salary
+      ? `₹${job.sectionData.jobpost.salary}`
+      : "Not specified",
+    location: job.sectionData?.jobpost?.location || "Unknown",
+    relativeTime: job.createdDate ? getRelativeTime(job.createdDate) : "Just now",
+  }));
+
+  // Determine if the "Apply Internship" button should be shown
+  const showApplyButton = user.role !== 'company' || (user.role === 'company' && user.companyId !== internship?.companyId);
 
   return (
     <div>
@@ -37,7 +142,7 @@ const InternshipDetailsPage = () => {
       >
         <div className="relative flex flex-col items-center text-center max-w-7xl mx-auto z-10">
           <h1 className="text-3xl md:text-4xl font-bold text-[#050748] mb-3">
-            Internships Details
+            Internship Details
           </h1>
           <p className="text-base md:text-lg text-[#45457D] mb-6 max-w-3xl">
             "Empower Your Future: Unleash Limitless Career Possibilities!"
@@ -50,27 +155,29 @@ const InternshipDetailsPage = () => {
         {/* Header */}
         <div className="flex justify-between items-start mb-10">
           <div>
-            <div className="text-xs text-gray-400 mb-1">10 min ago</div>
-            <h1 className="text-3xl font-bold mb-1">Ui/Ux Designer</h1>
-            <p className="text-gray-500">Webfinic Enterprise</p>
+            <div className="text-xs text-gray-400 mb-1">{relativeTime}</div>
+            <h1 className="text-3xl font-bold mb-1">{jobpost?.title || "Unknown Role"}</h1>
+            <p className="text-gray-500">{jobpost?.company || "Unknown Company"}</p>
             <div className="flex gap-5 text-sm text-gray-500 mt-3">
               <div className="flex items-center gap-1">
                 <MdWork />
-                Full time
+                {jobpost?.time || "Unknown"}
               </div>
               <div className="flex items-center gap-1">
                 <FaRupeeSign />
-                ₹25,000 - ₹30,000
+                {jobpost?.salary ? `₹${jobpost.salary}` : "Not specified"}
               </div>
               <div className="flex items-center gap-1">
                 <FaMapMarkerAlt />
-                Ahmedabad
+                {jobpost?.location || "Unknown"}
               </div>
             </div>
           </div>
-          <button className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-6 py-2 rounded-md">
-            Apply Internship
-          </button>
+          {showApplyButton && (
+            <button className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-6 py-2 rounded-md">
+              Apply Internship
+            </button>
+          )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
@@ -80,43 +187,43 @@ const InternshipDetailsPage = () => {
             <section className="mb-8">
               <h2 className="text-xl font-semibold mb-2">Internship Description</h2>
               <p className="text-gray-700">
-                As a UI/UX Designer, you will create intuitive, engaging, and visually appealing user interfaces
-                for web and mobile applications. You’ll collaborate with product managers, developers, and
-                stakeholders to design user-centered solutions that enhance user satisfaction and drive business
-                goals.
+                {jobpost?.description || "No description available."}
               </p>
             </section>
 
             {/* Key Responsibilities */}
-            <section className="mb-8">
-              <h2 className="text-xl font-semibold mb-2">Key Responsibilities</h2>
-              <ul className="list-disc ml-5 text-gray-700 space-y-2">
-                <li>Conduct user research and usability testing to understand user needs.</li>
-                <li>Design intuitive UI and engaging interactions aligned with guidelines.</li>
-                <li>Collaborate with developers to ensure design implementation.</li>
-                <li>Stay updated on UX/UI trends and tools.</li>
-                <li>Present design concepts to stakeholders.</li>
-                <li>Create wireframes, prototypes, and high-fidelity mockups.</li>
-              </ul>
-            </section>
+            {jobpost?.keyResponsibilities && jobpost.keyResponsibilities.length > 0 && (
+              <section className="mb-8">
+                <h2 className="text-xl font-semibold mb-2">Key Responsibilities</h2>
+                <ul className="list-disc ml-5 text-gray-700 space-y-2">
+                  {jobpost.keyResponsibilities.map((responsibility, index) => (
+                    <li key={index}>{responsibility.text}</li>
+                  ))}
+                </ul>
+              </section>
+            )}
 
             {/* Professional Skills */}
-            <section className="mb-8">
-              <h2 className="text-xl font-semibold mb-2">Professional Skills</h2>
-              <ul className="list-disc ml-5 text-gray-700 space-y-2">
-                <li>Proficient in Figma, Sketch, Adobe XD, etc.</li>
-                <li>Strong user-centered design principles.</li>
-                <li>Experience with responsive design and prototyping.</li>
-                <li>Basic understanding of HTML, CSS, JavaScript.</li>
-                <li>Excellent visual design and typography skills.</li>
-              </ul>
-            </section>
+            {jobpost?.professionalSkills && jobpost.professionalSkills.length > 0 && (
+              <section className="mb-8">
+                <h2 className="text-xl font-semibold mb-2">Professional Skills</h2>
+                <ul className="list-disc ml-5 text-gray-700 space-y-2">
+                  {jobpost.professionalSkills.map((skill, index) => (
+                    <li key={index}>{skill.text}</li>
+                  ))}
+                </ul>
+              </section>
+            )}
 
             {/* Tags + Share Internship */}
             <section className="mb-10">
               <h2 className="text-xl font-semibold mb-2">Tags:</h2>
               <div className="flex flex-wrap gap-2 mb-4">
-                {["Full time", "Commerce", "Ahmedabad", "Corporate", "Location"].map((tag, idx) => (
+                {[
+                  jobpost?.time || "Full Time",
+                  categoryName,
+                  jobpost?.location || "Unknown",
+                ].map((tag, idx) => (
                   <span
                     key={idx}
                     className="bg-gray-100 text-gray-700 text-sm px-3 py-1 rounded-md"
@@ -135,35 +242,42 @@ const InternshipDetailsPage = () => {
             </section>
 
             {/* Related Internships */}
-            <section>
-              <h2 className="text-2xl font-bold mb-5">Related Internships</h2>
-              {relatedInternships.map((item, index) => (
-                <div
-                  key={index}
-                  className="border p-4 rounded-lg shadow-sm flex justify-between items-center mb-4 bg-white"
-                >
-                  <div>
-                    <div className="text-xs text-gray-400 mb-1">10 min ago</div>
-                    <h4 className="font-semibold text-lg">{item.title}</h4>
-                    <div className="text-gray-500 text-sm">{item.company}</div>
-                    <div className="flex gap-4 text-sm text-gray-500 mt-1">
-                      <div className="flex items-center gap-1">
-                        <MdWork /> Full time
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <FaRupeeSign /> ₹25,000 - ₹30,000
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <FaMapMarkerAlt /> Ahmedabad
+            {formattedRelatedInternships.length > 0 && (
+              <section>
+                <h2 className="text-2xl font-bold mb-5">Related Internships</h2>
+                {formattedRelatedInternships.map((item) => (
+                  <div
+                    key={item.id}
+                    className="border p-4 rounded-lg shadow-sm flex justify-between items-center mb-4 bg-white min-h-[120px]"
+                  >
+                    <div className="flex flex-col justify-between h-full w-full pr-4">
+                      <div>
+                        <div className="text-xs text-gray-400 mb-1">{item.relativeTime}</div>
+                        <h4 className="font-semibold text-lg line-clamp-1">{item.title}</h4>
+                        <div className="text-gray-500 text-sm line-clamp-1">{item.company}</div>
+                        <div className="flex gap-4 text-sm text-gray-500 mt-1 flex-wrap">
+                          <div className="flex items-center gap-1">
+                            <MdWork /> {item.time}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <FaRupeeSign /> {item.salary}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <FaMapMarkerAlt /> {item.location}
+                          </div>
+                        </div>
                       </div>
                     </div>
+                    <button
+                      onClick={() => (window.location.href = `/internshipdetail/${item.id}`)}
+                      className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-4 py-2 rounded-md whitespace-nowrap"
+                    >
+                      Internship Details
+                    </button>
                   </div>
-                  <button className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-4 py-2 rounded-md">
-                    Internship Details
-                  </button>
-                </div>
-              ))}
-            </section>
+                ))}
+              </section>
+            )}
           </div>
 
           {/* Right Sidebar */}
@@ -174,31 +288,31 @@ const InternshipDetailsPage = () => {
               <div className="space-y-3 text-sm text-[#333]">
                 <div className="flex items-center gap-2">
                   <FaUser className="text-blue-500" />
-                  <span>Internship Title: UI/UX Designer</span>
+                  <span>Internship Title: {jobpost?.title || "Unknown Role"}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <MdWork className="text-blue-500" />
-                  <span>Internship Type: Full Time</span>
+                  <span>Internship Type: {jobpost?.time || "Unknown"}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <FaTags className="text-blue-500" />
-                  <span>Category: Commerce</span>
+                  <span>Category: {categoryName}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <FaRegClock className="text-blue-500" />
-                  <span>Experience: 2 Years</span>
+                  <span>Experience: {jobpost?.experiencelevel || "Not specified"}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <FaGraduationCap className="text-blue-500" />
-                  <span>Degree: Master</span>
+                  <span>Degrees: {degreesList}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <FaRupeeSign className="text-blue-500" />
-                  <span>Offered Salary: ₹25,000 - ₹30,000</span>
+                  <span>Offered Salary: {jobpost?.salary ? `₹${jobpost.salary}` : "Not specified"}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <FaMapMarkerAlt className="text-blue-500" />
-                  <span>Location: Ahmedabad</span>
+                  <span>Location: {jobpost?.location || "Unknown"}</span>
                 </div>
               </div>
               <div className="mt-4">

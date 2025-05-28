@@ -1,9 +1,11 @@
 import React, { useEffect, useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom"; // Import useNavigate for navigation
 import { BsBookmarkPlus } from "react-icons/bs";
 import { fetchSectionData } from "../../Utils/api";
 import { formatDistanceToNow, parse } from "date-fns";
 
 export default function RecentInternship() {
+  const navigate = useNavigate(); // Hook for navigation
   const [recentInternships, setRecentInternships] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -98,7 +100,7 @@ export default function RecentInternship() {
         {processedInternships.map((internship) => (
           <div
             key={internship.id}
-            className="flex flex-col bg-white rounded-lg shadow-md p-4"
+            className="flex flex-col bg-white rounded-lg shadow-md p-4 min-h-[150px]" // Set minimum height for consistency
           >
             <div className="flex justify-between items-center mb-2">
               <span className="inline-block bg-gray-200 text-gray-800 text-xs font-medium px-2 py-0.5 rounded-full">
@@ -107,16 +109,20 @@ export default function RecentInternship() {
               <BsBookmarkPlus className="h-6 w-6" aria-label="Bookmark Plus Icon" />
             </div>
             <div className="flex justify-between items-center flex-col md:flex-row">
-              <div className="flex-1">
+              <div className="flex-1 flex flex-col justify-between h-full">
                 <div className="flex items-center space-x-4">
                   <img
                     src={internship.logo}
                     alt={`${internship.company} Logo`}
                     className="w-10 h-10 rounded-full object-contain"
                   />
-                  <div>
-                    <h3 className="text-lg font-bold text-black">{internship.role}</h3>
-                    <p className="text-sm text-gray-500">{internship.company}</p>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-bold text-black line-clamp-1">
+                      {internship.role}
+                    </h3>
+                    <p className="text-sm text-gray-500 line-clamp-1">
+                      {internship.company}
+                    </p>
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center space-x-2 mt-2 text-sm text-gray-600">
@@ -180,7 +186,10 @@ export default function RecentInternship() {
                 </div>
               </div>
               <div className="flex items-end mt-4 md:mt-0">
-                <button className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-medium py-2 px-4 rounded-full hover:from-blue-600 hover:to-purple-700">
+                <button
+                  onClick={() => navigate(`/internshipdetail/${internship.id}`)} // Navigate to internship detail page
+                  className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-medium py-2 px-4 rounded-full hover:from-blue-600 hover:to-purple-700 whitespace-nowrap"
+                >
                   Internship Details
                 </button>
               </div>

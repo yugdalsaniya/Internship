@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useMemo } from "react";
-import { BsBookmarkPlus,BsSearch, BsGeoAlt } from "react-icons/bs";
+import { BsBookmarkPlus, BsSearch, BsGeoAlt } from "react-icons/bs";
+import { useNavigate } from "react-router-dom"; // Import useNavigate
 import { fetchSectionData } from "../Utils/api";
 import { formatDistanceToNow, parse } from "date-fns";
 import Hero from "../Components/home/Hero";
 import backgroundImg from "../assets/Hero/banner.jpg";
-
 
 export default function InternshipPage() {
   const [internships, setInternships] = useState([]);
@@ -13,6 +13,7 @@ export default function InternshipPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [sortOption, setSortOption] = useState("latest");
   const internshipsPerPage = 6;
+  const navigate = useNavigate(); // Initialize useNavigate
 
   useEffect(() => {
     const fetchInternships = async () => {
@@ -108,6 +109,11 @@ export default function InternshipPage() {
     }
   };
 
+  // Function to handle navigation to internship detail page
+  const handleViewDetails = (internshipId) => {
+    navigate(`/internshipdetail/${internshipId}`);
+  };
+
   if (loading) return <div className="mx-12 py-4">Loading...</div>;
   if (error) return <div className="mx-12 py-4">{error}</div>;
   if (filteredInternships.length === 0)
@@ -125,80 +131,79 @@ export default function InternshipPage() {
       />
       <div className="flex flex-col md:flex-row px-4 md:px-12 py-8 bg-[#fafafa]">
         <div className="w-full md:w-1/4 bg-gradient-to-b from-[#FFFCF2] to-[#FEEFF4] shadow-md rounded-xl p-6 mb-6 md:mb-0">
-      {/* Search by Internship Title */}
-      <h2 className="text-lg font-semibold mb-4">Search by Internship Title</h2>
-      <div className="relative mb-4">
-        <BsSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" />
-        <input
-          type="text"
-          placeholder="Internship title or company"
-          className="w-full pl-10 p-2 border rounded-lg text-sm"
-        />
-      </div>
+          {/* Search by Internship Title */}
+          <h2 className="text-lg font-semibold mb-4">Search by Internship Title</h2>
+          <div className="relative mb-4">
+            <BsSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" />
+            <input
+              type="text"
+              placeholder="Internship title or company"
+              className="w-full pl-10 p-2 border rounded-lg text-sm"
+            />
+          </div>
 
-      {/* Location */}
-      <h3 className="font-medium text-sm mb-2">Location</h3>
-      <div className="relative mb-4">
-        <BsGeoAlt className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" />
-        <select className="w-full pl-10 p-2 border rounded-lg text-sm">
-          <option>Choose city</option>
-        </select>
-      </div>
+          {/* Location */}
+          <h3 className="font-medium text-sm mb-2">Location</h3>
+          <div className="relative mb-4">
+            <BsGeoAlt className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" />
+            <select className="w-full pl-10 p-2 border rounded-lg text-sm">
+              <option>Choose city</option>
+            </select>
+          </div>
 
-      {/* Filter Categories */}
-      {[
-        {
-          title: "Category",
-          items: [
-            "Commerce",
-            "Telecommunications",
-            "Hotels & Tourism",
-            "Education",
-            "Financial Services",
-          ],
-        },
-        {
-          title: "Internship Type",
-          items: ["Full Time", "Part Time", "Freelance", "Seasonal", "Fixed-Price"],
-        },
-        {
-          title: "Experience Level",
-          items: ["No-experience", "Fresher", "Intermediate", "Expert"],
-        },
-        {
-          title: "Date Posted",
-          items: ["All", "Last Hour", "Last 24 Hours", "Last 7 Days", "Last 30 Days"],
-        },
-      ].map(({ title, items }, index) => (
-        <div key={title} className="mb-4">
-          <h3 className="font-medium text-sm mb-2">{title}</h3>
-          {items.map((item) => (
-            <label key={item} className="block text-sm text-gray-700">
-              <input type="checkbox" className="mr-2" /> {item}
-            </label>
+          {/* Filter Categories */}
+          {[
+            {
+              title: "Category",
+              items: [
+                "Commerce",
+                "Telecommunications",
+                "Hotels & Tourism",
+                "Education",
+                "Financial Services",
+              ],
+            },
+            {
+              title: "Internship Type",
+              items: ["Full Time", "Part Time", "Freelance", "Seasonal", "Fixed-Price"],
+            },
+            {
+              title: "Experience Level",
+              items: ["No-experience", "Fresher", "Intermediate", "Expert"],
+            },
+            {
+              title: "Date Posted",
+              items: ["All", "Last Hour", "Last 24 Hours", "Last 7 Days", "Last 30 Days"],
+            },
+          ].map(({ title, items }, index) => (
+            <div key={title} className="mb-4">
+              <h3 className="font-medium text-sm mb-2">{title}</h3>
+              {items.map((item) => (
+                <label key={item} className="block text-sm text-gray-700">
+                  <input type="checkbox" className="mr-2" /> {item}
+                </label>
+              ))}
+              {/* Show More button after Category section (first section) */}
+              {index === 0 && (
+                <button className="w-full bg-gradient-to-r from-[#6146B6] to-[#1F93EA] text-white py-2 rounded-lg mt-2 text-sm font-bold">
+                  Show More
+                </button>
+              )}
+            </div>
           ))}
-          {/* Show More button after Category section (first section) */}
-          {index === 0 && (
-            <button className="w-full bg-gradient-to-r from-[#6146B6] to-[#1F93EA] text-white py-2 rounded-lg mt-2 text-sm font-bold">
-              Show More
-            </button>
-          )}
+
+          {/* Salary Filter */}
+          <div className="mb-2">
+            <h3 className="font-medium text-sm mb-2">Salary</h3>
+            <input type="range" min="0" max="100000" className="w-full" />
+            <p className="text-xs text-gray-600 mt-1">Salary: ₹0 - ₹99999</p>
+          </div>
+
+          {/* Apply Button */}
+          <button className="w-full bg-gradient-to-b from-[#6146B6] to-[#1F93EA] text-white py-2 rounded-lg mt-2 text-sm font-bold">
+            Apply
+          </button>
         </div>
-      ))}
-
-      {/* Salary Filter */}
-      
-      <div className="mb-2">
-        <h3 className="font-medium text-sm mb-2">Salary</h3>
-        <input type="range" min="0" max="100000" className="w-full" />
-        <p className="text-xs text-gray-600 mt-1">Salary: ₹0 - ₹99999</p>
-      </div>
-
-      {/* Apply Button */}
-      <button className="w-full bg-gradient-to-b from-[#6146B6] to-[#1F93EA] text-white py-2 rounded-lg mt-2 text-sm font-bold">
-        Apply
-      </button>
-    </div>
         <div className="w-full md:w-3/4 md:pl-6">
           <div className="flex justify-between items-center mb-4">
             <p className="text-sm text-gray-600">
@@ -303,7 +308,10 @@ export default function InternshipPage() {
                     </div>
                   </div>
                   <div className="flex items-end">
-                    <button className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-medium py-2 px-4 rounded-full hover:from-blue-600 hover:to-purple-700">
+                    <button
+                      onClick={() => handleViewDetails(internship.id)} // Add onClick handler
+                      className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-medium py-2 px-4 rounded-full hover:from-blue-600 hover:to-purple-700"
+                    >
                       Internship Details
                     </button>
                   </div>
