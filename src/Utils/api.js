@@ -328,84 +328,42 @@ export const resetPassword = async (token, newPassword, appName) => {
 };
 
 
-/**
- * Updates data in a specific collection.
- * @param {Object} params - Parameters for updating data.
- * @param {string} params.dbName - Database name.
- * @param {string} params.collectionName - Collection name.
- * @param {Object} params.data - Data to update.
- * @returns {Promise<Object>} - API response data.
- */
-export const addGeneralData = async ({ dbName, collectionName, data }) => {
+export const mUpdate = async ({
+  appName,
+  collectionName,
+  query,
+  update,
+  options,
+}) => {
   try {
+    console.log(
+      'mUpdate request:',
+      'appName:', appName,
+      'collectionName:', collectionName,
+      'query:', query,
+      'update:', update
+    );
     const response = await axios.post(
-      `${API_URL}/api/general/v1/adddata`,
+      `${API_URL}/v1/dynamic/mupdate`,
       {
-        dbName,
+        appName,
         collectionName,
-        data,
+        query,
+        update,
+        options,
       },
       {
         headers: {
-          'x-api-key': API_KEY,
           'Content-Type': 'application/json',
+          'x-api-key': API_KEY,
         },
       }
     );
-
-    console.log('API Response:', response.data);
+    console.log('mUpdate response:', response.data);
     return response.data;
   } catch (error) {
-    console.error('Error while calling the adddata API:', error.response?.data || error.message);
+    console.error('Error in mUpdate:', error.response?.data || error.message);
     throw error;
   }
 };
-
-/**
- * Uploads a file and stores it, returning the file URL.
- * @param {Object} params - Parameters for file upload.
- * @param {string} params.appName - Application name.
- * @param {string} params.moduleName - Module name (e.g., "appuser").
- * @param {File} params.file - File to upload.
- * @param {string} params.userId - User ID.
- * @returns {Promise<Object>} - API response data with file URL or null if token is missing.
- */
-export const uploadAndStoreFile = async ({ appName, moduleName, file, userId }) => {
-  try {
-    if (!file) {
-      throw new Error('No file provided for upload.');
-    }
-
-    const formData = new FormData();
-    formData.append('file', file, file.name);
-    formData.append('user_id', userId);
-    formData.append('folderName', moduleName);
-
-    console.log('Uploading File:', file.name);
-
-    const token = localStorage.getItem(`${appName}_accessToken`);
-    if (!token) {
-      console.warn('Authorization token is missing. Skipping file upload.');
-      return { data: { fileUrl: null } };
-    }
-
-    const response = await axios.post(
-      `${API_URL}/api/v1/dynamic/uploadAndStore/upload/${appName}/${moduleName}`,
-      formData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-
-    console.log('Upload Response:', response.data);
-    return response.data;
-  } catch (error) {
-    console.error('Error uploading file:', error);
-    throw error;
-  }
-};
-
-
+window.mUpdate = mUpdate;

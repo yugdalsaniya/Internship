@@ -75,6 +75,7 @@ const SignIn = () => {
         }
 
         const userData = {
+          userid:response.user._id,
           legalname: response.user.legalname || response.user.email,
           email: response.user.email,
           role: roleName, // e.g., 'student'
