@@ -1,4 +1,5 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import Hero from "../assets/Hero/banner.jpg";
 import {
   FaMapMarkerAlt,
@@ -18,6 +19,8 @@ import { MdWork } from "react-icons/md";
 import { PiTwitterLogoFill } from "react-icons/pi";
 
 const InternshipDetailsPage = () => {
+  const navigate = useNavigate();
+
   const relatedInternships = [
     { title: "Marketing", company: "Allcargo Logistics Limited" },
     { title: "Graphic Designer", company: "Flippspaces co Limited" },
@@ -68,7 +71,10 @@ const InternshipDetailsPage = () => {
               </div>
             </div>
           </div>
-          <button className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-6 py-2 rounded-md">
+          <button
+            className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-6 py-2 rounded-md"
+            onClick={() => navigate("/applyinternshipform")}
+          >
             Apply Internship
           </button>
         </div>
