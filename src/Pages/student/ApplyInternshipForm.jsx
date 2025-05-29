@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import logo from '../../assets/Navbar/logo.png';
-
+  
 import { FaMale, FaFemale } from 'react-icons/fa';
 import { MdTransgender, MdOutlineWc } from 'react-icons/md';
 import { PiGenderIntersexBold } from 'react-icons/pi';
