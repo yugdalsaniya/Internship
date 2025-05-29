@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -62,7 +63,7 @@ function BasicDetails() {
   const navigate = useNavigate();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("yahuvarmora@gmail.com");
+  const [email, setEmail] = useState("");
   const [mobile, setMobile] = useState("");
   const [gender, setGender] = useState("");
   const [userType, setUserType] = useState("");
@@ -72,7 +73,7 @@ function BasicDetails() {
   const [college, setCollege] = useState("");
   const [startYear, setStartYear] = useState("");
   const [endYear, setEndYear] = useState("");
-  const [selectedPurpose, setSelectedPurpose] = useState([]); // Changed to array for multi-select
+  const [selectedPurpose, setSelectedPurpose] = useState([]);
   const [careerGoal, setCareerGoal] = useState("");
   const [designation, setDesignation] = useState("");
   const [workExperienceType, setWorkExperienceType] = useState("");
@@ -90,9 +91,78 @@ function BasicDetails() {
   const [isLoadingOptions, setIsLoadingOptions] = useState(false);
 
   useEffect(() => {
-    const fetchDropdownOptions = async () => {
+    const fetchUserDataAndDropdownOptions = async () => {
       setIsLoadingOptions(true);
       try {
+        const userString = localStorage.getItem("user");
+        if (!userString) {
+          setError("Please log in to view your details.");
+          setTimeout(() => setError(""), 5000);
+          return;
+        }
+
+        let userId;
+        try {
+          const user = JSON.parse(userString);
+          userId = user.userid;
+        } catch (parseError) {
+          setError("Invalid user data. Please log in again.");
+          setTimeout(() => setError(""), 5000);
+          return;
+        }
+
+        const userDataResponse = await fetchSectionData({
+          dbName: "internph",
+          collectionName: "appuser",
+          query: { _id: userId },
+        });
+
+        if (
+          !userDataResponse ||
+          (Array.isArray(userDataResponse) && userDataResponse.length === 0)
+        ) {
+          setError("User data not found. Please contact support.");
+          setTimeout(() => setError(""), 5000);
+          return;
+        }
+
+        const userData = Array.isArray(userDataResponse)
+          ? userDataResponse.find((item) => item._id === userId)?.sectionData
+              ?.appuser || {}
+          : userDataResponse.sectionData?.appuser || {};
+
+        const [fname = "", lname = ""] = userData.legalname
+          ? userData.legalname.split(" ")
+          : [userData.fname || "", userData.lname || ""];
+
+        setFirstName(fname);
+        setLastName(lname);
+        setEmail(userData.email || "");
+        setMobile(userData.mobile || "");
+        setGender(userData.Gender || "");
+        setUserType(userData.usertype || "");
+        setLocation(userData.location || "");
+        setCourse(userData.course || "");
+        setSpecialization(userData.coursespecialization || "");
+        setCollege(userData.organisationcollege || "");
+        setStartYear(userData.startyear || "");
+        setEndYear(userData.endyear || "");
+        setSelectedPurpose(userData.purpose || []);
+        setCareerGoal(
+          userData.growinmycurrentcareer
+            ? "current"
+            : userData.transitioninnewcareer
+            ? "new"
+            : ""
+        );
+        setDesignation(userData.designation || "");
+        setWorkExperienceType(userData.workexperience || "");
+        setIsCurrentlyWorking(userData.currentlyworkinginthisrole || false);
+        setGrade(userData.class || "");
+        setSchoolName(userData.organisationcollege || "");
+        setStream(userData.stream || "");
+        setNewCareerRole(userData.role1 || []);
+
         const designationData = await fetchSectionData({
           dbName: "internph",
           collectionName: "designation",
@@ -126,14 +196,14 @@ function BasicDetails() {
         }));
         setRoleOptions(roles);
       } catch (err) {
-        setError("Failed to load dropdown options. Please try again.");
+        setError("Failed to load user data or dropdown options. Please try again.");
         setTimeout(() => setError(""), 5000);
       } finally {
         setIsLoadingOptions(false);
       }
     };
 
-    fetchDropdownOptions();
+    fetchUserDataAndDropdownOptions();
   }, []);
 
   useEffect(() => {
@@ -168,7 +238,7 @@ function BasicDetails() {
       !gender ||
       !userType ||
       !location ||
-      !selectedPurpose.length // Updated to check array length
+      !selectedPurpose.length
     ) {
       return "Please fill all required fields.";
     }
@@ -205,10 +275,8 @@ function BasicDetails() {
 
   const handlePurposeToggle = (purpose) => {
     if (selectedPurpose.includes(purpose)) {
-      // If purpose is already selected, remove it
       setSelectedPurpose(selectedPurpose.filter((p) => p !== purpose));
     } else {
-      // If purpose is not selected, add it
       setSelectedPurpose([...selectedPurpose, purpose]);
     }
   };
@@ -241,6 +309,7 @@ function BasicDetails() {
       try {
         const user = JSON.parse(userString);
         userId = user.userid;
+        console.log('User ID from localStorage:', userId); // Debug log
       } catch (parseError) {
         setError("Invalid user data. Please log in again.");
         setTimeout(() => setError(""), 2000);
@@ -248,11 +317,12 @@ function BasicDetails() {
       }
 
       if (!userId || !token) {
-        setError("Authentication token missing. Please log in again.");
+        setError("Authentication token or user ID missing. Please log in again.");
         setTimeout(() => setError(""), 2000);
         return;
       }
 
+      // Verify user exists
       const existingUser = await fetchSectionData({
         dbName: "internph",
         collectionName: "appuser",
@@ -270,6 +340,22 @@ function BasicDetails() {
           setError("");
           navigate("/signup");
         }, 2000);
+        return;
+      }
+
+      // Check for duplicate users with the same email
+      const duplicateUsers = await fetchSectionData({
+        dbName: "internph",
+        collectionName: "appuser",
+        query: { "sectionData.appuser.email": email },
+      });
+
+      if (Array.isArray(duplicateUsers) && duplicateUsers.length > 1) {
+        console.warn('Multiple users found with email:', email, duplicateUsers);
+        setError(
+          "Multiple accounts detected for this email. Please contact support."
+        );
+        setTimeout(() => setError(""), 5000);
         return;
       }
 
@@ -299,12 +385,10 @@ function BasicDetails() {
           "sectionData.appuser.Gender": gender,
           "sectionData.appuser.usertype": userType,
           "sectionData.appuser.location": location,
-          "sectionData.appuser.purpose": selectedPurpose, // Already an array
+          "sectionData.appuser.purpose": selectedPurpose,
           "sectionData.appuser.growinmycurrentcareer": careerGoal === "current",
           "sectionData.appuser.transitioninnewcareer": careerGoal === "new",
-          "sectionData.appuser.companyname": "",
           "sectionData.appuser.academyname": "",
-          "sectionData.appuser.role": "",
           "sectionData.appuser.role1": newCareerRole,
           "sectionData.appuser.teammember": "",
           "sectionData.appuser.stream": userType === "School Student" ? stream : "",
@@ -332,7 +416,6 @@ function BasicDetails() {
         },
       };
 
-      
       const updateResponse = await mUpdate({
         appName: "app8657281202648",
         collectionName: "appuser",
@@ -342,6 +425,18 @@ function BasicDetails() {
       });
 
       if (updateResponse && updateResponse.success) {
+        if (updateResponse.matchedCount === 0) {
+          console.error('Update failed: No document matched the query', { userId });
+          setError("Failed to update user data: User not found.");
+          setTimeout(() => setError(""), 5000);
+          return;
+        }
+        if (updateResponse.upsertedId) {
+          console.error('Unexpected upsert occurred:', updateResponse.upsertedId);
+          setError("Unexpected error: New user created instead of updating. Please contact support.");
+          setTimeout(() => setError(""), 5000);
+          return;
+        }
         setSuccess("Details updated successfully!");
         setTimeout(() => {
           setSuccess("");
@@ -471,7 +566,7 @@ function BasicDetails() {
           </label>
           <input
             type="text"
-            value="yugpatel0631"
+            value={email.split("@")[0]}
             disabled
             className="w-full bg-gray-100 text-gray-500 border border-gray-300 rounded-lg p-2 mt-1 h-10"
           />

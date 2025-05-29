@@ -125,7 +125,7 @@ export const uploadAndStoreFile = async ({ appName, moduleName, file, userId }) 
       }
     );
 
-    console.log('Upload Response (Raw):', response.data); // Debug log
+    console.log('Upload Response (Raw):', response.data);
     return response.data;
   } catch (error) {
     console.error('Error uploading file:', {
@@ -236,16 +236,14 @@ export const login = async (credentials) => {
       }
     );
 
-    // Decode JWT to get roleId
     const decodedToken = jwtDecode(response.data.accessToken);
     const roleId = decodedToken.roleId || '';
 
-    // Normalize user role
     let normalizedUser = { ...response.data.user };
     if (normalizedUser.role && normalizedUser.role.role === 'user' && roleId === '1747825619417') {
-      normalizedUser.role.role = '1747825619417'; // Map 'user' to student role ID
+      normalizedUser.role.role = '1747825619417';
     } else if (normalizedUser.role && roleNames[roleId]) {
-      normalizedUser.role.role = roleId; // Ensure role is the ID
+      normalizedUser.role.role = roleId;
     }
 
     const normalizedResponse = {
@@ -327,7 +325,6 @@ export const resetPassword = async (token, newPassword, appName) => {
   }
 };
 
-
 export const mUpdate = async ({
   appName,
   collectionName,
@@ -336,13 +333,17 @@ export const mUpdate = async ({
   options,
 }) => {
   try {
-    console.log(
-      'mUpdate request:',
-      'appName:', appName,
-      'collectionName:', collectionName,
-      'query:', query,
-      'update:', update
-    );
+    const accessToken = localStorage.getItem('accessToken');
+    if (!accessToken) {
+      throw new Error('Authorization token is missing. Please log in again.');
+    }
+    console.log('mUpdate request:', {
+      appName,
+      collectionName,
+      query,
+      update,
+      options,
+    });
     const response = await axios.post(
       `${API_URL}/v1/dynamic/mupdate`,
       {
@@ -356,14 +357,25 @@ export const mUpdate = async ({
         headers: {
           'Content-Type': 'application/json',
           'x-api-key': API_KEY,
+          Authorization: `Bearer ${accessToken}`,
         },
       }
     );
-    console.log('mUpdate response:', response.data);
+    console.log('mUpdate response:', {
+      data: response.data,
+      matchedCount: response.data.matchedCount,
+      modifiedCount: response.data.modifiedCount,
+      upsertedId: response.data.upsertedId,
+    });
     return response.data;
   } catch (error) {
-    console.error('Error in mUpdate:', error.response?.data || error.message);
-    throw error;
+    console.error('Error in mUpdate:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status,
+      headers: error.response?.headers,
+    });
+    throw error.response?.data || { message: 'Failed to update data' };
   }
 };
 window.mUpdate = mUpdate;
