@@ -1,7 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
-import React from "react";
-import { useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import Hero from "../assets/Hero/banner.jpg";
 import {
   FaMapMarkerAlt,
@@ -24,6 +22,7 @@ import { formatDistanceToNow, parse } from "date-fns";
 
 const InternshipDetailsPage = () => {
   const { id } = useParams();
+  const navigate = useNavigate(); // Define navigate using useNavigate hook
   const [internship, setInternship] = useState(null);
   const [relatedInternships, setRelatedInternships] = useState([]);
   const [categoryMap, setCategoryMap] = useState({});
@@ -31,7 +30,7 @@ const InternshipDetailsPage = () => {
   const [error, setError] = useState(null);
 
   // Get the logged-in user from localStorage
-  const user = JSON.parse(localStorage.getItem('user')) || {};
+  const user = JSON.parse(localStorage.getItem("user")) || {};
 
   useEffect(() => {
     const fetchCategoriesAndInternship = async () => {
@@ -129,7 +128,7 @@ const InternshipDetailsPage = () => {
   }));
 
   // Determine if the "Apply Internship" button should be shown
-  const showApplyButton = user.role !== 'company' || (user.role === 'company' && user.companyId !== internship?.companyId);
+  const showApplyButton = user.role !== "company" || (user.role === "company" && user.companyId !== internship?.companyId);
 
   return (
     <div>
@@ -175,12 +174,14 @@ const InternshipDetailsPage = () => {
               </div>
             </div>
           </div>
-          <button
-            className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-6 py-2 rounded-md"
-            onClick={() => navigate("/applyinternshipform")}
-          >
-            Apply Internship
-          </button>
+          {showApplyButton && (
+            <button
+              className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-6 py-2 rounded-md"
+              onClick={() => navigate("/applyinternshipform")} // Now navigate is defined
+            >
+              Apply Internship
+            </button>
+          )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
@@ -272,7 +273,7 @@ const InternshipDetailsPage = () => {
                       </div>
                     </div>
                     <button
-                      onClick={() => (window.location.href = `/internshipdetail/${item.id}`)}
+                      onClick={() => navigate(`/internshipdetail/${item.id}`)} // Updated to use navigate
                       className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-4 py-2 rounded-md whitespace-nowrap"
                     >
                       Internship Details

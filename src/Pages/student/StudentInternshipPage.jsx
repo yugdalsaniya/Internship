@@ -8,9 +8,9 @@ import {
   FaRupeeSign,
 } from "react-icons/fa";
 import { BsBookmarkPlus, BsSearch, BsGeoAlt } from "react-icons/bs";
-import { fetchSectionData } from "../Utils/api";
+import { fetchSectionData } from "../../Utils/api";
 import { formatDistanceToNow, parse } from "date-fns";
-import heroImage from "../assets/Hero/herophoto.png";
+import heroImage from "../../assets/Hero/herophoto.png";
 
 // Hero Section
 const HeroSection = () => {
