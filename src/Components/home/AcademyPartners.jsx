@@ -1,28 +1,33 @@
 import React from 'react';
 
 const AcademyPartners = () => {
+  const fallbackLogo = '/assets/partners/fallback.png'; // Adjust path if in public
   const partners = [
     {
-      name: 'University of eastern pangasinan',
+      name: 'University of Eastern Pangasinan',
       tagline: 'Personalizing Experience with tech.',
-      logo: 'https://via.placeholder.com/100x100?text=UEP',
+      logo: 'https://picsum.photos/100/100?random=1',
     },
     {
       name: 'Urdaneta City University',
       tagline: 'Personalizing Experience with tech.',
-      logo: 'https://via.placeholder.com/100x100?text=UCU',
+      logo: 'https://picsum.photos/100/100?random=2',
     },
     {
       name: 'Pangasinan State University',
       tagline: 'Personalizing Experience with tech.',
-      logo: 'https://via.placeholder.com/100x100?text=PSU',
+      logo: 'https://picsum.photos/100/100?random=3',
     },
     {
-      name: 'ilocos sur community college',
+      name: 'Ilocos Sur Community College',
       tagline: 'Personalizing Experience with tech.',
-      logo: 'https://via.placeholder.com/100x100?text=ISCC',
+      logo: 'https://picsum.photos/100/100?random=4',
     },
   ];
+
+  const handleImageError = (e) => {
+    e.target.src = fallbackLogo; // Use local fallback or URL
+  };
 
   return (
     <section className="py-10">
@@ -39,17 +44,18 @@ const AcademyPartners = () => {
         </div>
 
         {/* Partners Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 ">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {partners.map((partner, index) => (
             <div
               key={index}
               className="bg-white rounded-tl-none rounded-br-none rounded-tr-xl rounded-bl-xl p-6 sm:p-8 flex flex-col items-center border border-gray-200 shadow-md hover:shadow-lg focus:shadow-lg transition-shadow duration-300 outline-none cursor-pointer min-h-[250px]"
             >
-              {/* Logo Placeholder */}
+              {/* Logo */}
               <img
                 src={partner.logo}
                 alt={`${partner.name} logo`}
                 className="w-24 h-24 object-contain mb-4"
+                onError={handleImageError}
               />
               <h3 className="text-lg font-semibold text-gray-900 text-center capitalize mb-2">
                 {partner.name}

@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-  
-import { FaMale, FaFemale } from 'react-icons/fa';
+import { FaCloudUploadAlt, FaMale, FaFemale } from 'react-icons/fa';
 import { MdTransgender, MdOutlineWc } from 'react-icons/md';
 import { PiGenderIntersexBold } from 'react-icons/pi';
 import { TbGenderBigender } from 'react-icons/tb';
@@ -14,17 +12,23 @@ const genderOptions = [
   { label: 'Intersex', icon: <PiGenderIntersexBold size={20} /> },
   { label: 'Non-binary', icon: <TbGenderBigender size={20} /> },
   { label: 'Prefer not to say', icon: <BsEyeSlash size={20} /> },
-  { label: 'Others', icon: <MdOutlineWc size={20} /> }
+  { label: 'Others', icon: <MdOutlineWc size={20} /> },
 ];
 
 const typeOptions = ['College Students', 'Professional', 'Others', 'Fresher'];
 const yearOptions = ['2020', '2021', '2022', '2023', '2024'];
 const differentlyAbledOptions = ['No', 'Yes'];
-
 const courseOptions = ['B.Tech', 'B.Sc', 'BCA', 'MBA', 'M.Tech'];
-const specializationOptions = ['Computer Science', 'Electronics', 'Mechanical', 'Civil', 'Information Technology'];
+const specializationOptions = [
+  'Computer Science',
+  'Electronics',
+  'Mechanical',
+  'Civil',
+  'Information Technology',
+];
 
-const PostInternshipForm = () => {
+const ApplyInternshipForm = () => {
+  const [page, setPage] = useState(1);
   const [formData, setFormData] = useState({
     email: '',
     mobile: '',
@@ -39,85 +43,102 @@ const PostInternshipForm = () => {
     duration: '',
     differentlyAbled: '',
     location: '',
-    consent: false
+    consent: false,
   });
   const [error, setError] = useState('');
-
-  const navigate = useNavigate();
+  const [fileName, setFileName] = useState('');
+  const [extendedLocation, setExtendedLocation] = useState({
+    country: '',
+    state: '',
+    city: '',
+  });
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === 'checkbox' ? checked : value,
     }));
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setError('');
-
-    // Basic validation
-    if (!formData.email.trim()) {
-      setError('Email is required.');
-      return;
-    }
-    if (!formData.mobile.trim()) {
-      setError('Mobile number is required.');
-      return;
-    }
-    if (!formData.firstName.trim()) {
-      setError('First name is required.');
-      return;
-    }
-    if (!formData.gender) {
-      setError('Gender is required.');
-      return;
-    }
-    if (!formData.organization.trim()) {
-      setError('Organization name is required.');
-      return;
-    }
-    if (!formData.type) {
-      setError('Type is required.');
-      return;
-    }
-    if (!formData.passoutYear) {
-      setError('Passout year is required.');
-      return;
-    }
-    if (!formData.location.trim()) {
-      setError('Location is required.');
-      return;
-    }
-    if (!formData.consent) {
-      setError('You must agree to the terms and conditions.');
-      return;
-    }
-
-    console.log('Form Submitted:', formData);
-    alert('Form submitted successfully!');
-    navigate('/post-internship');
+  const handleFileChange = (e) => {
+    setFileName(e.target.files[0]?.name || '');
   };
 
-  const renderOptionButtons = (options, selected, onSelect, name) => {
+  const handleExtendedLocationChange = (e) => {
+    const { name, value } = e.target;
+    setExtendedLocation((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const validateFirstForm = () => {
+    if (!formData.email.trim()) return 'Email is required.';
+    if (!formData.mobile.trim()) return 'Mobile number is required.';
+    if (!formData.firstName.trim()) return 'First name is required.';
+    if (!formData.gender) return 'Gender is required.';
+    if (!formData.organization.trim()) return 'Organization name is required.';
+    if (!formData.type) return 'Type is required.';
+    if (!formData.passoutYear) return 'Passout year is required.';
+    if (!formData.location.trim()) return 'Location is required.';
+    if (!formData.consent) return 'You must agree to the terms and conditions.';
+    return '';
+  };
+
+  const handleNext = (e) => {
+    e.preventDefault();
+    const validationError = validateFirstForm();
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+    setError('');
+    setPage(2);
+  };
+
+  const handleBack = () => {
+    setPage(1);
+  };
+
+  const handleSubmit = () => {
+    if (!fileName) {
+      alert('Please upload your CV/Resume.');
+      return;
+    }
+    if (!extendedLocation.country || !extendedLocation.state || !extendedLocation.city) {
+      alert('Please fill out all location fields.');
+      return;
+    }
+
+    alert(
+      'Form submitted successfully!\n\n' +
+        'Candidate Details:\n' +
+        JSON.stringify(formData, null, 2) +
+        '\n\nExtended Info:\n' +
+        JSON.stringify({ fileName, ...extendedLocation }, null, 2)
+    );
+  };
+
+  const renderOptionButtons = (options, selected, onSelect) => {
     return (
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-3">
         {options.map((option) => {
           const label = typeof option === 'object' ? option.label : option;
           const icon = typeof option === 'object' ? option.icon : null;
+          const isSelected = selected === label;
           return (
             <button
               key={label}
               type="button"
               onClick={() => onSelect(label)}
-              className={`flex items-center justify-center px-3 py-2 rounded-lg border text-sm font-medium transition-all ${
-                selected === label
-                  ? 'bg-blue-50 text-blue-700 border-blue-500'
-                  : 'text-gray-700 bg-white border-gray-300 hover:bg-gray-100'
+              className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-all ${
+                isSelected
+                  ? 'bg-blue-100 text-blue-700 border-blue-500 shadow-sm'
+                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
               }`}
             >
-              {icon && <span className="mr-2">{icon}</span>}
+              {icon && <span>{icon}</span>}
               <span>{label}</span>
             </button>
           );
@@ -129,209 +150,362 @@ const PostInternshipForm = () => {
   return (
     <div className="min-h-screen bg-[#fafafa] flex items-center justify-center px-4 py-8">
       <div className="max-w-4xl w-full bg-white rounded-lg shadow-md p-6">
-        
         <h2 className="text-xl md:text-2xl font-bold text-[#050748] mb-4 text-center">
-          Candidate Details
+          {page === 1 ? 'Candidate Details' : 'Extended Form'}
         </h2>
         {error && <p className="text-red-500 text-sm mb-4 text-center">{error}</p>}
-        <form className="space-y-6" onSubmit={handleSubmit}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Email <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                disabled
-                placeholder="abc@gmail.com"
-                className="w-full px-3 py-2 border rounded-lg text-sm bg-gray-200 focus:outline-none"
-              />
+
+        {page === 1 && (
+          <form onSubmit={handleNext} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Email <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  placeholder="e.g., example@domain.com"
+                  required
+                  className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Mobile <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="mobile"
+                  value={formData.mobile}
+                  onChange={handleChange}
+                  placeholder="e.g., +91 1234567890"
+                  required
+                  className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  First Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="firstName"
+                  value={formData.firstName}
+                  onChange={handleChange}
+                  placeholder="e.g., John"
+                  required
+                  className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Last Name (Optional)
+                </label>
+                <input
+                  type="text"
+                  name="lastName"
+                  value={formData.lastName}
+                  onChange={handleChange}
+                  placeholder="e.g., Doe"
+                  className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Gender <span className="text-red-500">*</span>
+                </label>
+                {renderOptionButtons(genderOptions, formData.gender, (val) =>
+                  setFormData((prev) => ({ ...prev, gender: val }))
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Organization Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="organization"
+                  value={formData.organization}
+                  onChange={handleChange}
+                  placeholder="e.g., ABC University"
+                  required
+                  className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Type <span className="text-red-500">*</span>
+                </label>
+                {renderOptionButtons(typeOptions, formData.type, (val) =>
+                  setFormData((prev) => ({ ...prev, type: val }))
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Passout Year <span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="passoutYear"
+                  value={formData.passoutYear}
+                  onChange={handleChange}
+                  required
+                  className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select Year</option>
+                  {yearOptions.map((year) => (
+                    <option key={year} value={year}>
+                      {year}
+                    </option>
+                  ))}
+                </select>
+              </div>
+             
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Course (Optional)
+                </label>
+                <select
+                  name="course"
+                  value={formData.course}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select Course</option>
+                  {courseOptions.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Specialization (Optional)
+                </label>
+                <select
+                  name="specialization"
+                  value={formData.specialization}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select Specialization</option>
+                  {specializationOptions.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Duration (Optional)
+                </label>
+                <input
+                  type="text"
+                  name="duration"
+                  value={formData.duration}
+                  onChange={handleChange}
+                  placeholder="e.g., 6 months"
+                  className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Differently Abled <span className="text-red-500">*</span>
+                </label>
+                {renderOptionButtons(
+                  differentlyAbledOptions,
+                  formData.differentlyAbled,
+                  (val) => setFormData((prev) => ({ ...prev, differentlyAbled: val }))
+                )}
+              </div>
+
+               <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Location <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="location"
+                  value={formData.location}
+                  onChange={handleChange}
+                  placeholder="e.g., Mumbai, India"
+                  required
+                  className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Mobile <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                name="mobile"
-                value={formData.mobile}
-                onChange={handleChange}
-                disabled
-                placeholder="+91 9876543210"
-                className="w-full px-3 py-2 border rounded-lg text-sm bg-gray-200 focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                First Name <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                name="firstName"
-                value={formData.firstName}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="First Name"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Last Name (if applicable)
-              </label>
-              <input
-                type="text"
-                name="lastName"
-                value={formData.lastName}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Last Name"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Gender <span className="text-red-500">*</span>
-              </label>
-              {renderOptionButtons(genderOptions, formData.gender, (val) => 
-                setFormData({ ...formData, gender: val }), 'gender')}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Organization Name <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                name="organization"
-                value={formData.organization}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Your College or Company Name"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Type <span className="text-red-500">*</span>
-              </label>
-              {renderOptionButtons(typeOptions, formData.type, (val) => 
-                setFormData({ ...formData, type: val }), 'type')}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Passout Year <span className="text-red-500">*</span>
-              </label>
-              {renderOptionButtons(yearOptions, formData.passoutYear, (val) => 
-                setFormData({ ...formData, passoutYear: val }), 'passoutYear')}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Course
-              </label>
-              <select
-                name="course"
-                value={formData.course}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Select Course</option>
-                {courseOptions.map((course) => (
-                  <option key={course} value={course}>{course}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Course Specialization
-              </label>
-              <select
-                name="specialization"
-                value={formData.specialization}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Select Specialization</option>
-                {specializationOptions.map((special) => (
-                  <option key={special} value={special}>{special}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Course Duration
-              </label>
-              <input
-                type="text"
-                name="duration"
-                value={formData.duration}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="e.g., 4 Year"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Differently Abled
-              </label>
-              {renderOptionButtons(differentlyAbledOptions, formData.differentlyAbled, (val) => 
-                setFormData({ ...formData, differentlyAbled: val }), 'differentlyAbled')}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Location <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                name="location"
-                value={formData.location}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Select Location"
-                required
-              />
-            </div>
-          </div>
-          <div>
-            <div className="flex items-start gap-2">
+
+            <div className="flex items-center gap-2 mt-4">
               <input
                 type="checkbox"
-                id="consent"
+                name="consent"
                 checked={formData.consent}
                 onChange={handleChange}
-                className="h-4 w-4 text-blue-500 border-gray-300 rounded focus:ring-blue-500 mt-1"
-                name="consent"
+                id="consent"
+                required
+                className="h-4 w-4 text-blue-500 border-gray-300 rounded focus:ring-blue-500"
               />
               <label htmlFor="consent" className="text-sm text-gray-700">
-                By registering for this opportunity, you agree to share the data mentioned in this
-                form or any form henceforth on this opportunity with the recruiter of this
-                opportunity for further analysis, processing, and outreach. Your data will also be
-                used for providing you regular and constant updates on this opportunity.
-                You also agree to the <a href="#" className="text-blue-500 hover:underline">privacy policy</a> and <a href="#" className="text-blue-500 hover:underline">terms of use</a> of INTERNSHIP–OJT.
+                I agree to terms and conditions
               </label>
             </div>
+
+            <div className="flex gap-4 mt-6">
+              <button
+                type="submit"
+                className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white py-2 rounded-lg text-sm font-bold hover:from-blue-600 hover:to-purple-700 transition-all"
+              >
+                Next
+              </button>
+              <button
+                type="button"
+                onClick={() => window.history.back()}
+                className="flex-1 border border-gray-400 text-gray-700 py-2 rounded-lg text-sm font-bold hover:bg-gray-100"
+              >
+                Cancel
+              </button>
+            </div>
+
+            {/* Pagination Dots */}
+            <div className="flex justify-center mt-4">
+              <span
+                className={`h-3 w-3 rounded-full mx-1 ${
+                  page === 1 ? 'bg-blue-500' : 'bg-gray-300'
+                }`}
+              ></span>
+              <span
+                className={`h-3 w-3 rounded-full mx-1 ${
+                  page === 2 ? 'bg-blue-500' : 'bg-gray-300'
+                }`}
+              ></span>
+            </div>
+          </form>
+        )}
+
+        {page === 2 && (
+          <div className="space-y-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                CV/Resume Submission <span className="text-red-500">*</span>
+              </label>
+              <p className="text-sm text-gray-600 mb-2">
+                Remark: Submit your resume in doc, docx, pdf
+              </p>
+              <label
+                htmlFor="resume-upload"
+                className="flex flex-col items-center justify-center border border-dashed border-gray-400 bg-gray-50 p-6 rounded-lg text-center cursor-pointer hover:bg-gray-100 transition-all"
+              >
+                <FaCloudUploadAlt className="text-4xl text-blue-500 mb-2" />
+                <span className="text-blue-600 font-medium text-sm">
+                  Click to Upload file
+                </span>
+                <span className="text-xs text-gray-500">
+                  Maximum file size is 50 MB{' '}
+                  <span className="text-red-500">(File type: pdf, doc, docx)</span>
+                </span>
+                <input
+                  id="resume-upload"
+                  type="file"
+                  className="hidden"
+                  onChange={handleFileChange}
+                  accept=".pdf,.doc,.docx"
+                />
+              </label>
+              {fileName && (
+                <p className="mt-2 text-sm text-gray-600">Uploaded: {fileName}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Your Location <span className="text-red-500">*</span>
+              </label>
+              <p className="text-sm text-gray-600 mb-2">Remark: Enter Your Location</p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Country <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="country"
+                    value={extendedLocation.country}
+                    onChange={handleExtendedLocationChange}
+                    placeholder="e.g., India"
+                    className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    State <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="state"
+                    value={extendedLocation.state}
+                    onChange={handleExtendedLocationChange}
+                    placeholder="e.g., Maharashtra"
+                    className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    City <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="city"
+                    value={extendedLocation.city}
+                    onChange={handleExtendedLocationChange}
+                    placeholder="e.g., Mumbai"
+                    className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-4">
+              <button
+                type="button"
+                onClick={handleBack}
+                className="flex-1 border border-gray-400 text-gray-700 py-2 rounded-lg text-sm font-bold hover:bg-gray-100"
+              >
+                Back
+              </button>
+              <button
+                type="button"
+                onClick={handleSubmit}
+                className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white py-2 rounded-lg text-sm font-bold hover:from-blue-600 hover:to-purple-700 transition-all"
+              >
+                Submit
+              </button>
+            </div>
+
+            {/* Pagination Dots */}
+            <div className="flex justify-center mt-4">
+              <span
+                className={`h-3 w-3 rounded-full mx-1 ${
+                  page === 1 ? 'bg-blue-500' : 'bg-gray-300'
+                }`}
+              ></span>
+              <span
+                className={`h-3 w-3 rounded-full mx-1 ${
+                  page === 2 ? 'bg-blue-500' : 'bg-gray-300'
+                }`}
+              ></span>
+            </div>
           </div>
-          <div className="flex gap-4">
-            <button
-              type="button"
-              onClick={() => navigate(-1)}
-              className="flex-1 border border-gray-400 text-gray-700 py-2 px-4 rounded-lg text-sm font-bold hover:bg-gray-100"
-            >
-              Back
-            </button>
-            <button
-              type="submit"
-              className={`flex-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white py-2 rounded-lg text-sm font-bold hover:from-blue-600 hover:to-purple-700 transition-all ${!formData.consent ? 'opacity-50 cursor-not-allowed' : ''}`}
-              disabled={!formData.consent}
-            >
-              Next
-            </button>
-          </div>
-        </form>
+        )}
       </div>
     </div>
   );
 };
 
-export default PostInternshipForm;
+export default ApplyInternshipForm;

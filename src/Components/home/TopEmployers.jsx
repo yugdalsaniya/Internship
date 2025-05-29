@@ -1,12 +1,17 @@
 import React from 'react';
 
 const TopEmployers = () => {
+  const fallbackLogo = '/assets/employers/fallback.png'; // Adjust path if in public
   const employers = [
-    { name: 'Accenture', logo: 'https://via.placeholder.com/150x100?text=Accenture' },
-    { name: 'GCash', logo: 'https://via.placeholder.com/150x100?text=GCash' },
-    { name: 'Kyndryl', logo: 'https://via.placeholder.com/150x100?text=Kyndryl' },
-    { name: 'Aboitiz Power', logo: 'https://via.placeholder.com/150x100?text=Aboitiz+Power' },
+    { name: 'Accenture', logo: 'https://picsum.photos/150/100?random=1' },
+    { name: 'GCash', logo: 'https://picsum.photos/150/100?random=2' },
+    { name: 'Kyndryl', logo: 'https://picsum.photos/150/100?random=3' },
+    { name: 'Aboitiz Power', logo: 'https://picsum.photos/150/100?random=4' },
   ];
+
+  const handleImageError = (e) => {
+    e.target.src = fallbackLogo; // Use local fallback or URL
+  };
 
   return (
     <section className="py-10">
@@ -22,11 +27,12 @@ const TopEmployers = () => {
               key={index}
               className="bg-white rounded-2xl p-6 flex flex-col items-center shadow-sm hover:shadow-md transition-shadow duration-300 border border-gray-300"
             >
-              {/* Logo Placeholder */}
+              {/* Logo */}
               <img
                 src={employer.logo}
                 alt={`${employer.name} logo`}
                 className="w-36 h-24 object-contain mb-4"
+                onError={handleImageError}
               />
               <h3 className="text-lg font-semibold text-gray-900 mb-4">{employer.name}</h3>
               <div className="flex space-x-3">

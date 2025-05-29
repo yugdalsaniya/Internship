@@ -256,16 +256,7 @@ const PostInternshipForm = () => {
   return (
     <div className="min-h-screen bg-[#fafafa] flex items-center justify-center px-4 py-8">
       <div className="max-w-4xl w-full bg-white rounded-lg shadow-md p-6">
-        <div className="flex justify-center items-center mb-6">
-          <img src={logo} alt="Logo" className="w-10 h-10 mr-2" />
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-[#050748] tracking-wide">
-              INTERNSHIP–OJT
-            </h1>
-            <div className="w-full h-4 bg-[#050748] mt-1 mb-1" />
-            <p className="text-sm text-black font-semibold text-center">Work 24 Philippines</p>
-          </div>
-        </div>
+       
         <h2 className="text-xl md:text-2xl font-bold text-[#050748] mb-4 text-center">
           Post Internship Form
         </h2>
