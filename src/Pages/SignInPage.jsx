@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { MdVisibility, MdVisibilityOff } from 'react-icons/md';
@@ -38,35 +39,30 @@ const SignIn = () => {
     return emailRegex.test(email);
   };
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  setError('');
-  setLoading(true);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
 
-  if (!validateEmail(formData.email)) {
-    setError('Please enter a valid email address.');
-    setLoading(false);
-    return;
-  }
+    if (!validateEmail(formData.email)) {
+      setError('Please enter a valid email address.');
+      setLoading(false);
+      return;
+    }
 
-  try {
-    const response = await login({
-      appName: 'app8657281202648',
-      username: formData.email.toLowerCase().trim(),
-      password: formData.password,
-    });
+    try {
+      const response = await login({
+        appName: 'app8657281202648',
+        username: formData.email.toLowerCase().trim(),
+        password: formData.password,
+      });
 
-    if (response.success) {
-      console.log('API Response User:', response.user);
-      // Use roleId from response.user.role.role (normalized by api.js)
-      const roleId = response.user.role?.role || '';
-      const roleName = roleNames[roleId] || '';
+      if (response.success) {
+        console.log('API Response User:', response.user);
 
-      // Verify roleId with JWT as a fallback
-      const decodedToken = jwtDecode(response.accessToken);
-      if (decodedToken.roleId !== roleId) {
-        console.warn('Role ID mismatch between API response and JWT:', { apiRoleId: roleId, jwtRoleId: decodedToken.roleId });
-        
+        // Get roleId from response
+        const roleId = response.user.role?.role || '';
+        const roleName = roleNames[roleId];
 
         if (!roleName) {
           setError('Invalid or unrecognized role. Please contact support@conscor.com.');
@@ -74,72 +70,58 @@ const handleSubmit = async (e) => {
           return;
         }
 
+        // Verify roleId with JWT
+        const decodedToken = jwtDecode(response.accessToken);
+        if (decodedToken.roleId !== roleId) {
+          console.warn('Role ID mismatch between API response and JWT:', {
+            apiRoleId: roleId,
+            jwtRoleId: decodedToken.roleId,
+          });
+          setError('Role verification failed. Please contact support@conscor.com.');
+          setLoading(false);
+          return;
+        }
+
+        // Prepare userData based on role
         const userData = {
-          userid:response.user._id,
           legalname: response.user.legalname || response.user.email,
           email: response.user.email,
-          role: roleName, // e.g., 'student'
-          roleId: roleId, // e.g., '1747825619417'
+          role: roleName,
+          roleId: roleId,
         };
+
+        // Add role-specific ID
+        if (roleName === 'student') {
+          userData.userid = response.user._id;
+        } else if (roleName === 'company') {
+          userData.companyId = response.user.companyId || '';
+        }
 
         localStorage.setItem('user', JSON.stringify(userData));
         localStorage.setItem('accessToken', response.accessToken);
         localStorage.setItem('refreshToken', response.refreshToken);
 
-        if (roleName === 'company') {
-          navigate('/');
-        } else {
-          navigate('/');
-        }
+        // Redirect to homepage for all roles
+        navigate('/');
       } else {
         setError(response.message || 'Login failed');
       }
-
-      if (!roleName) {
-        setError('Invalid or unrecognized role. Please contact support@conscor.com.');
-        setLoading(false);
-        return;
-      }
-
-      // Store companyId from the API response
-      const companyId = response.user.companyId || ''; // From API response: "1748324784060"
-
-      const userData = {
-        legalname: response.user.legalname || response.user.email,
-        email: response.user.email,
-        role: roleName, // e.g., 'company'
-        roleId: roleId, // e.g., '1747723485001'
-        companyId: companyId, // e.g., '1748324784060'
-      };
-
-      localStorage.setItem('user', JSON.stringify(userData));
-      localStorage.setItem('accessToken', response.accessToken);
-      localStorage.setItem('refreshToken', response.refreshToken);
-
-      if (roleName === 'company') {
-        navigate('/'); // Redirect to homepage for company
+    } catch (err) {
+      const errorMessage = err.response?.data?.message || err.message || 'Invalid email or password';
+      console.error('Login Error:', err.response?.data);
+      if (errorMessage.includes('OTP not verified')) {
+        setError('Please verify your email with OTP before logging in.');
+      } else if (errorMessage.includes('Invalid credentials')) {
+        setError('Incorrect email or password. Please try again.');
+      } else if (err.response?.status === 401) {
+        setError('Unauthorized access. Please check your credentials.');
       } else {
-        navigate('/');
+        setError(`${errorMessage}. Please try again or contact support@conscor.com.`);
       }
-    } else {
-      setError(response.message || 'Login failed');
+    } finally {
+      setLoading(false);
     }
-  } catch (err) {
-    const errorMessage = err.response?.data?.message || err.message || 'Invalid email or password';
-    console.error('Login Error:', err.response?.data);
-    if (errorMessage.includes('OTP not verified')) {
-      setError('Please verify your email with OTP before logging in.');
-    } else if (errorMessage.includes('Invalid credentials')) {
-      setError('Incorrect email or password. Please try again.');
-    } else if (err.response?.status === 401) {
-      setError('Unauthorized access. Please check your credentials.');
-    } else {
-      setError(`${errorMessage}. Please try again or contact support@conscor.com.`);
-    }
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   return (
     <div className="flex h-screen font-sans overflow-hidden">
