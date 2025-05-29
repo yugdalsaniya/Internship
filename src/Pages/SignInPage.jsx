@@ -62,41 +62,38 @@ const handleSubmit = async (e) => {
       const roleId = response.user.role?.role || '';
       const roleName = roleNames[roleId] || '';
 
-      // Verify roleId with JWT as a fallback
-      const decodedToken = jwtDecode(response.accessToken);
-      if (decodedToken.roleId !== roleId) {
-        console.warn('Role ID mismatch between API response and JWT:', { apiRoleId: roleId, jwtRoleId: decodedToken.roleId });
-      }
+        // Verify roleId with JWT as a fallback
+        const decodedToken = jwtDecode(response.accessToken);
+        if (decodedToken.roleId !== roleId) {
+          console.warn('Role ID mismatch between API response and JWT:', { apiRoleId: roleId, jwtRoleId: decodedToken.roleId });
+        }
 
-      if (!roleName) {
-        setError('Invalid or unrecognized role. Please contact support@conscor.com.');
-        setLoading(false);
-        return;
-      }
+        if (!roleName) {
+          setError('Invalid or unrecognized role. Please contact support@conscor.com.');
+          setLoading(false);
+          return;
+        }
 
-      // Store companyId from the API response
-      const companyId = response.user.companyId || ''; // From API response: "1748324784060"
+        const userData = {
+          userid:response.user._id,
+          legalname: response.user.legalname || response.user.email,
+          email: response.user.email,
+          role: roleName, // e.g., 'student'
+          roleId: roleId, // e.g., '1747825619417'
+        };
 
-      const userData = {
-        legalname: response.user.legalname || response.user.email,
-        email: response.user.email,
-        role: roleName, // e.g., 'company'
-        roleId: roleId, // e.g., '1747723485001'
-        companyId: companyId, // e.g., '1748324784060'
-      };
+        localStorage.setItem('user', JSON.stringify(userData));
+        localStorage.setItem('accessToken', response.accessToken);
+        localStorage.setItem('refreshToken', response.refreshToken);
 
-      localStorage.setItem('user', JSON.stringify(userData));
-      localStorage.setItem('accessToken', response.accessToken);
-      localStorage.setItem('refreshToken', response.refreshToken);
-
-      if (roleName === 'company') {
-        navigate('/'); // Redirect to homepage for company
+        if (roleName === 'company') {
+          navigate('/');
+        } else {
+          navigate('/');
+        }
       } else {
-        navigate('/');
+        setError(response.message || 'Login failed');
       }
-    } else {
-      setError(response.message || 'Login failed');
-    }
   } catch (err) {
     const errorMessage = err.response?.data?.message || err.message || 'Invalid email or password';
     console.error('Login Error:', err.response?.data);

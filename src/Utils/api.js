@@ -326,3 +326,44 @@ export const resetPassword = async (token, newPassword, appName) => {
     throw error.response?.data || { message: 'Failed to reset password.' };
   }
 };
+
+
+export const mUpdate = async ({
+  appName,
+  collectionName,
+  query,
+  update,
+  options,
+}) => {
+  try {
+    console.log(
+      'mUpdate request:',
+      'appName:', appName,
+      'collectionName:', collectionName,
+      'query:', query,
+      'update:', update
+    );
+    const response = await axios.post(
+      `${API_URL}/v1/dynamic/mupdate`,
+      {
+        appName,
+        collectionName,
+        query,
+        update,
+        options,
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': API_KEY,
+        },
+      }
+    );
+    console.log('mUpdate response:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error in mUpdate:', error.response?.data || error.message);
+    throw error;
+  }
+};
+window.mUpdate = mUpdate;
