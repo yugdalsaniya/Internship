@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FaCloudUploadAlt, FaMale, FaFemale } from 'react-icons/fa';
 import { MdTransgender, MdOutlineWc } from 'react-icons/md';
 import { PiGenderIntersexBold } from 'react-icons/pi';
 import { TbGenderBigender } from 'react-icons/tb';
 import { BsEyeSlash } from 'react-icons/bs';
+import { fetchSectionData, mUpdate, uploadAndStoreFile } from '../../Utils/api';
 
 const genderOptions = [
   { label: 'Female', icon: <FaFemale size={20} /> },
@@ -18,14 +19,7 @@ const genderOptions = [
 const typeOptions = ['College Students', 'Professional', 'Others', 'Fresher'];
 const yearOptions = ['2020', '2021', '2022', '2023', '2024'];
 const differentlyAbledOptions = ['No', 'Yes'];
-const courseOptions = ['B.Tech', 'B.Sc', 'BCA', 'MBA', 'M.Tech'];
-const specializationOptions = [
-  'Computer Science',
-  'Electronics',
-  'Mechanical',
-  'Civil',
-  'Information Technology',
-];
+const specializationOptions = ['Computer Science', 'Mechanical', 'Marketing'];
 
 const ApplyInternshipForm = () => {
   const [page, setPage] = useState(1);
@@ -38,20 +32,106 @@ const ApplyInternshipForm = () => {
     organization: '',
     type: '',
     passoutYear: '',
-    course: '',
+    course: '', // Will store course ID
     specialization: '',
     duration: '',
-    differentlyAbled: '',
+    differentlyAbled: 'No',
     location: '',
     consent: false,
   });
   const [error, setError] = useState('');
   const [fileName, setFileName] = useState('');
+  const [file, setFile] = useState(null);
   const [extendedLocation, setExtendedLocation] = useState({
     country: '',
     state: '',
     city: '',
   });
+  const [loading, setLoading] = useState(false);
+  const [courseOptions, setCourseOptions] = useState([]); // Dynamic course options
+  const [courseMap, setCourseMap] = useState({}); // Map course ID to name for display
+
+  const user = JSON.parse(localStorage.getItem('user')) || {};
+  const userId = user.userid;
+
+  // Fetch user data and course data on component mount
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!userId) {
+        setError('User not logged in. Please log in to continue.');
+        return;
+      }
+
+      try {
+        setLoading(true);
+
+        // Fetch user data
+        const userResponse = await fetchSectionData({
+          collectionName: 'appuser',
+          query: { _id: userId },
+          projection: { sectionData: 1 },
+        });
+
+        if (userResponse.length > 0) {
+          const userData = userResponse[0].sectionData.appuser;
+          const [firstName, ...lastNameParts] = userData.legalname.split(' ');
+          const duration =
+            userData.startyear && userData.endyear
+              ? `${parseInt(userData.endyear) - parseInt(userData.startyear)} years`
+              : '';
+
+          setFormData({
+            email: userData.email || '',
+            mobile: userData.mobile || '',
+            firstName: firstName || '',
+            lastName: lastNameParts.join(' ') || '',
+            gender: userData.Gender || '',
+            organization: userData.organisationcollege || '',
+            type: userData.usertype || '',
+            passoutYear: userData.endyear || '',
+            course: userData.course || '', // Stores course ID
+            specialization: userData.coursespecialization || '',
+            duration: duration,
+            differentlyAbled: userData.differentlyAbled || 'No',
+            location: userData.location || '',
+            consent: false,
+          });
+
+          setFileName(userData.resume ? userData.resume.split('/').pop() : '');
+        } else {
+          setError('User data not found.');
+        }
+
+        // Fetch course data
+        const courseResponse = await fetchSectionData({
+          collectionName: 'course',
+          query: {},
+          projection: { sectionData: 1, _id: 1 },
+        });
+
+        const courses = courseResponse.map((item) => ({
+          id: item._id,
+          name: item.sectionData.course.name,
+        }));
+
+        // Create course map for ID-to-name lookup
+        const map = {};
+        courses.forEach((course) => {
+          map[course.id] = course.name;
+        });
+
+        setCourseMap(map);
+        setCourseOptions(courses);
+      } catch (err) {
+        setError('Failed to fetch data. Please try again.');
+        console.error('Fetch Data Error:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [userId]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -62,7 +142,9 @@ const ApplyInternshipForm = () => {
   };
 
   const handleFileChange = (e) => {
-    setFileName(e.target.files[0]?.name || '');
+    const selectedFile = e.target.files[0];
+    setFile(selectedFile);
+    setFileName(selectedFile?.name || '');
   };
 
   const handleExtendedLocationChange = (e) => {
@@ -101,8 +183,8 @@ const ApplyInternshipForm = () => {
     setPage(1);
   };
 
-  const handleSubmit = () => {
-    if (!fileName) {
+  const handleSubmit = async () => {
+    if (!file && !fileName) {
       alert('Please upload your CV/Resume.');
       return;
     }
@@ -111,13 +193,58 @@ const ApplyInternshipForm = () => {
       return;
     }
 
-    alert(
-      'Form submitted successfully!\n\n' +
-        'Candidate Details:\n' +
-        JSON.stringify(formData, null, 2) +
-        '\n\nExtended Info:\n' +
-        JSON.stringify({ fileName, ...extendedLocation }, null, 2)
-    );
+    try {
+      setLoading(true);
+      let resumeUrl = formData.resume;
+
+      if (file) {
+        const uploadResponse = await uploadAndStoreFile({
+          appName: 'app8657281202648',
+          moduleName: 'appuser',
+          file,
+          userId,
+        });
+        resumeUrl = uploadResponse.data?.fileUrl || '';
+      }
+
+      const updateData = {
+        sectionData: {
+          appuser: {
+            email: formData.email,
+            mobile: formData.mobile,
+            legalname: `${formData.firstName} ${formData.lastName}`.trim(),
+            Gender: formData.gender,
+            organisationcollege: formData.organization,
+            usertype: formData.type,
+            endyear: formData.passoutYear,
+            course: formData.course, // Stores course ID
+            coursespecialization: formData.specialization,
+            duration: formData.duration,
+            differentlyAbled: formData.differentlyAbled,
+            location: formData.location,
+            resume: resumeUrl,
+            country: extendedLocation.country,
+            state: extendedLocation.state,
+            city: extendedLocation.city,
+          },
+        },
+      };
+
+      await mUpdate({
+        appName: 'app8657281202648',
+        collectionName: 'appuser',
+        query: { _id: userId },
+        update: { $set: updateData },
+        options: { upsert: false },
+      });
+
+      alert('Form submitted successfully!');
+    } catch (err) {
+      console.error('Submit Error:', err);
+      alert('Failed to submit form. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const renderOptionButtons = (options, selected, onSelect) => {
@@ -154,6 +281,7 @@ const ApplyInternshipForm = () => {
           {page === 1 ? 'Candidate Details' : 'Extended Form'}
         </h2>
         {error && <p className="text-red-500 text-sm mb-4 text-center">{error}</p>}
+        {loading && <p className="text-blue-500 text-sm mb-4 text-center">Loading...</p>}
 
         {page === 1 && (
           <form onSubmit={handleNext} className="space-y-6">
@@ -262,7 +390,6 @@ const ApplyInternshipForm = () => {
                   ))}
                 </select>
               </div>
-             
               <div>
                 <label className="block text-sm font-medium text-gray-700">
                   Course (Optional)
@@ -274,9 +401,9 @@ const ApplyInternshipForm = () => {
                   className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Select Course</option>
-                  {courseOptions.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
+                  {courseOptions.map((course) => (
+                    <option key={course.id} value={course.id}>
+                      {course.name}
                     </option>
                   ))}
                 </select>
@@ -322,8 +449,7 @@ const ApplyInternshipForm = () => {
                   (val) => setFormData((prev) => ({ ...prev, differentlyAbled: val }))
                 )}
               </div>
-
-               <div>
+              <div>
                 <label className="block text-sm font-medium text-gray-700">
                   Location <span className="text-red-500">*</span>
                 </label>
@@ -358,6 +484,7 @@ const ApplyInternshipForm = () => {
               <button
                 type="submit"
                 className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white py-2 rounded-lg text-sm font-bold hover:from-blue-600 hover:to-purple-700 transition-all"
+                disabled={loading}
               >
                 Next
               </button>
@@ -370,7 +497,6 @@ const ApplyInternshipForm = () => {
               </button>
             </div>
 
-            {/* Pagination Dots */}
             <div className="flex justify-center mt-4">
               <span
                 className={`h-3 w-3 rounded-full mx-1 ${
@@ -476,6 +602,7 @@ const ApplyInternshipForm = () => {
                 type="button"
                 onClick={handleBack}
                 className="flex-1 border border-gray-400 text-gray-700 py-2 rounded-lg text-sm font-bold hover:bg-gray-100"
+                disabled={loading}
               >
                 Back
               </button>
@@ -483,12 +610,12 @@ const ApplyInternshipForm = () => {
                 type="button"
                 onClick={handleSubmit}
                 className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white py-2 rounded-lg text-sm font-bold hover:from-blue-600 hover:to-purple-700 transition-all"
+                disabled={loading}
               >
-                Submit
+                {loading ? 'Submitting...' : 'Submit'}
               </button>
             </div>
 
-            {/* Pagination Dots */}
             <div className="flex justify-center mt-4">
               <span
                 className={`h-3 w-3 rounded-full mx-1 ${
