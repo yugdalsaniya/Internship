@@ -15,6 +15,8 @@ import ManageInternships from "../Pages/company/ManageInternships";
 import StudentInternshipPage from "../Pages/student/StudentInternshipPage";
 import StudentPostForm from "../Pages/student/StudentPostForm";
 import ApplyInternshipForm from "../Pages/student/ApplyInternshipForm";
+import AboutUsPage from "../Pages/AboutUsPage";
+import ContactUsPage from "../Pages/ContactUsPage";
 
 
 
@@ -25,28 +27,28 @@ export default function AppRoutes() {
         <Route path="/signup" element={<SignUpPage />} />
         <Route path="/signup/:role" element={<SignUpPage />} />
         <Route path="/otp" element={<OtpPage />} />
-        <Route path="/forgotpassword" element={<ForgotPassword/>} />
+        <Route path="/forgotpassword" element={<ForgotPassword />} />
         <Route path="/login" element={<SignInPage />} />
         <Route path="/editprofile/*" element={<ProfileEditPage />} />
-        
+
         <Route element={<MainLayout />}>
           {/* for student pages  */}
           <Route path="/" element={<HomePage />} />
           <Route path="/internship" element={<Internship />} />
           <Route path="/internshipdetail/:id" element={<InternshipDetailPage />} />
-          {/* <Route path="/studentinternship" element={<StudentInternshipPage />} /> */}
-          {/* <Route path="/studentpostform" element={<StudentPostForm />} /> */}
+          <Route path="/studentinternship" element={<StudentInternshipPage />} />
+          <Route path="/studentpostform" element={<StudentPostForm />} />
           <Route path="/applyinternshipform" element={<ApplyInternshipForm />} />
+          <Route path="/about" element={<AboutUsPage />} />
+          <Route path="/contact" element={<ContactUsPage />} />
 
           {/* for company pages  */}
-          <Route path="/post-internship" element={<PostInternship/>} />
+          <Route path="/post-internship" element={<PostInternship />} />
           <Route path="/post-internship/form" element={<PostInternshipForm />} />
           <Route path="/manage-internships" element={<ManageInternships />} />
 
 
-        
-          
-        
+
         </Route>
       </Routes>
     </Router>
