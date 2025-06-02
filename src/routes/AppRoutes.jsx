@@ -15,8 +15,7 @@ import ManageInternships from "../Pages/company/ManageInternships";
 import StudentInternshipPage from "../Pages/student/StudentInternshipPage";
 import StudentPostForm from "../Pages/student/StudentPostForm";
 import ApplyInternshipForm from "../Pages/student/ApplyInternshipForm";
-
-
+import InternshipCandidates from "../Pages/company/InternshipCandidates";
 
 export default function AppRoutes() {
   return (
@@ -25,28 +24,22 @@ export default function AppRoutes() {
         <Route path="/signup" element={<SignUpPage />} />
         <Route path="/signup/:role" element={<SignUpPage />} />
         <Route path="/otp" element={<OtpPage />} />
-        <Route path="/forgotpassword" element={<ForgotPassword/>} />
+        <Route path="/forgotpassword" element={<ForgotPassword />} />
         <Route path="/login" element={<SignInPage />} />
         <Route path="/editprofile/*" element={<ProfileEditPage />} />
         
         <Route element={<MainLayout />}>
-          {/* for student pages  */}
+          {/* for student pages */}
           <Route path="/" element={<HomePage />} />
           <Route path="/internship" element={<Internship />} />
           <Route path="/internshipdetail/:id" element={<InternshipDetailPage />} />
-          {/* <Route path="/studentinternship" element={<StudentInternshipPage />} /> */}
-          {/* <Route path="/studentpostform" element={<StudentPostForm />} /> */}
-          <Route path="/applyinternshipform" element={<ApplyInternshipForm />} />
-
-          {/* for company pages  */}
-          <Route path="/post-internship" element={<PostInternship/>} />
+          <Route path="/applyinternshipform/:id" element={<ApplyInternshipForm />} /> {/* Added :id parameter */}
+          
+          {/* for company pages */}
+          <Route path="/post-internship" element={<PostInternship />} />
           <Route path="/post-internship/form" element={<PostInternshipForm />} />
           <Route path="/manage-internships" element={<ManageInternships />} />
-
-
-        
-          
-        
+          <Route path="/internship/:id/candidates" element={<InternshipCandidates />} />
         </Route>
       </Routes>
     </Router>

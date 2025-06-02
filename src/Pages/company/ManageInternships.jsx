@@ -26,7 +26,7 @@ const ManageInternships = () => {
         const data = await fetchSectionData({
           dbName: 'internph',
           collectionName: 'jobpost',
-          query: { 'sectionData.jobpost.type': 'Internship', companyId: user.companyId }, // Use companyId
+          query: { 'sectionData.jobpost.type': 'Internship', companyId: user.companyId },
           limit: 100,
           order: -1,
           sortedBy: 'createdDate',
@@ -41,7 +41,7 @@ const ManageInternships = () => {
     };
 
     fetchInternships();
-  }, [user.companyId]); // Update dependency to user.companyId
+  }, [user.companyId]);
 
   const formattedInternships = useMemo(() => {
     return internships
@@ -111,7 +111,7 @@ const ManageInternships = () => {
     );
 
   return (
-    <div className="min-h-screen bg-[#fafafa] ">
+    <div className="min-h-screen bg-[#fafafa]">
       {/* Hero Section */}
       <div
         className="relative bg-cover bg-center h-96 flex items-center justify-center"
@@ -237,12 +237,20 @@ const ManageInternships = () => {
                       </span>
                     </div>
                   </div>
-                  <button
-                    onClick={() => navigate(`/internshipdetail/${internship.id}`)}
-                    className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-medium py-2 px-4 rounded-full hover:from-blue-600 hover:to-purple-700"
-                  >
-                    View Details
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => navigate(`/internship/${internship.id}/candidates`)}
+                      className="bg-gradient-to-r from-green-500 to-teal-600 text-white text-sm font-medium py-2 px-4 rounded-full hover:from-green-600 hover:to-teal-700"
+                    >
+                      Candidates
+                    </button>
+                    <button
+                      onClick={() => navigate(`/internshipdetail/${internship.id}`)}
+                      className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-medium py-2 px-4 rounded-full hover:from-blue-600 hover:to-purple-700"
+                    >
+                      View Details
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}

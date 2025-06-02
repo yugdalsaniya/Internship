@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Navigate, useParams } from 'react-router-dom';
 import { FaCloudUploadAlt, FaMale, FaFemale } from 'react-icons/fa';
 import { MdTransgender, MdOutlineWc } from 'react-icons/md';
 import { PiGenderIntersexBold } from 'react-icons/pi';
@@ -22,6 +23,7 @@ const differentlyAbledOptions = ['No', 'Yes'];
 const specializationOptions = ['Computer Science', 'Mechanical', 'Marketing'];
 
 const ApplyInternshipForm = () => {
+  const { id } = useParams(); // Changed from jobId to id
   const [page, setPage] = useState(1);
   const [formData, setFormData] = useState({
     email: '',
@@ -32,29 +34,25 @@ const ApplyInternshipForm = () => {
     organization: '',
     type: '',
     passoutYear: '',
-    course: '', // Will store course ID
+    course: '',
     specialization: '',
     duration: '',
     differentlyAbled: 'No',
-    location: '',
     consent: false,
+    resume: '',
   });
+  const [existingUserData, setExistingUserData] = useState({});
   const [error, setError] = useState('');
   const [fileName, setFileName] = useState('');
   const [file, setFile] = useState(null);
-  const [extendedLocation, setExtendedLocation] = useState({
-    country: '',
-    state: '',
-    city: '',
-  });
   const [loading, setLoading] = useState(false);
-  const [courseOptions, setCourseOptions] = useState([]); // Dynamic course options
-  const [courseMap, setCourseMap] = useState({}); // Map course ID to name for display
+  const [courseOptions, setCourseOptions] = useState([]);
+  const [courseMap, setCourseMap] = useState({});
+  const [isResumeUploaded, setIsResumeUploaded] = useState(false);
 
   const user = JSON.parse(localStorage.getItem('user')) || {};
   const userId = user.userid;
 
-  // Fetch user data and course data on component mount
   useEffect(() => {
     const fetchData = async () => {
       if (!userId) {
@@ -74,7 +72,8 @@ const ApplyInternshipForm = () => {
 
         if (userResponse.length > 0) {
           const userData = userResponse[0].sectionData.appuser;
-          const [firstName, ...lastNameParts] = userData.legalname.split(' ');
+          setExistingUserData(userData);
+          const [firstName, ...lastNameParts] = userData.legalname?.split(' ') || [''];
           const duration =
             userData.startyear && userData.endyear
               ? `${parseInt(userData.endyear) - parseInt(userData.startyear)} years`
@@ -89,15 +88,16 @@ const ApplyInternshipForm = () => {
             organization: userData.organisationcollege || '',
             type: userData.usertype || '',
             passoutYear: userData.endyear || '',
-            course: userData.course || '', // Stores course ID
+            course: userData.course || '',
             specialization: userData.coursespecialization || '',
             duration: duration,
             differentlyAbled: userData.differentlyAbled || 'No',
-            location: userData.location || '',
             consent: false,
+            resume: userData.resume || '',
           });
 
           setFileName(userData.resume ? userData.resume.split('/').pop() : '');
+          setIsResumeUploaded(!!userData.resume);
         } else {
           setError('User data not found.');
         }
@@ -114,7 +114,6 @@ const ApplyInternshipForm = () => {
           name: item.sectionData.course.name,
         }));
 
-        // Create course map for ID-to-name lookup
         const map = {};
         courses.forEach((course) => {
           map[course.id] = course.name;
@@ -145,14 +144,7 @@ const ApplyInternshipForm = () => {
     const selectedFile = e.target.files[0];
     setFile(selectedFile);
     setFileName(selectedFile?.name || '');
-  };
-
-  const handleExtendedLocationChange = (e) => {
-    const { name, value } = e.target;
-    setExtendedLocation((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setIsResumeUploaded(false); // Allow re-upload
   };
 
   const validateFirstForm = () => {
@@ -163,7 +155,6 @@ const ApplyInternshipForm = () => {
     if (!formData.organization.trim()) return 'Organization name is required.';
     if (!formData.type) return 'Type is required.';
     if (!formData.passoutYear) return 'Passout year is required.';
-    if (!formData.location.trim()) return 'Location is required.';
     if (!formData.consent) return 'You must agree to the terms and conditions.';
     return '';
   };
@@ -184,12 +175,8 @@ const ApplyInternshipForm = () => {
   };
 
   const handleSubmit = async () => {
-    if (!file && !fileName) {
+    if (!file && !formData.resume) {
       alert('Please upload your CV/Resume.');
-      return;
-    }
-    if (!extendedLocation.country || !extendedLocation.state || !extendedLocation.city) {
-      alert('Please fill out all location fields.');
       return;
     }
 
@@ -205,11 +192,15 @@ const ApplyInternshipForm = () => {
           userId,
         });
         resumeUrl = uploadResponse.data?.fileUrl || '';
+        setFormData((prev) => ({ ...prev, resume: resumeUrl }));
+        setFileName(resumeUrl.split('/').pop());
+        setIsResumeUploaded(true);
       }
 
       const updateData = {
         sectionData: {
           appuser: {
+            ...existingUserData,
             email: formData.email,
             mobile: formData.mobile,
             legalname: `${formData.firstName} ${formData.lastName}`.trim(),
@@ -217,25 +208,37 @@ const ApplyInternshipForm = () => {
             organisationcollege: formData.organization,
             usertype: formData.type,
             endyear: formData.passoutYear,
-            course: formData.course, // Stores course ID
+            course: formData.course,
             coursespecialization: formData.specialization,
             duration: formData.duration,
             differentlyAbled: formData.differentlyAbled,
-            location: formData.location,
             resume: resumeUrl,
-            country: extendedLocation.country,
-            state: extendedLocation.state,
-            city: extendedLocation.city,
           },
         },
       };
 
+      // Update user data
       await mUpdate({
         appName: 'app8657281202648',
         collectionName: 'appuser',
         query: { _id: userId },
         update: { $set: updateData },
         options: { upsert: false },
+      });
+
+      // Record application in applications collection
+      await mUpdate({
+        appName: 'app8657281202648',
+        collectionName: 'applications',
+        query: { userId, jobId: id }, // Changed jobId to id
+        update: {
+          $set: {
+            userId,
+            jobId: id, // Changed jobId to id
+            appliedAt: new Date().toISOString(),
+          },
+        },
+        options: { upsert: true },
       });
 
       alert('Form submitted successfully!');
@@ -278,7 +281,7 @@ const ApplyInternshipForm = () => {
     <div className="min-h-screen bg-[#fafafa] flex items-center justify-center px-4 py-8">
       <div className="max-w-4xl w-full bg-white rounded-lg shadow-md p-6">
         <h2 className="text-xl md:text-2xl font-bold text-[#050748] mb-4 text-center">
-          {page === 1 ? 'Candidate Details' : 'Extended Form'}
+          {page === 1 ? 'Candidate Details' : 'Resume Submission'}
         </h2>
         {error && <p className="text-red-500 text-sm mb-4 text-center">{error}</p>}
         {loading && <p className="text-blue-500 text-sm mb-4 text-center">Loading...</p>}
@@ -449,20 +452,6 @@ const ApplyInternshipForm = () => {
                   (val) => setFormData((prev) => ({ ...prev, differentlyAbled: val }))
                 )}
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Location <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="location"
-                  value={formData.location}
-                  onChange={handleChange}
-                  placeholder="e.g., Mumbai, India"
-                  required
-                  className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
             </div>
 
             <div className="flex items-center gap-2 mt-4">
@@ -521,80 +510,45 @@ const ApplyInternshipForm = () => {
               <p className="text-sm text-gray-600 mb-2">
                 Remark: Submit your resume in doc, docx, pdf
               </p>
-              <label
-                htmlFor="resume-upload"
-                className="flex flex-col items-center justify-center border border-dashed border-gray-400 bg-gray-50 p-6 rounded-lg text-center cursor-pointer hover:bg-gray-100 transition-all"
-              >
-                <FaCloudUploadAlt className="text-4xl text-blue-500 mb-2" />
-                <span className="text-blue-600 font-medium text-sm">
-                  Click to Upload file
-                </span>
-                <span className="text-xs text-gray-500">
-                  Maximum file size is 50 MB{' '}
-                  <span className="text-red-500">(File type: pdf, doc, docx)</span>
-                </span>
-                <input
-                  id="resume-upload"
-                  type="file"
-                  className="hidden"
-                  onChange={handleFileChange}
-                  accept=".pdf,.doc,.docx"
-                />
-              </label>
-              {fileName && (
-                <p className="mt-2 text-sm text-gray-600">Uploaded: {fileName}</p>
+              {isResumeUploaded ? (
+                <div className="text-sm text-gray-600">
+                  <p>Uploaded Resume:</p>
+                  <a
+                    href={formData.resume}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline"
+                  >
+                    {fileName || 'View Resume'}
+                  </a>
+                </div>
+              ) : (
+                <>
+                  <label
+                    htmlFor="resume-upload"
+                    className="flex flex-col items-center justify-center border border-dashed border-gray-400 bg-gray-50 p-6 rounded-lg text-center cursor-pointer hover:bg-gray-100 transition-all"
+                  >
+                    <FaCloudUploadAlt className="text-4xl text-blue-500 mb-2" />
+                    <span className="text-blue-600 font-medium text-sm">
+                      Click to Upload file
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      Maximum file size is 50 MB{' '}
+                      <span className="text-red-500">(File type: pdf, doc, docx)</span> {/* Fixed syntax error */}
+                    </span>
+                    <input
+                      id="resume-upload"
+                      type="file"
+                      className="hidden"
+                      onChange={handleFileChange}
+                      accept=".pdf,.doc,.docx"
+                    />
+                  </label>
+                  {fileName && (
+                    <p className="mt-2 text-sm text-gray-600">Selected: {fileName}</p>
+                  )}
+                </>
               )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Your Location <span className="text-red-500">*</span>
-              </label>
-              <p className="text-sm text-gray-600 mb-2">Remark: Enter Your Location</p>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    Country <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="country"
-                    value={extendedLocation.country}
-                    onChange={handleExtendedLocationChange}
-                    placeholder="e.g., India"
-                    className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    State <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="state"
-                    value={extendedLocation.state}
-                    onChange={handleExtendedLocationChange}
-                    placeholder="e.g., Maharashtra"
-                    className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">
-                    City <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="city"
-                    value={extendedLocation.city}
-                    onChange={handleExtendedLocationChange}
-                    placeholder="e.g., Mumbai"
-                    className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  />
-                </div>
-              </div>
             </div>
 
             <div className="flex gap-4">
