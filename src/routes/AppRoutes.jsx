@@ -16,6 +16,7 @@ import StudentInternshipPage from "../Pages/student/StudentInternshipPage";
 import StudentPostForm from "../Pages/student/StudentPostForm";
 import ApplyInternshipForm from "../Pages/student/ApplyInternshipForm";
 import InternshipCandidates from "../Pages/company/InternshipCandidates";
+import MyApplicationsPage from "../Pages/student/MyApplicationsPage";
 
 export default function AppRoutes() {
   return (
@@ -33,7 +34,8 @@ export default function AppRoutes() {
           <Route path="/" element={<HomePage />} />
           <Route path="/internship" element={<Internship />} />
           <Route path="/internshipdetail/:id" element={<InternshipDetailPage />} />
-          <Route path="/applyinternshipform/:id" element={<ApplyInternshipForm />} /> {/* Added :id parameter */}
+          <Route path="/applyinternshipform/:id" element={<ApplyInternshipForm />} />
+          <Route path="/my-applications" element={<MyApplicationsPage />} />
           
           {/* for company pages */}
           <Route path="/post-internship" element={<PostInternship />} />

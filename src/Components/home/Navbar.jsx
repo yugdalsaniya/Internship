@@ -125,6 +125,15 @@ const Navbar = () => {
                   >
                     Edit Profile
                   </Link>
+                  {role === 'student' && (
+                    <Link
+                      to="/my-applications"
+                      onClick={() => setDropdownOpen(false)}
+                      className="block px-4 py-2 text-sm text-gray-800 hover:bg-gray-100"
+                    >
+                      My Applications
+                    </Link>
+                  )}
                   <button
                     onClick={handleLogout}
                     className="w-full text-left px-4 py-2 text-sm text-gray-800 hover:bg-gray-100"
@@ -195,6 +204,15 @@ const Navbar = () => {
               >
                 Edit Profile
               </Link>
+              {role === 'student' && (
+                <Link
+                  to="/my-applications"
+                  className="text-gray-800 hover:text-blue-600 text-sm font-medium"
+                  onClick={() => setIsOpen(false)}
+                >
+                  My Applications
+                </Link>
+              )}
               <button
                 onClick={handleLogout}
                 className="text-gray-800 text-sm font-medium hover:text-blue-600 w-full text-center py-2"

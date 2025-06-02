@@ -22,15 +22,17 @@ import { formatDistanceToNow, parse } from "date-fns";
 
 const InternshipDetailsPage = () => {
   const { id } = useParams();
-  const navigate = useNavigate(); // Define navigate using useNavigate hook
+  const navigate = useNavigate();
   const [internship, setInternship] = useState(null);
   const [relatedInternships, setRelatedInternships] = useState([]);
   const [categoryMap, setCategoryMap] = useState({});
+  const [hasApplied, setHasApplied] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   // Get the logged-in user from localStorage
   const user = JSON.parse(localStorage.getItem("user")) || {};
+  const userId = user.userid;
 
   useEffect(() => {
     const fetchCategoriesAndInternship = async () => {
@@ -57,6 +59,15 @@ const InternshipDetailsPage = () => {
 
         if (internshipData && internshipData.length > 0) {
           setInternship(internshipData[0]);
+
+          // Check if the user has applied
+          if (userId && user.role === "student") {
+            const applicationData = await fetchSectionData({
+              collectionName: "applications",
+              query: { userId, jobId: id },
+            });
+            setHasApplied(applicationData.length > 0);
+          }
 
           // Fetch related internships
           const currentSubtype = internshipData[0]?.sectionData?.jobpost?.subtype;
@@ -90,7 +101,7 @@ const InternshipDetailsPage = () => {
     };
 
     fetchCategoriesAndInternship();
-  }, [id]);
+  }, [id, userId]);
 
   const getRelativeTime = (dateString) => {
     try {
@@ -175,13 +186,22 @@ const InternshipDetailsPage = () => {
             </div>
           </div>
           {showApplyButton && (
-  <button
-    className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-6 py-2 rounded-md"
-    onClick={() => navigate(`/applyinternshipform/${id}`)} // Pass id in the URL
-  >
-    Apply Internship
-  </button>
-)}
+            hasApplied ? (
+              <button
+                className="bg-green-500 text-white px-6 py-2 rounded-md cursor-not-allowed"
+                disabled
+              >
+                You Have Applied
+              </button>
+            ) : (
+              <button
+                className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-6 py-2 rounded-md"
+                onClick={() => navigate(`/applyinternshipform/${id}`)}
+              >
+                Apply Internship
+              </button>
+            )
+          )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
@@ -273,7 +293,7 @@ const InternshipDetailsPage = () => {
                       </div>
                     </div>
                     <button
-                      onClick={() => navigate(`/internshipdetail/${item.id}`)} // Updated to use navigate
+                      onClick={() => navigate(`/internshipdetail/${item.id}`)}
                       className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-4 py-2 rounded-md whitespace-nowrap"
                     >
                       Internship Details

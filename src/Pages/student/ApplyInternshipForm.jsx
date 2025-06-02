@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Navigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { FaCloudUploadAlt, FaMale, FaFemale } from 'react-icons/fa';
 import { MdTransgender, MdOutlineWc } from 'react-icons/md';
 import { PiGenderIntersexBold } from 'react-icons/pi';
@@ -23,7 +23,8 @@ const differentlyAbledOptions = ['No', 'Yes'];
 const specializationOptions = ['Computer Science', 'Mechanical', 'Marketing'];
 
 const ApplyInternshipForm = () => {
-  const { id } = useParams(); // Changed from jobId to id
+  const { id } = useParams();
+  const navigate = useNavigate();
   const [page, setPage] = useState(1);
   const [formData, setFormData] = useState({
     email: '',
@@ -230,11 +231,11 @@ const ApplyInternshipForm = () => {
       await mUpdate({
         appName: 'app8657281202648',
         collectionName: 'applications',
-        query: { userId, jobId: id }, // Changed jobId to id
+        query: { userId, jobId: id },
         update: {
           $set: {
             userId,
-            jobId: id, // Changed jobId to id
+            jobId: id,
             appliedAt: new Date().toISOString(),
           },
         },
@@ -242,6 +243,7 @@ const ApplyInternshipForm = () => {
       });
 
       alert('Form submitted successfully!');
+      navigate('/my-applications');
     } catch (err) {
       console.error('Submit Error:', err);
       alert('Failed to submit form. Please try again.');
@@ -534,7 +536,7 @@ const ApplyInternshipForm = () => {
                     </span>
                     <span className="text-xs text-gray-500">
                       Maximum file size is 50 MB{' '}
-                      <span className="text-red-500">(File type: pdf, doc, docx)</span> {/* Fixed syntax error */}
+                      <span className="text-red-500">(File type: pdf, doc, docx)</span>
                     </span>
                     <input
                       id="resume-upload"
