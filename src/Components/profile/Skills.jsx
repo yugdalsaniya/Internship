@@ -1,30 +1,144 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BiTime } from 'react-icons/bi';
 import { FaEye, FaRegLightbulb } from 'react-icons/fa';
+import { fetchSectionData, mUpdate } from '../../Utils/api';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 function Skills() {
   const [skillsText, setSkillsText] = useState('');
+  const [allSkills, setAllSkills] = useState([]);
+  const [selectedSkillIds, setSelectedSkillIds] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(0);
 
-  const suggestions = [
-    'TensorFlow Serving',
-    'M&A Analysis',
-    'Manufacturing',
-    'Performance Management',
-    'Resourcefulness',
-    'Industry Knowledge',
-    'Portfolio Development',
-    'IAM',
-    'UpKeep',
-    'Wireshark',
-  ];
+  // Retrieve userId from localStorage
+  const userString = localStorage.getItem('user');
+  let userId;
+  if (!userString) {
+    toast.error('Please log in to view your details.', { autoClose: 5000 });
+    userId = null;
+  } else {
+    try {
+      const user = JSON.parse(userString);
+      userId = user.userid;
+    } catch (parseError) {
+      toast.error('Invalid user data. Please log in again.', { autoClose: 5000 });
+      userId = null;
+    }
+  }
 
-  const handleSave = () => {
-    console.log('Skills saved:', skillsText);
+  // Fetch skills suggestions
+  useEffect(() => {
+    const fetchSkills = async () => {
+      try {
+        setLoading(true);
+        const response = await fetchSectionData({
+          dbName: 'internph',
+          collectionName: 'skills',
+          projection: { 'sectionData.skills': 1, '_id': 1 },
+        });
+        
+        const skillData = response.map(item => ({
+          id: item._id,
+          name: item.sectionData.skills.name
+        }));
+        setAllSkills(skillData);
+        setLoading(false);
+      } catch (err) {
+        toast.error('Failed to load skills', { autoClose: 5000 });
+        setLoading(false);
+      }
+    };
+
+    fetchSkills();
+  }, []);
+
+  // Fetch user's saved skills
+  useEffect(() => {
+    if (!userId) return;
+
+    const fetchUserSkills = async () => {
+      try {
+        setLoading(true);
+        const response = await fetchSectionData({
+          dbName: 'internph',
+          collectionName: 'appuser',
+          query: { _id: userId },
+          projection: { 'sectionData.appuser.skills': 1 }
+        });
+
+        if (response && response[0] && response[0].sectionData?.appuser?.skills) {
+          setSelectedSkillIds(response[0].sectionData.appuser.skills);
+        }
+        setLoading(false);
+      } catch (err) {
+        toast.error('Failed to load saved skills', { autoClose: 5000 });
+        setLoading(false);
+      }
+    };
+
+    fetchUserSkills();
+  }, [userId]);
+
+  // Compute suggestions to display (up to 10, excluding selected skills)
+  const getSuggestions = () => {
+    const availableSkills = allSkills.filter(skill => !selectedSkillIds.includes(skill.id));
+    const startIndex = currentPage * 10;
+    return availableSkills.slice(startIndex, startIndex + 10);
+  };
+
+  const handleSkillClick = (skillId, skillName) => {
+    if (selectedSkillIds.includes(skillId)) {
+      // Deselect skill: remove from selectedSkillIds
+      setSelectedSkillIds(selectedSkillIds.filter(id => id !== skillId));
+      // Adjust currentPage if necessary to ensure suggestions are populated
+      const availableSkills = allSkills.filter(skill => !selectedSkillIds.includes(skill.id) || skill.id === skillId);
+      const maxPage = Math.ceil(availableSkills.length / 10) - 1;
+      if (currentPage > maxPage) {
+        setCurrentPage(maxPage >= 0 ? maxPage : 0);
+      }
+    } else {
+      // Select skill: add to selectedSkillIds
+      setSelectedSkillIds([...selectedSkillIds, skillId]);
+      // Move to next page if current page is empty
+      const availableSkills = allSkills.filter(skill => !selectedSkillIds.includes(skill.id) && skill.id !== skillId);
+      const currentSuggestions = availableSkills.slice(currentPage * 10, currentPage * 10 + 10);
+      if (currentSuggestions.length === 0 && availableSkills.length > 0) {
+        setCurrentPage(prev => prev + 1);
+      }
+    }
+  };
+
+  const handleSave = async () => {
+    if (!userId) {
+      toast.error('Please log in to save skills.', { autoClose: 5000 });
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await mUpdate({
+        appName: 'app8657281202648',
+        collectionName: 'appuser',
+        query: { _id: userId },
+        update: { $set: { 'sectionData.appuser.skills': selectedSkillIds } },
+        options: { upsert: false }
+      });
+      console.log('Skills updated successfully:', selectedSkillIds, response);
+      toast.success('Skills saved successfully!', { autoClose: 5000 });
+      setLoading(false);
+    } catch (err) {
+      console.error('Failed to update skills:', err);
+      toast.error('Failed to save skills', { autoClose: 5000 });
+      setLoading(false);
+    }
   };
 
   return (
     <div className="bg-white rounded-xl shadow-md">
-      {/* Fixed Header */}
+      <ToastContainer position="top-right" autoClose={5000} hideProgressBar={false} newestOnTop closeOnClick pauseOnHover draggable />
+      
       <div className="sticky top-0 bg-white z-10 px-4 py-4 shadow-sm flex justify-between items-center border-b border-gray-200">
         <div className="flex items-center gap-2 text-gray-700 text-lg font-medium">
           <BiTime className="text-xl" />
@@ -36,26 +150,46 @@ function Skills() {
         </div>
       </div>
 
-      {/* Scrollable Content */}
       <div className="p-6 space-y-6">
         <div className="mb-4">
           <p className="text-sm font-medium text-gray-700 mb-1">
             Skills<span className="text-red-500 ml-1">*</span>
           </p>
-          <p className="text-gray-500 text-sm mb-2">Suggestions</p>
           <div className="flex flex-wrap gap-2 mb-4">
-            {suggestions.map((skill) => (
-              <button
-                key={skill}
-                className="px-3 py-1 border border-dashed rounded-full text-gray-600 hover:bg-gray-100 transition"
-              >
-                {skill}
-              </button>
-            ))}
+            {selectedSkillIds.map((skillId) => {
+              const skill = allSkills.find(s => s.id === skillId);
+              return skill ? (
+                <button
+                  key={skillId}
+                  onClick={() => handleSkillClick(skillId, skill.name)}
+                  className="px-3 py-1 bg-blue-100 text-blue-600 rounded-full flex items-center gap-1"
+                >
+                  {skill.name}
+                  <span className="text-sm">✕</span>
+                </button>
+              ) : null;
+            })}
           </div>
+
+          <p className="text-gray-500 text-sm mb-2">Suggestions</p>
+          {loading ? (
+            <p className="text-gray-500">Loading skills...</p>
+          ) : (
+            <div className="flex flex-wrap gap-2 mb-4">
+              {getSuggestions().map((skill) => (
+                <button
+                  key={skill.id}
+                  onClick={() => handleSkillClick(skill.id, skill.name)}
+                  className="px-3 py-1 border border-dashed rounded-full transition text-gray-600 hover:bg-gray-100"
+                >
+                  {skill.name}
+                </button>
+              ))}
+            </div>
+          )}
           <textarea
             className="w-full border rounded-lg p-2 resize-none"
-            rows="3"
+            rows="2"
             placeholder="List your skills here, showcasing what you excel at."
             value={skillsText}
             onChange={(e) => setSkillsText(e.target.value)}
@@ -63,12 +197,14 @@ function Skills() {
         </div>
       </div>
 
-      {/* Fixed Save Button */}
       <div className="sticky bottom-0 bg-white border-t p-4">
         <div className="flex justify-end">
           <button
             onClick={handleSave}
-            className="bg-blue-600 text-white px-6 py-2 rounded-full flex items-center gap-2 text-sm font-medium hover:bg-blue-700 transition"
+            className={`bg-blue-600 text-white px-6 py-2 rounded-full flex items-center gap-2 text-sm font-medium transition ${
+              loading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700'
+            }`}
+            disabled={loading}
           >
             <span className="text-lg">✓</span> Save
           </button>
