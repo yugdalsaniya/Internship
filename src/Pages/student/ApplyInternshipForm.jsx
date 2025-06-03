@@ -5,14 +5,16 @@ import { MdTransgender, MdOutlineWc } from 'react-icons/md';
 import { PiGenderIntersexBold } from 'react-icons/pi';
 import { TbGenderBigender } from 'react-icons/tb';
 import { BsEyeSlash } from 'react-icons/bs';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { fetchSectionData, mUpdate, uploadAndStoreFile } from '../../Utils/api';
 
 const genderOptions = [
   { label: 'Female', icon: <FaFemale size={20} /> },
   { label: 'Male', icon: <FaMale size={20} /> },
   { label: 'Transgender', icon: <MdTransgender size={20} /> },
-  { label: 'Intersex', icon: <PiGenderIntersexBold size={20} /> },
-  { label: 'Non-binary', icon: <TbGenderBigender size={20} /> },
+  { label: 'Intersex', icon: <PiGenderIntersexBold size={25} /> },
+  { label: 'Non-binary', icon: <TbGenderBigender size={25} /> },
   { label: 'Prefer not to say', icon: <BsEyeSlash size={20} /> },
   { label: 'Others', icon: <MdOutlineWc size={20} /> },
 ];
@@ -177,7 +179,15 @@ const ApplyInternshipForm = () => {
 
   const handleSubmit = async () => {
     if (!file && !formData.resume) {
-      alert('Please upload your CV/Resume.');
+      toast.error('Please upload your CV/Resume.', {
+        position: 'top-right',
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        theme: 'light',
+      });
       return;
     }
 
@@ -185,23 +195,36 @@ const ApplyInternshipForm = () => {
       setLoading(true);
       let resumeUrl = formData.resume;
 
+      // Upload new resume if a file is selected
       if (file) {
+        console.log('Uploading new resume for userId:', userId);
         const uploadResponse = await uploadAndStoreFile({
           appName: 'app8657281202648',
           moduleName: 'appuser',
           file,
           userId,
         });
-        resumeUrl = uploadResponse.data?.fileUrl || '';
+        console.log('Upload response:', uploadResponse);
+        resumeUrl = uploadResponse.filePath || '';
+        if (!resumeUrl) {
+          throw new Error('Failed to retrieve resume URL from upload response.');
+        }
+        // Update formData with the new resume URL
         setFormData((prev) => ({ ...prev, resume: resumeUrl }));
         setFileName(resumeUrl.split('/').pop());
         setIsResumeUploaded(true);
       }
 
+      console.log('Resume URL to be saved:', resumeUrl);
+
+      // Prepare user data update
       const updateData = {
         sectionData: {
           appuser: {
             ...existingUserData,
+            name: formData.email,
+            fname: '',
+            lname: '',
             email: formData.email,
             mobile: formData.mobile,
             legalname: `${formData.firstName} ${formData.lastName}`.trim(),
@@ -214,21 +237,36 @@ const ApplyInternshipForm = () => {
             duration: formData.duration,
             differentlyAbled: formData.differentlyAbled,
             resume: resumeUrl,
+            password: existingUserData.password || '',
+            role: existingUserData.role || user.role,
+            isOtpVerify: existingUserData.isOtpVerify || false,
+            academyname: existingUserData.academyname || '',
+            growinmycurrentcareer: existingUserData.growinmycurrentcareer || false,
+            location: existingUserData.location || '',
+            purpose: existingUserData.purpose || [],
+            role1: existingUserData.role1 || [],
+            startyear: existingUserData.startyear || '',
+            stream: existingUserData.stream || '',
+            teammember: existingUserData.teammember || '',
+            transitioninnewcareer: existingUserData.transitioninnewcareer || false,
           },
         },
       };
 
-      // Update user data
-      await mUpdate({
+      console.log('Updating appuser with data:', JSON.stringify(updateData, null, 2));
+
+      // Update user data in appuser collection
+      const updateResponse = await mUpdate({
         appName: 'app8657281202648',
         collectionName: 'appuser',
         query: { _id: userId },
         update: { $set: updateData },
         options: { upsert: false },
       });
+      console.log('Update response:', updateResponse);
 
       // Record application in applications collection
-      await mUpdate({
+      const applicationResponse = await mUpdate({
         appName: 'app8657281202648',
         collectionName: 'applications',
         query: { userId, jobId: id },
@@ -241,12 +279,49 @@ const ApplyInternshipForm = () => {
         },
         options: { upsert: true },
       });
+      console.log('Application recorded:', applicationResponse);
 
-      alert('Form submitted successfully!');
-      navigate('/my-applications');
+      // Update jobpost to add userId to applicants array
+      const jobPostUpdateResponse = await mUpdate({
+        appName: 'app8657281202648',
+        collectionName: 'jobpost',
+        query: { _id: id },
+        update: {
+          $push: {
+            'sectionData.jobpost.applicants': { text: userId },
+          },
+        },
+        options: { upsert: false },
+      });
+      console.log('Job post applicants updated:', jobPostUpdateResponse);
+
+      // Scroll to top before showing toast
+      window.scrollTo({ top: 0, behavior: 'instant' });
+
+      // Show success toast and delay navigation
+      toast.success('Form submitted successfully!', {
+        position: 'top-right',
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        theme: 'light',
+        onClose: () => navigate('/my-applications'), // Navigate after toast closes
+      });
     } catch (err) {
       console.error('Submit Error:', err);
-      alert('Failed to submit form. Please try again.');
+      // Scroll to top before showing error toast
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      toast.error(`Failed to submit form: ${err.message || 'Please try again.'}`, {
+        position: 'top-right',
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        theme: 'light',
+      });
     } finally {
       setLoading(false);
     }
@@ -281,6 +356,7 @@ const ApplyInternshipForm = () => {
 
   return (
     <div className="min-h-screen bg-[#fafafa] flex items-center justify-center px-4 py-8">
+      <ToastContainer />
       <div className="max-w-4xl w-full bg-white rounded-lg shadow-md p-6">
         <h2 className="text-xl md:text-2xl font-bold text-[#050748] mb-4 text-center">
           {page === 1 ? 'Candidate Details' : 'Resume Submission'}

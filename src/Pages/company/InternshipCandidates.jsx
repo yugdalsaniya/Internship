@@ -5,12 +5,13 @@ import logo from '../../assets/Navbar/logo.png';
 import backgroundImg from '../../assets/Hero/banner.jpg';
 
 const InternshipCandidates = () => {
-  const { id } = useParams(); // Get internship ID from URL
+  const { id } = useParams(); // jobId
   const navigate = useNavigate();
   const [candidates, setCandidates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [courseMap, setCourseMap] = useState({});
+  const [filters, setFilters] = useState({ status: 'All' });
   const user = JSON.parse(localStorage.getItem('user')) || {};
 
   // Redirect if not a company user
@@ -22,75 +23,64 @@ const InternshipCandidates = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch course data for mapping
+        // Fetch course data
         const courseResponse = await fetchSectionData({
           dbName: 'internph',
           collectionName: 'course',
           query: {},
           projection: { sectionData: 1, _id: 1 },
         });
-
         const courses = courseResponse.map((item) => ({
           id: item._id,
           name: item.sectionData.course.name,
         }));
-
-        const map = {};
-        courses.forEach((course) => {
-          map[course.id] = course.name;
-        });
+        const map = courses.reduce((acc, course) => ({ ...acc, [course.id]: course.name }), {});
         setCourseMap(map);
 
         // Fetch applications
-        console.log('Fetching applications for jobId:', id);
         const applications = await fetchSectionData({
           dbName: 'internph',
           collectionName: 'applications',
           query: { jobId: id },
-          projection: { userId: 1 },
+          projection: { userId: 1, resume: 1, _id: 1 },
         });
-        console.log('Applications found:', applications);
 
         if (applications.length === 0) {
-          console.log('No applications found for jobId:', id);
-          setCandidates([]);
-          setLoading(false);
-          return;
-        }
-
-        // Extract userIds
-        const userIds = applications.map((app) => app.userId).filter(Boolean);
-        console.log('User IDs:', userIds);
-
-        if (userIds.length === 0) {
-          console.log('No valid userIds found');
           setCandidates([]);
           setLoading(false);
           return;
         }
 
         // Fetch user details
+        const userIds = applications.map((app) => app.userId).filter(Boolean);
         const users = await fetchSectionData({
           dbName: 'internph',
           collectionName: 'appuser',
           query: { _id: { $in: userIds } },
           projection: { sectionData: 1 },
         });
-        console.log('Users found:', users);
+
+        const userMap = users.reduce((map, user) => {
+          map[user._id] = user.sectionData.appuser;
+          return map;
+        }, {});
+
+        // Load statuses from localStorage
+        const storedStatuses = JSON.parse(localStorage.getItem('applicationStatuses') || '{}');
 
         // Format candidates
-        const formattedCandidates = users.map((user) => {
-          const userData = user.sectionData.appuser;
-          return {
-            id: user._id,
-            name: userData.legalname || 'Unknown',
-            email: userData.email || 'N/A',
-            mobile: userData.mobile || 'N/A',
-            course: map[userData.course] || userData.course || 'N/A',
-            specialization: userData.coursespecialization || 'N/A',
-            resume: userData.resume || null,
-          };
-        });
+        const formattedCandidates = applications.map((app) => ({
+          id: app._id,
+          userId: app.userId,
+          name: userMap[app.userId]?.legalname || 'Unknown',
+          email: userMap[app.userId]?.email || 'N/A',
+          mobile: userMap[app.userId]?.mobile || 'N/A',
+          course: map[userMap[app.userId]?.course] || userMap[app.userId]?.course || 'N/A',
+          specialization: userMap[app.userId]?.coursespecialization || 'N/A',
+          resume: app.resume || userMap[app.userId]?.resume || '',
+          status: storedStatuses[app._id]?.status || 'Applied',
+          feedback: storedStatuses[app._id]?.feedback || '',
+        }));
 
         setCandidates(formattedCandidates);
       } catch (err) {
@@ -103,6 +93,31 @@ const InternshipCandidates = () => {
 
     fetchData();
   }, [id, navigate]);
+
+  const updateStatus = (applicationId, newStatus, feedback = '') => {
+    try {
+      // Update local state
+      setCandidates((prev) =>
+        prev.map((candidate) =>
+          candidate.id === applicationId
+            ? { ...candidate, status: newStatus, feedback }
+            : candidate
+        )
+      );
+
+      // Update localStorage
+      const storedStatuses = JSON.parse(localStorage.getItem('applicationStatuses') || '{}');
+      storedStatuses[applicationId] = { status: newStatus, feedback };
+      localStorage.setItem('applicationStatuses', JSON.stringify(storedStatuses));
+    } catch (err) {
+      console.error('Status Update Error:', err);
+      setError('Failed to update status. Please try again.');
+    }
+  };
+
+  const filteredCandidates = candidates.filter((candidate) =>
+    filters.status === 'All' ? true : candidate.status === filters.status
+  );
 
   if (loading) return <div className="mx-12 py-4">Loading...</div>;
   if (error) return <div className="mx-12 py-4 text-red-600">{error}</div>;
@@ -131,7 +146,7 @@ const InternshipCandidates = () => {
             Internship Candidates
           </h1>
           <p className="text-sm md:text-base text-gray-700 max-w-md mx-auto mb-6">
-            View all candidates who applied for this internship.
+            Manage candidates who applied for this internship.
           </p>
           <button
             onClick={() => navigate('/manage-internships')}
@@ -148,43 +163,79 @@ const InternshipCandidates = () => {
           <h2 className="text-2xl md:text-3xl font-bold text-[#050748] mb-6">
             Applied Candidates
           </h2>
-          {candidates.length === 0 ? (
-            <p className="text-center text-gray-600">No candidates have applied yet.</p>
+          <div className="mb-6">
+            <label className="text-sm font-medium mr-2">Filter by Status:</label>
+            <select
+              value={filters.status}
+              onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+              className="p-2 border rounded-md"
+            >
+              <option value="All">All</option>
+              <option value="Applied">Applied</option>
+              <option value="Shortlisted">Shortlisted</option>
+              <option value="Rejected">Rejected</option>
+              <option value="Interview">Interview</option>
+            </select>
+          </div>
+          {filteredCandidates.length === 0 ? (
+            <p className="text-center text-gray-600">No candidates match the selected filter.</p>
           ) : (
             <div className="space-y-4">
-              {candidates.map((candidate) => (
+              {filteredCandidates.map((candidate) => (
                 <div
                   key={candidate.id}
                   className="bg-white rounded-lg shadow-md p-4 border border-gray-200"
                 >
-                  <h3 className="text-lg font-semibold text-[#050748]">
-                    {candidate.name}
-                  </h3>
-                  <p className="text-sm text-gray-600">
-                    <span className="font-medium">Email:</span> {candidate.email}
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    <span className="font-medium">Mobile:</span> {candidate.mobile}
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    <span className="font-medium">Course:</span> {candidate.course}
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    <span className="font-medium">Specialization:</span>{' '}
-                    {candidate.specialization}
-                  </p>
-                  {candidate.resume && (
-                    <p className="text-sm">
-                      <a
-                        href={candidate.resume}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:underline"
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="text-lg font-semibold text-[#050748]">
+                        {candidate.name}
+                      </h3>
+                      <p className="text-sm text-gray-600">
+                        <span className="font-medium">Email:</span> {candidate.email}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        <span className="font-medium">Mobile:</span> {candidate.mobile}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        <span className="font-medium">Course:</span> {candidate.course}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        <span className="font-medium">Specialization:</span> {candidate.specialization}
+                      </p>
+                      {candidate.resume && (
+                        <a
+                          href={candidate.resume}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-block mt-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-medium py-1 px-3 rounded-md hover:from-blue-600 hover:to-purple-700 transition-all"
+                        >
+                          View Resume
+                        </a>
+                      )}
+                      {candidate.feedback && (
+                        <p className="text-sm text-gray-600 mt-2">
+                          <span className="font-medium">Feedback:</span> {candidate.feedback}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <select
+                        value={candidate.status}
+                        onChange={(e) => {
+                          const newStatus = e.target.value;
+                          const feedback = newStatus === 'Rejected' ? prompt('Enter rejection feedback (optional):') || '' : '';
+                          updateStatus(candidate.id, newStatus, feedback);
+                        }}
+                        className="p-2 border rounded-md"
                       >
-                        View Resume
-                      </a>
-                    </p>
-                  )}
+                        <option value="Applied">Applied</option>
+                        <option value="Shortlisted">Shortlisted</option>
+                        <option value="Rejected">Rejected</option>
+                        <option value="Interview">Interview</option>
+                      </select>
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>

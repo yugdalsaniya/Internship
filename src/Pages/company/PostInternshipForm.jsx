@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { addGeneralData, uploadAndStoreFile } from '../../Utils/api';
 import logo from '../../assets/Navbar/logo.png';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const PostInternshipForm = () => {
   const [formData, setFormData] = useState({
@@ -20,7 +22,7 @@ const PostInternshipForm = () => {
     logo: null,
     keyResponsibilities: [],
     professionalSkills: [],
-    degree: [], // Renamed to degree (singular) to match admin panel field name
+    degree: [],
   });
   const [newResponsibility, setNewResponsibility] = useState('');
   const [newSkill, setNewSkill] = useState('');
@@ -29,7 +31,6 @@ const PostInternshipForm = () => {
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user')) || {};
 
-  // List of available degree options
   const degreeOptions = [
     'B.Tech',
     'B.Sc',
@@ -41,7 +42,6 @@ const PostInternshipForm = () => {
     'Ph.D',
   ];
 
-  // Redirect if not a company user or if companyId is missing
   useEffect(() => {
     if (user.role !== 'company' || !user.companyId) {
       navigate('/login');
@@ -51,13 +51,10 @@ const PostInternshipForm = () => {
   const handleChange = (e) => {
     const { name, value, files, type, checked } = e.target;
     if (name === 'degree') {
-      // Handle checkbox changes for degree
       let updatedDegrees = [...formData.degree];
       if (checked) {
-        // Add the degree if checked
         updatedDegrees.push(value);
       } else {
-        // Remove the degree if unchecked
         updatedDegrees = updatedDegrees.filter((deg) => deg !== value);
       }
       setFormData({
@@ -113,69 +110,176 @@ const PostInternshipForm = () => {
 
     // Validation
     if (!user.companyId) {
-      setError('Company ID is missing. Please log in again.');
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      toast.error('Company ID is missing. Please log in again.', {
+        position: 'top-right',
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        theme: 'light',
+      });
       setLoading(false);
       navigate('/login');
       return;
     }
     if (!formData.title.trim()) {
-      setError('Internship title is required.');
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      toast.error('Internship title is required.', {
+        position: 'top-right',
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        theme: 'light',
+      });
       setLoading(false);
       return;
     }
     if (!formData.company.trim()) {
-      setError('Company name is required.');
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      toast.error('Company name is required.', {
+        position: 'top-right',
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        theme: 'light',
+      });
       setLoading(false);
       return;
     }
     if (!formData.location.trim()) {
-      setError('Location is required.');
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      toast.error('Location is required.', {
+        position: 'top-right',
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        theme: 'light',
+      });
       setLoading(false);
       return;
     }
     if (!formData.description.trim()) {
-      setError('Description is required.');
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      toast.error('Description is required.', {
+        position: 'top-right',
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        theme: 'light',
+      });
       setLoading(false);
       return;
     }
     if (!formData.subtype) {
-      setError('Category is required.');
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      toast.error('Category is required.', {
+        position: 'top-right',
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        theme: 'light',
+      });
       setLoading(false);
       return;
     }
     if (!formData.experiencelevel) {
-      setError('Experience level is required.');
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      toast.error('Experience level is required.', {
+        position: 'top-right',
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        theme: 'light',
+      });
       setLoading(false);
       return;
     }
     if (!formData.applicationdeadline) {
-      setError('Application deadline is required.');
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      toast.error('Application deadline is required.', {
+        position: 'top-right',
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        theme: 'light',
+      });
       setLoading(false);
       return;
     }
     if (!formData.internshipduration.trim()) {
-      setError('Internship duration is required.');
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      toast.error('Internship duration is required.', {
+        position: 'top-right',
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        theme: 'light',
+      });
       setLoading(false);
       return;
     }
     if (formData.keyResponsibilities.length === 0) {
-      setError('At least one key responsibility is required.');
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      toast.error('At least one key responsibility is required.', {
+        position: 'top-right',
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        theme: 'light',
+      });
       setLoading(false);
       return;
     }
     if (formData.professionalSkills.length === 0) {
-      setError('At least one professional skill is required.');
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      toast.error('At least one professional skill is required.', {
+        position: 'top-right',
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        theme: 'light',
+      });
       setLoading(false);
       return;
     }
     if (formData.degree.length === 0) {
-      setError('At least one degree is required.');
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      toast.error('At least one degree is required.', {
+        position: 'top-right',
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        theme: 'light',
+      });
       setLoading(false);
       return;
     }
 
     try {
-      // Handle logo upload
       let logoUrl = '';
       if (formData.logo) {
         const uploadResponse = await uploadAndStoreFile({
@@ -192,7 +296,6 @@ const PostInternshipForm = () => {
         console.log('Logo URL:', logoUrl);
       }
 
-      // Prepare jobpost data
       const jobpostData = {
         sectionData: {
           jobpost: {
@@ -212,7 +315,7 @@ const PostInternshipForm = () => {
             logo: logoUrl || undefined,
             keyResponsibilities: formData.keyResponsibilities,
             professionalSkills: formData.professionalSkills,
-            degree: formData.degree, // Use degree (singular) to match admin panel field name
+            degree: formData.degree,
           },
         },
         createdBy: user.companyId,
@@ -228,7 +331,6 @@ const PostInternshipForm = () => {
         }),
       };
 
-      // Call addGeneralData API
       const response = await addGeneralData({
         dbName: 'internph',
         collectionName: 'jobpost',
@@ -236,13 +338,40 @@ const PostInternshipForm = () => {
       });
 
       if (response.success) {
-        alert('Internship posted successfully!');
-        navigate('/');
+        window.scrollTo({ top: 0, behavior: 'instant' });
+        toast.success('Internship posted successfully!', {
+          position: 'top-right',
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          theme: 'light',
+          onClose: () => navigate('/'),
+        });
       } else {
-        setError(response.message || 'Failed to post internship.');
+        window.scrollTo({ top: 0, behavior: 'instant' });
+        toast.error(response.message || 'Failed to post internship.', {
+          position: 'top-right',
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          theme: 'light',
+        });
       }
     } catch (err) {
-      setError(err.message || 'Failed to post internship. Please try again.');
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      toast.error(err.message || 'Failed to post internship. Please try again.', {
+        position: 'top-right',
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        theme: 'light',
+      });
       console.error('Post Internship Error:', err);
     } finally {
       setLoading(false);
@@ -255,8 +384,8 @@ const PostInternshipForm = () => {
 
   return (
     <div className="min-h-screen bg-[#fafafa] flex items-center justify-center px-4 py-8">
+      <ToastContainer />
       <div className="max-w-4xl w-full bg-white rounded-lg shadow-md p-6">
-       
         <h2 className="text-xl md:text-2xl font-bold text-[#050748] mb-4 text-center">
           Post Internship Form
         </h2>

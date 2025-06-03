@@ -17,10 +17,12 @@ import StudentPostForm from "../Pages/student/StudentPostForm";
 import ApplyInternshipForm from "../Pages/student/ApplyInternshipForm";
 import InternshipCandidates from "../Pages/company/InternshipCandidates";
 import MyApplicationsPage from "../Pages/student/MyApplicationsPage";
+import SrollToTop from "../ScrollToTop";
 
 export default function AppRoutes() {
   return (
     <Router>
+      <SrollToTop />
       <Routes>
         <Route path="/signup" element={<SignUpPage />} />
         <Route path="/signup/:role" element={<SignUpPage />} />

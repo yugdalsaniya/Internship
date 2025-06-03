@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { fetchSectionData } from "../../Utils/api";
-import { formatDistanceToNow, parse } from "date-fns";
-import { FaBriefcase, FaMapMarkerAlt, FaRegClock, FaRupeeSign } from "react-icons/fa";
+import { formatDistanceToNow, format } from "date-fns";
+import { FaBriefcase } from "react-icons/fa";
 
 const MyApplicationsPage = () => {
   const navigate = useNavigate();
@@ -12,6 +12,7 @@ const MyApplicationsPage = () => {
 
   const user = JSON.parse(localStorage.getItem("user")) || {};
   const userId = user.userid;
+  const userEmail = user.email || "Unknown";
 
   useEffect(() => {
     const fetchApplications = async () => {
@@ -24,41 +25,55 @@ const MyApplicationsPage = () => {
       try {
         setLoading(true);
 
-        // Fetch applications for the user
+        // Fetch applications
         const applicationData = await fetchSectionData({
+          dbName: 'internph',
           collectionName: "applications",
           query: { userId },
+          projection: { jobId: 1, appliedAt: 1, _id: 1 },
         });
 
-        // Fetch job post details for each application
+        // Fetch job posts
         const jobIds = applicationData.map((app) => app.jobId);
         const jobPosts = await fetchSectionData({
+          dbName: 'internph',
           collectionName: "jobpost",
           query: { _id: { $in: jobIds } },
+          projection: { sectionData: 1 },
         });
 
-        // Map job posts to a lookup object
+        // Map job posts
         const jobPostMap = jobPosts.reduce((map, job) => {
           map[job._id] = job.sectionData.jobpost;
           return map;
         }, {});
 
-        // Combine application and job post data
+        // Load statuses from localStorage
+        const storedStatuses = JSON.parse(localStorage.getItem('applicationStatuses') || '{}');
+
+        // Combine data
         const formattedApplications = applicationData.map((app) => {
           const job = jobPostMap[app.jobId] || {};
           return {
             id: app.jobId,
+            applicationId: app._id,
             title: job.title || "Unknown Role",
             company: job.company || "Unknown Company",
-            location: job.location || "Unknown",
-            time: job.time || "Unknown",
-            salary: job.salary ? `₹${job.salary}` : "Not specified",
+            deadline: job.applicationdeadline
+              ? format(new Date(job.applicationdeadline), "MMM dd, yyyy")
+              : "Not specified",
             appliedAt: app.appliedAt
               ? formatDistanceToNow(new Date(app.appliedAt), { addSuffix: true })
                   .replace("about ", "")
                   .replace("hours", "hrs")
                   .replace("minutes", "min")
               : "Just now",
+            registeredOn: app.appliedAt
+              ? format(new Date(app.appliedAt), "MMM dd, yyyy, hh:mm a")
+              : "Unknown",
+            by: userEmail,
+            status: storedStatuses[app._id]?.status || "Applied",
+            feedback: storedStatuses[app._id]?.feedback || "",
           };
         });
 
@@ -73,6 +88,15 @@ const MyApplicationsPage = () => {
 
     fetchApplications();
   }, [userId]);
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "Shortlisted": return "bg-green-100 text-green-800";
+      case "Rejected": return "bg-red-100 text-red-800";
+      case "Interview": return "bg-blue-100 text-blue-800";
+      default: return "bg-gray-100 text-gray-800";
+    }
+  };
 
   if (loading) return <div className="mx-12 py-4">Loading...</div>;
   if (error) return <div className="mx-12 py-4">{error}</div>;
@@ -96,15 +120,23 @@ const MyApplicationsPage = () => {
                   <div className="text-gray-500 text-sm">{app.company}</div>
                   <div className="flex gap-4 text-sm text-gray-500 mt-1 flex-wrap">
                     <div className="flex items-center gap-1">
-                      <FaBriefcase /> {app.time}
+                      <FaBriefcase /> Deadline: {app.deadline}
                     </div>
-                    <div className="flex items-center gap-1">
-                      <FaRupeeSign /> {app.salary}
+                    <div className="text-sm text-gray-500">
+                      By: {app.by}
                     </div>
-                    <div className="flex items-center gap-1">
-                      <FaMapMarkerAlt /> {app.location}
-                    </div>
+                    <span className={`text-sm font-medium px-2 py-1 rounded ${getStatusColor(app.status)}`}>
+                      Status: {app.status}
+                    </span>
                   </div>
+                  <div className="text-sm text-gray-500 mt-1">
+                    Registered On: {app.registeredOn}
+                  </div>
+                  {app.feedback && (
+                    <div className="text-sm text-gray-500 mt-1">
+                      Feedback: {app.feedback}
+                    </div>
+                  )}
                 </div>
               </div>
               <button

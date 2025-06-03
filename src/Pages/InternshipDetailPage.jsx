@@ -15,10 +15,10 @@ import {
   FaFacebookF,
   FaLinkedinIn,
 } from "react-icons/fa";
-import { MdWork } from "react-icons/md";
+import { MdWork, MdDateRange } from "react-icons/md";
 import { PiTwitterLogoFill } from "react-icons/pi";
 import { fetchSectionData } from "../Utils/api";
-import { formatDistanceToNow, parse } from "date-fns";
+import { formatDistanceToNow, parse, format } from "date-fns";
 
 const InternshipDetailsPage = () => {
   const { id } = useParams();
@@ -116,12 +116,22 @@ const InternshipDetailsPage = () => {
     }
   };
 
+  const formatDeadline = (deadline) => {
+    try {
+      return format(new Date(deadline), "MMM dd, yyyy");
+    } catch (err) {
+      console.error("Error formatting deadline:", err);
+      return "Not specified";
+    }
+  };
+
   if (loading) return <div className="mx-12 py-4">Loading...</div>;
   if (error) return <div className="mx-12 py-4">{error}</div>;
 
   const jobpost = internship?.sectionData?.jobpost;
   const relativeTime = internship?.createdDate ? getRelativeTime(internship.createdDate) : "Just now";
   const categoryName = categoryMap[jobpost?.subtype] || jobpost?.subtype || "Unknown Category";
+  const applicationDeadline = jobpost?.applicationdeadline ? formatDeadline(jobpost.applicationdeadline) : "Not specified";
 
   // Join degree array into a comma-separated string
   const degreesList = jobpost?.degree?.length > 0 ? jobpost.degree.join(", ") : "Not specified";
@@ -182,6 +192,10 @@ const InternshipDetailsPage = () => {
               <div className="flex items-center gap-1">
                 <FaMapMarkerAlt />
                 {jobpost?.location || "Unknown"}
+              </div>
+              <div className="flex items-center gap-1">
+                <MdDateRange />
+                Deadline: {applicationDeadline}
               </div>
             </div>
           </div>
@@ -337,6 +351,10 @@ const InternshipDetailsPage = () => {
                 <div className="flex items-center gap-2">
                   <FaMapMarkerAlt className="text-blue-500" />
                   <span>Location: {jobpost?.location || "Unknown"}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <MdDateRange className="text-blue-500" />
+                  <span>Application Deadline: {applicationDeadline}</span>
                 </div>
               </div>
               <div className="mt-4">
