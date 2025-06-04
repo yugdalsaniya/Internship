@@ -1,7 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BiTime } from 'react-icons/bi';
 import { FaEye, FaRegLightbulb } from 'react-icons/fa';
 import { CalendarDays } from 'lucide-react';
+import { fetchSectionData, mUpdate } from './../../Utils/api';
+import { jwtDecode } from 'jwt-decode';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const PersonalDetails = () => {
   const [formData, setFormData] = useState({
@@ -24,8 +28,69 @@ const PersonalDetails = () => {
     copyAddress: false,
     hobbies: '',
   });
+  const [userId, setUserId] = useState(null);
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false); // New loading state
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const userString = localStorage.getItem('user');
+        let userIdLocal;
+        if (!userString) {
+          setError('Please log in to view your details.');
+          return;
+        }
+        try {
+          const user = JSON.parse(userString);
+          userIdLocal = user.userid;
+          setUserId(userIdLocal);
+        } catch (parseError) {
+          setError('Invalid user data. Please log in again.');
+          return;
+        }
+
+        const data = await fetchSectionData({
+          collectionName: 'appuser',
+          query: { _id: userIdLocal },
+          dbName: 'internph',
+        });
+
+        if (data.length > 0 && data[0].sectionData?.appuser) {
+          const user = data[0].sectionData.appuser;
+          setFormData({
+            pronouns: user.pronouns || '',
+            dob: user.dOB || '',
+            currentAddress: {
+              line1: user.addressline1 || '',
+              line2: user.addressline2 || '',
+              landmark: user.landmark1 || '',
+              pincode: user.pincode1 || '',
+              location: user.location1 || '',
+            },
+            permanentAddress: {
+              line1: user.addressline3 || '',
+              line2: user.addressline4 || '',
+              landmark: user.landmark2 || '',
+              pincode: user.pincode2 || '',
+              location: user.location2 || '',
+            },
+            copyAddress: user.copycurrentaddress || false,
+            hobbies: user.hobbies ? user.hobbies.join(', ') : '',
+          });
+        } else {
+          setError('User data not found. Please ensure your account exists.');
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+        setError('Failed to load user data. Please try again.');
+      }
+    };
+    fetchUserData();
+  }, []);
 
   const handleChange = (field, value, isPermanent = false) => {
+    setError('');
     if (field in formData) {
       setFormData({ ...formData, [field]: value });
     } else {
@@ -51,8 +116,79 @@ const PersonalDetails = () => {
     });
   };
 
-  const handleSave = () => {
-    console.log('Saved Personal Details:', formData);
+  const validateForm = () => {
+    if (!formData.currentAddress.line1 || !formData.currentAddress.pincode || !formData.currentAddress.location) {
+      setError('Please fill all required current address fields.');
+      return false;
+    }
+    if (!formData.copyAddress && (!formData.permanentAddress.line1 || !formData.permanentAddress.pincode || !formData.permanentAddress.location)) {
+      setError('Please fill all required permanent address fields or check "Copy Current Address".');
+      return false;
+    }
+    return true;
+  };
+
+  const handleSave = async () => {
+    try {
+      setIsLoading(true); // Set loading to true
+      if (!userId) {
+        setError('Please log in to save details.');
+        return;
+      }
+
+      if (!validateForm()) {
+        return;
+      }
+
+      const userData = {
+        'sectionData.appuser.pronouns': formData.pronouns,
+        'sectionData.appuser.dOB': formData.dob,
+        'sectionData.appuser.addressline1': formData.currentAddress.line1,
+        'sectionData.appuser.addressline2': formData.currentAddress.line2,
+        'sectionData.appuser.landmark1': formData.currentAddress.landmark,
+        'sectionData.appuser.pincode1': formData.currentAddress.pincode,
+        'sectionData.appuser.location1': formData.currentAddress.location,
+        'sectionData.appuser.copycurrentaddress': formData.copyAddress,
+        'sectionData.appuser.addressline3': formData.permanentAddress.line1,
+        'sectionData.appuser.addressline4': formData.permanentAddress.line2,
+        'sectionData.appuser.landmark2': formData.permanentAddress.landmark,
+        'sectionData.appuser.pincode2': formData.permanentAddress.pincode,
+        'sectionData.appuser.location2': formData.permanentAddress.location,
+        'sectionData.appuser.hobbies': formData.hobbies ? formData.hobbies.split(',').map(hobby => hobby.trim()) : [],
+        'editedAt': new Date().toISOString(),
+      };
+
+      await mUpdate({
+        appName: 'app8657281202648',
+        collectionName: 'appuser',
+        query: { _id: userId },
+        update: { $set: userData },
+        options: { upsert: false },
+      });
+
+      console.log('Data updated successfully:', userData);
+      toast.success('Personal details updated successfully!', {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+    } catch (error) {
+      console.error('Error updating data:', error);
+      setError(error.message || 'Failed to update personal details. Please try again.');
+      toast.error('Failed to update personal details. Please try again.', {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+    } finally {
+      setIsLoading(false); // Reset loading state
+    }
   };
 
   const renderInput = (label, field, section = null, placeholder = '', type = 'text', required = false) => (
@@ -72,6 +208,14 @@ const PersonalDetails = () => {
 
   return (
     <div className="bg-white rounded-xl shadow-md">
+      <ToastContainer />
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative m-4" role="alert">
+          <span>{error}</span>
+        </div>
+      )}
+
       {/* Fixed Header */}
       <div className="sticky top-0 bg-white z-10 px-4 py-4 shadow-sm flex justify-between items-center border-b border-gray-200">
         <div className="flex items-center gap-2 text-gray-700 text-lg font-medium">
@@ -114,9 +258,8 @@ const PersonalDetails = () => {
               type="date"
               value={formData.dob}
               onChange={(e) => handleChange('dob', e.target.value)}
-              className="w-full border rounded-lg p-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 pr-8"
+              className="w-full border rounded-lg p-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 pr-5"
             />
-            <CalendarDays className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
           </div>
         </div>
 
@@ -156,7 +299,7 @@ const PersonalDetails = () => {
           <p className="text-sm font-medium text-gray-700 mb-1">Hobbies</p>
           <input
             type="text"
-            placeholder="List your hobbies."
+            placeholder="List your hobbies (comma-separated)"
             value={formData.hobbies}
             onChange={(e) => handleChange('hobbies', e.target.value)}
             className="w-full border rounded-lg p-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -169,9 +312,12 @@ const PersonalDetails = () => {
         <div className="flex justify-end">
           <button
             onClick={handleSave}
-            className="bg-blue-600 text-white px-6 py-2 rounded-full flex items-center gap-2 text-sm font-medium hover:bg-blue-700 transition"
+            className={`bg-blue-600 text-white px-6 py-2 rounded-full flex items-center gap-2 text-sm font-medium transition ${
+              isLoading || error ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700'
+            }`}
+            disabled={isLoading || !!error}
           >
-            <span className="text-lg">✓</span> Save
+            <span className="text-lg">✓</span> {isLoading ? 'Saving...' : 'Save'}
           </button>
         </div>
       </div>
