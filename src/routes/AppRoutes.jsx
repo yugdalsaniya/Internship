@@ -25,7 +25,7 @@ import ContactUsPage from "../Pages/ContactUsPage";
 export default function AppRoutes() {
   return (
     <Router basename="/ph">
-      <SrollToTop />
+      {/* <SrollToTop /> */}
       <Routes>
         <Route path="/signup" element={<SignUpPage />} />
         <Route path="/signup/:role" element={<SignUpPage />} />
