@@ -11,7 +11,7 @@ const FeaturedCompany = () => {
       try {
         const data = await fetchSectionData({
           collectionName: 'company',
-          limit: 5,
+          limit: 50,
           query: { 'sectionData.Company.logoImage': { $ne: '' } },
         });
         console.log('FeaturedCompany API Response:', data);
