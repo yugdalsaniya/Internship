@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -19,7 +18,8 @@ import {
 } from "react-icons/fa";
 import { FaEye, FaRegLightbulb } from "react-icons/fa6";
 import Select from "react-select";
-import { fetchSectionData, mUpdate } from "../../Utils/api";
+import { fetchSectionData, mUpdate, uploadAndStoreFile } from "../../Utils/api";
+import { toast } from "react-toastify";
 
 const userTypes = [
   { label: "College Students", icon: <FaGraduationCap /> },
@@ -28,26 +28,11 @@ const userTypes = [
   { label: "Fresher", icon: <FaUserGraduate /> },
 ];
 
-const gradeOptions = [
-  { label: "1" },
-  { label: "2" },
-  { label: "3" },
-  { label: "4" },
-  { label: "5" },
-  { label: "6" },
-  { label: "7" },
-  { label: "8" },
-  { label: "9" },
-  { label: "10" },
-  { label: "11" },
-  { label: "12" },
-];
-
 const streamOptions = [
   { value: "", label: "Select Stream" },
-  { value: "Science", label: "Science" },
-  { value: "Commerce", label: "Commerce" },
-  { value: "Arts", label: "Arts" },
+  { value: "STEM", label: "STEM" },
+  { value: "ABM", label: "ABM" },
+  { value: "HUMSS", label: "HUMSS" },
 ];
 
 const purposes = [
@@ -57,7 +42,42 @@ const purposes = [
   { label: "To be a Mentor", icon: <FaUsers /> },
 ];
 
-const workExperienceOptions = ["1 year", "2 year", "3 year", "4 year"];
+const workExperienceOptions = ["1 year", "2 year"];
+
+async function uploadProfilePicture(file, userId) {
+  try {
+    if (!file) {
+      throw new Error("No file selected for upload.");
+    }
+    const validTypes = ["image/jpeg", "image/png", "image/gif"];
+    if (!validTypes.includes(file.type)) {
+      throw new Error("Invalid file type. Please upload a JPEG, PNG, or GIF image.");
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      throw new Error("File size exceeds 5MB limit.");
+    }
+
+    const response = await uploadAndStoreFile({
+      appName: "app8657281202648",
+      moduleName: "appuser",
+      file,
+      userId,
+    });
+    console.log("Upload Response:", response, "File");
+
+    if (!response || !response.filePath) {
+      throw new Error("Failed to upload profile picture: No file path returned.");
+    }
+
+    return response.filePath;
+  } catch (err) {
+    console.error("Upload profile picture error:", {
+      message: err.message,
+      response: err.response,
+    });
+    throw new Error(err.message || "Failed to upload profile picture.");
+  }
+}
 
 function BasicDetails() {
   const navigate = useNavigate();
@@ -78,7 +98,6 @@ function BasicDetails() {
   const [designation, setDesignation] = useState("");
   const [workExperienceType, setWorkExperienceType] = useState("");
   const [isCurrentlyWorking, setIsCurrentlyWorking] = useState(false);
-  const [grade, setGrade] = useState("");
   const [schoolName, setSchoolName] = useState("");
   const [stream, setStream] = useState("");
   const [error, setError] = useState("");
@@ -87,8 +106,12 @@ function BasicDetails() {
   const [newCareerRole, setNewCareerRole] = useState([]);
   const [designationOptions, setDesignationOptions] = useState([]);
   const [courseOptions, setCourseOptions] = useState([]);
+  const [instituteOptions, setInstituteOptions] = useState([]);
   const [roleOptions, setRoleOptions] = useState([]);
   const [isLoadingOptions, setIsLoadingOptions] = useState(false);
+  const [profilePicture, setProfilePicture] = useState("");
+  const [profilePictureFile, setProfilePictureFile] = useState(null);
+  const [profilePicturePreview, setProfilePicturePreview] = useState("");
 
   useEffect(() => {
     const fetchUserDataAndDropdownOptions = async () => {
@@ -158,16 +181,17 @@ function BasicDetails() {
         setDesignation(userData.designation || "");
         setWorkExperienceType(userData.workexperience || "");
         setIsCurrentlyWorking(userData.currentlyworkinginthisrole || false);
-        setGrade(userData.class || "");
         setSchoolName(userData.organisationcollege || "");
         setStream(userData.stream || "");
         setNewCareerRole(userData.role1 || []);
+        setProfilePicture(userData.profile || "");
 
         const designationData = await fetchSectionData({
           dbName: "internph",
           collectionName: "designation",
           query: {},
         });
+        console.log("Designation Data:", designationData); // Debug
         const designations = designationData.map((item) => ({
           _id: item._id,
           name: item.sectionData.designation.name,
@@ -179,24 +203,50 @@ function BasicDetails() {
           collectionName: "course",
           query: {},
         });
+        console.log("Course Data:", courseData); // Debug
         const courses = courseData.map((item) => ({
           _id: item._id,
           name: item.sectionData.course.name,
         }));
         setCourseOptions(courses);
 
+        const instituteData = await fetchSectionData({
+          dbName: "internph",
+          collectionName: "institute",
+          query: {},
+        });
+        console.log("Institute Data:", instituteData); // Debug
+        if (!Array.isArray(instituteData)) {
+          throw new Error("Institute data is not an array");
+        }
+        const institutes = instituteData
+          .map((item) => {
+            if (!item.sectionData?.institute?.institutionname) {
+              console.warn("Missing institutionname in item:", item);
+              return null;
+            }
+            return {
+              _id: item._id,
+              name: item.sectionData.institute.institutionname,
+            };
+          })
+          .filter((item) => item !== null);
+        setInstituteOptions(institutes);
+
         const roleData = await fetchSectionData({
           dbName: "internph",
           collectionName: "role",
           query: {},
         });
+        console.log("Role Data:", roleData); // Debug
         const roles = roleData.map((item) => ({
           _id: item._id,
           name: item.sectionData.role.name.trim(),
         }));
         setRoleOptions(roles);
       } catch (err) {
-        setError("Failed to load user data or dropdown options. Please try again.");
+        console.error("Error fetching data:", err); // Debug
+        setError("Failed to load user data or dropdown options: " + err.message);
         setTimeout(() => setError(""), 5000);
       } finally {
         setIsLoadingOptions(false);
@@ -213,7 +263,6 @@ function BasicDetails() {
       setIsCurrentlyWorking(false);
     }
     if (userType !== "School Student") {
-      setGrade("");
       setSchoolName("");
       setStream("");
     }
@@ -228,6 +277,23 @@ function BasicDetails() {
       setNewCareerRole([]);
     }
   }, [userType, careerGoal]);
+
+  const handleProfilePictureChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      console.log("Selected file:", {
+        name: file.name,
+        type: file.type,
+        size: file.size,
+      });
+      setProfilePictureFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfilePicturePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const validateForm = () => {
     if (
@@ -251,15 +317,11 @@ function BasicDetails() {
     ) {
       return "Please fill all required professional fields.";
     }
-    if (userType === "School Student" && (!grade || !schoolName)) {
+    if (userType === "School Student" && !schoolName) {
       return "Please fill all required school student fields.";
     }
-    if (
-      userType === "School Student" &&
-      (grade === "11" || grade === "12") &&
-      !stream
-    ) {
-      return "Please select a stream for grade 11 or 12.";
+    if (userType === "School Student" && !stream) {
+      return "Please select a stream.";
     }
     if (
       (userType === "College Students" || userType === "Fresher") &&
@@ -287,6 +349,7 @@ function BasicDetails() {
     const validationError = validateForm();
     if (validationError) {
       setError(validationError);
+      toast.error(validationError);
       setTimeout(() => setError(""), 5000);
       return;
     }
@@ -301,6 +364,7 @@ function BasicDetails() {
 
       if (!userString) {
         setError("Please log in to save your details.");
+        toast.error("Please log in to save your details.");
         setTimeout(() => setError(""), 2000);
         return;
       }
@@ -309,20 +373,20 @@ function BasicDetails() {
       try {
         const user = JSON.parse(userString);
         userId = user.userid;
-        console.log('User ID from localStorage:', userId); // Debug log
       } catch (parseError) {
         setError("Invalid user data. Please log in again.");
+        toast.error("Invalid user data. Please log in again.");
         setTimeout(() => setError(""), 2000);
         return;
       }
 
       if (!userId || !token) {
         setError("Authentication token or user ID missing. Please log in again.");
+        toast.error("Authentication token or user ID missing. Please log in again.");
         setTimeout(() => setError(""), 2000);
         return;
       }
 
-      // Verify user exists
       const existingUser = await fetchSectionData({
         dbName: "internph",
         collectionName: "appuser",
@@ -336,6 +400,7 @@ function BasicDetails() {
         setError(
           "User not found in database. Please sign up or contact support."
         );
+        toast.error("User not found in database. Please sign up or contact support.");
         setTimeout(() => {
           setError("");
           navigate("/signup");
@@ -343,7 +408,6 @@ function BasicDetails() {
         return;
       }
 
-      // Check for duplicate users with the same email
       const duplicateUsers = await fetchSectionData({
         dbName: "internph",
         collectionName: "appuser",
@@ -351,10 +415,10 @@ function BasicDetails() {
       });
 
       if (Array.isArray(duplicateUsers) && duplicateUsers.length > 1) {
-        console.warn('Multiple users found with email:', email, duplicateUsers);
         setError(
           "Multiple accounts detected for this email. Please contact support."
         );
+        toast.error("Multiple accounts detected for this email. Please contact support.");
         setTimeout(() => setError(""), 5000);
         return;
       }
@@ -369,15 +433,29 @@ function BasicDetails() {
             : existingUser.sectionData?.appuser || {};
           creatorName = `${userData.fname || firstName} ${userData.lname || lastName}`.trim();
         } catch (fetchError) {
-          console.warn(
-            "Failed to fetch user data for creatorName:",
-            fetchError
-          );
+          console.warn("Failed to fetch user data for creatorName:", fetchError);
+        }
+      }
+
+      let profilePictureUrl = profilePicture;
+      if (profilePictureFile) {
+        try {
+          profilePictureUrl = await uploadProfilePicture(profilePictureFile, userId);
+          setProfilePicture(profilePictureUrl);
+          setProfilePictureFile(null);
+          setProfilePicturePreview("");
+        } catch (uploadErr) {
+          setError(uploadErr.message);
+          toast.error(uploadErr.message);
+          setTimeout(() => setError(""), 5000);
+          setIsProcessing(false);
+          return;
         }
       }
 
       const updateData = {
         $set: {
+          "sectionData.appuser.profile": profilePictureUrl,
           "sectionData.appuser.name": email,
           "sectionData.appuser.legalname": creatorName,
           "sectionData.appuser.email": email,
@@ -400,7 +478,6 @@ function BasicDetails() {
             "sectionData.appuser.endyear": isCurrentlyWorking ? "" : endYear,
           }),
           ...(userType === "School Student" && {
-            "sectionData.appuser.class": grade,
             "sectionData.appuser.organisationcollege": schoolName,
           }),
           ...(userType === "College Students" || userType === "Fresher"
@@ -426,18 +503,19 @@ function BasicDetails() {
 
       if (updateResponse && updateResponse.success) {
         if (updateResponse.matchedCount === 0) {
-          console.error('Update failed: No document matched the query', { userId });
           setError("Failed to update user data: User not found.");
+          toast.error("Failed to update user data: User not found.");
           setTimeout(() => setError(""), 5000);
           return;
         }
         if (updateResponse.upsertedId) {
-          console.error('Unexpected upsert occurred:', updateResponse.upsertedId);
           setError("Unexpected error: New user created instead of updating. Please contact support.");
+          toast.error("Unexpected error: New user created instead of updating. Please contact support.");
           setTimeout(() => setError(""), 5000);
           return;
         }
         setSuccess("Details updated successfully!");
+        toast.success("Details updated successfully!");
         setTimeout(() => {
           setSuccess("");
           navigate("/");
@@ -454,6 +532,7 @@ function BasicDetails() {
         setTimeout(() => navigate("/login"), 2000);
       }
       setError(errorMessage || "Failed to update details. Please try again.");
+      toast.error(errorMessage || "Failed to update details. Please try again.");
       setTimeout(() => setError(""), 5000);
     } finally {
       setIsProcessing(false);
@@ -529,8 +608,32 @@ function BasicDetails() {
 
       <div className="p-4 sm:p-6 space-y-6">
         <div className="flex flex-col sm:flex-row items-center gap-6 mb-6">
-          <div className="w-24 h-24 bg-orange-400 rounded-full flex items-center justify-center">
-            <span className="text-4xl">👨‍🦱</span>
+          <div className="relative w-24 h-24 rounded-full flex items-center justify-center overflow-hidden group">
+            {profilePicture || profilePicturePreview ? (
+              <img
+                src={profilePicturePreview || profilePicture}
+                alt="Profile"
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full bg-orange-500 flex items-center justify-center">
+                <FaUser className="text-4xl text-white" />
+              </div>
+            )}
+            <label
+              htmlFor="profilePicture"
+              className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-40 rounded-full cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+            >
+              <FaEdit className="text-white text-xl" />
+              <input
+                id="profilePicture"
+                type="file"
+                accept="image/jpeg,image/png,image/gif"
+                onChange={handleProfilePictureChange}
+                className="hidden"
+                disabled={isProcessing}
+              />
+            </label>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
             <div>
@@ -574,11 +677,11 @@ function BasicDetails() {
 
         <div className="mb-4">
           <label className="text-sm font-medium text-gray-700 flex items-center justify-between">
-            Email <span className="text-red-500">*</span>
-            <button className="text-blue-600 text-sm flex items-center gap-1 hover:text-blue-800">
+            Email <span className="text-red-500"></span>
+            {/* <button className="text-blue-600 text-sm flex items-center gap-1 hover:text-blue-800">
               <FaEdit size={14} />
               Update Email
-            </button>
+            </button> */}
           </label>
           <div className="relative">
             <input
@@ -624,7 +727,7 @@ function BasicDetails() {
             Gender <span className="text-red-500">*</span>
           </label>
           <div className="flex flex-wrap gap-2 mt-1">
-            {["Male", "Female", "More Options"].map((g) => (
+            {["Male", "Female", "other"].map((g) => (
               <button
                 key={g}
                 onClick={() => setGender(g)}
@@ -637,7 +740,7 @@ function BasicDetails() {
               >
                 {g === "Male" && <FaMale />}
                 {g === "Female" && <FaFemale />}
-                {g === "More Options" && <FaUser />}
+                {g === "other" && <FaUser />}
                 {g}
               </button>
             ))}
@@ -753,51 +856,22 @@ function BasicDetails() {
         ) : userType === "School Student" ? (
           <>
             <div className="mb-4">
-              <label className="block font-medium mb-2 text-sm text-gray-700">
-                Class <span className="text-red-500">*</span>
+              <label className="text-sm font-medium block mb-1 text-gray-700">
+                Stream <span className="text-red-500">*</span>
               </label>
-              <div className="flex flex-wrap gap-3">
-                {gradeOptions.map((g) => (
-                  <button
-                    key={g.label}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-full border text-sm min-w-[60px] text-center justify-center ${
-                      grade === g.label
-                        ? "bg-blue-100 border-blue-500 text-blue-700 font-medium"
-                        : "border-gray-300 text-gray-600 hover:border-blue-400"
-                    } transition`}
-                    onClick={() => {
-                      setGrade(g.label);
-                      if (g.label !== "11" && g.label !== "12") {
-                        setStream("");
-                      }
-                    }}
-                    disabled={isProcessing}
-                  >
-                    {g.label}
-                  </button>
+              <select
+                className="w-full border border-gray-300 rounded-lg p-2 h-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={stream}
+                onChange={(e) => setStream(e.target.value)}
+                disabled={isProcessing}
+              >
+                {streamOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
                 ))}
-              </div>
+              </select>
             </div>
-
-            {(grade === "11" || grade === "12") && (
-              <div className="mb-4">
-                <label className="text-sm font-medium block mb-1 text-gray-700">
-                  Stream <span className="text-red-500">*</span>
-                </label>
-                <select
-                  className="w-full border border-gray-300 rounded-lg p-2 h-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={stream}
-                  onChange={(e) => setStream(e.target.value)}
-                  disabled={isProcessing}
-                >
-                  {streamOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
 
             <div className="mb-4">
               <label className="text-sm font-medium block mb-1 text-gray-700">
@@ -891,12 +965,24 @@ function BasicDetails() {
                 className="w-full border border-gray-300 rounded-lg p-2 h-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={college}
                 onChange={(e) => setCollege(e.target.value)}
-                disabled={isProcessing}
+                disabled={isProcessing || isLoadingOptions}
               >
                 <option value="">Select College</option>
-                <option value="ABC University">ABC University</option>
-                <option value="XYZ Institute">XYZ Institute</option>
+                {instituteOptions.length > 0 ? (
+                  instituteOptions.map((option) => (
+                    <option key={option._id} value={option._id}>
+                      {option.name}
+                    </option>
+                  ))
+                ) : (
+                  <option value="" disabled>
+                    No institutes available
+                  </option>
+                )}
               </select>
+              {isLoadingOptions && (
+                <p className="text-sm text-gray-500 mt-1">Loading institutes...</p>
+              )}
             </div>
           </>
         )}

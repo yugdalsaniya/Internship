@@ -147,7 +147,9 @@ function About() {
             maxLength={maxLength}
             disabled={isProcessing}
           />
-          <button className="mt-2 px-4 py-2 border rounded-full text-blue-600 hover:bg-blue-50 transition">
+          <button className="mt-2 px-4 py-2 border rounded-full text-blue-600 opacity-50 cursor-not-allowed hover:bg-blue-50 transition"
+          disabled
+          >
             Generate with AI
           </button>
         </div>
