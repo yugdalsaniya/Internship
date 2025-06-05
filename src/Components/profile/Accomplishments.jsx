@@ -1,9 +1,33 @@
+import { useState } from 'react';
 import { BiTime } from 'react-icons/bi';
 import { FaEye, FaRegLightbulb } from 'react-icons/fa';
+import CertificatesForm from './certificates-form/CertificatesForm';
+import ProjectsForm from './certificates-form/ProjectsForm';
+import AchievementsForm from './certificates-form/AchievementsForm';
+import ResponsibilitiesForm from './certificates-form/ResponsibilitiesForm';
 
 function Accomplishments() {
-  return (
-    <div className="bg-white rounded-xl shadow-md">
+  const[selected,setSelected] =useState(null)
+
+  const handleClick = (type) =>{
+    setSelected(type)
+  }
+  const renderFormComponent = ()=>{
+    switch(selected){
+       case 'certificates':
+        return <CertificatesForm onBack={()=>setSelected(null)}/>
+      case 'project':
+        return <ProjectsForm  onBack={()=>setSelected(null)}/>
+       case 'achievements':
+        return <AchievementsForm onBack={() => setSelected(null)} />;
+      case 'responsibilities':
+        return <ResponsibilitiesForm onBack={() => setSelected(null)} />;
+      default:
+        return null;
+    }
+  }
+const Main = ()=>(
+<div className="bg-white rounded-xl shadow-md">
       {/* Fixed Header */}
       <div className="sticky top-0 bg-white z-10 px-4 py-4 shadow-sm flex justify-between items-center border-b border-gray-200">
         <div className="flex items-center gap-2 text-gray-700 text-lg font-medium">
@@ -23,7 +47,7 @@ function Accomplishments() {
             Accomplishments & Initiatives
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-purple-50 p-4 rounded-lg text-center">
+            <div onClick={() => handleClick('certificates')} className="bg-purple-50 p-4 rounded-lg text-center cursor-pointer transition-transform transform hover:scale-105 hover:shadow-md hover:bg-purple-100">
               <div className="w-12 h-12 bg-purple-200 rounded-full flex items-center justify-center mx-auto mb-2">
                 <span>🎖️</span>
               </div>
@@ -32,16 +56,16 @@ function Accomplishments() {
                 Boost your profile with a certificate to impress employers
               </p>
             </div>
-            <div className="bg-blue-50 p-4 rounded-lg text-center">
-              <div className="w-12 h-12 bg-blue-200 rounded-full flex items-center justify-center mx-auto mb-2">
-                <span>📜</span>
+              <div  onClick={() => handleClick('project')} className="bg-blue-50 p-4 rounded-lg text-center cursor-pointer transition-transform transform hover:scale-105 hover:shadow-md hover:bg-blue-100">
+                <div className="w-12 h-12 bg-blue-200 rounded-full flex items-center justify-center mx-auto mb-2">
+                  <span>📜</span>
+                </div>
+                <p className="font-semibold text-gray-700">Add Projects</p>
+                <p className="text-sm text-gray-600">
+                  Boost your profile with a project to impress employers
+                </p>
               </div>
-              <p className="font-semibold text-gray-700">Add Projects</p>
-              <p className="text-sm text-gray-600">
-                Boost your profile with a project to impress employers
-              </p>
-            </div>
-            <div className="bg-yellow-50 p-4 rounded-lg text-center">
+            <div  onClick={() => handleClick('achievements')} className="bg-yellow-50 p-4 rounded-lg text-center cursor-pointer transition-transform transform hover:scale-105 hover:shadow-md hover:bg-yellow-100">
               <div className="w-12 h-12 bg-yellow-200 rounded-full flex items-center justify-center mx-auto mb-2">
                 <span>🏆</span>
               </div>
@@ -50,7 +74,7 @@ function Accomplishments() {
                 Boost your profile with an achievement to impress employers
               </p>
             </div>
-            <div className="bg-green-50 p-4 rounded-lg text-center">
+            <div  onClick={() => handleClick('responsibilities')} className="bg-green-50 p-4 rounded-lg text-center cursor-pointer transition-transform transform hover:scale-105 hover:shadow-md hover:bg-green-100">
               <div className="w-12 h-12 bg-green-200 rounded-full flex items-center justify-center mx-auto mb-2">
                 <span>🌱</span>
               </div>
@@ -73,6 +97,20 @@ function Accomplishments() {
           </button>
         </div>
       </div>
+    </div>
+)
+    
+        //  {selected === 'certificates' && <CertificatesForm />}
+    return (
+    <div className="bg-white rounded-xl shadow-md">
+      {selected === null ? (
+        <>
+       {Main()}
+        </>
+      ) : (
+       renderFormComponent()
+
+      )}
     </div>
   );
 }
