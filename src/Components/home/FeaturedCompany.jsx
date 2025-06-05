@@ -14,11 +14,10 @@ const FeaturedCompany = () => {
           limit: 50,
           query: { 'sectionData.Company.logoImage': { $ne: '' } },
         });
-        console.log('FeaturedCompany API Response:', data);
         setCompanies(data);
       } catch (err) {
         setError('Error fetching company data');
-getitem: console.error('FeaturedCompany API Error:', err);
+        console.error('FeaturedCompany API Error:', err);
       } finally {
         setLoading(false);
       }
@@ -27,7 +26,6 @@ getitem: console.error('FeaturedCompany API Error:', err);
     getCompanies();
   }, []);
 
-  // Memoize companies with valid logo sources
   const filteredCompanies = useMemo(() => {
     return companies
       .filter((company) => {
@@ -36,24 +34,48 @@ getitem: console.error('FeaturedCompany API Error:', err);
       })
       .map((company) => ({
         ...company,
-        logoSrc: company.sectionData.Company.logoImage || 'https://placehold.co/150x150',
+        logoSrc: company.sectionData.Company.logoImage,
+        companyName: company.sectionData.Company.companyName || 'Company'
       }));
   }, [companies]);
 
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>{error}</div>;
-  if (filteredCompanies.length === 0) return <div>No companies with valid logos found.</div>;
+  if (loading) return <div className="flex justify-center items-center h-32">Loading...</div>;
+  if (error) return <div className="flex justify-center items-center h-32 text-red-500">{error}</div>;
+  if (filteredCompanies.length === 0) return <div className="flex justify-center items-center h-32">No companies found.</div>;
 
   return (
-    <div className="flex flex-wrap justify-center items-center mx-6 py-10 bg-white space-x-4 sm:space-x-24">
-      {filteredCompanies.map((company) => (
-        <img
-          key={company._id}
-          src={company.logoSrc}
-          alt={`${company.sectionData.Company.companyName} Logo`}
-          className="h-6 sm:h-8 md:h-10 object-contain"
-        />
-      ))}
+    <div className="w-full bg-white py-8 px-4">
+      <div className="max-w-7xl mx-auto">
+        <div className={`relative ${filteredCompanies.length > 5 ? 'overflow-x-auto' : 'overflow-x-visible'}`}>
+          {/* Container that centers when few logos, left-aligns when many */}
+          <div className={`
+            flex 
+            ${filteredCompanies.length > 5 ? 'justify-start' : 'justify-center'}
+            w-full
+            scroll-smooth 
+            pb-4 
+            [&::-webkit-scrollbar]:hidden 
+            [-ms-overflow-style:none] 
+            [scrollbar-width:none]
+          `}>
+            <div className="flex space-x-8 md:space-x-16 px-4">
+              {filteredCompanies.map((company) => (
+                <div 
+                  key={company._id}
+                  className="flex flex-col items-center justify-center flex-shrink-0 w-32 h-20"
+                >
+                  <img
+                    src={company.logoSrc}
+                    alt={`${company.companyName} Logo`}
+                    className="max-h-12 w-auto object-contain transition-all duration-300 hover:scale-105"
+                    style={{ maxWidth: '100px' }}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
