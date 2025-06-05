@@ -53,7 +53,7 @@ const ProfileEditPage = () => {
     { label: 'About', path: 'about', completed: false, required: true },
     { label: 'Skills', path: 'skills', completed: false, required: true },
     { label: 'Education', path: 'education', completed: false, required: false },
-    { label: 'Work Experience', path: 'work-experience', completed: false, required: false },
+    // { label: 'Work Experience', path: 'work-experience', completed: false, required: false },
     { label: 'Accomplishments & Initiatives', path: 'accomplishments-and-initiatives', completed: false, required: false },
     { label: 'Personal Details', path: 'personal-details', completed: false, required: false },
     { label: 'Social Links', path: 'social-links', completed: false, required: false },
