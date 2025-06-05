@@ -223,175 +223,176 @@ const ForgotPassword = () => {
   };
 
   return (
-    <div className="flex h-screen font-sans overflow-hidden">
-      {/* Left Side - Form */}
-      <div className="w-full lg:w-1/2 flex flex-col justify-center px-6 py-4">
-        <div className="max-w-xs sm:max-w-sm mx-auto w-full">
-          {/* Logo Section */}
-          <div className="mb-6 flex flex-col items-center">
-            <div className="flex items-center space-x-3 mb-2">
-              <img src={logo} alt="Logo" className="w-10 h-10" />
-              <div>
-                <h1 className="text-xl font-bold text-[#050748] tracking-wide">
-                  INTERNSHIP–OJT
-                </h1>
-                <div className="w-full h-[2px] bg-[#050748] mt-1 mb-1" />
-                <p className="text-xs text-black font-bold text-center">
-                  WORK24 PHILIPPINES
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Form Section */}
-          <div className="w-full">
-            <h2 className="text-xl font-bold mb-1 text-black">
-              {step === 1 && 'Forgot Password'}
-              {step === 2 && 'Verify OTP'}
-              {step === 3 && 'Reset Password'}
-            </h2>
-            <p className="text-xs text-gray-500 mb-4">
-              {step === 1 && 'Enter your email to receive an OTP.'}
-              {step === 2 && 'Enter the OTP sent to your email.'}
-              {step === 3 && 'Enter your new password.'}
-            </p>
-            {error && <p className="text-red-500 text-xs mb-3">{error}</p>}
-
-            {step === 1 && (
-              <div className="space-y-3">
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Email"
-                  className="w-full px-3 py-2 border rounded-md outline-none text-xs"
-                  required
-                />
-                <button
-                  onClick={handleForgotPassword}
-                  disabled={loading || otpSent}
-                  className={`w-full bg-[#3D7EFF] text-white py-2 rounded-md font-semibold text-xs hover:bg-blue-600 transition-colors ${
-                    loading || otpSent ? 'opacity-70 cursor-not-allowed' : ''
-                  }`}
-                >
-                  {loading ? 'Sending OTP...' : otpSent ? 'OTP Sent' : 'Send OTP'}
-                </button>
-              </div>
-            )}
-
-            {step === 2 && (
-              <div className="space-y-4">
-                <div className="flex justify-between gap-2">
-                  {otp.map((digit, index) => (
-                    <input
-                      key={index}
-                      id={`otp-${index}`}
-                      type="text"
-                      maxLength="1"
-                      value={digit}
-                      onChange={(e) => handleOtpChange(index, e.target.value)}
-                      className="w-10 h-10 border rounded-md text-center text-sm outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  ))}
-                </div>
-                <button
-                  onClick={handleVerifyOtp}
-                  disabled={verifyLoading || resendLoading}
-                  className={`w-full bg-[#3D7EFF] text-white py-2 rounded-md font-semibold text-xs hover:bg-blue-600 transition-colors ${
-                    verifyLoading || resendLoading ? 'opacity-70 cursor-not-allowed' : ''
-                  }`}
-                >
-                  {verifyLoading ? 'Verifying...' : 'Verify OTP'}
-                </button>
-                <div className="text-center">
-                  <button
-                    type="button"
-                    onClick={handleResendOtp}
-                    disabled={verifyLoading || resendLoading}
-                    className={`text-xs text-[#3D7EFF] font-medium hover:text-blue-600 transition-colors ${
-                      verifyLoading || resendLoading ? 'opacity-50 cursor-not-allowed' : ''
-                    }`}
-                  >
-                    {resendLoading ? 'Resending...' : 'Resend OTP'}
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {step === 3 && (
-              <div className="space-y-3">
-                <div className="relative">
-                  <input
-                    type={showNewPassword ? 'text' : 'password'}
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="New Password"
-                    className="w-full px-3 py-2 border rounded-md outline-none text-xs pr-10"
-                    required
-                  />
-                  {showNewPassword ? (
-                    <MdVisibility
-                      className="absolute top-1/2 right-2 transform -translate-y-1/2 text-gray-500 cursor-pointer text-sm"
-                      onClick={toggleNewPasswordVisibility}
-                    />
-                  ) : (
-                    <MdVisibilityOff
-                      className="absolute top-1/2 right-2 transform -translate-y-1/2 text-gray-500 cursor-pointer text-sm"
-                      onClick={toggleNewPasswordVisibility}
-                    />
-                  )}
-                </div>
-                <div className="relative">
-                  <input
-                    type={showConfirmPassword ? 'text' : 'password'}
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Confirm Password"
-                    className="w-full px-3 py-2 border rounded-md outline-none text-xs pr-10"
-                    required
-                  />
-                  {showConfirmPassword ? (
-                    <MdVisibility
-                      className="absolute top-1/2 right-2 transform -translate-y-1/2 text-gray-500 cursor-pointer text-sm"
-                      onClick={toggleConfirmPasswordVisibility}
-                    />
-                  ) : (
-                    <MdVisibilityOff
-                      className="absolute top-1/2 right-2 transform -translate-y-1/2 text-gray-500 cursor-pointer text-sm"
-                      onClick={toggleConfirmPasswordVisibility}
-                    />
-                  )}
-                </div>
-                <button
-                  onClick={handleResetPassword}
-                  disabled={loading}
-                  className={`w-full bg-[#3D7EFF] text-white py-2 rounded-md font-semibold text-xs hover:bg-blue-600 transition-colors ${
-                    loading ? 'opacity-70 cursor-not-allowed' : ''
-                  }`}
-                >
-                  {loading ? 'Resetting...' : 'Reset Password'}
-                </button>
-              </div>
-            )}
-
-            <p className="text-xs text-center mt-4">
-              Back to{' '}
-              <Link to="/login" className="text-[#3D7EFF] font-semibold">
-                Sign in
-              </Link>
+   <div className="flex h-screen ">
+  {/* Left Side - Form */}
+  <div className="w-full lg:w-1/2 flex flex-col justify-center px-4 py-2 xs:px-6 sm:px-8">
+    <div className="max-w-[20rem] xs:max-w-[24rem] sm:max-w-[28rem] mx-auto w-full">
+      {/* Logo Section */}
+      <div className="mb-3 flex flex-col items-center">
+        <div className="flex items-center space-x-2 mb-1">
+          <img src={logo} alt="Logo" className="w-8 h-8 xs:w-10 xs:h-10 sm:w-12 sm:h-12" />
+          <div>
+            <h1 className="text-base xs:text-lg sm:text-xl font-bold text-[#050748] tracking-wide">
+              INTERNSHIP–OJT
+            </h1>
+            <div className="w-full h-[2px] bg-[#050748] mt-0.5 mb-0.5" />
+            <p className="text-xs xs:text-sm sm:text-base text-black font-bold text-center">
+              WORK24 PHILIPPINES
             </p>
           </div>
         </div>
       </div>
 
-      {/* Right Side - Image */}
-      <div className="hidden lg:flex w-1/2 p-4">
-        <div
-          className="w-full h-full bg-cover bg-center rounded-3xl"
-          style={{ backgroundImage: `url(${rightImage})` }}
-        ></div>
+      {/* Form Section */}
+      <div className="w-full">
+        <h2 className="text-base xs:text-lg sm:text-xl font-bold mb-1 text-black">
+          {step === 1 && 'Forgot Password'}
+          {step === 2 && 'Verify OTP'}
+          {step === 3 && 'Reset Password'}
+        </h2>
+        <p className="text-xs xs:text-sm text-gray-500 mb-2">
+          {step === 1 && 'Enter your email to receive an OTP.'}
+          {step === 2 && 'Enter the OTP sent to your email.'}
+          {step === 3 && 'Enter your new password.'}
+        </p>
+        {error && <p className="text-red-500 text-xs xs:text-sm mb-2">{error}</p>}
+
+        {step === 1 && (
+          <div className="space-y-2">
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Email"
+              className="w-full px-3 py-2 xs:px-4 xs:py-2.5 border rounded-md outline-none text-xs xs:text-sm sm:text-base focus:ring-2 focus:ring-[#3D7EFF]"
+              required
+            />
+            <button
+              onClick={handleForgotPassword}
+              disabled={loading || otpSent}
+              className={`w-full bg-[#3D7EFF] text-white py-2 xs:py-2.5 rounded-md font-semibold text-xs xs:text-sm sm:text-base hover:bg-[#2b66cc] transition-colors ${
+                loading || otpSent ? 'opacity-70 cursor-not-allowed' : ''
+              }`}
+            >
+              {loading ? 'Sending OTP...' : otpSent ? 'OTP Sent' : 'Send OTP'}
+            </button>
+          </div>
+        )}
+
+        {step === 2 && (
+          <div className="space-y-2">
+            <div className="flex justify-between gap-2">
+              {otp.map((digit, index) => (
+                <input
+                  key={index}
+                  id={`otp-${index}`}
+                  type="text"
+                  maxLength="1"
+                  value={digit}
+                  onChange={(e) => handleOtpChange(index, e.target.value)}
+                  className="w-10 h-10 border rounded-md text-center text-sm outline-none focus:ring-2 focus:ring-[#3D7EFF]"
+                />
+              ))}
+            </div>
+            <button
+              onClick={handleVerifyOtp}
+              disabled={verifyLoading || resendLoading}
+              className={`w-full bg-[#3D7EFF] text-white py-2 xs:py-2.5 rounded-md font-semibold text-xs xs:text-sm sm:text-base hover:bg-[#2b66cc] transition-colors ${
+                verifyLoading || resendLoading ? 'opacity-70 cursor-not-allowed' : ''
+              }`}
+            >
+              {verifyLoading ? 'Verifying...' : 'Verify OTP'}
+            </button>
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={handleResendOtp}
+                disabled={verifyLoading || resendLoading}
+                className={`text-xs xs:text-sm text-[#3D7EFF] font-medium hover:text-blue-600 transition-colors ${
+                  verifyLoading || resendLoading ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
+              >
+                {resendLoading ? 'Resending...' : 'Resend OTP'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {step === 3 && (
+          <div className="space-y-2">
+            <div className="relative">
+              <input
+                type={showNewPassword ? 'text' : 'password'}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="New Password"
+                className="w-full px-3 py-2 xs:px-4 xs:py-2.5 border rounded-md outline-none text-xs xs:text-sm sm:text-base pr-10 focus:ring-2 focus:ring-[#3D7EFF]"
+                required
+              />
+              {showNewPassword ? (
+                <MdVisibility
+                  className="absolute top-1/2 right-2 xs:right-3 transform -translate-y-1/2 text-gray-500 cursor-pointer text-base xs:text-lg"
+                  onClick={toggleNewPasswordVisibility}
+                />
+              ) : (
+                <MdVisibilityOff
+                  className="absolute top-1/2 right-2 xs:right-3 transform -translate-y-1/2 text-gray-500 cursor-pointer text-base xs:text-lg"
+                  onClick={toggleNewPasswordVisibility}
+                />
+              )}
+            </div>
+            <div className="relative">
+              <input
+                type={showConfirmPassword ? 'text' : 'password'}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Confirm Password"
+                className="w-full px-3 py-2 xs:px-4 xs:py-2.5 border rounded-md outline-none text-xs xs:text-sm sm:text-base pr-10 focus:ring-2 focus:ring-[#3D7EFF]"
+                required
+              />
+              {showConfirmPassword ? (
+                <MdVisibility
+                  className="absolute top-1/2 right-2 xs:right-3 transform -translate-y-1/2 text-gray-500 cursor-pointer text-base xs:text-lg"
+                  onClick={toggleConfirmPasswordVisibility}
+                />
+              ) : (
+                <MdVisibilityOff
+                  className="absolute top-1/2 right-2 xs:right-3 transform -translate-y-1/2 text-gray-500 cursor-pointer text-base xs:text-lg"
+                  onClick={toggleConfirmPasswordVisibility}
+                />
+              )}
+            </div>
+            <button
+              onClick={handleResetPassword}
+              disabled={loading}
+              className={`w-full bg-[#3D7EFF] text-white py-2 xs:py-2.5 rounded-md font-semibold text-xs xs:text-sm sm:text-base hover:bg-[#2b66cc] transition-colors ${
+                loading ? 'opacity-70 cursor-not-allowed' : ''
+              }`}
+            >
+              {loading ? 'Resetting...' : 'Reset Password'}
+            </button>
+          </div>
+        )}
+
+        <p className="text-xs xs:text-sm text-center mt-2.5">
+          Back to{' '}
+          <Link to="/login" className="text-[#3D7EFF] font-semibold hover:underline">
+            Sign in
+          </Link>
+        </p>
       </div>
     </div>
+  </div>
+
+  {/* Right Side - Image */}
+  <div className="hidden lg:flex w-1/2 p-2">
+    <div
+      className="w-full h-full bg-cover bg-center rounded-3xl"
+      style={{ backgroundImage: `url(${rightImage})` }}
+    ></div>
+  </div>
+</div>
+
   );
 };
 

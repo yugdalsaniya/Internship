@@ -152,20 +152,19 @@ const OtpVerification = () => {
   };
 
   return (
-    <div className="flex h-screen font-sans overflow-hidden">
-      {/* Left Side - Form */}
-      <div className="w-full lg:w-1/2 flex flex-col justify-center px-6 py-4">
-        <div className="max-w-xs sm:max-w-sm mx-auto w-full">
+    <div className="flex h-screen">
+      <div className="w-full lg:w-1/2 flex flex-col justify-center px-4 py-2 xs:px-6 sm:px-8">
+        <div className="max-w-[20rem] xs:max-w-[24rem] sm:max-w-[28rem] mx-auto w-full">
           {/* Logo Section */}
-          <div className="mb-6 flex flex-col items-center">
-            <div className="flex items-center space-x-3 mb-2">
-              <img src={logo} alt="Logo" className="w-10 h-10" />
+          <div className="mb-3 flex flex-col items-center">
+            <div className="flex items-center space-x-2 mb-1">
+              <img src={logo} alt="Logo" className="w-8 h-8 xs:w-10 xs:h-10 sm:w-12 sm:h-12" />
               <div>
-                <h1 className="text-xl font-bold text-[#050748] tracking-wide">
+                <h1 className="text-base xs:text-lg sm:text-xl font-bold text-[#050748] tracking-wide">
                   INTERNSHIP–OJT
                 </h1>
-                <div className="w-full h-[2px] bg-[#050748] mt-1 mb-1" />
-                <p className="text-xs text-black font-bold text-center">
+                <div className="w-full h-[2px] bg-[#050748] mt-0.5 mb-0.5" />
+                <p className="text-xs xs:text-sm sm:text-base text-black font-bold text-center">
                   WORK24 PHILIPPINES
                 </p>
               </div>
@@ -173,22 +172,22 @@ const OtpVerification = () => {
           </div>
 
           {/* OTP Image */}
-          <div className="mb-6 flex justify-center">
-            <img src={otpImage} alt="OTP Verification" className="w-40" />
+          <div className="mb-4 flex justify-center">
+            <img src={otpImage} alt="OTP Verification" className="w-32 xs:w-36 sm:w-40" />
           </div>
 
           <div className="w-full">
             <div className="text-center">
-              <h2 className="text-xl font-bold mb-1 text-black">Verify Your Email Address</h2>
-              <p className="text-xs text-gray-500 mb-4">Verify your email with the OTP sent</p>
+              <h2 className="text-base xs:text-lg sm:text-xl font-bold mb-1 text-black">Verify Your Email Address</h2>
+              <p className="text-xs xs:text-sm text-gray-500 mb-2">Verify your email with the OTP sent</p>
               {error && (
-                <p className={`text-xs mb-3 ${error.includes('successfully') ? 'text-green-500' : 'text-red-500'}`}>
+                <p className={`text-xs xs:text-sm mb-2 ${error.includes('successfully') ? 'text-green-500' : 'text-red-500'}`}>
                   {error}
                 </p>
               )}
 
-              <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
-                <div className="flex justify-between gap-2">
+              <form ref={formRef} onSubmit={handleSubmit} className="space-y-3">
+                <div className="flex justify-center gap-2 xs:gap-3">
                   {otp.map((digit, index) => (
                     <input
                       key={index}
@@ -197,7 +196,7 @@ const OtpVerification = () => {
                       maxLength="1"
                       value={digit}
                       onChange={(e) => handleChange(index, e.target.value)}
-                      className="w-10 h-10 border rounded-md text-center text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-10 h-10 xs:w-12 xs:h-12 border rounded-md text-center text-sm xs:text-base outline-none focus:ring-2 focus:ring-[#3D7EFF]"
                       aria-label={`OTP digit ${index + 1}`}
                     />
                   ))}
@@ -206,24 +205,24 @@ const OtpVerification = () => {
                 <button
                   type="submit"
                   disabled={verifyLoading || resendLoading}
-                  className={`w-full bg-[#3D7EFF] text-white py-2 rounded-md font-semibold text-xs hover:bg-blue-600 transition-colors ${
-                    verifyLoading || resendLoading ? 'opacity-70 cursor-not-allowed pointer-events-none' : ''
+                  className={`w-full bg-[#3D7EFF] text-white py-2 xs:py-2.5 rounded-md font-semibold text-xs xs:text-sm sm:text-base hover:bg-[#2b66cc] transition-colors ${
+                    verifyLoading || resendLoading ? 'opacity-70 cursor-not-allowed' : ''
                   }`}
                 >
                   {verifyLoading ? 'Verifying...' : 'Verify OTP'}
                 </button>
               </form>
 
-              <div className="mt-4">
+              <div className="mt-3">
                 <button
                   type="button"
                   onClick={handleResend}
                   disabled={verifyLoading || resendLoading}
-                  className={`text-xs text-[#3D7EFF] font-medium hover:text-blue-600 transition-colors ${
-                    verifyLoading || resendLoading ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''
+                  className={`text-xs xs:text-sm text-[#3D7EFF] font-medium hover:text-blue-600 hover:underline transition-colors ${
+                    verifyLoading || resendLoading ? 'opacity-50 cursor-not-allowed' : ''
                   }`}
                 >
-                  {resendLoading ? 'Resending...' : 'Resend OTP'}
+                  {resendLoading ? 'Resending...' : "Didn't receive code? Resend OTP"}
                 </button>
               </div>
             </div>
@@ -232,7 +231,7 @@ const OtpVerification = () => {
       </div>
 
       {/* Right Side - Image */}
-      <div className="hidden lg:flex w-1/2 p-4">
+      <div className="hidden lg:flex w-1/2 p-2">
         <div
           className="w-full h-full bg-cover bg-center rounded-3xl"
           style={{ backgroundImage: `url(${rightImage})` }}

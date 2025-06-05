@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { MdVisibility, MdVisibilityOff } from 'react-icons/md';
@@ -124,33 +123,33 @@ const SignIn = () => {
   };
 
   return (
-    <div className="flex h-screen font-sans overflow-hidden">
-      <div className="w-full lg:w-1/2 flex flex-col justify-center px-6 py-4">
-        <div className="max-w-xs sm:max-w-sm mx-auto w-full">
-          <div className="mb-6 flex flex-col items-center">
-            <div className="flex items-center space-x-3 mb-2">
-              <img src={logo} alt="Logo" className="w-10 h-10" />
+    <div className="flex h-screen ">
+      <div className="w-full lg:w-1/2 flex flex-col justify-center px-4 py-2 xs:px-6 sm:px-8">
+        <div className="max-w-[20rem] xs:max-w-[24rem] sm:max-w-[28rem] mx-auto w-full">
+          <div className="mb-3 flex flex-col items-center">
+            <div className="flex items-center space-x-2 mb-1">
+              <img src={logo} alt="Logo" className="w-8 h-8 xs:w-10 xs:h-10 sm:w-12 sm:h-12" />
               <div>
-                <h1 className="text-xl font-bold text-[#050748] tracking-wide">
+                <h1 className="text-base xs:text-lg sm:text-xl font-bold text-[#050748] tracking-wide">
                   INTERNSHIP–OJT
                 </h1>
-                <div className="w-full h-[2px] bg-[#050748] mt-1 mb-1" />
-                <p className="text-xs text-black font-bold text-center">
+                <div className="w-full h-[2px] bg-[#050748] mt-0.5 mb-0.5" />
+                <p className="text-xs xs:text-sm sm:text-base text-black font-bold text-center">
                   WORK24 PHILIPPINES
                 </p>
               </div>
             </div>
           </div>
           <div className="w-full">
-            <h2 className="text-xl font-bold mb-1 text-black">Sign in</h2>
-            <p className="text-xs text-gray-500 mb-4">Please login to continue to your account.</p>
-            {error && <p className="text-red-500 text-xs mb-3">{error}</p>}
-            <form className="space-y-3" onSubmit={handleSubmit}>
+            <h2 className="text-base xs:text-lg sm:text-xl font-bold mb-1 text-black">Sign in</h2>
+            <p className="text-xs xs:text-sm text-gray-500 mb-2">Please login to continue to your account.</p>
+            {error && <p className="text-red-500 text-xs xs:text-sm mb-2">{error}</p>}
+            <form className="space-y-2" onSubmit={handleSubmit}>
               <input
                 type="email"
                 name="email"
                 placeholder="Email"
-                className="w-full px-3 py-2 border rounded-md outline-none text-xs"
+                className="w-full px-3 py-2 xs:px-4 xs:py-2.5 border rounded-md outline-none text-xs xs:text-sm sm:text-base focus:ring-2 focus:ring-[#3D7EFF]"
                 value={formData.email}
                 onChange={handleChange}
                 required
@@ -160,35 +159,35 @@ const SignIn = () => {
                   type={showPassword ? 'text' : 'password'}
                   name="password"
                   placeholder="Password"
-                  className="w-full px-3 py-2 border rounded-md pr-8 text-xs"
+                  className="w-full px-3 py-2 xs:px-4 xs:py-2.5 border rounded-md outline-none text-xs xs:text-sm sm:text-base focus:ring-2 focus:ring-[#3D7EFF]"
                   value={formData.password}
                   onChange={handleChange}
                   required
                 />
                 {showPassword ? (
                   <MdVisibility
-                    className="absolute top-1/2 right-2 transform -translate-y-1/2 text-gray-500 cursor-pointer text-sm"
+                    className="absolute top-1/2 right-2 xs:right-3 transform -translate-y-1/2 text-gray-500 cursor-pointer text-base xs:text-lg"
                     onClick={togglePasswordVisibility}
                   />
                 ) : (
                   <MdVisibilityOff
-                    className="absolute top-1/2 right-2 transform -translate-y-1/2 text-gray-500 cursor-pointer text-sm"
+                    className="absolute top-1/2 right-2 xs:right-3 transform -translate-y-1/2 text-gray-500 cursor-pointer text-base xs:text-lg"
                     onClick={togglePasswordVisibility}
                   />
                 )}
               </div>
-              <div className="flex items-center justify-between text-xs">
+              <div className="flex items-center justify-between text-xs xs:text-sm">
                 <label className="flex items-center">
-                  <input type="checkbox" className="mr-2" />
+                  <input type="checkbox" className="mr-1 w-3.5 h-3.5 xs:w-4 xs:h-4" />
                   Keep me logged in
                 </label>
-                <Link to="/forgotpassword" className="text-[#3D7EFF]">
+                <Link to="/forgotpassword" className="text-[#3D7EFF] hover:underline">
                   Forgot Password?
                 </Link>
               </div>
               <button
                 type="submit"
-                className="w-full bg-[#3D7EFF] text-white py-2 rounded-md font-semibold text-xs"
+                className="w-full bg-[#3D7EFF] text-white py-2 xs:py-2.5 rounded-md font-semibold text-xs xs:text-sm sm:text-base hover:bg-[#2b66cc] transition-colors"
                 disabled={loading}
               >
                 {loading ? 'Signing in...' : 'Sign in'}
@@ -196,38 +195,38 @@ const SignIn = () => {
             </form>
             {user.role !== 'company' && (
               <>
-                <div className="flex items-center my-4">
+                <div className="flex items-center my-2">
                   <hr className="flex-grow border-t" />
-                  <span className="mx-2 text-xs text-gray-500">or</span>
+                  <span className="mx-2 text-xs xs:text-sm text-gray-500">or</span>
                   <hr className="flex-grow border-t" />
                 </div>
-                <div className="flex justify-center gap-4 mb-4">
-                  <button className="border p-1 rounded-md">
+                <div className="flex justify-center gap-3 xs:gap-4 mb-2">
+                  <button className="border p-1.5 rounded-md hover:bg-gray-100">
                     <img
                       src="https://img.icons8.com/color/48/google-logo.png"
                       alt="Google"
-                      className="w-5 h-5"
+                      className="w-4 h-4 xs:w-5 xs:h-5"
                     />
                   </button>
-                  <button className="border p-1 rounded-md">
-                    <img src={facebook} alt="Facebook" className="w-5 h-5" />
+                  <button className="border p-1.5 rounded-md hover:bg-gray-100">
+                    <img src={facebook} alt="Facebook" className="w-4 h-4 xs:w-5 xs:h-5" />
                   </button>
-                  <button className="border p-1 rounded-md">
-                    <img src={linkedin} alt="LinkedIn" className="w-5 h-5" />
+                  <button className="border p-1.5 rounded-md hover:bg-gray-100">
+                    <img src={linkedin} alt="LinkedIn" className="w-4 h-4 xs:w-5 xs:h-5" />
                   </button>
                 </div>
               </>
             )}
-            <p className="text-xs text-center">
+            <p className="text-sm xs:text-sm text-center">
               Need an account?{' '}
-              <Link to="/signup" className="text-[#3D7EFF] font-semibold">
+              <Link to="/signup" className="text-[#3D7EFF] font-semibold hover:underline">
                 Create one
               </Link>
             </p>
           </div>
         </div>
       </div>
-      <div className="hidden lg:flex w-1/2 p-4">
+      <div className="hidden lg:flex w-1/2 p-2">
         <div
           className="w-full h-full bg-cover bg-center rounded-3xl"
           style={{ backgroundImage: `url(${rightImage})` }}
