@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { BiTime } from 'react-icons/bi';
 import { FaEye, FaRegLightbulb } from 'react-icons/fa';
 import { fetchSectionData, mUpdate } from '../../Utils/api';
@@ -11,6 +11,10 @@ function Skills() {
   const [selectedSkillIds, setSelectedSkillIds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(0);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [filteredSkills, setFilteredSkills] = useState([]);
+  const textareaRef = useRef(null);
+  const dropdownRef = useRef(null);
 
   // Retrieve userId from localStorage
   const userString = localStorage.getItem('user');
@@ -38,21 +42,21 @@ function Skills() {
           collectionName: 'skills',
           projection: { 'sectionData.skills': 1, '_id': 1 },
         });
-        
+
         const skillData = response.map(item => ({
           id: item._id,
-          name: item.sectionData.skills.name
+          name: item.sectionData.skills.name,
         }));
         setAllSkills(skillData);
         setLoading(false);
       } catch (err) {
-        toast.error('Failed to load skills', { autoClose: 5000 });
+        toast.error('Failed to load skills:', { autoClose: err.message });
         setLoading(false);
-      }
-    };
+        }
+      };
 
-    fetchSkills();
-  }, []);
+      fetchSkills();
+    }, []);
 
   // Fetch user's saved skills
   useEffect(() => {
@@ -68,7 +72,7 @@ function Skills() {
           projection: { 'sectionData.appuser.skills': 1 }
         });
 
-        if (response && response[0] && response[0].sectionData?.appuser?.skills) {
+        if (response && response[0]?.sectionData?.appuser?.skills) {
           setSelectedSkillIds(response[0].sectionData.appuser.skills);
         }
         setLoading(false);
@@ -80,6 +84,41 @@ function Skills() {
 
     fetchUserSkills();
   }, [userId]);
+
+  // Handle clicks outside textarea to hide dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        textareaRef.current &&
+        !textareaRef.current.contains(event.target) &&
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target)
+      ) {
+        setShowDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  // Filter skills based on textarea input
+  useEffect(() => {
+    if (skillsText.trim() === '') {
+      setFilteredSkills([]);
+      setShowDropdown(false);
+      return;
+    }
+
+    const filtered = allSkills.filter((skill) =>
+      skill.name.toLowerCase().includes(skillsText.toLowerCase()) &&
+      !selectedSkillIds.includes(skill.id)
+    );
+    setFilteredSkills(filtered);
+    setShowDropdown(filtered.length > 0);
+  }, [skillsText, allSkills, selectedSkillIds]);
 
   // Compute suggestions to display (up to 10, excluding selected skills)
   const getSuggestions = () => {
@@ -106,6 +145,11 @@ function Skills() {
       const currentSuggestions = availableSkills.slice(currentPage * 10, currentPage * 10 + 10);
       if (currentSuggestions.length === 0 && availableSkills.length > 0) {
         setCurrentPage(prev => prev + 1);
+      }
+      // Clear textarea and hide dropdown if selected from dropdown
+      if (showDropdown) {
+        setSkillsText('');
+        setShowDropdown(false);
       }
     }
   };
@@ -138,7 +182,7 @@ function Skills() {
   return (
     <div className="bg-white rounded-xl shadow-md">
       <ToastContainer position="top-right" autoClose={5000} hideProgressBar={false} newestOnTop closeOnClick pauseOnHover draggable />
-      
+
       <div className="sticky top-0 bg-white z-10 px-4 py-4 shadow-sm flex justify-between items-center border-b border-gray-200">
         <div className="flex items-center gap-2 text-gray-700 text-lg font-medium">
           <BiTime className="text-xl" />
@@ -187,13 +231,33 @@ function Skills() {
               ))}
             </div>
           )}
-          <textarea
-            className="w-full border rounded-lg p-2 resize-none"
-            rows="2"
-            placeholder="List your skills here, showcasing what you excel at."
-            value={skillsText}
-            onChange={(e) => setSkillsText(e.target.value)}
-          />
+          <div className="relative">
+            <textarea
+              ref={textareaRef}
+              className="w-full border rounded-lg p-2 resize-none"
+              rows="1"
+              placeholder="List your skills here, showcasing what you excel at."
+              value={skillsText}
+              onChange={(e) => setSkillsText(e.target.value)}
+              onFocus={() => skillsText.trim() && filteredSkills.length > 0 && setShowDropdown(true)}
+            />
+            {showDropdown && filteredSkills.length > 0 && (
+              <div
+                ref={dropdownRef}
+                className="absolute z-10 w-full bg-white border border-gray-200 rounded-lg shadow-lg mt-1 max-h-40 overflow-y-auto"
+              >
+                {filteredSkills.map((skill) => (
+                  <button
+                    key={skill.id}
+                    className="w-full text-left px-3 py-2 text-gray-700 hover:bg-gray-100 transition"
+                    onClick={() => handleSkillClick(skill.id, skill.name)}
+                  >
+                    {skill.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

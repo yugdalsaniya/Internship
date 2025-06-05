@@ -15,14 +15,14 @@ const PersonalDetails = () => {
       line1: '',
       line2: '',
       landmark: '',
-      pincode: '',
+      ZIPcode: '',
       location: '',
     },
     permanentAddress: {
       line1: '',
       line2: '',
       landmark: '',
-      pincode: '',
+      ZIPcode: '',
       location: '',
     },
     copyAddress: false,
@@ -65,14 +65,14 @@ const PersonalDetails = () => {
               line1: user.addressline1 || '',
               line2: user.addressline2 || '',
               landmark: user.landmark1 || '',
-              pincode: user.pincode1 || '',
+              ZIPcode: user.zipcode1 || '',
               location: user.location1 || '',
             },
             permanentAddress: {
               line1: user.addressline3 || '',
               line2: user.addressline4 || '',
               landmark: user.landmark2 || '',
-              pincode: user.pincode2 || '',
+              ZIPcode: user.zipcode2 || '',
               location: user.location2 || '',
             },
             copyAddress: user.copycurrentaddress || false,
@@ -111,17 +111,17 @@ const PersonalDetails = () => {
       ...formData,
       copyAddress: copied,
       permanentAddress: copied ? { ...formData.currentAddress } : {
-        line1: '', line2: '', landmark: '', pincode: '', location: '',
+        line1: '', line2: '', landmark: '', ZIPcode: '', location: '',
       }
     });
   };
 
   const validateForm = () => {
-    if (!formData.currentAddress.line1 || !formData.currentAddress.pincode || !formData.currentAddress.location) {
+    if (!formData.currentAddress.line1 || !formData.currentAddress.ZIPcode || !formData.currentAddress.location) {
       setError('Please fill all required current address fields.');
       return false;
     }
-    if (!formData.copyAddress && (!formData.permanentAddress.line1 || !formData.permanentAddress.pincode || !formData.permanentAddress.location)) {
+    if (!formData.copyAddress && (!formData.permanentAddress.line1 || !formData.permanentAddress.ZIPcode || !formData.permanentAddress.location)) {
       setError('Please fill all required permanent address fields or check "Copy Current Address".');
       return false;
     }
@@ -146,13 +146,13 @@ const PersonalDetails = () => {
         'sectionData.appuser.addressline1': formData.currentAddress.line1,
         'sectionData.appuser.addressline2': formData.currentAddress.line2,
         'sectionData.appuser.landmark1': formData.currentAddress.landmark,
-        'sectionData.appuser.pincode1': formData.currentAddress.pincode,
+        'sectionData.appuser.zipcode1': formData.currentAddress.ZIPcode,
         'sectionData.appuser.location1': formData.currentAddress.location,
         'sectionData.appuser.copycurrentaddress': formData.copyAddress,
         'sectionData.appuser.addressline3': formData.permanentAddress.line1,
         'sectionData.appuser.addressline4': formData.permanentAddress.line2,
         'sectionData.appuser.landmark2': formData.permanentAddress.landmark,
-        'sectionData.appuser.pincode2': formData.permanentAddress.pincode,
+        'sectionData.appuser.zipcode2': formData.permanentAddress.ZIPcode,
         'sectionData.appuser.location2': formData.permanentAddress.location,
         'sectionData.appuser.hobbies': formData.hobbies ? formData.hobbies.split(',').map(hobby => hobby.trim()) : [],
         'editedAt': new Date().toISOString(),
@@ -269,7 +269,7 @@ const PersonalDetails = () => {
           {renderInput('Address Line 1', 'line1', 'currentAddress', '', 'text', true)}
           {renderInput('Address Line 2', 'line2', 'currentAddress')}
           {renderInput('Landmark', 'landmark', 'currentAddress')}
-          {renderInput('Pincode', 'pincode', 'currentAddress', '', 'text', true)}
+          {renderInput('ZIP Code', 'ZIPcode', 'currentAddress', '', 'text', true)}
           {renderInput('Location', 'location', 'currentAddress', '', 'text', true)}
         </div>
 
@@ -290,7 +290,7 @@ const PersonalDetails = () => {
           {renderInput('Address Line 1', 'line1', 'permanentAddress', '', 'text', true)}
           {renderInput('Address Line 2', 'line2', 'permanentAddress')}
           {renderInput('Landmark', 'landmark', 'permanentAddress')}
-          {renderInput('Pincode', 'pincode', 'permanentAddress', '', 'text', true)}
+          {renderInput('ZIP Code', 'ZIPcode', 'permanentAddress', '', 'text', true)}
           {renderInput('Location', 'location', 'permanentAddress', '', 'text', true)}
         </div>
 

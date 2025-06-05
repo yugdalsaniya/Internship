@@ -1,41 +1,43 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { BiTime } from 'react-icons/bi';
-import { BsEye, BsLightbulb } from 'react-icons/bs';
-import { AiFillFilePdf } from 'react-icons/ai';
-import { MdDelete, MdEdit } from 'react-icons/md';
-import { ChevronDown, Plus } from 'lucide-react';
-import { fetchSectionData, mUpdate, uploadAndStoreFile } from '../../Utils/api';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import React, { useState, useEffect, useRef } from "react";
+import { BiTime } from "react-icons/bi";
+import { BsEye, BsLightbulb } from "react-icons/bs";
+import { AiFillFilePdf } from "react-icons/ai";
+import { MdDelete, MdEdit } from "react-icons/md";
+import { ChevronDown, Plus } from "lucide-react";
+import { fetchSectionData, mUpdate, uploadAndStoreFile } from "../../Utils/api";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const Education = () => {
   const [formData, setFormData] = useState({
-    qualification: '',
-    course: '',
-    specialization: '',
-    stream: '',
-    board: '',
-    college: '',
-    startYear: '',
-    endYear: '',
-    courseType: '',
-    percentage: '',
-    cgpa: '',
-    rollNumber: '',
-    lateralEntry: '',
-    skills: '',
-    description: '',
-    fileUrl: '',
+    qualification: "",
+    course: "",
+    specialization: "",
+    stream: "",
+    college: "",
+    startYear: "",
+    endYear: "",
+    courseType: "",
+    percentage: "",
+    cgpa: "",
+    rollNumber: "",
+    lateralEntry: "",
+    skills: "",
+    description: "",
+    fileUrl: "",
   });
   const [educationList, setEducationList] = useState([]);
-  const [intermediateEducationList, setIntermediateEducationList] = useState([]);
+  const [intermediateEducationList, setIntermediateEducationList] = useState(
+    []
+  );
   const [highSchoolEducationList, setHighSchoolEducationList] = useState([]);
   const [courseOptions, setCourseOptions] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [userId, setUserId] = useState(null);
   const [editingIndex, setEditingIndex] = useState(null);
-  const [editingIntermediateIndex, setEditingIntermediateIndex] = useState(null);
+  const [editingIntermediateIndex, setEditingIntermediateIndex] =
+    useState(null);
   const [editingHighSchoolIndex, setEditingHighSchoolIndex] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -48,23 +50,29 @@ const Education = () => {
         setShowDropdown(false);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
 
   useEffect(() => {
-    const userString = localStorage.getItem('user');
+    const userString = localStorage.getItem("user");
     if (!userString) {
-      toast.error('Please log in to view your details.', { position: 'top-right', autoClose: 5000 });
+      toast.error("Please log in to view your details.", {
+        position: "top-right",
+        autoClose: 5000,
+      });
       return;
     }
     try {
       const user = JSON.parse(userString);
       setUserId(user.userid);
     } catch (parseError) {
-      toast.error('Invalid user data. Please log in again.', { position: 'top-right', autoClose: 5000 });
+      toast.error("Invalid user data. Please log in again.", {
+        position: "top-right",
+        autoClose: 5000,
+      });
     }
   }, []);
 
@@ -72,55 +80,71 @@ const Education = () => {
     const fetchCourses = async () => {
       try {
         setIsProcessing(true);
-        console.log('Fetching courses from database...');
+        console.log("Fetching courses from database...");
         const response = await fetchSectionData({
-          dbName: 'internph',
-          collectionName: 'course',
+          dbName: "internph",
+          collectionName: "course",
           query: {},
-          projection: { _id: 1, 'sectionData.course.name': 1 },
+          projection: { _id: 1, "sectionData.course.name": 1 },
         });
 
-        console.log('fetchCourses raw response:', response);
+        console.log("fetchCourses raw response:", response);
 
         if (!response || !Array.isArray(response)) {
-          console.error('Response is not an array or is null:', response);
-          toast.error('Invalid response from server while fetching courses.', { position: 'top-right', autoClose: 5000 });
+          console.error("Response is not an array or is null:", response);
+          toast.error("Invalid response from server while fetching courses.", {
+            position: "top-right",
+            autoClose: 5000,
+          });
           return;
         }
 
         if (response.length === 0) {
-          console.warn('No courses found in the database.');
-          toast.error('No courses found in the database. Please add courses to continue.', { position: 'top-right', autoClose: 5000 });
+          console.warn("No courses found in the database.");
+          toast.error(
+            "No courses found in the database. Please add courses to continue.",
+            { position: "top-right", autoClose: 5000 }
+          );
           return;
         }
 
-        const courses = response.map((item, index) => {
-          if (!item._id) {
-            console.warn(`Course at index ${index} missing _id:`, item);
-            return null;
-          }
-          if (!item.sectionData?.course?.name) {
-            console.warn(`Course at index ${index} missing sectionData.course.name:`, item);
-            return null;
-          }
-          return {
-            id: item._id,
-            name: item.sectionData.course.name,
-          };
-        }).filter(Boolean);
+        const courses = response
+          .map((item, index) => {
+            if (!item._id) {
+              console.warn(`Course at index ${index} missing _id:`, item);
+              return null;
+            }
+            if (!item.sectionData?.course?.name) {
+              console.warn(
+                `Course at index ${index} missing sectionData.course.name:`,
+                item
+              );
+              return null;
+            }
+            return {
+              id: item._id,
+              name: item.sectionData.course.name,
+            };
+          })
+          .filter(Boolean);
 
-        console.log('Processed courses:', courses);
+        console.log("Processed courses:", courses);
 
         if (courses.length === 0) {
-          toast.error('No valid courses found in the database.', { position: 'top-right', autoClose: 5000 });
+          toast.error("No valid courses found in the database.", {
+            position: "top-right",
+            autoClose: 5000,
+          });
           return;
         }
 
         setCourseOptions(courses);
-        
       } catch (err) {
-        console.error('fetchCourses error:', err);
-        toast.error(`Failed to load course data: ${err.message}`, { position: 'top-right', autoClose: 5000 });
+        console.error("fetchCourses error:", err);
+        toast.error(`Failed to load course data: ${err.message}`, {
+          position: "top-right",
+          autoClose: 5000,
+        });
       } finally {
         setIsProcessing(false);
       }
@@ -136,34 +160,48 @@ const Education = () => {
       try {
         setIsProcessing(true);
         const response = await fetchSectionData({
-          dbName: 'internph',
-          collectionName: 'appuser',
+          dbName: "internph",
+          collectionName: "appuser",
           query: { _id: userId },
           projection: {
-            'sectionData.appuser.education': 1,
-            'sectionData.appuser.intermediateeducation': 1,
-            'sectionData.appuser.highschooleducation': 1,
+            "sectionData.appuser.education": 1,
+            "sectionData.appuser.intermediateeducation": 1,
+            "sectionData.appuser.highschooleducation": 1,
           },
         });
 
-        console.log('Fetched education data:', response);
+        console.log("Fetched education data:", response);
 
-        const fetchedEducation = response && response[0] && response[0].sectionData?.appuser?.education
-          ? response[0].sectionData.appuser.education
-          : [];
-        const fetchedIntermediateEducation = response && response[0] && response[0].sectionData?.appuser?.intermediateeducation
-          ? response[0].sectionData.appuser.intermediateeducation
-          : [];
-        const fetchedHighSchoolEducation = response && response[0] && response[0].sectionData?.appuser?.highschooleducation
-          ? response[0].sectionData.appuser.highschooleducation
-          : [];
+        const fetchedEducation =
+          response && response[0] && response[0].sectionData?.appuser?.education
+            ? response[0].sectionData.appuser.education
+            : [];
+        const fetchedIntermediateEducation =
+          response &&
+          response[0] &&
+          response[0].sectionData?.appuser?.intermediateeducation
+            ? response[0].sectionData.appuser.intermediateeducation
+            : [];
+        const fetchedHighSchoolEducation =
+          response &&
+          response[0] &&
+          response[0].sectionData?.appuser?.highschooleducation
+            ? response[0].sectionData.appuser.highschooleducation
+            : [];
 
         setEducationList(fetchedEducation);
         setIntermediateEducationList(fetchedIntermediateEducation);
         setHighSchoolEducationList(fetchedHighSchoolEducation);
-        setShowForm(fetchedEducation.length === 0 && fetchedIntermediateEducation.length === 0 && fetchedHighSchoolEducation.length === 0);
+        setShowForm(
+          fetchedEducation.length === 0 &&
+            fetchedIntermediateEducation.length === 0 &&
+            fetchedHighSchoolEducation.length === 0
+        );
       } catch (err) {
-        toast.error('Failed to load education data.', { position: 'top-right', autoClose: 5000 });
+        toast.error("Failed to load education data.", {
+          position: "top-right",
+          autoClose: 5000,
+        });
       } finally {
         setIsProcessing(false);
       }
@@ -181,41 +219,55 @@ const Education = () => {
     if (!file) return;
 
     setSelectedFile(file);
-    setFormData({ ...formData, fileUrl: '' });
+    setFormData({ ...formData, fileUrl: "" });
   };
 
   const handleRemoveFileFromForm = () => {
     setSelectedFile(null);
-    setFormData({ ...formData, fileUrl: '' });
+    setFormData({ ...formData, fileUrl: "" });
   };
 
   const handleSave = async () => {
     if (!userId) {
-      toast.error('Please log in to save education details.', { position: 'top-right', autoClose: 5000 });
+      toast.error("Please log in to save education details.", {
+        position: "top-right",
+        autoClose: 5000,
+      });
       return;
     }
 
-    console.log('formData before saving:', formData);
+    console.log("formData before saving:", formData);
 
-    const requiredFields = ['qualification', 'board', 'college', 'startYear', 'endYear'];
-    const isIntermediate = formData.qualification === 'Intermediate (12th)';
+    const requiredFields = ["qualification", "college", "startYear", "endYear"];
+    const isIntermediate = formData.qualification === "Intermediate (12th)";
     if (isIntermediate) {
-      requiredFields.push('stream');
-    } else if (formData.qualification !== 'High School (10th)') {
-      requiredFields.push('course');
+      requiredFields.push("stream");
+    } else if (formData.qualification !== "High School (10th)") {
+      requiredFields.push("course");
     }
 
     for (const field of requiredFields) {
       if (!formData[field]) {
-        toast.error(`Please fill in the ${field} field.`, { position: 'top-right', autoClose: 5000 });
+        toast.error(`Please fill in the ${field} field.`, {
+          position: "top-right",
+          autoClose: 5000,
+        });
         return;
       }
     }
 
-    if (formData.qualification !== 'High School (10th)' && formData.qualification !== 'Intermediate (12th)') {
-      const validCourse = courseOptions.find((course) => course.id === formData.course);
+    if (
+      formData.qualification !== "High School (10th)" &&
+      formData.qualification !== "Intermediate (12th)"
+    ) {
+      const validCourse = courseOptions.find(
+        (course) => course.id === formData.course
+      );
       if (!validCourse) {
-        toast.error('Please select a valid course from the list.', { position: 'top-right', autoClose: 5000 });
+        toast.error("Please select a valid course from the list.", {
+          position: "top-right",
+          autoClose: 5000,
+        });
         return;
       }
     }
@@ -226,25 +278,29 @@ const Education = () => {
 
       if (selectedFile) {
         const uploadResponse = await uploadAndStoreFile({
-          appName: 'app8657281202648',
-          moduleName: 'appuser',
+          appName: "app8657281202648",
+          moduleName: "appuser",
           file: selectedFile,
           userId,
         });
 
-        fileUrl = uploadResponse?.filePath || uploadResponse?.fileUrl || uploadResponse?.data?.fileUrl;
+        fileUrl =
+          uploadResponse?.filePath ||
+          uploadResponse?.fileUrl ||
+          uploadResponse?.data?.fileUrl;
         if (!fileUrl) {
-          throw new Error('Failed to upload file: No file path returned in response.');
+          throw new Error(
+            "Failed to upload file: No file path returned in response."
+          );
         }
       }
 
       let updatePayload = {};
-      const isHighSchool = formData.qualification === 'High School (10th)';
+      const isHighSchool = formData.qualification === "High School (10th)";
 
       if (isHighSchool) {
         const highSchoolData = {
           qualification3: formData.qualification,
-          board3: formData.board,
           college3: formData.college,
           startyear3: formData.startYear,
           endyear3: formData.endYear,
@@ -257,15 +313,19 @@ const Education = () => {
 
         if (editingHighSchoolIndex !== null) {
           updatePayload = {
-            [`sectionData.appuser.highschooleducation.${editingHighSchoolIndex}`]: highSchoolData,
+            [`sectionData.appuser.highschooleducation.${editingHighSchoolIndex}`]:
+              highSchoolData,
           };
           const updatedHighSchoolList = [...highSchoolEducationList];
           updatedHighSchoolList[editingHighSchoolIndex] = highSchoolData;
           setHighSchoolEducationList(updatedHighSchoolList);
         } else {
-          const updatedHighSchoolList = [...highSchoolEducationList, highSchoolData];
+          const updatedHighSchoolList = [
+            ...highSchoolEducationList,
+            highSchoolData,
+          ];
           updatePayload = {
-            'sectionData.appuser.highschooleducation': updatedHighSchoolList,
+            "sectionData.appuser.highschooleducation": updatedHighSchoolList,
           };
           setHighSchoolEducationList(updatedHighSchoolList);
         }
@@ -273,7 +333,6 @@ const Education = () => {
         const intermediateData = {
           qualification2: formData.qualification,
           steam2: formData.stream,
-          board2: formData.board,
           college2: formData.college,
           startyear2: formData.startYear,
           endyear2: formData.endYear,
@@ -286,15 +345,20 @@ const Education = () => {
 
         if (editingIntermediateIndex !== null) {
           updatePayload = {
-            [`sectionData.appuser.intermediateeducation.${editingIntermediateIndex}`]: intermediateData,
+            [`sectionData.appuser.intermediateeducation.${editingIntermediateIndex}`]:
+              intermediateData,
           };
           const updatedIntermediateList = [...intermediateEducationList];
           updatedIntermediateList[editingIntermediateIndex] = intermediateData;
           setIntermediateEducationList(updatedIntermediateList);
         } else {
-          const updatedIntermediateList = [...intermediateEducationList, intermediateData];
+          const updatedIntermediateList = [
+            ...intermediateEducationList,
+            intermediateData,
+          ];
           updatePayload = {
-            'sectionData.appuser.intermediateeducation': updatedIntermediateList,
+            "sectionData.appuser.intermediateeducation":
+              updatedIntermediateList,
           };
           setIntermediateEducationList(updatedIntermediateList);
         }
@@ -304,11 +368,10 @@ const Education = () => {
           course1: formData.course,
           specialization1: formData.specialization,
           stream1: formData.stream,
-          board1: formData.board,
           college1: formData.college,
           startyear1: formData.startYear,
           endyear1: formData.endYear,
-          'Course type1': formData.courseType,
+          "Course type1": formData.courseType,
           percentage1: formData.percentage,
           cgpa1: formData.cgpa,
           rollnumber1: formData.rollNumber,
@@ -318,7 +381,7 @@ const Education = () => {
           files1: fileUrl,
         };
 
-        console.log('educationData:', educationData);
+        console.log("educationData:", educationData);
 
         if (editingIndex !== null) {
           updatePayload = {
@@ -330,46 +393,47 @@ const Education = () => {
         } else {
           const updatedEducationList = [...educationList, educationData];
           updatePayload = {
-            'sectionData.appuser.education': updatedEducationList,
+            "sectionData.appuser.education": updatedEducationList,
           };
           setEducationList(updatedEducationList);
         }
       }
 
       const response = await mUpdate({
-        appName: 'app8657281202648',
-        collectionName: 'appuser',
+        appName: "app8657281202648",
+        collectionName: "appuser",
         query: { _id: userId },
         update: {
           $set: updatePayload,
         },
-        options: { upsert: false, writeConcern: { w: 'majority' } },
+        options: { upsert: false, writeConcern: { w: "majority" } },
       });
 
       if (response && response.success) {
         toast.success(
-          editingIndex !== null || editingIntermediateIndex !== null || editingHighSchoolIndex !== null
-            ? 'Education details updated successfully!'
-            : 'Education details saved successfully!',
-          { position: 'top-right', autoClose: 3000 }
+          editingIndex !== null ||
+            editingIntermediateIndex !== null ||
+            editingHighSchoolIndex !== null
+            ? "Education details updated successfully!"
+            : "Education details saved successfully!",
+          { position: "top-right", autoClose: 3000 }
         );
         setFormData({
-          qualification: '',
-          course: '',
-          specialization: '',
-          stream: '',
-          board: '',
-          college: '',
-          startYear: '',
-          endYear: '',
-          courseType: '',
-          percentage: '',
-          cgpa: '',
-          rollNumber: '',
-          lateralEntry: '',
-          skills: '',
-          description: '',
-          fileUrl: '',
+          qualification: "",
+          course: "",
+          specialization: "",
+          stream: "",
+          college: "",
+          startYear: "",
+          endYear: "",
+          courseType: "",
+          percentage: "",
+          cgpa: "",
+          rollNumber: "",
+          lateralEntry: "",
+          skills: "",
+          description: "",
+          fileUrl: "",
         });
         setSelectedFile(null);
         setEditingIndex(null);
@@ -378,66 +442,67 @@ const Education = () => {
         setShowForm(false);
         setIsQualificationLocked(false);
       } else {
-        throw new Error('Failed to save education data to database.');
+        throw new Error("Failed to save education data to database.");
       }
     } catch (error) {
-      console.error('Failed to save education data:', error);
+      console.error("Failed to save education data:", error);
       let errorMessage = error.message;
       if (error.response?.status === 404) {
-        errorMessage = 'API endpoint not found. Please contact support.';
+        errorMessage = "API endpoint not found. Please contact support.";
       } else if (error.response?.status === 401) {
-        errorMessage = 'Authentication failed. Please log in again.';
+        errorMessage = "Authentication failed. Please log in again.";
       }
-      toast.error(errorMessage || 'Failed to save education details', { position: 'top-right', autoClose: 5000 });
+      toast.error(errorMessage || "Failed to save education details", {
+        position: "top-right",
+        autoClose: 5000,
+      });
     } finally {
       setIsProcessing(false);
     }
   };
 
   const handleEditEducation = (index, type) => {
-    if (type === 'highschool') {
+    if (type === "highschool") {
       const edu = highSchoolEducationList[index];
       setFormData({
-        qualification: edu.qualification3 || '',
-        course: '',
-        specialization: '',
-        stream: '',
-        board: edu.board3 || '',
-        college: edu.college3 || '',
-        startYear: edu.startyear3 || '',
-        endYear: edu.endyear3 || '',
-        courseType: edu.coursetype3 || '',
-        percentage: edu.percentage3 || '',
-        cgpa: edu.cgpa3 || '',
-        rollNumber: edu.rollnumber3 || '',
-        lateralEntry: '',
-        skills: '',
-        description: '',
-        fileUrl: edu.files3 || '',
+        qualification: edu.qualification3 || "",
+        course: "",
+        specialization: "",
+        stream: "",
+        college: edu.college3 || "",
+        startYear: edu.startyear3 || "",
+        endYear: edu.endyear3 || "",
+        courseType: edu.coursetype3 || "",
+        percentage: edu.percentage3 || "",
+        cgpa: edu.cgpa3 || "",
+        rollNumber: edu.rollnumber3 || "",
+        lateralEntry: "",
+        skills: "",
+        description: "",
+        fileUrl: edu.files3 || "",
       });
       setEditingHighSchoolIndex(index);
       setEditingIntermediateIndex(null);
       setEditingIndex(null);
       setIsQualificationLocked(true);
-    } else if (type === 'intermediate') {
+    } else if (type === "intermediate") {
       const edu = intermediateEducationList[index];
       setFormData({
-        qualification: edu.qualification2 || '',
-        course: '',
-        specialization: '',
-        stream: edu.steam2 || '',
-        board: edu.board2 || '',
-        college: edu.college2 || '',
-        startYear: edu.startyear2 || '',
-        endYear: edu.endyear2 || '',
-        courseType: edu.coursetype2 || '',
-        percentage: edu.percentage2 || '',
-        cgpa: edu.cgpa2 || '',
-        rollNumber: edu.rollnumber2 || '',
-        lateralEntry: '',
-        skills: '',
-        description: '',
-        fileUrl: edu.files2 || '',
+        qualification: edu.qualification2 || "",
+        course: "",
+        specialization: "",
+        stream: edu.steam2 || "",
+        college: edu.college2 || "",
+        startYear: edu.startyear2 || "",
+        endYear: edu.endyear2 || "",
+        courseType: edu.coursetype2 || "",
+        percentage: edu.percentage2 || "",
+        cgpa: edu.cgpa2 || "",
+        rollNumber: edu.rollnumber2 || "",
+        lateralEntry: "",
+        skills: "",
+        description: "",
+        fileUrl: edu.files2 || "",
       });
       setEditingIntermediateIndex(index);
       setEditingHighSchoolIndex(null);
@@ -445,24 +510,28 @@ const Education = () => {
       setIsQualificationLocked(true);
     } else {
       const edu = educationList[index];
-      const courseValue = courseOptions.find((c) => c.id === edu.course1 || c.name === edu.course1)?.id || edu.course1 || '';
+      const courseValue =
+        courseOptions.find(
+          (c) => c.id === edu.course1 || c.name === edu.course1
+        )?.id ||
+        edu.course1 ||
+        "";
       setFormData({
-        qualification: edu.assetname1 || '',
+        qualification: edu.assetname1 || "",
         course: courseValue,
-        specialization: edu.specialization1 || '',
-        stream: edu.stream1 || '',
-        board: edu.board1 || '',
-        college: edu.college1 || '',
-        startYear: edu.startyear1 || '',
-        endYear: edu.endyear1 || '',
-        courseType: edu['Course type1'] || '',
-        percentage: edu.percentage1 || '',
-        cgpa: edu.cgpa1 || '',
-        rollNumber: edu.rollnumber1 || '',
-        lateralEntry: edu.areyoualateralentrystudent1 || '',
-        skills: edu.skills1 || '',
-        description: edu.description1 || '',
-        fileUrl: edu.files1 || '',
+        specialization: edu.specialization1 || "",
+        stream: edu.stream1 || "",
+        college: edu.college1 || "",
+        startYear: edu.startyear1 || "",
+        endYear: edu.endyear1 || "",
+        courseType: edu["Course type1"] || "",
+        percentage: edu.percentage1 || "",
+        cgpa: edu.cgpa1 || "",
+        rollNumber: edu.rollnumber1 || "",
+        lateralEntry: edu.areyoualateralentrystudent1 || "",
+        skills: edu.skills1 || "",
+        description: edu.description1 || "",
+        fileUrl: edu.files1 || "",
       });
       setEditingIndex(index);
       setEditingIntermediateIndex(null);
@@ -476,7 +545,10 @@ const Education = () => {
 
   const handleRemoveEducation = async (index, type) => {
     if (!userId) {
-      toast.error('Please log in to remove education details.', { position: 'top-right', autoClose: 5000 });
+      toast.error("Please log in to remove education details.", {
+        position: "top-right",
+        autoClose: 5000,
+      });
       return;
     }
 
@@ -487,19 +559,19 @@ const Education = () => {
       let updatedIntermediateList = [...intermediateEducationList];
       let updatedHighSchoolList = [...highSchoolEducationList];
 
-      if (type === 'highschool') {
+      if (type === "highschool") {
         updatedHighSchoolList.splice(index, 1);
         updatePayload = {
-          'sectionData.appuser.highschooleducation': updatedHighSchoolList,
+          "sectionData.appuser.highschooleducation": updatedHighSchoolList,
         };
         setHighSchoolEducationList(updatedHighSchoolList);
         if (editingHighSchoolIndex === index) {
           setEditingHighSchoolIndex(null);
         }
-      } else if (type === 'intermediate') {
+      } else if (type === "intermediate") {
         updatedIntermediateList.splice(index, 1);
         updatePayload = {
-          'sectionData.appuser.intermediateeducation': updatedIntermediateList,
+          "sectionData.appuser.intermediateeducation": updatedIntermediateList,
         };
         setIntermediateEducationList(updatedIntermediateList);
         if (editingIntermediateIndex === index) {
@@ -508,7 +580,7 @@ const Education = () => {
       } else {
         updatedEducationList.splice(index, 1);
         updatePayload = {
-          'sectionData.appuser.education': updatedEducationList,
+          "sectionData.appuser.education": updatedEducationList,
         };
         setEducationList(updatedEducationList);
         if (editingIndex === index) {
@@ -517,50 +589,59 @@ const Education = () => {
       }
 
       const response = await mUpdate({
-        appName: 'app8657281202648',
-        collectionName: 'appuser',
+        appName: "app8657281202648",
+        collectionName: "appuser",
         query: { _id: userId },
         update: {
           $set: updatePayload,
         },
-        options: { upsert: false, writeConcern: { w: 'majority' } },
+        options: { upsert: false, writeConcern: { w: "majority" } },
       });
 
       if (response && response.success) {
-        toast.success('Education entry removed successfully!', { position: 'top-right', autoClose: 3000 });
+        toast.success("Education entry removed successfully!", {
+          position: "top-right",
+          autoClose: 3000,
+        });
         setFormData({
-          qualification: '',
-          course: '',
-          specialization: '',
-          stream: '',
-          board: '',
-          college: '',
-          startYear: '',
-          endYear: '',
-          courseType: '',
-          percentage: '',
-          cgpa: '',
-          rollNumber: '',
-          lateralEntry: '',
-          skills: '',
-          description: '',
-          fileUrl: '',
+          qualification: "",
+          course: "",
+          specialization: "",
+          stream: "",
+          college: "",
+          startYear: "",
+          endYear: "",
+          courseType: "",
+          percentage: "",
+          cgpa: "",
+          rollNumber: "",
+          lateralEntry: "",
+          skills: "",
+          description: "",
+          fileUrl: "",
         });
         setSelectedFile(null);
-        setShowForm(updatedEducationList.length === 0 && updatedIntermediateList.length === 0 && updatedHighSchoolList.length === 0);
+        setShowForm(
+          updatedEducationList.length === 0 &&
+            updatedIntermediateList.length === 0 &&
+            updatedHighSchoolList.length === 0
+        );
         setIsQualificationLocked(false);
       } else {
-        throw new Error('Failed to remove education entry from database.');
+        throw new Error("Failed to remove education entry from database.");
       }
     } catch (error) {
-      console.error('Failed to remove education data:', error);
+      console.error("Failed to remove education data:", error);
       let errorMessage = error.message;
       if (error.response?.status === 404) {
-        errorMessage = 'API endpoint not found. Please contact support.';
+        errorMessage = "API endpoint not found. Please contact support.";
       } else if (error.response?.status === 401) {
-        errorMessage = 'Authentication failed. Please log in again.';
+        errorMessage = "Authentication failed. Please log in again.";
       }
-      toast.error(errorMessage || 'Failed to remove education entry', { position: 'top-right', autoClose: 5000 });
+      toast.error(errorMessage || "Failed to remove education entry", {
+        position: "top-right",
+        autoClose: 5000,
+      });
     } finally {
       setIsProcessing(false);
     }
@@ -568,7 +649,10 @@ const Education = () => {
 
   const handleDeleteFile = async (index, type) => {
     if (!userId) {
-      toast.error('Please log in to remove file.', { position: 'top-right', autoClose: 5000 });
+      toast.error("Please log in to remove file.", {
+        position: "top-right",
+        autoClose: 5000,
+      });
       return;
     }
 
@@ -576,63 +660,81 @@ const Education = () => {
       setIsProcessing(true);
       let updatePayload = {};
 
-      if (type === 'highschool') {
+      if (type === "highschool") {
         updatePayload = {
-          [`sectionData.appuser.highschooleducation.${index}.files3`]: '',
+          [`sectionData.appuser.highschooleducation.${index}.files3`]: "",
         };
         const updatedHighSchoolList = [...highSchoolEducationList];
-        updatedHighSchoolList[index] = { ...updatedHighSchoolList[index], files3: '' };
+        updatedHighSchoolList[index] = {
+          ...updatedHighSchoolList[index],
+          files3: "",
+        };
         setHighSchoolEducationList(updatedHighSchoolList);
-      } else if (type === 'intermediate') {
+      } else if (type === "intermediate") {
         updatePayload = {
-          [`sectionData.appuser.intermediateeducation.${index}.files2`]: '',
+          [`sectionData.appuser.intermediateeducation.${index}.files2`]: "",
         };
         const updatedIntermediateList = [...intermediateEducationList];
-        updatedIntermediateList[index] = { ...updatedIntermediateList[index], files2: '' };
+        updatedIntermediateList[index] = {
+          ...updatedIntermediateList[index],
+          files2: "",
+        };
         setIntermediateEducationList(updatedIntermediateList);
       } else {
         updatePayload = {
-          [`sectionData.appuser.education.${index}.files1`]: '',
+          [`sectionData.appuser.education.${index}.files1`]: "",
         };
         const updatedEducationList = [...educationList];
-        updatedEducationList[index] = { ...updatedEducationList[index], files1: '' };
+        updatedEducationList[index] = {
+          ...updatedEducationList[index],
+          files1: "",
+        };
         setEducationList(updatedEducationList);
       }
 
       const response = await mUpdate({
-        appName: 'app8657281202648',
-        collectionName: 'appuser',
+        appName: "app8657281202648",
+        collectionName: "appuser",
         query: { _id: userId },
         update: {
           $set: updatePayload,
         },
-        options: { upsert: false, writeConcern: { w: 'majority' } },
+        options: { upsert: false, writeConcern: { w: "majority" } },
       });
 
       if (response && response.success) {
-        toast.success('File removed successfully!', { position: 'top-right', autoClose: 3000 });
-        if (type === 'education' && editingIndex === index) {
-          setFormData({ ...formData, fileUrl: '' });
+        toast.success("File removed successfully!", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+        if (type === "education" && editingIndex === index) {
+          setFormData({ ...formData, fileUrl: "" });
           setSelectedFile(null);
-        } else if (type === 'intermediate' && editingIntermediateIndex === index) {
-          setFormData({ ...formData, fileUrl: '' });
+        } else if (
+          type === "intermediate" &&
+          editingIntermediateIndex === index
+        ) {
+          setFormData({ ...formData, fileUrl: "" });
           setSelectedFile(null);
-        } else if (type === 'highschool' && editingHighSchoolIndex === index) {
-          setFormData({ ...formData, fileUrl: '' });
+        } else if (type === "highschool" && editingHighSchoolIndex === index) {
+          setFormData({ ...formData, fileUrl: "" });
           setSelectedFile(null);
         }
       } else {
-        throw new Error('Failed to remove file from database.');
+        throw new Error("Failed to remove file from database.");
       }
     } catch (error) {
-      console.error('Failed to remove file:', error);
+      console.error("Failed to remove file:", error);
       let errorMessage = error.message;
       if (error.response?.status === 404) {
-        errorMessage = 'API endpoint not found. Please contact support.';
+        errorMessage = "API endpoint not found. Please contact support.";
       } else if (error.response?.status === 401) {
-        errorMessage = 'Authentication failed. Please log in again.';
+        errorMessage = "Authentication failed. Please log in again.";
       }
-      toast.error(errorMessage || 'Failed to remove file', { position: 'top-right', autoClose: 5000 });
+      toast.error(errorMessage || "Failed to remove file", {
+        position: "top-right",
+        autoClose: 5000,
+      });
     } finally {
       setIsProcessing(false);
     }
@@ -641,22 +743,21 @@ const Education = () => {
   const handleAddNew = () => {
     setShowForm(true);
     setFormData({
-      qualification: 'Bachelor',
-      course: '',
-      specialization: '',
-      stream: '',
-      board: '',
-      college: '',
-      startYear: '',
-      endYear: '',
-      courseType: '',
-      percentage: '',
-      cgpa: '',
-      rollNumber: '',
-      lateralEntry: '',
-      skills: '',
-      description: '',
-      fileUrl: '',
+      qualification: "Bachelor",
+      course: "",
+      specialization: "",
+      stream: "",
+      college: "",
+      startYear: "",
+      endYear: "",
+      courseType: "",
+      percentage: "",
+      cgpa: "",
+      rollNumber: "",
+      lateralEntry: "",
+      skills: "",
+      description: "",
+      fileUrl: "",
     });
     setSelectedFile(null);
     setEditingIndex(null);
@@ -669,22 +770,21 @@ const Education = () => {
   const handleAddIntermediate = () => {
     setShowForm(true);
     setFormData({
-      qualification: 'Intermediate (12th)',
-      course: '',
-      specialization: '',
-      stream: '',
-      board: '',
-      college: '',
-      startYear: '',
-      endYear: '',
-      courseType: '',
-      percentage: '',
-      cgpa: '',
-      rollNumber: '',
-      lateralEntry: '',
-      skills: '',
-      description: '',
-      fileUrl: '',
+      qualification: "Intermediate (12th)",
+      course: "",
+      specialization: "",
+      stream: "",
+      college: "",
+      startYear: "",
+      endYear: "",
+      courseType: "",
+      percentage: "",
+      cgpa: "",
+      rollNumber: "",
+      lateralEntry: "",
+      skills: "",
+      description: "",
+      fileUrl: "",
     });
     setSelectedFile(null);
     setEditingIndex(null);
@@ -697,22 +797,21 @@ const Education = () => {
   const handleAddHighSchool = () => {
     setShowForm(true);
     setFormData({
-      qualification: 'High School (10th)',
-      course: '',
-      specialization: '',
-      stream: '',
-      board: '',
-      college: '',
-      startYear: '',
-      endYear: '',
-      courseType: '',
-      percentage: '',
-      cgpa: '',
-      rollNumber: '',
-      lateralEntry: '',
-      skills: '',
-      description: '',
-      fileUrl: '',
+      qualification: "High School (10th)",
+      course: "",
+      specialization: "",
+      stream: "",
+      college: "",
+      startYear: "",
+      endYear: "",
+      courseType: "",
+      percentage: "",
+      cgpa: "",
+      rollNumber: "",
+      lateralEntry: "",
+      skills: "",
+      description: "",
+      fileUrl: "",
     });
     setSelectedFile(null);
     setEditingIndex(null);
@@ -723,17 +822,29 @@ const Education = () => {
   };
 
   const dropdownOptions = {
-    qualification: ['High School (10th)', 'Intermediate (12th)', 'Bachelor', 'Master', 'PhD'],
-    stream: ['Science', 'Commerce', 'Arts'],
-    board: ['CBSE', 'ICSE', 'State Board'],
-    courseType: ['Full Time', 'Part Time', 'Distance Learning'],
-    specialization: ['Computer Science', 'Mechanical Engineering', 'Electrical Engineering', 'Civil Engineering', 'Business Administration', 'Other'],
-    lateralEntry: ['Yes', 'No'],
+    qualification: [
+      "High School (10th)",
+      "Intermediate (12th)",
+      "Bachelor",
+      "Master",
+      "PhD",
+    ],
+    stream: ["STEM", "ABM", "HUMSS"],
+    courseType: ["Full Time", "Part Time", "Distance Learning"],
+    specialization: [
+      "Computer Science",
+      "Mechanical Engineering",
+      "Electrical Engineering",
+      "Civil Engineering",
+      "Business Administration",
+      "Other",
+    ],
+    lateralEntry: ["Yes", "No"],
   };
 
   const getCourseNameById = (id) => {
     const course = courseOptions.find((c) => c.id === id || c.name === id);
-    return course ? course.name : id || 'Unknown Course';
+    return course ? course.name : id || "Unknown Course";
   };
 
   const renderSelect = (label, field, options, required = false) => (
@@ -743,17 +854,21 @@ const Education = () => {
       </label>
       <div className="relative">
         <select
-          value={formData[field] || ''}
+          value={formData[field] || ""}
           onChange={(e) => handleChange(field, e.target.value)}
           className={`w-full border border-gray-300 rounded-lg p-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none ${
-            isProcessing || (field === 'qualification' && isQualificationLocked) ? 'opacity-50 cursor-not-allowed' : ''
+            isProcessing || (field === "qualification" && isQualificationLocked)
+              ? "opacity-50 cursor-not-allowed"
+              : ""
           }`}
-          disabled={isProcessing || (field === 'qualification' && isQualificationLocked)}
+          disabled={
+            isProcessing || (field === "qualification" && isQualificationLocked)
+          }
         >
           <option value="" disabled>
             Select {label}
           </option>
-          {field === 'course' ? (
+          {field === "course" ? (
             <>
               {options.length === 0 ? (
                 <option value="" disabled>
@@ -780,7 +895,7 @@ const Education = () => {
     </div>
   );
 
-  const renderInput = (label, field, type = 'text', required = false) => (
+  const renderInput = (label, field, type = "text", required = false) => (
     <div className="mb-4">
       <label className="block text-sm font-medium text-gray-700 mb-1">
         {label} {required && <span className="text-red-500">*</span>}
@@ -798,7 +913,9 @@ const Education = () => {
 
   const renderTextarea = (label, field) => (
     <div className="mb-4">
-      <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+      <label className="block text-sm font-medium text-gray-700 mb-1">
+        {label}
+      </label>
       <textarea
         placeholder={label}
         value={formData[field]}
@@ -812,7 +929,14 @@ const Education = () => {
 
   return (
     <div className="bg-white rounded-xl shadow-md">
-      <ToastContainer position="top-right" autoClose={5000} hideProgressBar={false} newestOnTop closeOnClick pauseOnHover />
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        pauseOnHover
+      />
 
       <div className="sticky top-0 bg-white z-10 px-4 py-4 shadow-sm flex justify-between items-center border-b border-gray-200">
         <div className="flex items-center gap-2 text-gray-700 text-lg font-medium">
@@ -840,51 +964,67 @@ const Education = () => {
         {showForm ? (
           <div className="space-y-4">
             {renderSelect(
-              'Qualification',
-              'qualification',
+              "Qualification",
+              "qualification",
               dropdownOptions.qualification,
               true
             )}
-            {formData.qualification !== 'High School (10th)' &&
-              formData.qualification !== 'Intermediate (12th)' && (
+            {formData.qualification !== "High School (10th)" &&
+              formData.qualification !== "Intermediate (12th)" && (
                 <>
-                  {renderSelect('Course', 'course', courseOptions, true)}
-                  {renderSelect('Specialization', 'specialization', dropdownOptions.specialization)}
+                  {renderSelect("Course", "course", courseOptions, true)}
+                  {renderSelect(
+                    "Specialization",
+                    "specialization",
+                    dropdownOptions.specialization
+                  )}
                 </>
               )}
-            {formData.qualification === 'Intermediate (12th)' &&
-              renderSelect('Stream', 'stream', dropdownOptions.stream, true)}
-            {renderSelect('Board', 'board', dropdownOptions.board, true)}
-            {renderInput('College', 'college', 'text', true)}
+            {formData.qualification === "Intermediate (12th)" &&
+              renderSelect("Stream", "stream", dropdownOptions.stream, true)}
+            {renderInput("College", "college", "text", true)}
 
             <div className="grid md:grid-cols-2 gap-4">
-              {renderInput('Start Year', 'startYear', 'text', true)}
-              {renderInput('End Year', 'endYear', 'text', true)}
+              {renderInput("Start Year", "startYear", "text", true)}
+              {renderInput("End Year", "endYear", "text", true)}
             </div>
 
-            {renderSelect('Course Type', 'courseType', dropdownOptions.courseType)}
+            {renderSelect(
+              "Course Type",
+              "courseType",
+              dropdownOptions.courseType
+            )}
             <div className="grid md:grid-cols-2 gap-4">
-              {renderInput('Percentage', 'percentage')}
-              {renderInput('CGPA', 'cgpa')}
+              {renderInput("Percentage", "percentage")}
+              {renderInput("CGPA", "cgpa")}
             </div>
 
-            {renderInput('Roll Number', 'rollNumber')}
+            {renderInput("Roll Number", "rollNumber")}
 
-            {formData.qualification !== 'High School (10th)' &&
-              formData.qualification !== 'Intermediate (12th)' && (
+            {formData.qualification !== "High School (10th)" &&
+              formData.qualification !== "Intermediate (12th)" && (
                 <>
-                  {renderSelect('Are You A Lateral Entry Student?', 'lateralEntry', dropdownOptions.lateralEntry)}
-                  {renderInput('Skills', 'skills')}
-                  {renderTextarea('Description', 'description')}
+                  {renderSelect(
+                    "Are You A Lateral Entry Student?",
+                    "lateralEntry",
+                    dropdownOptions.lateralEntry
+                  )}
+                  {renderInput("Skills", "skills")}
+                  {renderTextarea("Description", "description")}
                 </>
               )}
 
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Attachments</label>
-              {(formData.fileUrl || selectedFile) ? (
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Attachments
+              </label>
+              {formData.fileUrl || selectedFile ? (
                 <div className="flex items-center justify-between border border-gray-300 rounded-md p-2 mb-2">
                   <div className="flex items-center space-x-2">
-                    <AiFillFilePdf className="text-gray-500 text-lg" aria-label="PDF file icon" />
+                    <AiFillFilePdf
+                      className="text-gray-500 text-lg"
+                      aria-label="PDF file icon"
+                    />
                     {formData.fileUrl ? (
                       <a
                         href={formData.fileUrl}
@@ -892,7 +1032,7 @@ const Education = () => {
                         rel="noopener noreferrer"
                         className="text-sm text-gray-600 truncate max-w-[200px]"
                       >
-                        {formData.fileUrl.split('/').pop()}
+                        {formData.fileUrl.split("/").pop()}
                       </a>
                     ) : (
                       <p className="text-sm text-gray-600 truncate max-w-[200px]">
@@ -986,9 +1126,23 @@ const Education = () => {
                         </label>
                         <button
                           onClick={() => {
-                            if (editingIndex !== null || editingIntermediateIndex !== null || editingHighSchoolIndex !== null) {
-                              const type = editingHighSchoolIndex !== null ? 'highschool' : editingIntermediateIndex !== null ? 'intermediate' : 'education';
-                              const idx = editingHighSchoolIndex !== null ? editingHighSchoolIndex : editingIntermediateIndex !== null ? editingIntermediateIndex : editingIndex;
+                            if (
+                              editingIndex !== null ||
+                              editingIntermediateIndex !== null ||
+                              editingHighSchoolIndex !== null
+                            ) {
+                              const type =
+                                editingHighSchoolIndex !== null
+                                  ? "highschool"
+                                  : editingIntermediateIndex !== null
+                                  ? "intermediate"
+                                  : "education";
+                              const idx =
+                                editingHighSchoolIndex !== null
+                                  ? editingHighSchoolIndex
+                                  : editingIntermediateIndex !== null
+                                  ? editingIntermediateIndex
+                                  : editingIndex;
                               handleDeleteFile(idx, type);
                             } else {
                               handleRemoveFileFromForm();
@@ -1018,7 +1172,10 @@ const Education = () => {
                   </div>
                 </div>
               ) : (
-                <label htmlFor="educationFileUpload" className="cursor-pointer block">
+                <label
+                  htmlFor="educationFileUpload"
+                  className="cursor-pointer block"
+                >
                   <div className="border-dashed border-2 border-gray-300 rounded-md px-4 py-6 text-center text-gray-600">
                     <span className="text-xl">+</span> Attachments
                   </div>
@@ -1033,26 +1190,48 @@ const Education = () => {
                 </label>
               )}
             </div>
-
+            <button
+              className="mt-2 px-4 py-2 border rounded-full text-blue-600 opacity-50 cursor-not-allowed transition"
+              disabled
+            >
+              Generate with AI
+            </button>
             <div className="sticky bottom-0 bg-white border-t p-4">
               <div className="flex justify-end">
                 <button
                   onClick={handleSave}
                   className={`bg-blue-600 text-white px-6 py-2 rounded-full flex items-center gap-2 text-sm font-medium transition ${
-                    isProcessing ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700'
+                    isProcessing
+                      ? "opacity-50 cursor-not-allowed"
+                      : "hover:bg-blue-700"
                   }`}
                   disabled={isProcessing}
-                  aria-label={editingIndex !== null || editingIntermediateIndex !== null || editingHighSchoolIndex !== null ? 'Update Education' : 'Save Education'}
+                  aria-label={
+                    editingIndex !== null ||
+                    editingIntermediateIndex !== null ||
+                    editingHighSchoolIndex !== null
+                      ? "Update Education"
+                      : "Save Education"
+                  }
                 >
-                  <span className="text-lg">✓</span> {editingIndex !== null || editingIntermediateIndex !== null || editingHighSchoolIndex !== null ? 'Update' : 'Save'}
+                  <span className="text-lg">✓</span>{" "}
+                  {editingIndex !== null ||
+                  editingIntermediateIndex !== null ||
+                  editingHighSchoolIndex !== null
+                    ? "Update"
+                    : "Save"}
                 </button>
               </div>
             </div>
           </div>
         ) : (
           <div className="space-y-6">
-            <p className="text-sm font-medium text-gray-700 mb-2">Saved Education</p>
-            {(educationList.length === 0 && intermediateEducationList.length === 0 && highSchoolEducationList.length === 0) ? (
+            <p className="text-sm font-medium text-gray-700 mb-2">
+              Saved Education
+            </p>
+            {educationList.length === 0 &&
+            intermediateEducationList.length === 0 &&
+            highSchoolEducationList.length === 0 ? (
               <p className="text-gray-600">No education details saved yet.</p>
             ) : (
               <div className="flex flex-wrap gap-4">
@@ -1064,18 +1243,44 @@ const Education = () => {
                     <div className="flex justify-between items-start">
                       <div className="flex items-start space-x-3">
                         <div className="flex-shrink-0 w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-gray-600 font-semibold">
-                          {edu.college1?.charAt(0) || 'S'}
+                          {edu.college1?.charAt(0) || "S"}
                         </div>
                         <div>
-                          <p className="text-sm font-semibold text-gray-800">{edu.college1}</p>
-                          <p className="text-sm text-gray-600">{edu.assetname1}</p>
-                          {edu.course1 && <p className="text-sm text-gray-600">{getCourseNameById(edu.course1)}</p>}
-                          {edu.specialization1 && <p className="text-sm text-gray-600">{edu.specialization1}</p>}
-                          {edu.areyoualateralentrystudent1 && <p className="text-sm text-gray-600">Lateral Entry: {edu.areyoualateralentrystudent1}</p>}
-                          {edu.skills1 && <p className="text-sm text-gray-600">Skills: {edu.skills1}</p>}
-                          {edu.description1 && <p className="text-sm text-gray-600">Description: {edu.description1}</p>}
+                          <p className="text-sm font-semibold text-gray-800">
+                            {edu.college1}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            {edu.assetname1}
+                          </p>
+                          {edu.course1 && (
+                            <p className="text-sm text-gray-600">
+                              {getCourseNameById(edu.course1)}
+                            </p>
+                          )}
+                          {edu.specialization1 && (
+                            <p className="text-sm text-gray-600">
+                              {edu.specialization1}
+                            </p>
+                          )}
+                          {edu.areyoualateralentrystudent1 && (
+                            <p className="text-sm text-gray-600">
+                              Lateral Entry: {edu.areyoualateralentrystudent1}
+                            </p>
+                          )}
+                          {edu.skills1 && (
+                            <p className="text-sm text-gray-600">
+                              Skills: {edu.skills1}
+                            </p>
+                          )}
+                          {edu.description1 && (
+                            <p className="text-sm text-gray-600">
+                              Description: {edu.description1}
+                            </p>
+                          )}
                           <div className="flex items-center space-x-2">
-                            <p className="text-sm text-gray-600">{edu.stream1}</p>
+                            <p className="text-sm text-gray-600">
+                              {edu.stream1}
+                            </p>
                           </div>
                           <div className="flex items-center space-x-2 mt-1">
                             <BiTime className="text-gray-500" />
@@ -1083,26 +1288,32 @@ const Education = () => {
                           </div>
                           {(edu.percentage1 || edu.cgpa1) && (
                             <p className="text-sm text-gray-600 mt-1">
-                              {edu.percentage1 && `Percentage: ${edu.percentage1}%`}
-                              {edu.percentage1 && edu.cgpa1 && ' | '}
+                              {edu.percentage1 &&
+                                `Percentage: ${edu.percentage1}%`}
+                              {edu.percentage1 && edu.cgpa1 && " | "}
                               {edu.cgpa1 && `CGPA: ${edu.cgpa1}`}
                             </p>
                           )}
                           <span className="text-gray-600">Attachment</span>
                           {edu.files1 && (
                             <div className="flex items-center space-x-2 mt-1">
-                              <AiFillFilePdf className="text-red-500 text-lg" aria-label="PDF file icon" />
+                              <AiFillFilePdf
+                                className="text-red-500 text-lg"
+                                aria-label="PDF file icon"
+                              />
                               <a
                                 href={edu.files1}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-sm text-blue-600 underline"
                               >
-                                {edu.files1.split('/').pop()}
+                                {edu.files1.split("/").pop()}
                               </a>
                               <MdDelete
                                 className="text-red-500 text-lg cursor-pointer hover:text-red-700"
-                                onClick={() => handleDeleteFile(index, 'education')}
+                                onClick={() =>
+                                  handleDeleteFile(index, "education")
+                                }
                                 title="Delete File"
                                 aria-label="Delete File"
                               />
@@ -1113,13 +1324,17 @@ const Education = () => {
                       <div className="flex items-center space-x-2">
                         <MdEdit
                           className="text-blue-600 text-xl cursor-pointer hover:text-blue-800"
-                          onClick={() => handleEditEducation(index, 'education')}
+                          onClick={() =>
+                            handleEditEducation(index, "education")
+                          }
                           disabled={isProcessing}
                           aria-label="Edit Education"
                         />
                         <MdDelete
                           className="text-red-500 text-xl cursor-pointer hover:text-red-700"
-                          onClick={() => handleRemoveEducation(index, 'education')}
+                          onClick={() =>
+                            handleRemoveEducation(index, "education")
+                          }
                           disabled={isProcessing}
                           aria-label="Delete Education"
                         />
@@ -1135,13 +1350,19 @@ const Education = () => {
                     <div className="flex justify-between items-start">
                       <div className="flex items-start space-x-3">
                         <div className="flex-shrink-0 w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-gray-600 font-semibold">
-                          {edu.college2?.charAt(0) || 'S'}
+                          {edu.college2?.charAt(0) || "S"}
                         </div>
                         <div>
-                          <p className="text-sm font-semibold text-gray-800">{edu.college2}</p>
-                          <p className="text-sm text-gray-600">{edu.qualification2}</p>
+                          <p className="text-sm font-semibold text-gray-800">
+                            {edu.college2}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            {edu.qualification2}
+                          </p>
                           <div className="flex items-center space-x-2">
-                            <p className="text-sm text-gray-600">{edu.steam2}</p>
+                            <p className="text-sm text-gray-600">
+                              {edu.steam2}
+                            </p>
                           </div>
                           <div className="flex items-center space-x-2 mt-1">
                             <BiTime className="text-gray-500" />
@@ -1149,26 +1370,32 @@ const Education = () => {
                           </div>
                           {(edu.percentage2 || edu.cgpa2) && (
                             <p className="text-sm text-gray-600 mt-1">
-                              {edu.percentage2 && `Percentage: ${edu.percentage2}%`}
-                              {edu.percentage2 && edu.cgpa2 && ' | '}
+                              {edu.percentage2 &&
+                                `Percentage: ${edu.percentage2}%`}
+                              {edu.percentage2 && edu.cgpa2 && " | "}
                               {edu.cgpa2 && `CGPA: ${edu.cgpa2}`}
                             </p>
                           )}
                           <span className="text-gray-600">Attachment</span>
                           {edu.files2 && (
                             <div className="flex items-center space-x-2 mt-1">
-                              <AiFillFilePdf className="text-red-500 text-lg" aria-label="PDF file icon" />
+                              <AiFillFilePdf
+                                className="text-red-500 text-lg"
+                                aria-label="PDF file icon"
+                              />
                               <a
                                 href={edu.files2}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-sm text-blue-600 underline"
                               >
-                                {edu.files2.split('/').pop()}
+                                {edu.files2.split("/").pop()}
                               </a>
                               <MdDelete
                                 className="text-red-500 text-lg cursor-pointer hover:text-red-700"
-                                onClick={() => handleDeleteFile(index, 'intermediate')}
+                                onClick={() =>
+                                  handleDeleteFile(index, "intermediate")
+                                }
                                 title="Delete File"
                                 aria-label="Delete File"
                               />
@@ -1179,13 +1406,17 @@ const Education = () => {
                       <div className="flex items-center space-x-2">
                         <MdEdit
                           className="text-blue-600 text-xl cursor-pointer hover:text-blue-800"
-                          onClick={() => handleEditEducation(index, 'intermediate')}
+                          onClick={() =>
+                            handleEditEducation(index, "intermediate")
+                          }
                           disabled={isProcessing}
                           aria-label="Edit Intermediate Education"
                         />
                         <MdDelete
                           className="text-red-500 text-xl cursor-pointer hover:text-red-700"
-                          onClick={() => handleRemoveEducation(index, 'intermediate')}
+                          onClick={() =>
+                            handleRemoveEducation(index, "intermediate")
+                          }
                           disabled={isProcessing}
                           aria-label="Delete Intermediate Education"
                         />
@@ -1201,37 +1432,47 @@ const Education = () => {
                     <div className="flex justify-between items-start">
                       <div className="flex items-start space-x-3">
                         <div className="flex-shrink-0 w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-gray-600 font-semibold">
-                          {edu.college3?.charAt(0) || 'S'}
+                          {edu.college3?.charAt(0) || "S"}
                         </div>
                         <div>
-                          <p className="text-sm font-semibold text-gray-800">{edu.college3}</p>
-                          <p className="text-sm text-gray-600">{edu.qualification3}</p>
+                          <p className="text-sm font-semibold text-gray-800">
+                            {edu.college3}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            {edu.qualification3}
+                          </p>
                           <div className="flex items-center space-x-2 mt-1">
                             <BiTime className="text-gray-500" />
                             <p className="text-sm text-gray-600">{`${edu.startyear3} - ${edu.endyear3}`}</p>
                           </div>
                           {(edu.percentage3 || edu.cgpa3) && (
                             <p className="text-sm text-gray-600 mt-1">
-                              {edu.percentage3 && `Percentage: ${edu.percentage3}%`}
-                              {edu.percentage3 && edu.cgpa3 && ' | '}
+                              {edu.percentage3 &&
+                                `Percentage: ${edu.percentage3}%`}
+                              {edu.percentage3 && edu.cgpa3 && " | "}
                               {edu.cgpa3 && `CGPA: ${edu.cgpa3}`}
                             </p>
                           )}
                           <span className="text-gray-600">Attachment</span>
                           {edu.files3 && (
                             <div className="flex items-center space-x-2 mt-1">
-                              <AiFillFilePdf className="text-red-500 text-lg" aria-label="PDF file icon" />
+                              <AiFillFilePdf
+                                className="text-red-500 text-lg"
+                                aria-label="PDF file icon"
+                              />
                               <a
                                 href={edu.files3}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-sm text-blue-600 underline"
                               >
-                                {edu.files3.split('/').pop()}
+                                {edu.files3.split("/").pop()}
                               </a>
                               <MdDelete
                                 className="text-red-500 text-lg cursor-pointer hover:text-red-700"
-                                onClick={() => handleDeleteFile(index, 'highschool')}
+                                onClick={() =>
+                                  handleDeleteFile(index, "highschool")
+                                }
                                 title="Delete File"
                                 aria-label="Delete File"
                               />
@@ -1242,13 +1483,17 @@ const Education = () => {
                       <div className="flex items-center space-x-2">
                         <MdEdit
                           className="text-blue-600 text-xl cursor-pointer hover:text-blue-800"
-                          onClick={() => handleEditEducation(index, 'highschool')}
+                          onClick={() =>
+                            handleEditEducation(index, "highschool")
+                          }
                           disabled={isProcessing}
                           aria-label="Edit High School Education"
                         />
                         <MdDelete
                           className="text-red-500 text-xl cursor-pointer hover:text-red-700"
-                          onClick={() => handleRemoveEducation(index, 'highschool')}
+                          onClick={() =>
+                            handleRemoveEducation(index, "highschool")
+                          }
                           disabled={isProcessing}
                           aria-label="Delete High School Education"
                         />
@@ -1268,7 +1513,8 @@ const Education = () => {
                   Add Intermediate
                 </button>
               )}
-              {intermediateEducationList.length === 0 && highSchoolEducationList.length === 0 && <br />}
+              {intermediateEducationList.length === 0 &&
+                highSchoolEducationList.length === 0 && <br />}
               {highSchoolEducationList.length === 0 && (
                 <button
                   onClick={handleAddHighSchool}
