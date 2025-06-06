@@ -9,7 +9,7 @@ const WorkExperience = () => {
         designation: '',
         organisation: '',
         employmentType: '',
-        gotFromUnstop: false,
+        gotFromInternph: false,
         startDate: '',
         endDate: '',
         currentlyWorking: false,
@@ -84,11 +84,11 @@ const WorkExperience = () => {
                 <label className="flex items-center gap-2 text-sm text-gray-700 mb-4">
                     <input
                         type="checkbox"
-                        checked={formData.gotFromUnstop}
-                        onChange={(e) => handleChange('gotFromUnstop', e.target.checked)}
+                        checked={formData.gotFromInternph}
+                        onChange={(e) => handleChange('gotFromInternph', e.target.checked)}
                         className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
-                    Got this job from Unstop
+                    Got this job from InternPH
                 </label>
 
                 {renderSelect('Designation', 'designation', ['Software Engineer', 'Product Manager'], true)}

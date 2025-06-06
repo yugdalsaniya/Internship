@@ -18,8 +18,7 @@ const SignUpPage = () => {
   const navigate = useNavigate();
   const [role, setRole] = useState(null);
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
+    name: '',
     companyName: '',
     academyName: '',
     mobile: '',
@@ -73,7 +72,7 @@ const SignUpPage = () => {
   };
 
   const validatePassword = (password) => {
-    const passwordRegex = /^.{6,}$/;
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/;
     return passwordRegex.test(password);
   };
 
@@ -86,8 +85,7 @@ const SignUpPage = () => {
     setRole(newRole);
     navigate(`/signup/${newRole}`);
     setFormData({
-      firstName: '',
-      lastName: '',
+      name: '',
       companyName: '',
       academyName: '',
       mobile: '',
@@ -99,181 +97,174 @@ const SignUpPage = () => {
   };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  setError('');
+    e.preventDefault();
+    setError('');
 
-  if (!formData.firstName.trim() || !formData.lastName.trim()) {
-    setError('First Name and Last Name are required.');
-    return;
-  }
-  if (!validateEmail(formData.email)) {
-    setError('Please enter a valid email address.');
-    return;
-  }
-  if (!validatePassword(formData.password)) {
-    setError('Password must be at least 6 characters long.');
-    return;
-  }
-  if (formData.password !== formData.confirmPassword) {
-    setError('Passwords do not match.');
-    return;
-  }
-  if (!validateMobile(formData.mobile)) {
-    setError('Mobile number must contain only digits or be empty.');
-    return;
-  }
-  if (role === 'company' && !formData.companyName.trim()) {
-    setError('Company Name is required.');
-    return;
-  }
-  if (role === 'academy' && !formData.academyName.trim()) {
-    setError('Academy Name is required.');
-    return;
-  }
-
-  try {
-    let payload;
-    let response;
-
-    if (role === 'company') {
-      payload = {
-        appName: 'app8657281202648',
-        companyName: formData.companyName.trim(),
-        mobile: formData.mobile.trim() || '',
-        legalname: `${formData.firstName.trim()} ${formData.lastName.trim()}`.trim(),
-        role: roleIds[role],
-        email: formData.email.toLowerCase().trim(),
-        password: formData.password,
-      };
-      console.log('Company Signup Payload:', payload);
-      response = await signupCompany(payload);
-    } else {
-      payload = {
-        appName: 'app8657281202648',
-        type: 'otp',
-        name: formData.email.toLowerCase().trim(),
-        username: formData.email.toLowerCase().trim(),
-        password: formData.password,
-        role: roleIds[role],
-        legalname: `${formData.firstName.trim()} ${formData.lastName.trim()}`.trim(),
-        email: formData.email.toLowerCase().trim(),
-        mobile: formData.mobile.trim() || '',
-        ...(role === 'academy' && { academyname: formData.academyName.trim() }),
-      };
-      console.log('Signup Payload:', payload);
-      response = await signup(payload);
+    if (!formData.name.trim()) {
+      setError('Name is required.');
+      return;
+    }
+    if (!validateEmail(formData.email)) {
+      setError('Please enter a valid email address.');
+      return;
+    }
+    if (!validatePassword(formData.password)) {
+      setError('Password must be at least 8 characters long and include an uppercase letter, a lowercase letter, a number, and a special character (e.g., !@#$%^&*).');
+      return;
+    }
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match.');
+      return;
+    }
+    if (!validateMobile(formData.mobile)) {
+      setError('Mobile number must contain only digits or be empty.');
+      return;
+    }
+    if (role === 'company' && !formData.companyName.trim()) {
+      setError('Company Name is required.');
+      return;
+    }
+    if (role === 'academy' && !formData.academyName.trim()) {
+      setError('Academy Name is required.');
+      return;
     }
 
-    if (response.success) {
+    try {
+      let payload;
+      let response;
+
       if (role === 'company') {
-        setFormData({
-          firstName: '',
-          lastName: '',
-          companyName: '',
-          academyName: '',
-          mobile: '',
-          email: '',
-          password: '',
-          confirmPassword: '',
-        });
-        // Store user data with companyId from the API response
-        const companyId = response.user?.companyId || ''; // Adjust based on actual API response structure
-        localStorage.setItem('user', JSON.stringify({
-          legalname: `${formData.firstName} ${formData.lastName}`.trim(),
+        payload = {
+          appName: 'app8657281202648',
+          companyName: formData.companyName.trim(),
+          mobile: formData.mobile.trim() ? `+63${formData.mobile.trim()}` : '',
+          legalname: formData.name.trim(),
+          role: roleIds[role],
           email: formData.email.toLowerCase().trim(),
-          role: roleNames[roleIds[role]],
-          roleId: roleIds[role],
-          companyId: companyId, // Store companyId
-        }));
-        navigate('/');
+          password: formData.password,
+        };
+        console.log('Company Signup Payload:', payload);
+        response = await signupCompany(payload);
       } else {
-        localStorage.setItem('pendingUser', JSON.stringify({
-          legalname: `${formData.firstName} ${formData.lastName}`.trim(),
+        payload = {
+          appName: 'app8657281202648',
+          type: 'otp',
+          name: formData.email.toLowerCase().trim(),
+          username: formData.email.toLowerCase().trim(),
+          password: formData.password,
+          role: roleIds[role],
+          legalname: formData.name.trim(),
           email: formData.email.toLowerCase().trim(),
-          role: roleNames[roleIds[role]],
-          roleId: roleIds[role],
+          mobile: formData.mobile.trim() ? `+63${formData.mobile.trim()}` : '',
           ...(role === 'academy' && { academyname: formData.academyName.trim() }),
-        }));
-        navigate('/otp');
+        };
+        console.log('Signup Payload:', payload);
+        response = await signup(payload);
       }
-    } else {
-      setError(response.message || 'Signup failed');
+
+      if (response.success) {
+        if (role === 'company') {
+          setFormData({
+            name: '',
+            companyName: '',
+            academyName: '',
+            mobile: '',
+            email: '',
+            password: '',
+            confirmPassword: '',
+          });
+          const companyId = response.user?.companyId || '';
+          localStorage.setItem('user', JSON.stringify({
+            legalname: formData.name.trim(),
+            email: formData.email.toLowerCase().trim(),
+            role: roleNames[roleIds[role]],
+            roleId: roleIds[role],
+            companyId: companyId,
+          }));
+          navigate('/');
+        } else {
+          localStorage.setItem('pendingUser', JSON.stringify({
+            legalname: formData.name.trim(),
+            email: formData.email.toLowerCase().trim(),
+            role: roleNames[roleIds[role]],
+            roleId: roleIds[role],
+            ...(role === 'academy' && { academyname: formData.academyName.trim() }),
+          }));
+          navigate('/otp');
+        }
+      } else {
+        setError(response.message || 'Signup failed');
+      }
+    } catch (err) {
+      const errorMessage = err.response?.data?.message || err.message || 'An error occurred during signup';
+      console.error('Signup Error Response:', err.response?.data);
+      if (errorMessage.includes('User with this username already exists') || errorMessage.includes('User with this email already exists')) {
+        setError('This email is already registered. Please use a different email or sign in.');
+      } else {
+        setError(`${errorMessage}. Please try again or contact support@conscor.com.`);
+      }
     }
-  } catch (err) {
-    const errorMessage = err.response?.data?.message || err.message || 'An error occurred during signup';
-    console.error('Signup Error Response:', err.response?.data);
-    if (errorMessage.includes('User with this username already exists') || errorMessage.includes('User with this email already exists')) {
-      setError('This email is already registered. Please use a different email or sign in.');
-    } else {
-      setError(`${errorMessage}. Please try again or contact support@conscor.com.`);
-    }
-  }
-};
+  };
 
   const formFields = {
     student: [
-      { name: 'firstName', placeholder: 'First Name', type: 'text', required: true },
-      { name: 'lastName', placeholder: 'Last Name', type: 'text', required: true },
-      { name: 'mobile', placeholder: 'Mobile (e.g., 9979737457)', type: 'text' },
+      { name: 'name', placeholder: 'Name', type: 'text', required: true },
+      { name: 'mobile', type: 'text' },
       { name: 'email', placeholder: 'Email', type: 'email', required: true },
-      { name: 'password', placeholder: 'Password', type: showPassword ? 'text' : 'password', required: true },
-      { name: 'confirmPassword', placeholder: 'Confirm Password', type: showPassword ? 'text' : 'password', required: true },
+      { name: 'password', placeholder: 'Strong Password', type: showPassword ? 'text' : 'password', required: true },
+      { name: 'confirmPassword', placeholder: 'Confirm Strong Password', type: showPassword ? 'text' : 'password', required: true },
     ],
     company: [
-      { name: 'firstName', placeholder: 'First Name', type: 'text', required: true },
-      { name: 'lastName', placeholder: 'Last Name', type: 'text', required: true },
+      { name: 'name', placeholder: 'Name', type: 'text', required: true },
       { name: 'companyName', placeholder: 'Company Name', type: 'text', required: true },
-      { name: 'mobile', placeholder: 'Mobile (e.g., 9979737457)', type: 'text' },
+      { name: 'mobile', type: 'text' },
       { name: 'email', placeholder: 'Email', type: 'email', required: true },
-      { name: 'password', placeholder: 'Password', type: showPassword ? 'text' : 'password', required: true },
-      { name: 'confirmPassword', placeholder: 'Confirm Password', type: showPassword ? 'text' : 'password', required: true },
+      { name: 'password', placeholder: 'Strong Password', type: showPassword ? 'text' : 'password', required: true },
+      { name: 'confirmPassword', placeholder: 'Confirm Strong Password', type: showPassword ? 'text' : 'password', required: true },
     ],
     academy: [
-      { name: 'firstName', placeholder: 'First Name', type: 'text', required: true },
-      { name: 'lastName', placeholder: 'Last Name', type: 'text', required: true },
+      { name: 'name', placeholder: 'Name', type: 'text', required: true },
       { name: 'academyName', placeholder: 'Academy Name', type: 'text', required: true },
-      { name: 'mobile', placeholder: 'Mobile (e.g., 9979737457)', type: 'text' },
+      { name: 'mobile', type: 'text' },
       { name: 'email', placeholder: 'Email', type: 'email', required: true },
-      { name: 'password', placeholder: 'Password', type: showPassword ? 'text' : 'password', required: true },
-      { name: 'confirmPassword', placeholder: 'Confirm Password', type: showPassword ? 'text' : 'password', required: true },
+      { name: 'password', placeholder: 'Strong Password', type: showPassword ? 'text' : 'password', required: true },
+      { name: 'confirmPassword', placeholder: 'Confirm Strong Password', type: showPassword ? 'text' : 'password', required: true },
     ],
     recruiter: [
-      { name: 'firstName', placeholder: 'First Name', type: 'text', required: true },
-      { name: 'lastName', placeholder: 'Last Name', type: 'text', required: true },
-      { name: 'mobile', placeholder: 'Mobile (e.g., 9979737457)', type: 'text' },
+      { name: 'name', placeholder: 'Name', type: 'text', required: true },
+      { name: 'mobile', type: 'text' },
       { name: 'email', placeholder: 'Email', type: 'email', required: true },
-      { name: 'password', placeholder: 'Password', type: showPassword ? 'text' : 'password', required: true },
-      { name: 'confirmPassword', placeholder: 'Confirm Password', type: showPassword ? 'text' : 'password', required: true },
+      { name: 'password', placeholder: 'Strong Password', type: showPassword ? 'text' : 'password', required: true },
+      { name: 'confirmPassword', placeholder: 'Confirm Strong Password', type: showPassword ? 'text' : 'password', required: true },
     ],
     mentor: [
-      { name: 'firstName', placeholder: 'First Name', type: 'text', required: true },
-      { name: 'lastName', placeholder: 'Last Name', type: 'text', required: true },
-      { name: 'mobile', placeholder: 'Mobile (e.g., 9979737457)', type: 'text' },
+      { name: 'name', placeholder: 'Name', type: 'text', required: true },
+      { name: 'mobile', type: 'text' },
       { name: 'email', placeholder: 'Email', type: 'email', required: true },
-      { name: 'password', placeholder: 'Password', type: showPassword ? 'text' : 'password', required: true },
-      { name: 'confirmPassword', placeholder: 'Confirm Password', type: showPassword ? 'text' : 'password', required: true },
+      { name: 'password', placeholder: 'Strong Password', type: showPassword ? 'text' : 'password', required: true },
+      { name: 'confirmPassword', placeholder: 'Confirm Strong Password', type: showPassword ? 'text' : 'password', required: true },
     ],
   };
 
   return (
-    <div className="flex min-h-screen font-sans lg:overflow-hidden">
-      <div className="w-full lg:w-1/2 flex flex-col justify-center px-4 py-4 sm:px-6 md:px-8 lg:h-screen lg:overflow-hidden">
-        <div className="w-full max-w-md mx-auto lg:flex lg:flex-col lg:justify-center lg:min-h-[600px]">
-          <div className="flex flex-col items-center mb-4">
-            <div className="flex items-center space-x-3 mb-2">
-              <img src={logo} alt="Logo" className="w-8 h-8 sm:w-10 sm:h-10" />
+    <div className="flex h-screen font-sans">
+      <div className="w-full lg:w-1/2 flex flex-col justify-center px-4 py-2 xs:px-6 sm:px-8">
+        <div className="max-w-[20rem] xs:max-w-[24rem] sm:max-w-[28rem] mx-auto w-full">
+          <div className="mb-3 flex flex-col items-center">
+            <div className="flex items-center space-x-2 mb-1">
+              <img src={logo} alt="Logo" className="w-8 h-8 xs:w-10 xs:h-10 sm:w-12 sm:h-12" />
               <div>
-                <h1 className="text-base sm:text-lg font-bold text-[#050748] tracking-wide">
+                <h1 className="text-base xs:text-lg sm:text-xl font-bold text-[#050748] tracking-wide">
                   INTERNSHIP–OJT
                 </h1>
-                <div className="w-full h-[2px] bg-[#050748] mt-1 mb-1" />
-                <p className="text-xs sm:text-sm text-black font-bold text-center">
+                <div className="w-full h-[2px] bg-[#050748] mt-0.5 mb-0.5" />
+                <p className="text-xs xs:text-sm sm:text-base text-black font-bold text-center">
                   WORK24 PHILIPPINES
                 </p>
               </div>
             </div>
           </div>
-          <div className="flex flex-wrap justify-center gap-2 sm:gap-3 mb-4">
+          <div className="flex flex-wrap justify-center gap-2 xs:gap-3 sm:gap-4 mb-3">
             {['student', 'company', 'academy', 'recruiter', 'mentor'].map((r) => (
               <div
                 key={r}
@@ -298,80 +289,59 @@ const SignUpPage = () => {
                         : 'https://img.icons8.com/ios-filled/50/000000/user-male.png'
                     }
                     alt={r}
-                    className="w-5 h-5 sm:w-6 sm:h-6"
+                    className="w-5 h-5 xs:w-6 xs:h-6 sm:w-7 sm:h-7"
                   />
                 </div>
-                <span className="text-xs font-medium capitalize">{r}</span>
+                <span className="text-xs xs:text-sm font-medium capitalize">{r}</span>
               </div>
             ))}
           </div>
           {role && (
-            <div className="w-full min-h-[350px] lg:min-h-[400px]">
-              <h2 className="text-base sm:text-lg font-bold mb-1 text-black">Sign up</h2>
-              <p className="text-xs text-gray-500 mb-3">Sign up to enjoy the feature of Revolutie</p>
-              {error && <p className="text-red-500 text-xs mb-2">{error}</p>}
+            <div className="w-full">
+              <h2 className="text-base xs:text-lg sm:text-xl font-bold mb-1 text-black">Sign up</h2>
+              <p className="text-xs xs:text-sm text-gray-500 mb-2">Sign up to enjoy the feature of Revolutie</p>
+              {error && <p className="text-red-500 text-xs xs:text-sm mb-2">{error}</p>}
               <form className="space-y-2" onSubmit={handleSubmit}>
-                <div className="flex flex-col sm:flex-row gap-2">
-                  <div className="flex-1 relative">
+                {formFields[role].map((field) => (
+                  <div key={field.name} className="relative flex items-center">
+                    {field.name === 'mobile' && (
+                      <span className="absolute left-3 text-gray-500 text-xs xs:text-sm sm:text-base">+63</span>
+                    )}
                     <input
-                      type="text"
-                      name="firstName"
-                      placeholder="First Name"
-                      className="w-full px-3 py-1.5 border rounded-md outline-none text-xs"
-                      value={formData.firstName}
+                      type={field.type}
+                      name={field.name}
+                      placeholder={field.placeholder}
+                      className={`w-full px-3 py-2 xs:px-4 xs:py-2.5 border rounded-md outline-none text-xs xs:text-sm sm:text-base focus:ring-2 focus:ring-[#3D7EFF] ${
+                        field.name === 'mobile' ? 'pl-10' : ''
+                      }`}
+                      value={formData[field.name]}
                       onChange={handleChange}
-                      required
+                      required={field.required}
                     />
+                    {(field.name === 'password' || field.name === 'confirmPassword') &&
+                      (showPassword ? (
+                        <MdVisibility
+                          className="absolute top-1/2 right-2 xs:right-3 transform -translate-y-1/2 text-gray-500 cursor-pointer text-base xs:text-lg"
+                          onClick={togglePasswordVisibility}
+                        />
+                      ) : (
+                        <MdVisibilityOff
+                          className="absolute top-1/2 right-2 xs:right-3 transform -translate-y-1/2 text-gray-500 cursor-pointer text-base xs:text-lg"
+                          onClick={togglePasswordVisibility}
+                        />
+                      ))}
                   </div>
-                  <div className="flex-1 relative">
-                    <input
-                      type="text"
-                      name="lastName"
-                      placeholder="Last Name"
-                      className="w-full px-3 py-1.5 border rounded-md outline-none text-xs"
-                      value={formData.lastName}
-                      onChange={handleChange}
-                      required
-                    />
-                  </div>
-                </div>
-                {formFields[role]
-                  .filter((field) => field.name !== 'firstName' && field.name !== 'lastName')
-                  .map((field) => (
-                    <div key={field.name} className="relative">
-                      <input
-                        type={field.type}
-                        name={field.name}
-                        placeholder={field.placeholder}
-                        className="w-full px-3 py-1.5 border rounded-md outline-none text-xs"
-                        value={formData[field.name]}
-                        onChange={handleChange}
-                        required={field.required}
-                      />
-                      {(field.name === 'password' || field.name === 'confirmPassword') &&
-                        (showPassword ? (
-                          <MdVisibility
-                            className="absolute top-1/2 right-2 transform -translate-y-1/2 text-gray-500 cursor-pointer text-sm"
-                            onClick={togglePasswordVisibility}
-                          />
-                        ) : (
-                          <MdVisibilityOff
-                            className="absolute top-1/2 right-2 transform -translate-y-1/2 text-gray-500 cursor-pointer text-sm"
-                            onClick={togglePasswordVisibility}
-                          />
-                        ))}
-                    </div>
-                  ))}
+                ))}
                 <button
                   type="submit"
-                  className="w-full bg-[#3D7EFF] text-white py-1.5 rounded-md font-semibold text-xs"
+                  className="w-full bg-[#3D7EFF] text-white py-2 xs:py-2.5 rounded-md font-semibold text-xs xs:text-sm sm:text-base hover:bg-[#2b66cc] transition-colors"
                 >
                   Sign up
                 </button>
                 {role === 'company' && (
-                  <p className="text-xs text-center mt-2">
+                  <p className="text-sm xs:text-sm text-center mt-2.5">
                     Already have an account?{' '}
-                    <Link to="/login" className="text-[#3D7EFF] font-semibold">
+                    <Link to="/login" className="text-[#3D7EFF] font-semibold hover:underline">
                       Sign in
                     </Link>
                   </p>
@@ -379,29 +349,9 @@ const SignUpPage = () => {
               </form>
               {role !== 'company' && (
                 <>
-                  <div className="flex items-center my-3 min-h-[24px]">
-                    <hr className="flex-grow border-t" />
-                    <span className="mx-2 text-xs text-gray-500">or</span>
-                    <hr className="flex-grow border-t" />
-                  </div>
-                  <div className="flex justify-center gap-3 mb-3 min-h-[28px]">
-                    <button className="border p-1 rounded-md">
-                      <img
-                        src="https://img.icons8.com/color/48/google-logo.png"
-                        alt="Google"
-                        className="w-4 h-4"
-                      />
-                    </button>
-                    <button className="border p-1 rounded-md">
-                      <img src={facebook} alt="Facebook" className="w-4 h-4" />
-                    </button>
-                    <button className="border p-1 rounded-md">
-                      <img src={linkedin} alt="LinkedIn" className="w-4 h-4" />
-                    </button>
-                  </div>
-                  <p className="text-xs text-center">
+                  <p className="text-sm xs:text-sm text-center mt-2.5">
                     Already have an account?{' '}
-                    <Link to="/login" className="text-[#3D7EFF] font-semibold">
+                    <Link to="/login" className="text-[#3D7EFF] font-semibold hover:underline">
                       Sign in
                     </Link>
                   </p>
@@ -411,7 +361,7 @@ const SignUpPage = () => {
           )}
         </div>
       </div>
-      <div className="hidden lg:flex w-1/2 p-4">
+      <div className="hidden lg:flex w-1/2 p-2">
         <div
           className="w-full h-full bg-cover bg-center rounded-3xl"
           style={{ backgroundImage: `url(${rightImage})` }}

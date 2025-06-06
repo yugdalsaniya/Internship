@@ -5,6 +5,7 @@
 html, body {
   @apply font-kanit;
    scroll-behavior: auto;
+   
 }
 
 *:focus {

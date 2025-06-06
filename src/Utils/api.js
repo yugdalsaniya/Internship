@@ -1,17 +1,17 @@
-import axios from 'axios';
-import { jwtDecode } from 'jwt-decode';
+import axios from "axios";
+import { jwtDecode } from "jwt-decode";
 
-const API_URL = 'https://crmapi.conscor.com/api';
-const DB_NAME = 'internph';
-const API_KEY = 'LHCHoE0IlCOuESA4VQuJ';
+const API_URL = "https://crmapi.conscor.com/api";
+const DB_NAME = "internph";
+const API_KEY = "LHCHoE0IlCOuESA4VQuJ";
 
 // Role ID to name mapping (for normalizing login response)
 const roleNames = {
-  '1747825619417': 'student',
-  '1747723485001': 'company',
-  '1747903042943': 'academy',
-  '1747902920002': 'recruiter',
-  '1747902955524': 'mentor',
+  1747825619417: "student",
+  1747723485001: "company",
+  1747903042943: "academy",
+  1747902920002: "recruiter",
+  1747902955524: "mentor",
 };
 
 export const fetchSectionData = async (params) => {
@@ -22,13 +22,15 @@ export const fetchSectionData = async (params) => {
     limit = 0,
     skip = 0,
     order = -1,
-    sortedBy = 'createdAt',
+    sortedBy = "createdAt",
     cacheBust,
   } = params;
 
   try {
-    const url = cacheBust ? `${API_URL}/general/mfind?_=${cacheBust}` : `${API_URL}/general/mfind`;
-    const accessToken = localStorage.getItem('accessToken');
+    const url = cacheBust
+      ? `${API_URL}/general/mfind?_=${cacheBust}`
+      : `${API_URL}/general/mfind`;
+    const accessToken = localStorage.getItem("accessToken");
     const response = await axios.post(
       url,
       {
@@ -43,8 +45,8 @@ export const fetchSectionData = async (params) => {
       },
       {
         headers: {
-          'x-api-key': API_KEY,
-          'Content-Type': 'application/json',
+          "x-api-key": API_KEY,
+          "Content-Type": "application/json",
           Authorization: accessToken ? `Bearer ${accessToken}` : undefined,
         },
       }
@@ -65,7 +67,7 @@ export const fetchSectionData = async (params) => {
 
 export const addGeneralData = async ({ dbName, collectionName, data }) => {
   try {
-    const accessToken = localStorage.getItem('accessToken');
+    const accessToken = localStorage.getItem("accessToken");
     const response = await axios.post(
       `${API_URL}/general/adddata`,
       {
@@ -75,42 +77,47 @@ export const addGeneralData = async ({ dbName, collectionName, data }) => {
       },
       {
         headers: {
-          'x-api-key': API_KEY,
-          'Content-Type': 'application/json',
+          "x-api-key": API_KEY,
+          "Content-Type": "application/json",
           Authorization: accessToken ? `Bearer ${accessToken}` : undefined,
         },
       }
     );
 
-    console.log('addGeneralData API Response:', response.data);
+    console.log("addGeneralData API Response:", response.data);
     return response.data;
   } catch (error) {
-    console.error('Error while calling the adddata API:', {
+    console.error("Error while calling the adddata API:", {
       message: error.message,
       response: error.response?.data,
       status: error.response?.status,
       headers: error.response?.headers,
     });
-    throw error.response?.data || { message: 'Failed to add data' };
+    throw error.response?.data || { message: "Failed to add data" };
   }
 };
 
-export const uploadAndStoreFile = async ({ appName, moduleName, file, userId }) => {
+export const uploadAndStoreFile = async ({
+  appName,
+  moduleName,
+  file,
+  userId,
+}) => {
   try {
     if (!file) {
-      throw new Error('No file provided for upload.');
+      throw new Error("No file provided for upload.");
     }
 
     const formData = new FormData();
-    formData.append('file', file, file.name);
-    formData.append('user_id', userId);
-    formData.append('folderName', moduleName);
+    formData.append("file", file, file.name);
+    formData.append("user_id", userId);
+    formData.append("folderName", moduleName);
 
-    console.log('Uploading File:', file.name);
+    console.log("Uploading File:", file.name);
 
-    const token = localStorage.getItem('accessToken');
+    const token = localStorage.getItem("accessToken");
     if (!token) {
-      throw new Error('Authorization token is missing. Please log in again.');
+      throw new Error("Authorization token is missing. Please log in again.");
     }
 
     const response = await axios.post(
@@ -118,23 +125,27 @@ export const uploadAndStoreFile = async ({ appName, moduleName, file, userId }) 
       formData,
       {
         headers: {
-          'Content-Type': 'multipart/form-data',
-          'x-api-key': API_KEY,
+          "Content-Type": "multipart/form-data",
+          "x-api-key": API_KEY,
           Authorization: `Bearer ${token}`,
         },
       }
     );
 
-    console.log('Upload Response (Raw):', response.data);
+    console.log("Upload Response (Raw):", response.data);
     return response.data;
   } catch (error) {
-    console.error('Error uploading file:', {
+    console.error("Error uploading file:", {
       message: error.message,
       response: error.response?.data,
       status: error.response?.status,
       headers: error.response?.headers,
     });
-    throw error.response?.data || { message: error.message || 'Failed to upload file' };
+    throw (
+      error.response?.data || {
+        message: error.message || "Failed to upload file",
+      }
+    );
   }
 };
 
@@ -145,22 +156,22 @@ export const signup = async (userData) => {
       userData,
       {
         headers: {
-          'x-api-key': API_KEY,
-          'Content-Type': 'application/json',
+          "x-api-key": API_KEY,
+          "Content-Type": "application/json",
         },
       }
     );
-    console.log('Signup API response:', response.data);
+    console.log("Signup API response:", response.data);
     return response.data;
   } catch (error) {
-    console.error('Error during signup:', {
+    console.error("Error during signup:", {
       message: error.message,
       response: error.response?.data,
       status: error.response?.status,
       headers: error.response?.headers,
       requestData: userData,
     });
-    throw error.response?.data || { message: 'Signup failed' };
+    throw error.response?.data || { message: "Signup failed" };
   }
 };
 
@@ -168,19 +179,19 @@ export const signupCompany = async (userData) => {
   try {
     const accessToken = localStorage.getItem(`${userData.appName}_accessToken`);
     const response = await axios.post(
-      'https://crmapi.conscor.com/api/v1/auth/hana/signup',
+      "https://crmapi.conscor.com/api/v1/auth/hana/signup",
       userData,
       {
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
           Authorization: `Bearer ${accessToken}`,
         },
       }
     );
-    console.log('Company Signup API response:', response.data);
+    console.log("Company Signup API response:", response.data);
     return response.data;
   } catch (error) {
-    console.error('Error during company signup:', {
+    console.error("Error during company signup:", {
       message: error.message,
       response: error.response?.data,
       status: error.response?.status,
@@ -188,9 +199,13 @@ export const signupCompany = async (userData) => {
       requestData: userData,
     });
     if (error.response && error.response.status === 400) {
-      throw error.response.data || { message: 'User with this email already exists.' };
+      throw (
+        error.response.data || {
+          message: "User with this email already exists.",
+        }
+      );
     }
-    throw error.response?.data || { message: 'Company signup failed' };
+    throw error.response?.data || { message: "Company signup failed" };
   }
 };
 
@@ -201,21 +216,21 @@ export const verifyOtp = async (otpData) => {
       otpData,
       {
         headers: {
-          'x-api-key': API_KEY,
-          'Content-Type': 'application/json',
+          "x-api-key": API_KEY,
+          "Content-Type": "application/json",
         },
       }
     );
-    console.log('Verify OTP API response:', response.data);
+    console.log("Verify OTP API response:", response.data);
     return response.data;
   } catch (error) {
-    console.error('Error verifying OTP:', {
+    console.error("Error verifying OTP:", {
       message: error.message,
       response: error.response?.data,
       status: error.response?.status,
       headers: error.response?.headers,
     });
-    throw error.response?.data || { message: 'OTP verification failed' };
+    throw error.response?.data || { message: "OTP verification failed" };
   }
 };
 
@@ -224,24 +239,28 @@ export const login = async (credentials) => {
     const response = await axios.post(
       `${API_URL}/v1/auth/login`,
       {
-        appName: 'app8657281202648',
+        appName: "app8657281202648",
         username: credentials.username.toLowerCase().trim(),
         password: credentials.password,
       },
       {
         headers: {
-          'x-api-key': API_KEY,
-          'Content-Type': 'application/json',
+          "x-api-key": API_KEY,
+          "Content-Type": "application/json",
         },
       }
     );
 
     const decodedToken = jwtDecode(response.data.accessToken);
-    const roleId = decodedToken.roleId || '';
+    const roleId = decodedToken.roleId || "";
 
     let normalizedUser = { ...response.data.user };
-    if (normalizedUser.role && normalizedUser.role.role === 'user' && roleId === '1747825619417') {
-      normalizedUser.role.role = '1747825619417';
+    if (
+      normalizedUser.role &&
+      normalizedUser.role.role === "user" &&
+      roleId === "1747825619417"
+    ) {
+      normalizedUser.role.role = "1747825619417";
     } else if (normalizedUser.role && roleNames[roleId]) {
       normalizedUser.role.role = roleId;
     }
@@ -251,16 +270,16 @@ export const login = async (credentials) => {
       user: normalizedUser,
     };
 
-    console.log('Login API response:', normalizedResponse);
+    console.log("Login API response:", normalizedResponse);
     return normalizedResponse;
   } catch (error) {
-    console.error('Error during login:', {
+    console.error("Error during login:", {
       message: error.message,
       response: error.response?.data,
       status: error.response?.status,
       headers: error.response?.headers,
     });
-    throw error.response?.data || { message: 'Invalid email or password' };
+    throw error.response?.data || { message: "Invalid email or password" };
   }
 };
 
@@ -274,8 +293,8 @@ export const forgotPassword = async (username, appName) => {
       },
       {
         headers: {
-          'x-api-key': API_KEY,
-          'Content-Type': 'application/json',
+          "x-api-key": API_KEY,
+          "Content-Type": "application/json",
         },
       }
     );
@@ -284,13 +303,15 @@ export const forgotPassword = async (username, appName) => {
       return response.data.message;
     }
   } catch (error) {
-    console.error('Error during forgot password:', {
+    console.error("Error during forgot password:", {
       message: error.message,
       response: error.response?.data,
       status: error.response?.status,
       headers: error.response?.headers,
     });
-    throw error.response?.data || { message: 'Failed to initiate password reset.' };
+    throw (
+      error.response?.data || { message: "Failed to initiate password reset." }
+    );
   }
 };
 
@@ -305,8 +326,8 @@ export const resetPassword = async (token, newPassword, appName) => {
       },
       {
         headers: {
-          'x-api-key': API_KEY,
-          'Content-Type': 'application/json',
+          "x-api-key": API_KEY,
+          "Content-Type": "application/json",
         },
       }
     );
@@ -315,13 +336,13 @@ export const resetPassword = async (token, newPassword, appName) => {
       return response.data.message;
     }
   } catch (error) {
-    console.error('Error during reset password:', {
+    console.error("Error during reset password:", {
       message: error.message,
       response: error.response?.data,
       status: error.response?.status,
       headers: error.response?.headers,
     });
-    throw error.response?.data || { message: 'Failed to reset password.' };
+    throw error.response?.data || { message: "Failed to reset password." };
   }
 };
 
@@ -333,11 +354,11 @@ export const mUpdate = async ({
   options,
 }) => {
   try {
-    const accessToken = localStorage.getItem('accessToken');
+    const accessToken = localStorage.getItem("accessToken");
     if (!accessToken) {
-      throw new Error('Authorization token is missing. Please log in again.');
+      throw new Error("Authorization token is missing. Please log in again.");
     }
-    console.log('mUpdate request:', {
+    console.log("mUpdate request:", {
       appName,
       collectionName,
       query,
@@ -355,13 +376,13 @@ export const mUpdate = async ({
       },
       {
         headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': API_KEY,
+          "Content-Type": "application/json",
+          "x-api-key": API_KEY,
           Authorization: `Bearer ${accessToken}`,
         },
       }
     );
-    console.log('mUpdate response:', {
+    console.log("mUpdate response:", {
       data: response.data,
       matchedCount: response.data.matchedCount,
       modifiedCount: response.data.modifiedCount,
@@ -369,13 +390,13 @@ export const mUpdate = async ({
     });
     return response.data;
   } catch (error) {
-    console.error('Error in mUpdate:', {
+    console.error("Error in mUpdate:", {
       message: error.message,
       response: error.response?.data,
       status: error.response?.status,
       headers: error.response?.headers,
     });
-    throw error.response?.data || { message: 'Failed to update data' };
+    throw error.response?.data || { message: "Failed to update data" };
   }
 };
 window.mUpdate = mUpdate;

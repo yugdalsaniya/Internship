@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { addGeneralData, uploadAndStoreFile } from '../../Utils/api';
+import { addGeneralData, uploadAndStoreFile, fetchSectionData, mUpdate } from '../../Utils/api';
 import logo from '../../assets/Navbar/logo.png';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -13,7 +13,7 @@ const PostInternshipForm = () => {
     time: 'Full Time',
     salary: '',
     description: '',
-    subtype: '',
+    subtype: '', // Stores category _id
     experiencelevel: '',
     applicationdeadline: '',
     internshipduration: '',
@@ -28,6 +28,8 @@ const PostInternshipForm = () => {
   const [newSkill, setNewSkill] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [categoryData, setCategoryData] = useState([]);
+  const [categoryLoading, setCategoryLoading] = useState(true);
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user')) || {};
 
@@ -42,14 +44,79 @@ const PostInternshipForm = () => {
     'Ph.D',
   ];
 
+  const experienceLevelOptions = [
+    'No-experience',
+    'Fresher',
+    'Intermediate',
+    'Expert',
+  ];
+
   useEffect(() => {
     if (user.role !== 'company' || !user.companyId) {
       navigate('/login');
     }
   }, [user.role, user.companyId, navigate]);
 
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        setCategoryLoading(true);
+        const response = await fetchSectionData({
+          collectionName: 'category',
+          query: {},
+          projection: {
+            '_id': 1,
+            'sectionData.category.titleofinternship': 1,
+          },
+          limit: 0,
+          skip: 0,
+          order: 1,
+          sortedBy: 'sectionData.category.titleofinternship',
+        });
+
+        if (Array.isArray(response) && response.length > 0) {
+          setCategoryData(
+            response
+              .map((item) => ({
+                _id: item._id,
+                titleofinternship: item.sectionData.category.titleofinternship,
+              }))
+              .sort((a, b) => a.titleofinternship.localeCompare(b.titleofinternship))
+          );
+        } else {
+          toast.error('No categories found in the database.', {
+            position: 'top-right',
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            theme: 'light',
+          });
+          setCategoryData([]);
+        }
+      } catch (err) {
+        console.error('Category Fetch Error:', err);
+        toast.error('Failed to fetch categories. Please try again.', {
+          position: 'top-right',
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          theme: 'light',
+        });
+        setCategoryData([]);
+      } finally {
+        setCategoryLoading(false);
+      }
+    };
+    fetchCategories();
+  }, []);
+
   const handleChange = (e) => {
     const { name, value, files, type, checked } = e.target;
+    console.log(`Input Change: ${name} = ${value}`); // Debug log
     if (name === 'degree') {
       let updatedDegrees = [...formData.degree];
       if (checked) {
@@ -107,6 +174,8 @@ const PostInternshipForm = () => {
     e.preventDefault();
     setError('');
     setLoading(true);
+
+    console.log('Form Data on Submit:', formData); // Debug log
 
     // Validation
     if (!user.companyId) {
@@ -194,9 +263,42 @@ const PostInternshipForm = () => {
       setLoading(false);
       return;
     }
+    // Validate subtype (category _id)
+    const isValidSubtype = categoryData.some(
+      (category) => category._id === formData.subtype
+    );
+    if (!isValidSubtype) {
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      toast.error('Invalid category selected. Please choose a valid category.', {
+        position: 'top-right',
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        theme: 'light',
+      });
+      setLoading(false);
+      return;
+    }
     if (!formData.experiencelevel) {
       window.scrollTo({ top: 0, behavior: 'instant' });
       toast.error('Experience level is required.', {
+        position: 'top-right',
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        theme: 'light',
+      });
+      setLoading(false);
+      return;
+    }
+    // Validate experience level
+    if (!experienceLevelOptions.includes(formData.experiencelevel)) {
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      toast.error('Invalid experience level selected.', {
         position: 'top-right',
         autoClose: 3000,
         hideProgressBar: false,
@@ -296,6 +398,10 @@ const PostInternshipForm = () => {
         console.log('Logo URL:', logoUrl);
       }
 
+      console.log('Category Data:', categoryData);
+      console.log('Selected Subtype (Category ID):', formData.subtype);
+      console.log('Selected Experience Level:', formData.experiencelevel);
+
       const jobpostData = {
         sectionData: {
           jobpost: {
@@ -330,14 +436,62 @@ const PostInternshipForm = () => {
           hour12: true,
         }),
       };
-
+      console.log('Job Post Data:', jobpostData);
       const response = await addGeneralData({
         dbName: 'internph',
         collectionName: 'jobpost',
         data: jobpostData,
       });
+      console.log('Add General Data Response:', response);
 
       if (response.success) {
+        // Update the numberofinternships in the category collection
+        try {
+          // Fetch the current category document
+          const categoryResponse = await fetchSectionData({
+            collectionName: 'category',
+            query: {
+              '_id': formData.subtype,
+            },
+            projection: { 'sectionData.category.numberofinternships': 1 },
+            limit: 1,
+          });
+
+          if (categoryResponse.length === 0) {
+            throw new Error(`Category with ID '${formData.subtype}' not found in the database.`);
+          }
+
+          const currentCount = parseInt(categoryResponse[0].sectionData.category.numberofinternships, 10) || 0;
+          const newCount = currentCount + 1;
+
+          // Update the category with the new count
+          await mUpdate({
+            appName: 'app8657281202648',
+            collectionName: 'category',
+            query: {
+              '_id': formData.subtype,
+            },
+            update: {
+              $set: { 'sectionData.category.numberofinternships': newCount.toString() },
+            },
+            options: {
+              upsert: false,
+            },
+          });
+          console.log(`Updated numberofinternships for category ID '${formData.subtype}' to ${newCount}`);
+        } catch (updateError) {
+          console.error('Error updating numberofinternships:', updateError);
+          toast.error('Internship posted, but failed to update category count.', {
+            position: 'top-right',
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            theme: 'light',
+          });
+        }
+
         window.scrollTo({ top: 0, behavior: 'instant' });
         toast.success('Internship posted successfully!', {
           position: 'top-right',
@@ -462,7 +616,7 @@ const PostInternshipForm = () => {
                 value={formData.salary}
                 onChange={handleChange}
                 className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="e.g., ₹10,000/month"
+                placeholder="e.g., ₱10,000/month"
               />
             </div>
             <div>
@@ -475,13 +629,16 @@ const PostInternshipForm = () => {
                 onChange={handleChange}
                 className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
+                disabled={categoryLoading || categoryData.length === 0}
               >
-                <option value="">Select Category</option>
-                <option value="Commerce">Commerce</option>
-                <option value="Telecommunications">Telecommunications</option>
-                <option value="Hotels & Tourism">Hotels & Tourism</option>
-                <option value="Education">Education</option>
-                <option value="Financial Services">Financial Services</option>
+                <option value="" disabled>
+                  {categoryLoading ? 'Loading categories...' : categoryData.length === 0 ? 'No categories available' : 'Select Category'}
+                </option>
+                {categoryData.map((category, index) => (
+                  <option key={index} value={category._id}>
+                    {category.titleofinternship.charAt(0).toUpperCase() + category.titleofinternship.slice(1).toLowerCase()}
+                  </option>
+                ))}
               </select>
             </div>
             <div>
@@ -495,11 +652,14 @@ const PostInternshipForm = () => {
                 className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               >
-                <option value="">Select Experience Level</option>
-                <option value="No-experience">No Experience</option>
-                <option value="Fresher">Fresher</option>
-                <option value="Intermediate">Intermediate</option>
-                <option value="Expert">Expert</option>
+                <option value="" disabled>
+                  Select Experience Level
+                </option>
+                {experienceLevelOptions.map((level, index) => (
+                  <option key={index} value={level}>
+                    {level.replace('-', ' ').charAt(0).toUpperCase() + level.replace('-', ' ').slice(1).toLowerCase()}
+                  </option>
+                ))}
               </select>
             </div>
             <div>
@@ -686,7 +846,7 @@ const PostInternshipForm = () => {
           <div className="flex gap-4">
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || categoryLoading || categoryData.length === 0}
               className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white py-2 rounded-lg text-sm font-bold hover:from-blue-600 hover:to-purple-700 transition-all disabled:opacity-50"
             >
               {loading ? 'Submitting...' : 'Submit Internship'}
