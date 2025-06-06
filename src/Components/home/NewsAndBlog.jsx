@@ -39,15 +39,15 @@ const NewsAndBlog = () => {
   }, []);
 
   return (
-    <section className="py-10">
+    <section className="py-4">
       <div className="px-12">
         {/* Heading and View All Link */}
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex justify-between items-center mb-4">
           <div>
-            <h2 className="text-3xl font-bold text-[#050748] mb-2">
+            <h2 className="text-3xl font-bold text-[#050748] mb-4">
               News and Blog
             </h2>
-            <p className="text-[#6A6A8E]">
+            <p className="text-[#6A6A8E] mb-4">
               Latest News, Expert Tips, and More.
             </p>
           </div>

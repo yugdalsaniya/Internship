@@ -94,7 +94,7 @@ export default function RecentInternship() {
     return <div className="px-4 md:px-12 py-4">No recent internships found.</div>;
 
   return (
-    <div className="px-4 md:px-12 py-8 bg-[#fafafa]">
+    <div className="px-12 md:px-12 py-4 bg-[#fafafa]">
       <h2 className="text-2xl font-bold mb-4">Recent Internships</h2>
       <div className="space-y-4">
         {processedInternships.map((internship) => (
