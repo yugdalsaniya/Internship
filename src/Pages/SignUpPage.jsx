@@ -305,14 +305,14 @@ const SignUpPage = () => {
                 {formFields[role].map((field) => (
                   <div key={field.name} className="relative flex items-center">
                     {field.name === 'mobile' && (
-                      <span className="absolute left-3 text-gray-500 text-xs xs:text-sm sm:text-base">+63</span>
+                      <span className="absolute left-3 text-gray-500 text-xs xs:text-sm sm:text-base ">+63</span>
                     )}
                     <input
                       type={field.type}
                       name={field.name}
                       placeholder={field.placeholder}
                       className={`w-full px-3 py-2 xs:px-4 xs:py-2.5 border rounded-md outline-none text-xs xs:text-sm sm:text-base focus:ring-2 focus:ring-[#3D7EFF] ${
-                        field.name === 'mobile' ? 'pl-10' : ''
+                        field.name === 'mobile' ? 'pl-12' : ''
                       }`}
                       value={formData[field.name]}
                       onChange={handleChange}
