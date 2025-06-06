@@ -53,7 +53,7 @@ const TopAcademy= () => {
         <div className="flex justify-between items-center mb-8">
           <div>
             <h2 className="text-3xl font-bold text-[#050748] mb-4">Top Academy</h2>
-            {/* <p className="text-[#6A6A8E]">Elite Learning Partners</p> */}
+            <p className="text-[#6A6A8E]">Elite Learning Partners</p>
           </div>
           <a href="#" className="text-[#6A6A8E] font-medium hover:underline">
             View all
