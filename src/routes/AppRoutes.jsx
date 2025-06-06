@@ -20,6 +20,7 @@ import MyApplicationsPage from "../Pages/student/MyApplicationsPage";
 import SrollToTop from "../ScrollToTop";
 import AboutUsPage from "../Pages/AboutUsPage";
 import ContactUsPage from "../Pages/ContactUsPage";
+import CategoryInternshipsPage from "../Pages/CategoryInternshipsPage";
 
 
 export default function AppRoutes() {
@@ -46,6 +47,7 @@ export default function AppRoutes() {
           {/* <Route path="/studentpostform" element={<StudentPostForm />} /> */}
           <Route path="/applyinternshipform/:id" element={<ApplyInternshipForm />} />
           <Route path="/my-applications" element={<MyApplicationsPage />} />
+          <Route path="/:categoryname/internships" element={<CategoryInternshipsPage />} />
 
 
 

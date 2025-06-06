@@ -15,7 +15,7 @@ export default function HomePage() {
    <FeaturedCompany />
    <RecentInternships />
    <Category />
-   <FeaturedInterns />
+   {/* <FeaturedInterns /> */}
    <TopEmployers />
    <AcademyPartners />
    <NewsAndBlog />
