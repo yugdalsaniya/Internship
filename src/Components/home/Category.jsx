@@ -12,6 +12,7 @@ const Category = () => {
         const data = await fetchSectionData({
           collectionName: 'category',
           limit: 100,
+          cacheBust: new Date().getTime(), // Ensures fresh data
         });
         console.log('Category API Response:', data);
         setCategories(data);
@@ -43,7 +44,7 @@ const Category = () => {
     return uniqueCategories
       .filter((category) => {
         const cat = category.sectionData?.category;
-        return cat && cat.titleofinternship && cat.numberofinternships;
+        return cat && cat.titleofinternship && cat.showinhomepage === true;
       })
       .map((category) => ({
         id: category._id,

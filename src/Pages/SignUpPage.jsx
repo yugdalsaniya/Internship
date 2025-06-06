@@ -72,7 +72,7 @@ const SignUpPage = () => {
   };
 
   const validatePassword = (password) => {
-    const passwordRegex = /^.{6,}$/;
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}$/;
     return passwordRegex.test(password);
   };
 
@@ -109,7 +109,7 @@ const SignUpPage = () => {
       return;
     }
     if (!validatePassword(formData.password)) {
-      setError('Password must be at least 6 characters long.');
+      setError('Password must be at least 8 characters long and include an uppercase letter, a lowercase letter, a number, and a special character (e.g., !@#$%^&*).');
       return;
     }
     if (formData.password !== formData.confirmPassword) {
@@ -137,7 +137,7 @@ const SignUpPage = () => {
         payload = {
           appName: 'app8657281202648',
           companyName: formData.companyName.trim(),
-          mobile: formData.mobile.trim() || '',
+          mobile: formData.mobile.trim() ? `+63${formData.mobile.trim()}` : '',
           legalname: formData.name.trim(),
           role: roleIds[role],
           email: formData.email.toLowerCase().trim(),
@@ -155,7 +155,7 @@ const SignUpPage = () => {
           role: roleIds[role],
           legalname: formData.name.trim(),
           email: formData.email.toLowerCase().trim(),
-          mobile: formData.mobile.trim() || '',
+          mobile: formData.mobile.trim() ? `+63${formData.mobile.trim()}` : '',
           ...(role === 'academy' && { academyname: formData.academyName.trim() }),
         };
         console.log('Signup Payload:', payload);
@@ -209,40 +209,40 @@ const SignUpPage = () => {
   const formFields = {
     student: [
       { name: 'name', placeholder: 'Name', type: 'text', required: true },
-      { name: 'mobile', placeholder: 'Mobile (e.g., 9979737457)', type: 'text' },
+      { name: 'mobile', type: 'text' },
       { name: 'email', placeholder: 'Email', type: 'email', required: true },
-      { name: 'password', placeholder: 'Password', type: showPassword ? 'text' : 'password', required: true },
-      { name: 'confirmPassword', placeholder: 'Confirm Password', type: showPassword ? 'text' : 'password', required: true },
+      { name: 'password', placeholder: 'Strong Password', type: showPassword ? 'text' : 'password', required: true },
+      { name: 'confirmPassword', placeholder: 'Confirm Strong Password', type: showPassword ? 'text' : 'password', required: true },
     ],
     company: [
       { name: 'name', placeholder: 'Name', type: 'text', required: true },
       { name: 'companyName', placeholder: 'Company Name', type: 'text', required: true },
-      { name: 'mobile', placeholder: 'Mobile (e.g., 9979737457)', type: 'text' },
+      { name: 'mobile', type: 'text' },
       { name: 'email', placeholder: 'Email', type: 'email', required: true },
-      { name: 'password', placeholder: 'Password', type: showPassword ? 'text' : 'password', required: true },
-      { name: 'confirmPassword', placeholder: 'Confirm Password', type: showPassword ? 'text' : 'password', required: true },
+      { name: 'password', placeholder: 'Strong Password', type: showPassword ? 'text' : 'password', required: true },
+      { name: 'confirmPassword', placeholder: 'Confirm Strong Password', type: showPassword ? 'text' : 'password', required: true },
     ],
     academy: [
       { name: 'name', placeholder: 'Name', type: 'text', required: true },
       { name: 'academyName', placeholder: 'Academy Name', type: 'text', required: true },
-      { name: 'mobile', placeholder: 'Mobile (e.g., 9979737457)', type: 'text' },
+      { name: 'mobile', type: 'text' },
       { name: 'email', placeholder: 'Email', type: 'email', required: true },
-      { name: 'password', placeholder: 'Password', type: showPassword ? 'text' : 'password', required: true },
-      { name: 'confirmPassword', placeholder: 'Confirm Password', type: showPassword ? 'text' : 'password', required: true },
+      { name: 'password', placeholder: 'Strong Password', type: showPassword ? 'text' : 'password', required: true },
+      { name: 'confirmPassword', placeholder: 'Confirm Strong Password', type: showPassword ? 'text' : 'password', required: true },
     ],
     recruiter: [
       { name: 'name', placeholder: 'Name', type: 'text', required: true },
-      { name: 'mobile', placeholder: 'Mobile (e.g., 9979737457)', type: 'text' },
+      { name: 'mobile', type: 'text' },
       { name: 'email', placeholder: 'Email', type: 'email', required: true },
-      { name: 'password', placeholder: 'Password', type: showPassword ? 'text' : 'password', required: true },
-      { name: 'confirmPassword', placeholder: 'Confirm Password', type: showPassword ? 'text' : 'password', required: true },
+      { name: 'password', placeholder: 'Strong Password', type: showPassword ? 'text' : 'password', required: true },
+      { name: 'confirmPassword', placeholder: 'Confirm Strong Password', type: showPassword ? 'text' : 'password', required: true },
     ],
     mentor: [
       { name: 'name', placeholder: 'Name', type: 'text', required: true },
-      { name: 'mobile', placeholder: 'Mobile (e.g., 9979737457)', type: 'text' },
+      { name: 'mobile', type: 'text' },
       { name: 'email', placeholder: 'Email', type: 'email', required: true },
-      { name: 'password', placeholder: 'Password', type: showPassword ? 'text' : 'password', required: true },
-      { name: 'confirmPassword', placeholder: 'Confirm Password', type: showPassword ? 'text' : 'password', required: true },
+      { name: 'password', placeholder: 'Strong Password', type: showPassword ? 'text' : 'password', required: true },
+      { name: 'confirmPassword', placeholder: 'Confirm Strong Password', type: showPassword ? 'text' : 'password', required: true },
     ],
   };
 
@@ -303,12 +303,17 @@ const SignUpPage = () => {
               {error && <p className="text-red-500 text-xs xs:text-sm mb-2">{error}</p>}
               <form className="space-y-2" onSubmit={handleSubmit}>
                 {formFields[role].map((field) => (
-                  <div key={field.name} className="relative">
+                  <div key={field.name} className="relative flex items-center">
+                    {field.name === 'mobile' && (
+                      <span className="absolute left-3 text-gray-500 text-xs xs:text-sm sm:text-base">+63</span>
+                    )}
                     <input
                       type={field.type}
                       name={field.name}
                       placeholder={field.placeholder}
-                      className="w-full px-3 py-2 xs:px-4 xs:py-2.5 border rounded-md outline-none text-xs xs:text-sm sm:text-base focus:ring-2 focus:ring-[#3D7EFF]"
+                      className={`w-full px-3 py-2 xs:px-4 xs:py-2.5 border rounded-md outline-none text-xs xs:text-sm sm:text-base focus:ring-2 focus:ring-[#3D7EFF] ${
+                        field.name === 'mobile' ? 'pl-10' : ''
+                      }`}
                       value={formData[field.name]}
                       onChange={handleChange}
                       required={field.required}
@@ -329,7 +334,7 @@ const SignUpPage = () => {
                 ))}
                 <button
                   type="submit"
-                  className="w-full bg-[#3D7EFF] text-white py-2 xs:py-2.5 rounded-md font-semibold text-xs xs:text-sm sm:text-base  hover:bg-[#2b66cc] transition-colors"
+                  className="w-full bg-[#3D7EFF] text-white py-2 xs:py-2.5 rounded-md font-semibold text-xs xs:text-sm sm:text-base hover:bg-[#2b66cc] transition-colors"
                 >
                   Sign up
                 </button>
@@ -344,26 +349,6 @@ const SignUpPage = () => {
               </form>
               {role !== 'company' && (
                 <>
-                  {/* <div className="flex items-center my-2">
-                    <hr className="flex-grow border-t" />
-                    <span className="mx-2 text-xs xs:text-sm text-gray-500">or</span>
-                    <hr className="flex-grow border-t" />
-                  </div> */}
-                  {/* <div className="flex justify-center gap-3 xs:gap-4 mb-2">
-                    <button className="border p-1.5 rounded-md hover:bg-gray-100">
-                      <img
-                        src="https://img.icons8.com/color/48/google-logo.png"
-                        alt="Google"
-                        className="w-4 h-4 xs:w-5 xs:h-5"
-                      />
-                    </button>
-                    <button className="border p-1.5 rounded-md hover:bg-gray-100">
-                      <img src={facebook} alt="Facebook" className="w-4 h-4 xs:w-5 xs:h-5" />
-                    </button>
-                    <button className="border p-1.5 rounded-md hover:bg-gray-100">
-                      <img src={linkedin} alt="LinkedIn" className="w-4 h-4 xs:w-5 xs:h-5" />
-                    </button>
-                  </div> */}
                   <p className="text-sm xs:text-sm text-center mt-2.5">
                     Already have an account?{' '}
                     <Link to="/login" className="text-[#3D7EFF] font-semibold hover:underline">
