@@ -581,7 +581,6 @@ function BasicDetails() {
         toast.success("Details updated successfully!");
         setTimeout(() => {
           setSuccess("");
-          navigate("/");
         }, 2000);
       } else {
         throw new Error("Failed to update details in database.");
@@ -1021,32 +1020,29 @@ function BasicDetails() {
             </div>
 
             <div className="mb-4">
-              <label className="text-sm font-medium block mb-1 text-gray-700">
-                Organisation/College <span className="text-red-500">*</span>
-              </label>
-              <select
-                className="w-full border border-gray-300 rounded-lg p-2 h-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={college}
-                onChange={(e) => setCollege(e.target.value)}
-                disabled={isProcessing || isLoadingOptions}
-              >
-                <option value="">Select College</option>
-                {instituteOptions.length > 0 ? (
-                  instituteOptions.map((option) => (
-                    <option key={option._id} value={option._id}>
-                      {option.name}
-                    </option>
-                  ))
-                ) : (
-                  <option value="" disabled>
-                    No institutes available
-                  </option>
-                )}
-              </select>
-              {isLoadingOptions && (
-                <p className="text-sm text-gray-500 mt-1">Loading institutes...</p>
-              )}
-            </div>
+  <label className="text-sm font-medium block mb-1 text-gray-700">
+    Organisation/College <span className="text-red-500">*</span>
+  </label>
+  <Select
+    options={instituteOptions.map((option) => ({
+      value: option._id,
+      label: option.name,
+    }))}
+    value={instituteOptions
+      .filter((option) => option._id === college)
+      .map((option) => ({ value: option._id, label: option.name }))}
+    onChange={(selected) => setCollege(selected ? selected.value : "")}
+    styles={customSelectStyles}
+    isDisabled={isProcessing || isLoadingOptions}
+    placeholder="Search for your college..."
+    isClearable
+    isSearchable
+    menuPortalTarget={document.body}
+  />
+  {isLoadingOptions && (
+    <p className="text-sm text-gray-500 mt-1">Loading institutes...</p>
+  )}
+</div>
           </>
         )}
 
