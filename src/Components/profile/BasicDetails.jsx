@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   FaMale,
@@ -112,6 +112,8 @@ function BasicDetails() {
   const [profilePicture, setProfilePicture] = useState("");
   const [profilePictureFile, setProfilePictureFile] = useState(null);
   const [profilePicturePreview, setProfilePicturePreview] = useState("");
+  const locationInputRef = useRef(null); // Ref for the location input field
+  const autocompleteRef = useRef(null); // Ref to store the Autocomplete instance
 
   useEffect(() => {
     const fetchUserDataAndDropdownOptions = async () => {
@@ -255,6 +257,67 @@ function BasicDetails() {
 
     fetchUserDataAndDropdownOptions();
   }, []);
+
+  // Initialize Google Places Autocomplete
+  useEffect(() => {
+  // Function to load Google Maps script dynamically
+  const loadGoogleMapsScript = () => {
+    return new Promise((resolve, reject) => {
+      // Check if the script is already loaded
+      if (window.google && window.google.maps && window.google.maps.places) {
+        resolve();
+        return;
+      }
+
+      const script = document.createElement("script");
+      script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyCu9YGSvrE22iUL4Xhe3ISk-B0r8FTW9jI&libraries=places&loading=async`;
+      script.async = true;
+      script.defer = true;
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error("Failed to load Google Maps API"));
+      document.head.appendChild(script);
+    });
+  };
+
+  // Initialize Google Places Autocomplete after script is loaded
+  loadGoogleMapsScript()
+    .then(() => {
+      if (window.google && window.google.maps && window.google.maps.places) {
+        autocompleteRef.current = new window.google.maps.places.Autocomplete(
+          locationInputRef.current,
+          {
+            types: ["(cities)"], // Restrict to cities
+            fields: ["formatted_address", "name"], // Retrieve only necessary fields
+          }
+        );
+
+        autocompleteRef.current.addListener("place_changed", () => {
+          const place = autocompleteRef.current.getPlace();
+          if (place.formatted_address) {
+            setLocation(place.formatted_address);
+          } else {
+            setLocation(place.name || "");
+          }
+        });
+      } else {
+        console.error("Google Maps API not loaded");
+        setError("Google Maps API failed to load. Location suggestions unavailable.");
+        setTimeout(() => setError(""), 5000);
+      }
+    })
+    .catch((err) => {
+      console.error("Error loading Google Maps API:", err);
+      setError("Google Maps API failed to load. Location suggestions unavailable.");
+      setTimeout(() => setError(""), 5000);
+    });
+
+  // Cleanup
+  return () => {
+    if (autocompleteRef.current) {
+      window.google.maps.event.clearInstanceListeners(autocompleteRef.current);
+    }
+  };
+}, []);
 
   useEffect(() => {
     if (userType !== "Professional") {
@@ -1072,8 +1135,10 @@ function BasicDetails() {
               type="text"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
+              ref={locationInputRef}
               className="w-full border border-gray-300 rounded-lg px-4 py-2 pr-10 h-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
               disabled={isProcessing}
+              placeholder="Enter your location"
             />
             <FaCrosshairs className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500" />
           </div>
