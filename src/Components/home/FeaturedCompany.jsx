@@ -14,11 +14,10 @@ const FeaturedCompany = () => {
           limit: 50,
           query: { 'sectionData.Company.logoImage': { $ne: '' } },
         });
-        console.log('FeaturedCompany API Response:', data);
         setCompanies(data);
       } catch (err) {
         setError('Error fetching company data');
-getitem: console.error('FeaturedCompany API Error:', err);
+        console.error('FeaturedCompany API Error:', err);
       } finally {
         setLoading(false);
       }
@@ -27,7 +26,6 @@ getitem: console.error('FeaturedCompany API Error:', err);
     getCompanies();
   }, []);
 
-  // Memoize companies with valid logo sources
   const filteredCompanies = useMemo(() => {
     return companies
       .filter((company) => {
@@ -40,20 +38,65 @@ getitem: console.error('FeaturedCompany API Error:', err);
       }));
   }, [companies]);
 
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>{error}</div>;
-  if (filteredCompanies.length === 0) return <div>No companies with valid logos found.</div>;
+  if (loading) return (
+    <div className="relative bg-white">
+      <div className="max-w-7xl mx-auto px-6 py-10">
+        <div className="relative">
+          <div className="flex gap-4 overflow-x-auto pb-4 px-4 sm:px-8 md:px-12 space-x-4 sm:space-x-8 md:space-x-12 scrollbar">
+            {[...Array(5)].map((_, index) => (
+              <div
+                key={`skeleton-${index}`}
+                className="flex-shrink-0 w-[calc(20%-16px)] sm:w-[calc(20%-32px)] md:w-[calc(20%-48px)] border border-gray-200 rounded-lg flex items-center justify-center p-4 bg-white"
+              >
+                <div className="h-6 sm:h-8 md:h-10 w-[120px] bg-gray-200 animate-pulse rounded" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+  if (error) return <div className="py-10 text-center text-red-500">{error}</div>;
+  if (filteredCompanies.length === 0) return <div className="py-10 text-center">No companies with valid logos found.</div>;
 
   return (
-    <div className="flex flex-wrap justify-center items-center mx-6 py-10 bg-white space-x-4 sm:space-x-24">
-      {filteredCompanies.map((company) => (
-        <img
-          key={company._id}
-          src={company.logoSrc}
-          alt={`${company.sectionData.Company.companyName} Logo`}
-          className="h-6 sm:h-8 md:h-10 object-contain"
-        />
-      ))}
+    <div className="relative bg-white">
+      <div className="max-w-7xl mx-auto px-6 py-10">
+        <div className="relative">
+          <div className="flex gap-4 overflow-x-auto pb-4 px-4 sm:px-8 md:px-12 space-x-4 sm:space-x-8 md:space-x-12 scrollbar">
+            {filteredCompanies.map((company) => (
+              <div 
+                key={company._id}
+                className="flex-shrink-0 w-[calc(20%-16px)] sm:w-[calc(20%-32px)] md:w-[calc(20%-48px)] border border-gray-200 rounded-lg flex items-center justify-center p-4 bg-white"
+              >
+                <img
+                  src={company.logoSrc}
+                  alt={`${company.sectionData.Company.companyName} Logo`}
+                  className="h-6 sm:h-8 md:h-10 max-w-[120px] object-contain"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <style jsx>{`
+        .scrollbar::-webkit-scrollbar {
+          height: 6px;
+          display: none;
+        }
+        .scrollbar::-webkit-scrollbar-track {
+          background: #f1f1f1;
+          border-radius: 10px;
+        }
+        .scrollbar::-webkit-scrollbar-thumb {
+          background: #888;
+          border-radius: 10px;
+        }
+        .scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #555;
+        }
+      `}</style>
     </div>
   );
 };

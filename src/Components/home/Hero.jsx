@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import bannerImage from '../../assets/Hero/banner.jpg'; // Default background
+import { fetchSectionData } from '../../Utils/api';
 
 const Hero = ({
   title = 'Top Internships and OJT Programs in the Philippines for Career Launch',
@@ -9,9 +10,12 @@ const Hero = ({
     { type: 'select', placeholder: 'Select Location', options: ['Select Location'] },
     { type: 'select', placeholder: 'Select Category', options: ['Select Category'] },
   ],
-  stats = [
+  backgroundImage = bannerImage,
+  gradient = 'linear-gradient(to right, rgba(249, 220, 223, 0.8), rgba(181, 217, 211, 0.8))',
+}) => {
+  const [stats, setStats] = useState([
     {
-      count: '25,850',
+      count: '0', // Placeholder, will be updated dynamically
       label: 'Internships',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -31,7 +35,7 @@ const Hero = ({
       bgColor: 'bg-[#6A6A8E]',
     },
     {
-      count: '18,400',
+      count: '0', // Placeholder, will be updated dynamically
       label: 'Companies',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -41,7 +45,7 @@ const Hero = ({
       bgColor: 'bg-[#6A6A8E]',
     },
     {
-      count: '2,500',
+      count: '0', // Placeholder, will be updated dynamically
       label: 'Academy',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -50,10 +54,55 @@ const Hero = ({
       ),
       bgColor: 'bg-[#6A6A8E]',
     },
-  ],
-  backgroundImage = bannerImage,
-  gradient = 'linear-gradient(to right, rgba(249, 220, 223, 0.8), rgba(181, 217, 211, 0.8))',
-}) => {
+  ]);
+
+  useEffect(() => {
+    const fetchCounts = async () => {
+      try {
+        // Fetch internship count
+        const internshipResponse = await fetchSectionData({
+          collectionName: 'jobpost',
+          query: { 'sectionData.jobpost.type': 'Internship' },
+        });
+        const internshipCount = internshipResponse.length * 11;
+
+        // Fetch company count (role: 1747723485001)
+        const companyResponse = await fetchSectionData({
+          collectionName: 'appuser',
+          query: { 'sectionData.appuser.role': '1747723485001' },
+        });
+        const companyCount = companyResponse.length * 11;
+
+        // Fetch academy count (role: 1747903042943)
+        const academyResponse = await fetchSectionData({
+          collectionName: 'appuser',
+          query: { 'sectionData.appuser.role': '1747903042943' },
+        });
+        const academyCount = academyResponse.length * 11;
+
+        // Update stats with dynamic counts
+        setStats((prevStats) =>
+          prevStats.map((stat) => {
+            if (stat.label === 'Internships') {
+              return { ...stat, count: internshipCount.toLocaleString() };
+            }
+            if (stat.label === 'Companies') {
+              return { ...stat, count: companyCount.toLocaleString() };
+            }
+            if (stat.label === 'Academy') {
+              return { ...stat, count: academyCount.toLocaleString() };
+            }
+            return stat;
+          })
+        );
+      } catch (error) {
+        console.error('Error fetching counts:', error);
+      }
+    };
+
+    fetchCounts();
+  }, []);
+
   return (
     <section
       className="relative bg-cover bg-center py-16 px-4 sm:px-12"
@@ -74,25 +123,24 @@ const Hero = ({
 
         {/* Search Bar */}
         {searchFields.length > 0 && (
-          <div className="bg-white rounded-lg shadow-md flex flex-col md:flex-row  items-center w-full max-w-3xl p-3 space-y-3 md:space-y-0 md:space-x-3">
+          <div className="bg-white rounded-lg shadow-md flex flex-col md:flex-row items-center w-full max-w-3xl p-3 space-y-3 md:space-y-0 md:space-x-3">
             {searchFields.map((field, index) => (
-  <React.Fragment key={index}>
-    {field.type === 'input' ? (
-      <input
-        type="text"
-        placeholder={field.placeholder}
-        className="w-full md:flex-1 border border-gray-300 rounded-md p-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
-      />
-    ) : (
-      <select className="w-full md:flex-1 border border-gray-300 rounded-md p-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
-        {field.options.map((option, optIndex) => (
-          <option key={optIndex}>{option}</option>
-        ))}
-      </select>
-    )}
-  </React.Fragment>
-))}
-
+              <React.Fragment key={index}>
+                {field.type === 'input' ? (
+                  <input
+                    type="text"
+                    placeholder={field.placeholder}
+                    className="w-full md:flex-1 border border-gray-300 rounded-md p-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                ) : (
+                  <select className="w-full md:flex-1 border border-gray-300 rounded-md p-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    {field.options.map((option, optIndex) => (
+                      <option key={optIndex}>{option}</option>
+                    ))}
+                  </select>
+                )}
+              </React.Fragment>
+            ))}
             <button className="bg-blue-600 text-white rounded-md py-2 px-4 text-xs hover:bg-blue-700 transition-colors">
               Search
             </button>

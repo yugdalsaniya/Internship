@@ -49,7 +49,7 @@ const Category = () => {
       .map((category) => ({
         id: category._id,
         name: category.sectionData.category.titleofinternship.toUpperCase(),
-        originalName: category.sectionData.category.titleofinternship, // Keep original case for navigation
+        originalName: category.sectionData.category.titleofinternship,
         count: parseInt(category.sectionData.category.numberofinternships, 10) || 0,
         logo: category.sectionData?.category?.logo && category.sectionData.category.logo.startsWith('http')
           ? category.sectionData.category.logo
@@ -58,12 +58,34 @@ const Category = () => {
   }, [categories]);
 
   const handleCategoryClick = (categoryName) => {
-    // Encode category name for URL (e.g., "Hotels & Tourism" -> "Hotels%20%26%20Tourism")
     const encodedCategory = encodeURIComponent(categoryName);
     navigate(`/${encodedCategory}/internships`);
   };
 
-  if (loading) return <div className="px-4 sm:px-12 py-12 text-center">Loading...</div>;
+  if (loading) return (
+    <section className="bg-gradient-to-b from-[#FFFCF2] to-[#FEEFF4] py-4">
+      <div className="px-4 sm:px-12">
+        <h2 className="text-center text-3xl sm:text-4xl font-bold text-[#050748] mb-4">
+          Browse by Category
+        </h2>
+        <p className="text-center text-[#6A6A8E] text-lg sm:text-xl mb-4">
+          Explore options by category.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
+          {[...Array(4)].map((_, index) => (
+            <div
+              key={`skeleton-${index}`}
+              className="bg-white rounded-tl-none rounded-br-none rounded-tr-xl rounded-bl-xl p-6 sm:p-8 flex flex-col items-center border border-gray-200 shadow-md min-h-[250px]"
+            >
+              <div className="h-10 w-10 bg-gray-200 animate-pulse rounded-full mb-6" />
+              <div className="h-6 w-3/4 bg-gray-200 animate-pulse rounded mb-6" />
+              <div className="h-6 w-32 bg-gray-200 animate-pulse rounded-full" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
   if (error) return <div className="px-4 sm:px-12 py-12 text-center">{error}</div>;
   if (filteredCategories.length === 0)
     return <div className="px-4 sm:px-12 py-12 text-center">No categories found.</div>;

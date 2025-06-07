@@ -3,10 +3,13 @@ import axios from "axios";
 
 const NewsAndBlog = () => {
   const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchPosts = async () => {
       try {
+        setLoading(true);
         const response = await axios.post(
           "https://crmapi.conscor.com/api/general/mfind",
           {
@@ -24,14 +27,19 @@ const NewsAndBlog = () => {
               date: item.createdDate || "No date",
               title: data.NewsAndBlogTitle || "No Title",
               image: data.NewsAndBlogImage || "",
-              link: "#", // You can customize this based on actual links
+              link: "#",
             };
           });
 
           setPosts(postList);
+        } else {
+          setError("No valid blog posts found.");
         }
       } catch (error) {
+        setError("Error fetching posts. Please try again later.");
         console.error("Error fetching posts:", error);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -41,7 +49,6 @@ const NewsAndBlog = () => {
   return (
     <section className="py-4">
       <div className="px-12">
-        {/* Heading and View All Link */}
         <div className="flex justify-between items-center mb-4">
           <div>
             <h2 className="text-3xl font-bold text-[#050748] mb-4">
@@ -56,51 +63,76 @@ const NewsAndBlog = () => {
           </a>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          {posts.map((post, index) => (
-            <div
-              key={index}
-              className="bg-white rounded-2xl p-6 flex flex-col shadow-sm hover:shadow-md transition-shadow duration-300"
-            >
-              {post.image ? (
-                <img
-                  src={post.image}
-                  alt={post.title}
-                  className="w-full h-48 object-cover rounded-xl mb-4"
-                />
-              ) : (
-                <div className="w-full h-48 bg-gray-300 rounded-xl mb-4 blur-sm"></div>
-              )}
-              <span className="bg-gray-200 text-gray-700 text-sm font-medium px-3 py-1 rounded-full self-start mb-2">
-                {post.category}
-              </span>
-              <p className="text-gray-600 text-sm mb-2">{post.date}</p>
-              <h3 className="text-lg font-semibold text-blue-900 mb-4">
-                {post.title}
-              </h3>
-              <a
-                href={post.link}
-                className="text-blue-600 font-medium flex items-center space-x-1 hover:underline self-start"
+        {loading && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            {[...Array(4)].map((_, index) => (
+              <div
+                key={`skeleton-${index}`}
+                className="bg-white rounded-2xl p-6 flex flex-col shadow-sm min-h-[300px]"
               >
-                <span>Read more</span>
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M9 5l7 7-7 7"
+                <div className="w-full h-48 bg-gray-200 animate-pulse rounded-xl mb-4" />
+                <div className="h-5 w-24 bg-gray-200 animate-pulse rounded-full mb-2" />
+                <div className="h-4 w-32 bg-gray-200 animate-pulse rounded mb-2" />
+                <div className="h-5 w-3/4 bg-gray-200 animate-pulse rounded mb-4" />
+                <div className="h-4 w-20 bg-gray-200 animate-pulse rounded" />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {error && <div className="text-center text-red-600">{error}</div>}
+
+        {!loading && !error && posts.length === 0 && (
+          <div className="text-center text-gray-600">No blog posts found.</div>
+        )}
+
+        {!loading && !error && posts.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            {posts.map((post, index) => (
+              <div
+                key={index}
+                className="bg-white rounded-2xl p-6 flex flex-col shadow-sm hover:shadow-md transition-shadow duration-300"
+              >
+                {post.image ? (
+                  <img
+                    src={post.image}
+                    alt={post.title}
+                    className="w-full h-48 object-cover rounded-xl mb-4"
                   />
-                </svg>
-              </a>
-            </div>
-          ))}
-        </div>
+                ) : (
+                  <div className="w-full h-48 bg-gray-300 rounded-xl mb-4 blur-sm"></div>
+                )}
+                <span className="bg-gray-200 text-gray-700 text-sm font-medium px-3 py-1 rounded-full self-start mb-2">
+                  {post.category}
+                </span>
+                <p className="text-gray-600 text-sm mb-2">{post.date}</p>
+                <h3 className="text-lg font-semibold text-blue-900 mb-4">
+                  {post.title}
+                </h3>
+                <a
+                  href={post.link}
+                  className="text-blue-600 font-medium flex items-center space-x-1 hover:underline self-start"
+                >
+                  <span>Read more</span>
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M9 5l7 7-7 7"
+                    />
+                  </svg>
+                </a>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );

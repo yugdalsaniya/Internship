@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { fetchSectionData } from './../../Utils/api'; // Adjust the import path based on your project structure
+import { fetchSectionData } from './../../Utils/api';
 
-const TopAcademy= () => {
-  const fallbackLogo = '/assets/partners/fallback.png'; // Adjust path if in public
+const TopAcademy = () => {
+  const fallbackLogo = '/assets/partners/fallback.png';
   const [partners, setPartners] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -14,7 +14,7 @@ const TopAcademy= () => {
         const data = await fetchSectionData({
           dbName: 'internph',
           collectionName: 'institute',
-          query: { 'sectionData.institute.showinhomepage': true }, // Fetch only institutes shown on homepage
+          query: { 'sectionData.institute.showinhomepage': true },
           projection: {
             'sectionData.institute.institutionname': 1,
             'sectionData.institute.institutiontagline': 1,
@@ -23,11 +23,10 @@ const TopAcademy= () => {
           },
         });
 
-        // Map API response to match the component's expected structure
         const mappedData = data.map((item) => ({
           name: item.sectionData.institute.institutionname,
           tagline: item.sectionData.institute.institutiontagline,
-          logo: item.sectionData.institute.image, // Placeholder logo
+          logo: item.sectionData.institute.image,
         }));
 
         setPartners(mappedData);
@@ -43,13 +42,12 @@ const TopAcademy= () => {
   }, []);
 
   const handleImageError = (e) => {
-    e.target.src = fallbackLogo; // Use local fallback or URL
+    e.target.src = fallbackLogo;
   };
 
   return (
     <section className="py-4">
       <div className="px-12">
-        {/* Heading and View All Link */}
         <div className="flex justify-between items-center mb-8">
           <div>
             <h2 className="text-3xl font-bold text-[#050748] mb-4">Top Academy</h2>
@@ -60,15 +58,24 @@ const TopAcademy= () => {
           </a>
         </div>
 
-        {/* Loading State */}
         {loading && (
-          <div className="text-center text-gray-600">Loading partners...</div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[...Array(4)].map((_, index) => (
+              <div
+                key={`skeleton-${index}`}
+                className="bg-white rounded-tl-none rounded-br-none rounded-tr-xl rounded-bl-xl p-6 sm:p-8 flex flex-col items-center border border-gray-200 shadow-md min-h-[250px]"
+              >
+                <div className="w-24 h-24 bg-gray-200 animate-pulse rounded-full mb-4" />
+                <div className="h-5 w-3/4 bg-gray-200 animate-pulse rounded mb-2" />
+                <div className="h-4 w-2/3 bg-gray-200 animate-pulse rounded mb-4" />
+                <div className="h-8 w-32 bg-gray-200 animate-pulse rounded-full" />
+              </div>
+            ))}
+          </div>
         )}
 
-        {/* Error State */}
         {error && <div className="text-center text-red-600">{error}</div>}
 
-        {/* Partners Grid */}
         {!loading && !error && partners.length === 0 && (
           <div className="text-center text-gray-600">No partners found.</div>
         )}
@@ -79,7 +86,6 @@ const TopAcademy= () => {
                 key={index}
                 className="bg-white rounded-tl-none rounded-br-none rounded-tr-xl rounded-bl-xl p-6 sm:p-8 flex flex-col items-center border border-gray-200 shadow-md hover:shadow-lg focus:shadow-lg transition-shadow duration-300 outline-none cursor-pointer min-h-[250px]"
               >
-                {/* Logo */}
                 <img
                   src={partner.logo}
                   alt={`${partner.name} logo`}

@@ -1,17 +1,16 @@
 import React, { useEffect, useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom"; // Import useNavigate for navigation
+import { useNavigate } from "react-router-dom";
 import { BsBookmarkPlus } from "react-icons/bs";
 import { fetchSectionData } from "../../Utils/api";
 import { formatDistanceToNow, parse } from "date-fns";
 
 export default function RecentInternship() {
-  const navigate = useNavigate(); // Hook for navigation
+  const navigate = useNavigate();
   const [recentInternships, setRecentInternships] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const maxInternships = 4; // Show only 4 recent internships
+  const maxInternships = 4;
 
-  // Fetch internships from API
   useEffect(() => {
     const fetchRecentInternships = async () => {
       try {
@@ -33,12 +32,10 @@ export default function RecentInternship() {
 
     fetchRecentInternships();
 
-    // Poll for updates every 60 seconds to reflect new admin additions
     const interval = setInterval(fetchRecentInternships, 60000);
     return () => clearInterval(interval);
   }, []);
 
-  // Process and sort internships
   const processedInternships = useMemo(() => {
     return recentInternships
       .filter((job) => job.sectionData?.jobpost?.type === "Internship")
@@ -79,16 +76,52 @@ export default function RecentInternship() {
         try {
           const dateA = parse(a.createdDate, "dd/MM/yyyy, h:mm:ss a", new Date());
           const dateB = parse(b.createdDate, "dd/MM/yyyy, h:mm:ss a", new Date());
-          return dateB - dateA; // Most recent first
+          return dateB - dateA;
         } catch (err) {
           console.error("Sorting error:", err);
           return 0;
         }
       })
-      .slice(0, maxInternships); // Limit to 4 most recent
+      .slice(0, maxInternships);
   }, [recentInternships]);
 
-  if (loading) return <div className="px-4 md:px-12 py-4">Loading...</div>;
+  if (loading) return (
+    <div className="px-12 md:px-12 py-4 bg-[#fafafa]">
+      <h2 className="text-2xl font-bold mb-4">Recent Internships</h2>
+      <div className="space-y-4">
+        {[...Array(maxInternships)].map((_, index) => (
+          <div
+            key={`skeleton-${index}`}
+            className="flex flex-col bg-white rounded-lg shadow-md p-4 min-h-[150px]"
+          >
+            <div className="flex justify-between items-center mb-2">
+              <div className="h-5 w-16 bg-gray-200 animate-pulse rounded-full" />
+              <div className="h-6 w-6 bg-gray-200 animate-pulse rounded" />
+            </div>
+            <div className="flex justify-between items-center flex-col md:flex-row">
+              <div className="flex-1 flex flex-col justify-between h-full">
+                <div className="flex items-center space-x-4">
+                  <div className="w-10 h-10 bg-gray-200 animate-pulse rounded-full" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-5 w-3/4 bg-gray-200 animate-pulse rounded" />
+                    <div className="h-4 w-1/2 bg-gray-200 animate-pulse rounded" />
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center space-x-2 mt-2">
+                  <div className="h-4 w-20 bg-gray-200 animate-pulse rounded" />
+                  <div className="h-4 w-20 bg-gray-200 animate-pulse rounded" />
+                  <div className="h-4 w-20 bg-gray-200 animate-pulse rounded" />
+                </div>
+              </div>
+              <div className="flex items-end mt-4 md:mt-0">
+                <div className="h-8 w-32 bg-gray-200 animate-pulse rounded-full" />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
   if (error) return <div className="px-4 md:px-12 py-4">{error}</div>;
   if (processedInternships.length === 0)
     return <div className="px-4 md:px-12 py-4">No recent internships found.</div>;
@@ -100,7 +133,7 @@ export default function RecentInternship() {
         {processedInternships.map((internship) => (
           <div
             key={internship.id}
-            className="flex flex-col bg-white rounded-lg shadow-md p-4 min-h-[150px]" // Set minimum height for consistency
+            className="flex flex-col bg-white rounded-lg shadow-md p-4 min-h-[150px]"
           >
             <div className="flex justify-between items-center mb-2">
               <span className="inline-block bg-gray-200 text-gray-800 text-xs font-medium px-2 py-0.5 rounded-full">
@@ -187,7 +220,7 @@ export default function RecentInternship() {
               </div>
               <div className="flex items-end mt-4 md:mt-0">
                 <button
-                  onClick={() => navigate(`/internshipdetail/${internship.id}`)} // Navigate to internship detail page
+                  onClick={() => navigate(`/internshipdetail/${internship.id}`)}
                   className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-medium py-2 px-4 rounded-full hover:from-blue-600 hover:to-purple-700 whitespace-nowrap"
                 >
                   Internship Details
