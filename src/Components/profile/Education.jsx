@@ -19,7 +19,7 @@ const Education = () => {
     endYear: "",
     courseType: "",
     percentage: "",
-    cgpa: "",
+    grade: "",
     rollNumber: "",
     lateralEntry: "",
     skills: "",
@@ -236,7 +236,7 @@ const Education = () => {
     console.log("formData before saving:", formData);
 
     const requiredFields = ["qualification", "college", "startYear", "endYear"];
-    const isIntermediate = formData.qualification === "Intermediate (12th)";
+    const isIntermediate = formData.qualification === "Senior High School (SHS)";
     if (isIntermediate) {
       requiredFields.push("stream");
     } else if (formData.qualification !== "Junior High School (JHS)") {
@@ -255,7 +255,7 @@ const Education = () => {
 
     if (
       formData.qualification !== "Junior High School (JHS)" &&
-      formData.qualification !== "Intermediate (12th)"
+      formData.qualification !== "Senior High School (SHS)"
     ) {
       const validCourse = courseOptions.find(
         (course) => course.id === formData.course
@@ -303,7 +303,7 @@ const Education = () => {
           endyear3: formData.endYear,
           coursetype3: formData.courseType,
           percentage3: formData.percentage,
-          cgpa3: formData.cgpa,
+          grade3: formData.grade,
           rollnumber3: formData.rollNumber,
           files3: fileUrl,
         };
@@ -335,7 +335,7 @@ const Education = () => {
           endyear2: formData.endYear,
           coursetype2: formData.courseType,
           percentage2: formData.percentage,
-          cgpa2: formData.cgpa,
+          grade2: formData.grade,
           rollnumber2: formData.rollNumber,
           files2: fileUrl,
         };
@@ -360,7 +360,7 @@ const Education = () => {
         }
       } else {
         const educationData = {
-          assetname1: formData.qualification,
+          qualification1: formData.qualification,
           course1: formData.course,
           specialization1: formData.specialization,
           stream1: formData.stream,
@@ -369,7 +369,7 @@ const Education = () => {
           endyear1: formData.endYear,
           "Course type1": formData.courseType,
           percentage1: formData.percentage,
-          cgpa1: formData.cgpa,
+          grade1: formData.grade,
           rollnumber1: formData.rollNumber,
           areyoualateralentrystudent1: formData.lateralEntry,
           skills1: formData.skills,
@@ -424,7 +424,7 @@ const Education = () => {
           endYear: "",
           courseType: "",
           percentage: "",
-          cgpa: "",
+          grade: "",
           rollNumber: "",
           lateralEntry: "",
           skills: "",
@@ -470,7 +470,7 @@ const Education = () => {
         endYear: edu.endyear3 || "",
         courseType: edu.coursetype3 || "",
         percentage: edu.percentage3 || "",
-        cgpa: edu.cgpa3 || "",
+        grade: edu.grade3 || "",
         rollNumber: edu.rollnumber3 || "",
         lateralEntry: "",
         skills: "",
@@ -493,7 +493,7 @@ const Education = () => {
         endYear: edu.endyear2 || "",
         courseType: edu.coursetype2 || "",
         percentage: edu.percentage2 || "",
-        cgpa: edu.cgpa2 || "",
+        grade: edu.grade2 || "",
         rollNumber: edu.rollnumber2 || "",
         lateralEntry: "",
         skills: "",
@@ -522,7 +522,7 @@ const Education = () => {
         endYear: edu.endyear1 || "",
         courseType: edu["Course type1"] || "",
         percentage: edu.percentage1 || "",
-        cgpa: edu.cgpa1 || "",
+        grade: edu.grade1 || "",
         rollNumber: edu.rollnumber1 || "",
         lateralEntry: edu.areyoualateralentrystudent1 || "",
         skills: edu.skills1 || "",
@@ -609,7 +609,7 @@ const Education = () => {
           endYear: "",
           courseType: "",
           percentage: "",
-          cgpa: "",
+          grade: "",
           rollNumber: "",
           lateralEntry: "",
           skills: "",
@@ -748,7 +748,7 @@ const Education = () => {
       endYear: "",
       courseType: "",
       percentage: "",
-      cgpa: "",
+      grade: "",
       rollNumber: "",
       lateralEntry: "",
       skills: "",
@@ -766,7 +766,7 @@ const Education = () => {
   const handleAddIntermediate = () => {
     setShowForm(true);
     setFormData({
-      qualification: "Intermediate (12th)",
+      qualification: "Senior High School (SHS)",
       course: "",
       specialization: "",
       stream: "",
@@ -775,7 +775,7 @@ const Education = () => {
       endYear: "",
       courseType: "",
       percentage: "",
-      cgpa: "",
+      grade: "",
       rollNumber: "",
       lateralEntry: "",
       skills: "",
@@ -802,7 +802,7 @@ const Education = () => {
       endYear: "",
       courseType: "",
       percentage: "",
-      cgpa: "",
+      grade: "",
       rollNumber: "",
       lateralEntry: "",
       skills: "",
@@ -820,7 +820,7 @@ const Education = () => {
   const dropdownOptions = {
     qualification: [
       "Junior High School (JHS)",
-      "Intermediate (12th)",
+      "Senior High School (SHS)",
       "Bachelor",
       "Master",
       "PhD",
@@ -1052,7 +1052,7 @@ const Education = () => {
               true
             )}
             {formData.qualification !== "Junior High School (JHS)" &&
-              formData.qualification !== "Intermediate (12th)" && (
+              formData.qualification !== "Senior High School (SHS)" && (
                 <>
                   {renderSelect("Course", "course", courseOptions, true)}
                   {renderSelect(
@@ -1062,7 +1062,7 @@ const Education = () => {
                   )}
                 </>
               )}
-            {formData.qualification === "Intermediate (12th)" &&
+            {formData.qualification === "Senior High School (SHS)" &&
               renderSelect("Stream", "stream", dropdownOptions.stream, true)}
             {renderInput("College", "college", "text", true)}
 
@@ -1078,13 +1078,13 @@ const Education = () => {
             )}
             <div className="grid md:grid-cols-2 gap-4">
               {renderInput("Percentage", "percentage")}
-              {renderInput("CGPA", "cgpa")}
+              {renderInput("GRADE", "grade")}
             </div>
 
             {renderInput("Roll Number", "rollNumber")}
 
             {formData.qualification !== "Junior High School (JHS)" &&
-              formData.qualification !== "Intermediate (12th)" && (
+              formData.qualification !== "Senior High School (SHS)" && (
                 <>
                   {renderSelect(
                     "Are You A Lateral Entry Student?",
@@ -1368,12 +1368,12 @@ const Education = () => {
                             <BiTime className="text-gray-500" />
                             <p className="text-sm">{`${edu.startyear1} - ${edu.endyear1}`}</p>
                           </div>
-                          {(edu.percentage1 || edu.cgpa1) && (
+                          {(edu.percentage1 || edu.grade1) && (
                             <p className="text-sm text-gray-600 mt-1">
                               {edu.percentage1 &&
                                 `Percentage: ${edu.percentage1}%`}
-                              {edu.percentage1 && edu.cgpa1 && " | "}
-                              {edu.cgpa1 && `CGPA: ${edu.cgpa1}`}
+                              {edu.percentage1 && edu.grade1 && " | "}
+                              {edu.grade1 && `GRADE: ${edu.grade1}`}
                             </p>
                           )}
                           <span className="text-gray-600">Attachment</span>
@@ -1450,12 +1450,12 @@ const Education = () => {
                             <BiTime className="text-gray-500" />
                             <p className="text-sm text-gray-600">{`${edu.startyear2} - ${edu.endyear2}`}</p>
                           </div>
-                          {(edu.percentage2 || edu.cgpa2) && (
+                          {(edu.percentage2 || edu.grade2) && (
                             <p className="text-sm text-gray-600 mt-1">
                               {edu.percentage2 &&
                                 `Percentage: ${edu.percentage2}%`}
-                              {edu.percentage2 && edu.cgpa2 && " | "}
-                              {edu.cgpa2 && `CGPA: ${edu.cgpa2}`}
+                              {edu.percentage2 && edu.grade2 && " | "}
+                              {edu.grade2 && `GRADE: ${edu.grade2}`}
                             </p>
                           )}
                           <span className="text-gray-600">Attachment</span>
@@ -1527,12 +1527,12 @@ const Education = () => {
                             <BiTime className="text-gray-500" />
                             <p className="text-sm text-gray-600">{`${edu.startyear3} - ${edu.endyear3}`}</p>
                           </div>
-                          {(edu.percentage3 || edu.cgpa3) && (
+                          {(edu.percentage3 || edu.grade3) && (
                             <p className="text-sm text-gray-600 mt-1">
                               {edu.percentage3 &&
                                 `Percentage: ${edu.percentage3}%`}
-                              {edu.percentage3 && edu.cgpa3 && " | "}
-                              {edu.cgpa3 && `CGPA: ${edu.cgpa3}`}
+                              {edu.percentage3 && edu.grade3 && " | "}
+                              {edu.grade3 && `GRADE: ${edu.grade3}`}
                             </p>
                           )}
                           <span className="text-gray-600">Attachment</span>
