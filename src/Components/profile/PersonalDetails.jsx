@@ -222,10 +222,10 @@ const PersonalDetails = () => {
           <BiTime className="text-xl" />
           <span>Personal Details</span>
         </div>
-        <div className="flex items-center gap-4 text-gray-600 text-xl">
+        {/* <div className="flex items-center gap-4 text-gray-600 text-xl">
           <FaEye className="cursor-pointer hover:text-blue-600" />
           <FaRegLightbulb className="cursor-pointer hover:text-yellow-500" />
-        </div>
+        </div> */}
       </div>
 
       {/* Scrollable Content */}

@@ -662,10 +662,10 @@ function BasicDetails() {
           <FaCheckCircle className="text-green-500" />
           Basic Details
         </div>
-        <div className="flex items-center gap-4 text-gray-600 text-lg">
+        {/* <div className="flex items-center gap-4 text-gray-600 text-lg">
           <FaEye className="cursor-pointer hover:text-gray-800" />
           <FaRegLightbulb className="cursor-pointer hover:text-gray-800" />
-        </div>
+        </div> */}
       </div>
 
       <div className="p-4 sm:p-6 space-y-6">
@@ -678,7 +678,7 @@ function BasicDetails() {
                 className="w-full h-full object-cover"
               />
             ) : (
-              <div className="w-full h-full bg-orange-500 flex items-center justify-center">
+              <div className="w-full h-full bg-gray-500 flex items-center justify-center">
                 <FaUser className="text-4xl text-white" />
               </div>
             )}

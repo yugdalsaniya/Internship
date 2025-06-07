@@ -19,7 +19,7 @@ const Education = () => {
     endYear: "",
     courseType: "",
     percentage: "",
-    cgpa: "",
+    grade: "",
     rollNumber: "",
     lateralEntry: "",
     skills: "",
@@ -27,17 +27,14 @@ const Education = () => {
     fileUrl: "",
   });
   const [educationList, setEducationList] = useState([]);
-  const [intermediateEducationList, setIntermediateEducationList] = useState(
-    []
-  );
+  const [intermediateEducationList, setIntermediateEducationList] = useState([]);
   const [highSchoolEducationList, setHighSchoolEducationList] = useState([]);
   const [courseOptions, setCourseOptions] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [userId, setUserId] = useState(null);
   const [editingIndex, setEditingIndex] = useState(null);
-  const [editingIntermediateIndex, setEditingIntermediateIndex] =
-    useState(null);
+  const [editingIntermediateIndex, setEditingIntermediateIndex] = useState(null);
   const [editingHighSchoolIndex, setEditingHighSchoolIndex] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -239,10 +236,10 @@ const Education = () => {
     console.log("formData before saving:", formData);
 
     const requiredFields = ["qualification", "college", "startYear", "endYear"];
-    const isIntermediate = formData.qualification === "Intermediate (12th)";
+    const isIntermediate = formData.qualification === "Senior High School (SHS)";
     if (isIntermediate) {
       requiredFields.push("stream");
-    } else if (formData.qualification !== "High School (10th)") {
+    } else if (formData.qualification !== "Junior High School (JHS)") {
       requiredFields.push("course");
     }
 
@@ -257,8 +254,8 @@ const Education = () => {
     }
 
     if (
-      formData.qualification !== "High School (10th)" &&
-      formData.qualification !== "Intermediate (12th)"
+      formData.qualification !== "Junior High School (JHS)" &&
+      formData.qualification !== "Senior High School (SHS)"
     ) {
       const validCourse = courseOptions.find(
         (course) => course.id === formData.course
@@ -296,7 +293,7 @@ const Education = () => {
       }
 
       let updatePayload = {};
-      const isHighSchool = formData.qualification === "High School (10th)";
+      const isHighSchool = formData.qualification === "Junior High School (JHS)";
 
       if (isHighSchool) {
         const highSchoolData = {
@@ -306,7 +303,7 @@ const Education = () => {
           endyear3: formData.endYear,
           coursetype3: formData.courseType,
           percentage3: formData.percentage,
-          cgpa3: formData.cgpa,
+          grade3: formData.grade,
           rollnumber3: formData.rollNumber,
           files3: fileUrl,
         };
@@ -338,7 +335,7 @@ const Education = () => {
           endyear2: formData.endYear,
           coursetype2: formData.courseType,
           percentage2: formData.percentage,
-          cgpa2: formData.cgpa,
+          grade2: formData.grade,
           rollnumber2: formData.rollNumber,
           files2: fileUrl,
         };
@@ -357,14 +354,13 @@ const Education = () => {
             intermediateData,
           ];
           updatePayload = {
-            "sectionData.appuser.intermediateeducation":
-              updatedIntermediateList,
+            "sectionData.appuser.intermediateeducation": updatedIntermediateList,
           };
           setIntermediateEducationList(updatedIntermediateList);
         }
       } else {
         const educationData = {
-          assetname1: formData.qualification,
+          qualification1: formData.qualification,
           course1: formData.course,
           specialization1: formData.specialization,
           stream1: formData.stream,
@@ -373,7 +369,7 @@ const Education = () => {
           endyear1: formData.endYear,
           "Course type1": formData.courseType,
           percentage1: formData.percentage,
-          cgpa1: formData.cgpa,
+          grade1: formData.grade,
           rollnumber1: formData.rollNumber,
           areyoualateralentrystudent1: formData.lateralEntry,
           skills1: formData.skills,
@@ -428,7 +424,7 @@ const Education = () => {
           endYear: "",
           courseType: "",
           percentage: "",
-          cgpa: "",
+          grade: "",
           rollNumber: "",
           lateralEntry: "",
           skills: "",
@@ -474,7 +470,7 @@ const Education = () => {
         endYear: edu.endyear3 || "",
         courseType: edu.coursetype3 || "",
         percentage: edu.percentage3 || "",
-        cgpa: edu.cgpa3 || "",
+        grade: edu.grade3 || "",
         rollNumber: edu.rollnumber3 || "",
         lateralEntry: "",
         skills: "",
@@ -497,7 +493,7 @@ const Education = () => {
         endYear: edu.endyear2 || "",
         courseType: edu.coursetype2 || "",
         percentage: edu.percentage2 || "",
-        cgpa: edu.cgpa2 || "",
+        grade: edu.grade2 || "",
         rollNumber: edu.rollnumber2 || "",
         lateralEntry: "",
         skills: "",
@@ -526,7 +522,7 @@ const Education = () => {
         endYear: edu.endyear1 || "",
         courseType: edu["Course type1"] || "",
         percentage: edu.percentage1 || "",
-        cgpa: edu.cgpa1 || "",
+        grade: edu.grade1 || "",
         rollNumber: edu.rollnumber1 || "",
         lateralEntry: edu.areyoualateralentrystudent1 || "",
         skills: edu.skills1 || "",
@@ -613,7 +609,7 @@ const Education = () => {
           endYear: "",
           courseType: "",
           percentage: "",
-          cgpa: "",
+          grade: "",
           rollNumber: "",
           lateralEntry: "",
           skills: "",
@@ -752,7 +748,7 @@ const Education = () => {
       endYear: "",
       courseType: "",
       percentage: "",
-      cgpa: "",
+      grade: "",
       rollNumber: "",
       lateralEntry: "",
       skills: "",
@@ -770,7 +766,7 @@ const Education = () => {
   const handleAddIntermediate = () => {
     setShowForm(true);
     setFormData({
-      qualification: "Intermediate (12th)",
+      qualification: "Senior High School (SHS)",
       course: "",
       specialization: "",
       stream: "",
@@ -779,7 +775,7 @@ const Education = () => {
       endYear: "",
       courseType: "",
       percentage: "",
-      cgpa: "",
+      grade: "",
       rollNumber: "",
       lateralEntry: "",
       skills: "",
@@ -797,7 +793,7 @@ const Education = () => {
   const handleAddHighSchool = () => {
     setShowForm(true);
     setFormData({
-      qualification: "High School (10th)",
+      qualification: "Junior High School (JHS)",
       course: "",
       specialization: "",
       stream: "",
@@ -806,7 +802,7 @@ const Education = () => {
       endYear: "",
       courseType: "",
       percentage: "",
-      cgpa: "",
+      grade: "",
       rollNumber: "",
       lateralEntry: "",
       skills: "",
@@ -823,8 +819,8 @@ const Education = () => {
 
   const dropdownOptions = {
     qualification: [
-      "High School (10th)",
-      "Intermediate (12th)",
+      "Junior High School (JHS)",
+      "Senior High School (SHS)",
       "Bachelor",
       "Master",
       "PhD",
@@ -927,8 +923,88 @@ const Education = () => {
     </div>
   );
 
+  const renderSkeletonCard = () => (
+   <div
+      className={`border border-gray-200 rounded-lg p-3 bg-white shadow-sm w-full animate-pulse `}
+      aria-hidden="true"
+    >
+      <div className="flex items-start gap-3">
+        <div className="flex-shrink-0 w-8 h-8 bg-gray-200 rounded"></div>
+        <div className="flex-1 space-y-2">
+          <div className="h-3 bg-gray-200 rounded w-1/3"></div>
+          <div className="h-2 bg-gray-200 rounded w-2/3"></div>
+          <div className="h-2 bg-gray-200 rounded w-1/2"></div>
+          <div className="h-4 bg-gray-200 rounded w-full mt-2"></div>
+          <div className="flex gap-2 mt-2">
+            <div className="w-4 h-4 bg-gray-200 rounded-full"></div>
+            <div className="w-4 h-4 bg-gray-200 rounded-full"></div>
+            <div className="w-4 h-4 bg-gray-200 rounded-full"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderSkeletonForm = () => (
+    <div className="space-y-4 animate-pulse">
+      <div className="mb-4">
+        <div className="h-4 bg-gray-200 rounded w-1/4 mb-2"></div>
+        <div className="h-10 bg-gray-200 rounded w-full"></div>
+      </div>
+      <div className="mb-4">
+        <div className="h-4 bg-gray-200 rounded w-1/4 mb-2"></div>
+        <div className="h-10 bg-gray-200 rounded w-full"></div>
+      </div>
+      <div className="grid md:grid-cols-2 gap-4">
+        <div>
+          <div className="h-4 bg-gray-200 rounded w-1/4 mb-2"></div>
+          <div className="h-10 bg-gray-200 rounded w-full"></div>
+        </div>
+        <div>
+          <div className="h-4 bg-gray-200 rounded w-1/4 mb-2"></div>
+          <div className="h-10 bg-gray-200 rounded w-full"></div>
+        </div>
+      </div>
+      <div className="mb-4">
+        <div className="h-4 bg-gray-200 rounded w-1/4 mb-2"></div>
+        <div className="h-10 bg-gray-200 rounded w-full"></div>
+      </div>
+      <div className="mb-4">
+        <div className="h-4 bg-gray-200 rounded w-1/4 mb-2"></div>
+        <div className="h-24 bg-gray-200 rounded w-full"></div>
+      </div>
+      <div className="mb-4">
+        <div className="h-4 bg-gray-200 rounded w-1/4 mb-2"></div>
+        <div className="h-20 bg-gray-200 rounded w-full border-dashed"></div>
+      </div>
+      <div className="flex justify-end">
+        <div className="h-10 bg-gray-200 rounded-full w-32"></div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="bg-white rounded-xl shadow-md">
+      <style jsx>{`
+        @keyframes shimmer {
+          0% {
+            background-position: -468px 0;
+          }
+          100% {
+            background-position: 468px 0;
+          }
+        }
+        .animate-pulse {
+          animation: shimmer 1.5s infinite;
+          background: linear-gradient(
+            to right,
+            #f6f7f8 8%,
+            #edeef1 18%,
+            #f6f7f8 33%
+          );
+          background-size: 800px 104px;
+        }
+      `}</style>
       <ToastContainer
         position="top-right"
         autoClose={5000}
@@ -944,13 +1020,12 @@ const Education = () => {
           <span>Education</span>
         </div>
         <div className="flex items-center gap-4 text-gray-600 text-xl">
-          <BsEye className="cursor-pointer hover:text-blue-600" />
-          <BsLightbulb className="cursor-pointer hover:text-yellow-500" />
           <button
             onClick={handleAddNew}
             className="text-green-600 hover:text-green-700 cursor-pointer"
             title="Add New Education"
             aria-label="Add New Education"
+            disabled={isProcessing}
           >
             <Plus className="text-xl" />
           </button>
@@ -958,10 +1033,17 @@ const Education = () => {
       </div>
 
       <div className="p-6 space-y-6">
-        {isProcessing && (
-          <div className="text-center text-gray-600">Loading...</div>
-        )}
-        {showForm ? (
+        {isProcessing ? (
+          showForm ? (
+            renderSkeletonForm()
+          ) : (
+            <div className="space-y-4">
+              {[...Array(2)].map((_, i) => (
+                <div key={i}>{renderSkeletonCard()}</div>
+              ))}
+            </div>
+          )
+        ) : showForm ? (
           <div className="space-y-4">
             {renderSelect(
               "Qualification",
@@ -969,8 +1051,8 @@ const Education = () => {
               dropdownOptions.qualification,
               true
             )}
-            {formData.qualification !== "High School (10th)" &&
-              formData.qualification !== "Intermediate (12th)" && (
+            {formData.qualification !== "Junior High School (JHS)" &&
+              formData.qualification !== "Senior High School (SHS)" && (
                 <>
                   {renderSelect("Course", "course", courseOptions, true)}
                   {renderSelect(
@@ -980,7 +1062,7 @@ const Education = () => {
                   )}
                 </>
               )}
-            {formData.qualification === "Intermediate (12th)" &&
+            {formData.qualification === "Senior High School (SHS)" &&
               renderSelect("Stream", "stream", dropdownOptions.stream, true)}
             {renderInput("College", "college", "text", true)}
 
@@ -996,13 +1078,13 @@ const Education = () => {
             )}
             <div className="grid md:grid-cols-2 gap-4">
               {renderInput("Percentage", "percentage")}
-              {renderInput("CGPA", "cgpa")}
+              {renderInput("GRADE", "grade")}
             </div>
 
             {renderInput("Roll Number", "rollNumber")}
 
-            {formData.qualification !== "High School (10th)" &&
-              formData.qualification !== "Intermediate (12th)" && (
+            {formData.qualification !== "Junior High School (JHS)" &&
+              formData.qualification !== "Senior High School (SHS)" && (
                 <>
                   {renderSelect(
                     "Are You A Lateral Entry Student?",
@@ -1068,7 +1150,7 @@ const Education = () => {
                             href={formData.fileUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className=" px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                            className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
                           >
                             <svg
                               className="w-4 h-4 mr-2"
@@ -1095,7 +1177,7 @@ const Education = () => {
                         )}
                         <label
                           htmlFor="educationFileUpload"
-                          className=" px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer flex items-center"
+                          className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer flex items-center"
                         >
                           <svg
                             className="w-4 h-4 mr-2"
@@ -1149,7 +1231,7 @@ const Education = () => {
                             }
                             setShowDropdown(false);
                           }}
-                          className=" w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 flex items-center"
+                          className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 flex items-center"
                         >
                           <svg
                             className="w-4 h-4 mr-2"
@@ -1162,7 +1244,7 @@ const Education = () => {
                               strokeLinecap="round"
                               strokeLinejoin="round"
                               strokeWidth="2"
-                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-4h4m-4 0a2 2 0 00-2 2v1h8V5a2 2 0 00-2-2zm-3 4h6"
+                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-4h4M5 7h14M5 7l1-4h6l1 4"
                             />
                           </svg>
                           Delete
@@ -1173,7 +1255,7 @@ const Education = () => {
                 </div>
               ) : (
                 <label
-                  htmlFor="educationFileUpload"
+                  htmlFor="educationFileId"
                   className="cursor-pointer block"
                 >
                   <div className="border-dashed border-2 border-gray-300 rounded-md px-4 py-6 text-center text-gray-600">
@@ -1181,7 +1263,7 @@ const Education = () => {
                   </div>
                   <input
                     type="file"
-                    id="educationFileUpload"
+                    id="educationFileId"
                     className="hidden"
                     accept=".doc,.docx,.pdf"
                     onChange={handleFileUpload}
@@ -1284,14 +1366,14 @@ const Education = () => {
                           </div>
                           <div className="flex items-center space-x-2 mt-1">
                             <BiTime className="text-gray-500" />
-                            <p className="text-sm text-gray-600">{`${edu.startyear1} - ${edu.endyear1}`}</p>
+                            <p className="text-sm">{`${edu.startyear1} - ${edu.endyear1}`}</p>
                           </div>
-                          {(edu.percentage1 || edu.cgpa1) && (
+                          {(edu.percentage1 || edu.grade1) && (
                             <p className="text-sm text-gray-600 mt-1">
                               {edu.percentage1 &&
                                 `Percentage: ${edu.percentage1}%`}
-                              {edu.percentage1 && edu.cgpa1 && " | "}
-                              {edu.cgpa1 && `CGPA: ${edu.cgpa1}`}
+                              {edu.percentage1 && edu.grade1 && " | "}
+                              {edu.grade1 && `GRADE: ${edu.grade1}`}
                             </p>
                           )}
                           <span className="text-gray-600">Attachment</span>
@@ -1368,12 +1450,12 @@ const Education = () => {
                             <BiTime className="text-gray-500" />
                             <p className="text-sm text-gray-600">{`${edu.startyear2} - ${edu.endyear2}`}</p>
                           </div>
-                          {(edu.percentage2 || edu.cgpa2) && (
+                          {(edu.percentage2 || edu.grade2) && (
                             <p className="text-sm text-gray-600 mt-1">
                               {edu.percentage2 &&
                                 `Percentage: ${edu.percentage2}%`}
-                              {edu.percentage2 && edu.cgpa2 && " | "}
-                              {edu.cgpa2 && `CGPA: ${edu.cgpa2}`}
+                              {edu.percentage2 && edu.grade2 && " | "}
+                              {edu.grade2 && `GRADE: ${edu.grade2}`}
                             </p>
                           )}
                           <span className="text-gray-600">Attachment</span>
@@ -1445,12 +1527,12 @@ const Education = () => {
                             <BiTime className="text-gray-500" />
                             <p className="text-sm text-gray-600">{`${edu.startyear3} - ${edu.endyear3}`}</p>
                           </div>
-                          {(edu.percentage3 || edu.cgpa3) && (
+                          {(edu.percentage3 || edu.grade3) && (
                             <p className="text-sm text-gray-600 mt-1">
                               {edu.percentage3 &&
                                 `Percentage: ${edu.percentage3}%`}
-                              {edu.percentage3 && edu.cgpa3 && " | "}
-                              {edu.cgpa3 && `CGPA: ${edu.cgpa3}`}
+                              {edu.percentage3 && edu.grade3 && " | "}
+                              {edu.grade3 && `GRADE: ${edu.grade3}`}
                             </p>
                           )}
                           <span className="text-gray-600">Attachment</span>

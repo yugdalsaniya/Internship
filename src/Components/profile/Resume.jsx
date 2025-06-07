@@ -199,10 +199,10 @@ function Resume() {
           <BiTime className="text-xl" />
           <span>Resume</span>
         </div>
-        <div className="flex items-center gap-4 text-gray-600 text-xl">
+        {/* <div className="flex items-center gap-4 text-gray-600 text-xl">
           <BsEye className="cursor-pointer hover:text-blue-600" />
           <BsLightbulb className="cursor-pointer hover:text-yellow-500" />
-        </div>
+        </div> */}
       </div>
 
       {/* Main Content */}
