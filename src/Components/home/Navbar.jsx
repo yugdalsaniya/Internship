@@ -73,19 +73,19 @@ const Navbar = () => {
   const links = navLinks[role] || defaultLinks;
 
   return (
-    <nav className="bg-white shadow-md py-4 px-12">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center ml-4">
+    <nav className="bg-white shadow-md py-4 px-5 sm:px-12">
+      <div className="flex items-center justify-between mx-auto">
+        <div className="flex items-center ml-0 sm:ml-4">
           <img
             src={logo}
             alt="Internship-OJT Logo"
-            className="h-8 w-8 mr-2"
+            className="h-7 sm:h-8 w-7 sm:w-8 mr-2"
           />
           <div className="flex flex-col items-center">
-            <h1 className="text-lg font-semibold text-[#050748] underline">
+            <h1 className="text-base sm:text-lg font-semibold text-[#050748] underline">
               INTERNSHIP-OJT
             </h1>
-            <p className="text-xs text-black font-bold uppercase mx-1">
+            <p className="text-[10px] sm:text-xs text-black font-bold uppercase mx-0 sm:mx-1">
               WORK24 PHILIPPINES
             </p>
           </div>
@@ -103,25 +103,25 @@ const Navbar = () => {
           ))}
         </div>
 
-        <div className="flex items-center space-x-4 mr-4">
+        <div className="flex items-center space-x-3 sm:space-x-4 mr-0 sm:mr-4">
           {user.email ? (
             <div className="relative">
               <button
                 onClick={toggleDropdown}
-                className="w-10 h-10 rounded-full bg-blue-500 text-white flex items-center justify-center text-sm font-medium"
+                className="w-9 sm:w-10 h-9 sm:h-10 rounded-full bg-blue-500 text-white flex items-center justify-center text-sm font-medium"
               >
                 {user.legalname?.[0]?.toUpperCase() || 'U'}
               </button>
               {dropdownOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white border rounded-md shadow-lg py-2 z-10">
+                <div className="absolute right-0 mt-2 w-44 sm:w-48 bg-white border rounded-md shadow-lg py-2 z-10">
                   <div className="px-4 py-2">
-                    <p className="text-sm font-medium text-gray-800">{user.legalname}</p>
-                    <p className="text-xs text-gray-500">{user.email}</p>
+                    <p className="text-xs sm:text-sm font-medium text-gray-800">{user.legalname}</p>
+                    <p className="text-[10px] sm:text-xs text-gray-500">{user.email}</p>
                   </div>
                   <Link
                     to="/editprofile"
                     onClick={() => setDropdownOpen(false)}
-                    className="block px-4 py-2 text-sm text-gray-800 hover:bg-gray-100"
+                    className="block px-4 py-2 text-xs sm:text-sm text-gray-800 hover:bg-gray-100"
                   >
                     Edit Profile
                   </Link>
@@ -129,14 +129,14 @@ const Navbar = () => {
                     <Link
                       to="/my-applications"
                       onClick={() => setDropdownOpen(false)}
-                      className="block px-4 py-2 text-sm text-gray-800 hover:bg-gray-100"
+                      className="block px-4 py-2 text-xs sm:text-sm text-gray-800 hover:bg-gray-100"
                     >
                       My Applications
                     </Link>
                   )}
                   <button
                     onClick={handleLogout}
-                    className="w-full text-left px-4 py-2 text-sm text-gray-800 hover:bg-gray-100"
+                    className="w-full text-left px-4 py-2 text-xs sm:text-sm text-gray-800 hover:bg-gray-100"
                   >
                     Logout
                   </button>
@@ -183,12 +183,12 @@ const Navbar = () => {
       </div>
 
       {isOpen && (
-        <div className="md:hidden flex flex-col items-center space-y-4 mt-4 pb-4">
+        <div className="md:hidden flex flex-col items-center space-y-3 mt-3 pb-3 w-full">
           {links.map((link) => (
             <Link
               key={link.to}
               to={link.to}
-              className="text-gray-800 hover:text-blue-600 text-sm font-medium"
+              className="text-gray-800 hover:text-blue-600 text-sm font-medium w-full text-center py-2"
               onClick={() => setIsOpen(false)}
             >
               {link.label}
@@ -196,10 +196,10 @@ const Navbar = () => {
           ))}
           {user.email ? (
             <>
-              <div className="text-sm text-gray-800 font-medium">{user.legalname}</div>
+              <div className="text-sm text-gray-800 font-medium w-full text-center">{user.legalname}</div>
               <Link
                 to="/editprofile"
-                className="text-gray-800 hover:text-blue-600 text-sm font-medium"
+                className="text-gray-800 hover:text-blue-600 text-sm font-medium w-full text-center py-2"
                 onClick={() => setIsOpen(false)}
               >
                 Edit Profile
@@ -207,7 +207,7 @@ const Navbar = () => {
               {role === 'student' && (
                 <Link
                   to="/my-applications"
-                  className="text-gray-800 hover:text-blue-600 text-sm font-medium"
+                  className="text-gray-800 hover:text-blue-600 text-sm font-medium w-full text-center py-2"
                   onClick={() => setIsOpen(false)}
                 >
                   My Applications

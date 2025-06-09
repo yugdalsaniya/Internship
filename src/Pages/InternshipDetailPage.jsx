@@ -125,8 +125,8 @@ const InternshipDetailsPage = () => {
     }
   };
 
-  if (loading) return <div className="mx-12 py-4">Loading...</div>;
-  if (error) return <div className="mx-12 py-4">{error}</div>;
+  if (loading) return <div className="mx-4 py-4 text-sm sm:mx-12 sm:text-base">Loading...</div>;
+  if (error) return <div className="mx-4 py-4 text-sm sm:mx-12 sm:text-base">{error}</div>;
 
   const jobpost = internship?.sectionData?.jobpost;
   const relativeTime = internship?.createdDate ? getRelativeTime(internship.createdDate) : "Just now";
@@ -155,32 +155,32 @@ const InternshipDetailsPage = () => {
     <div>
       {/* Hero Section */}
       <div
-        className="w-full h-[300px] bg-cover bg-center relative flex items-center justify-center text-center"
+        className="w-full h-[200px] sm:h-[300px] bg-cover bg-center relative flex items-center justify-center text-center"
         style={{
           backgroundImage: `linear-gradient(to right, rgba(249, 220, 223, 0.8), rgba(181, 217, 211, 0.8)), url(${Hero})`,
           backgroundSize: "cover",
           backgroundPosition: "center",
         }}
       >
-        <div className="relative flex flex-col items-center text-center max-w-7xl mx-auto z-10">
-          <h1 className="text-3xl md:text-4xl font-bold text-[#050748] mb-3">
+        <div className="relative flex flex-col items-center text-center max-w-[90%] sm:max-w-7xl mx-auto z-10">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#050748] mb-2 sm:mb-3">
             Internship Details
           </h1>
-          <p className="text-base md:text-lg text-[#45457D] mb-6 max-w-3xl">
+          <p className="text-sm sm:text-base md:text-lg text-[#45457D] mb-4 sm:mb-6 max-w-xl sm:max-w-3xl">
             "Empower Your Future: Unleash Limitless Career Possibilities!"
           </p>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 py-10">
+      <div className="max-w-[95%] mx-auto px-3 py-6 sm:max-w-7xl sm:px-4 sm:py-10">
         {/* Header */}
-        <div className="flex justify-between items-start mb-10">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-6 sm:mb-10 gap-4">
           <div>
             <div className="text-xs text-gray-400 mb-1">{relativeTime}</div>
-            <h1 className="text-3xl font-bold mb-1">{jobpost?.title || "Unknown Role"}</h1>
-            <p className="text-gray-500">{jobpost?.company || "Unknown Company"}</p>
-            <div className="flex gap-5 text-sm text-gray-500 mt-3">
+            <h1 className="text-xl sm:text-3xl font-bold mb-1">{jobpost?.title || "Unknown Role"}</h1>
+            <p className="text-sm sm:text-base text-gray-500">{jobpost?.company || "Unknown Company"}</p>
+            <div className="flex flex-wrap gap-3 sm:gap-5 text-xs sm:text-sm text-gray-500 mt-2 sm:mt-3">
               <div className="flex items-center gap-1">
                 <MdWork />
                 {jobpost?.time || "Unknown"}
@@ -202,14 +202,14 @@ const InternshipDetailsPage = () => {
           {showApplyButton && (
             hasApplied ? (
               <button
-                className="bg-green-500 text-white px-6 py-2 rounded-md cursor-not-allowed"
+                className="bg-green-500 text-white px-4 py-2 rounded-md text-sm cursor-not-allowed w-full sm:w-auto"
                 disabled
               >
                 You Have Applied
               </button>
             ) : (
               <button
-                className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-6 py-2 rounded-md"
+                className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-4 py-2 rounded-md text-sm w-full sm:w-auto"
                 onClick={() => navigate(`/applyinternshipform/${id}`)}
               >
                 Apply Internship
@@ -218,22 +218,22 @@ const InternshipDetailsPage = () => {
           )}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-10">
           {/* Left Section */}
           <div className="lg:col-span-2">
             {/* Internship Description */}
-            <section className="mb-8">
-              <h2 className="text-xl font-semibold mb-2">Internship Description</h2>
-              <p className="text-gray-700">
+            <section className="mb-6 sm:mb-8">
+              <h2 className="text-lg sm:text-xl font-semibold mb-2">Internship Description</h2>
+              <p className="text-sm sm:text-base text-gray-700">
                 {jobpost?.description || "No description available."}
               </p>
             </section>
 
             {/* Key Responsibilities */}
             {jobpost?.keyResponsibilities && jobpost.keyResponsibilities.length > 0 && (
-              <section className="mb-8">
-                <h2 className="text-xl font-semibold mb-2">Key Responsibilities</h2>
-                <ul className="list-disc ml-5 text-gray-700 space-y-2">
+              <section className="mb-6 sm:mb-8">
+                <h2 className="text-lg sm:text-xl font-semibold mb-2">Key Responsibilities</h2>
+                <ul className="list-disc ml-4 sm:ml-5 text-gray-700 space-y-1 text-sm sm:text-base">
                   {jobpost.keyResponsibilities.map((responsibility, index) => (
                     <li key={index}>{responsibility.text}</li>
                   ))}
@@ -243,9 +243,9 @@ const InternshipDetailsPage = () => {
 
             {/* Professional Skills */}
             {jobpost?.professionalSkills && jobpost.professionalSkills.length > 0 && (
-              <section className="mb-8">
-                <h2 className="text-xl font-semibold mb-2">Professional Skills</h2>
-                <ul className="list-disc ml-5 text-gray-700 space-y-2">
+              <section className="mb-6 sm:mb-8">
+                <h2 className="text-lg sm:text-xl font-semibold mb-2">Professional Skills</h2>
+                <ul className="list-disc ml-4 sm:ml-5 text-gray-700 space-y-1 text-sm sm:text-base">
                   {jobpost.professionalSkills.map((skill, index) => (
                     <li key={index}>{skill.text}</li>
                   ))}
@@ -254,9 +254,9 @@ const InternshipDetailsPage = () => {
             )}
 
             {/* Tags + Share Internship */}
-            <section className="mb-10">
-              <h2 className="text-xl font-semibold mb-2">Tags:</h2>
-              <div className="flex flex-wrap gap-2 mb-4">
+            <section className="mb-6 sm:mb-10">
+              <h2 className="text-lg sm:text-xl font-semibold mb-2">Tags:</h2>
+              <div className="flex flex-wrap gap-2 mb-3 sm:mb-4">
                 {[
                   jobpost?.time || "Full Time",
                   categoryName,
@@ -264,36 +264,36 @@ const InternshipDetailsPage = () => {
                 ].map((tag, idx) => (
                   <span
                     key={idx}
-                    className="bg-gray-100 text-gray-700 text-sm px-3 py-1 rounded-md"
+                    className="bg-gray-100 text-gray-700 text-xs sm:text-sm px-2 sm:px-3 py-1 rounded-md"
                   >
                     {tag}
                   </span>
                 ))}
               </div>
 
-              <div className="flex items-center gap-4">
-                <p className="text-sm font-medium">Share Internship:</p>
-                <FaFacebookF className="text-[#4267B2] text-lg cursor-pointer" title="Facebook" />
-                <PiTwitterLogoFill className="text-black text-lg cursor-pointer" title="X" />
-                <FaLinkedinIn className="text-[#0077b5] text-lg cursor-pointer" title="LinkedIn" />
+              <div className="flex items-center gap-3 sm:gap-4">
+                <p className="text-xs sm:text-sm font-medium">Share Internship:</p>
+                <FaFacebookF className="text-[#4267B2] text-base sm:text-lg cursor-pointer" title="Facebook" />
+                <PiTwitterLogoFill className="text-black text-base sm:text-lg cursor-pointer" title="X" />
+                <FaLinkedinIn className="text-[#0077b5] text-base sm:text-lg cursor-pointer" title="LinkedIn" />
               </div>
             </section>
 
             {/* Related Internships */}
             {formattedRelatedInternships.length > 0 && (
               <section>
-                <h2 className="text-2xl font-bold mb-5">Related Internships</h2>
+                <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-5">Related Internships</h2>
                 {formattedRelatedInternships.map((item) => (
                   <div
                     key={item.id}
-                    className="border p-4 rounded-lg shadow-sm flex justify-between items-center mb-4 bg-white min-h-[120px]"
+                    className="border p-3 sm:p-4 rounded-lg shadow-sm flex flex-col sm:flex-row sm:justify-between sm:items-center mb-3 sm:mb-4 bg-white min-h-[100px] sm:min-h-[120px]"
                   >
-                    <div className="flex flex-col justify-between h-full w-full pr-4">
+                    <div className="flex flex-col justify-between h-full w-full sm:pr-4">
                       <div>
                         <div className="text-xs text-gray-400 mb-1">{item.relativeTime}</div>
-                        <h4 className="font-semibold text-lg line-clamp-1">{item.title}</h4>
-                        <div className="text-gray-500 text-sm line-clamp-1">{item.company}</div>
-                        <div className="flex gap-4 text-sm text-gray-500 mt-1 flex-wrap">
+                        <h4 className="font-semibold text-base sm:text-lg line-clamp-1">{item.title}</h4>
+                        <div className="text-gray-500 text-xs sm:text-sm line-clamp-1">{item.company}</div>
+                        <div className="flex flex-wrap gap-3 sm:gap-4 text-xs sm:text-sm text-gray-500 mt-1 sm:mt-2">
                           <div className="flex items-center gap-1">
                             <MdWork /> {item.time}
                           </div>
@@ -308,7 +308,7 @@ const InternshipDetailsPage = () => {
                     </div>
                     <button
                       onClick={() => navigate(`/internshipdetail/${item.id}`)}
-                      className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-4 py-2 rounded-md whitespace-nowrap"
+                      className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm whitespace-nowrap mt-3 sm:mt-0 w-full sm:w-auto"
                     >
                       Internship Details
                     </button>
@@ -319,11 +319,11 @@ const InternshipDetailsPage = () => {
           </div>
 
           {/* Right Sidebar */}
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {/* Internship Overview */}
-            <div className="bg-gradient-to-br from-[#fff7f9] to-[#f4f9fd] p-5 rounded-2xl shadow-md">
-              <h3 className="font-semibold text-lg mb-3">Internship Overview</h3>
-              <div className="space-y-3 text-sm text-[#333]">
+            <div className="bg-gradient-to-br from-[#fff7f9] to-[#f4f9fd] p-4 sm:p-5 rounded-2xl shadow-md">
+              <h3 className="font-semibold text-base sm:text-lg mb-2 sm:mb-3">Internship Overview</h3>
+              <div className="space-y-2 sm:space-y-3 text-xs sm:text-sm text-[#333]">
                 <div className="flex items-center gap-2">
                   <FaUser className="text-blue-500" />
                   <span>Internship Title: {jobpost?.title || "Unknown Role"}</span>
@@ -357,11 +357,11 @@ const InternshipDetailsPage = () => {
                   <span>Application Deadline: {applicationDeadline}</span>
                 </div>
               </div>
-              <div className="mt-4">
+              <div className="mt-3 sm:mt-4">
                 <iframe
                   src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3670.005659035671!2d72.57136231534908!3d23.022505984951904!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x395e84f8f2a83b8f%3A0xc4bb2c3cccf0f0f!2sAhmedabad%2C%20Gujarat!5e0!3m2!1sen!2sin!4v1625215052287!5m2!1sen!2sin"
                   width="100%"
-                  height="200"
+                  height="150"
                   style={{ border: 0 }}
                   allowFullScreen=""
                   loading="lazy"
@@ -372,9 +372,9 @@ const InternshipDetailsPage = () => {
             </div>
 
             {/* Contact Form */}
-            <div className="bg-gradient-to-br from-[#fff7f9] to-[#f4f9fd] p-5 rounded-2xl shadow-md">
-              <h3 className="font-semibold text-lg mb-4">Send Us Message</h3>
-              <form className="space-y-3 text-sm">
+            <div className="bg-gradient-to-br from-[#fff7f9] to-[#f4f9fd] p-4 sm:p-5 rounded-2xl shadow-md">
+              <h3 className="font-semibold text-base sm:text-lg mb-3 sm:mb-4">Send Us Message</h3>
+              <form className="space-y-2 sm:space-y-3 text-xs sm:text-sm">
                 <input
                   type="text"
                   placeholder="Full name"
@@ -395,7 +395,7 @@ const InternshipDetailsPage = () => {
                   className="w-full p-2 border border-gray-300 rounded-md focus:outline-none"
                   rows={3}
                 ></textarea>
-                <button className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white w-full py-2 rounded-md text-sm font-medium">
+                <button className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white w-full py-2 rounded-md text-xs sm:text-sm font-medium">
                   Send Message
                 </button>
               </form>

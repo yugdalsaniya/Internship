@@ -40,15 +40,15 @@ const FeaturedCompany = () => {
 
   if (loading) return (
     <div className="relative bg-white">
-      <div className="max-w-7xl mx-auto px-6 py-10">
+      <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 sm:py-10">
         <div className="relative">
-          <div className="flex gap-4 overflow-x-auto pb-4 px-4 sm:px-8 md:px-12 space-x-4 sm:space-x-8 md:space-x-12 scrollbar">
+          <div className="flex gap-3 overflow-x-auto pb-3 px-2 sm:gap-4 sm:pb-4 sm:px-8 md:px-12 sm:space-x-8 md:space-x-12 scrollbar">
             {[...Array(5)].map((_, index) => (
               <div
                 key={`skeleton-${index}`}
-                className="flex-shrink-0 w-[calc(20%-16px)] sm:w-[calc(20%-32px)] md:w-[calc(20%-48px)] border border-gray-200 rounded-lg flex items-center justify-center p-4 bg-white"
+                className="flex-shrink-0 w-[100px] sm:w-[calc(20%-32px)] md:w-[calc(20%-48px)] border border-gray-200 rounded-lg flex items-center justify-center p-3 sm:p-4 bg-white"
               >
-                <div className="h-6 sm:h-8 md:h-10 w-[120px] bg-gray-200 animate-pulse rounded" />
+                <div className="h-5 sm:h-8 md:h-10 w-[80px] sm:w-[120px] bg-gray-200 animate-pulse rounded" />
               </div>
             ))}
           </div>
@@ -56,23 +56,23 @@ const FeaturedCompany = () => {
       </div>
     </div>
   );
-  if (error) return <div className="py-10 text-center text-red-500">{error}</div>;
-  if (filteredCompanies.length === 0) return <div className="py-10 text-center">No companies with valid logos found.</div>;
+  if (error) return <div className="py-6 sm:py-10 text-center text-red-500 text-sm sm:text-base">{error}</div>;
+  if (filteredCompanies.length === 0) return <div className="py-6 sm:py-10 text-center text-sm sm:text-base">No companies with valid logos found.</div>;
 
   return (
     <div className="relative bg-white">
-      <div className="max-w-7xl mx-auto px-6 py-10">
+      <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 sm:py-10">
         <div className="relative">
-          <div className="flex gap-4 overflow-x-auto pb-4 px-4 sm:px-8 md:px-12 space-x-4 sm:space-x-8 md:space-x-12 scrollbar">
+          <div className="flex gap-3 overflow-x-auto pb-3 px-2 sm:gap-4 sm:pb-4 sm:px-8 md:px-12 sm:space-x-8 md:space-x-12 snap-x snap-mandatory scrollbar">
             {filteredCompanies.map((company) => (
               <div 
                 key={company._id}
-                className="flex-shrink-0 w-[calc(20%-16px)] sm:w-[calc(20%-32px)] md:w-[calc(20%-48px)] border border-gray-200 rounded-lg flex items-center justify-center p-4 bg-white"
+                className="flex-shrink-0 w-[100px] sm:w-[calc(20%-32px)] md:w-[calc(20%-48px)] border border-gray-200 rounded-lg flex items-center justify-center p-3 sm:p-4 bg-white snap-center"
               >
                 <img
                   src={company.logoSrc}
                   alt={`${company.sectionData.Company.companyName} Logo`}
-                  className="h-6 sm:h-8 md:h-10 max-w-[120px] object-contain"
+                  className="h-5 sm:h-8 md:h-10 max-w-[80px] sm:max-w-[120px] object-contain"
                 />
               </div>
             ))}
@@ -82,19 +82,25 @@ const FeaturedCompany = () => {
 
       <style jsx>{`
         .scrollbar::-webkit-scrollbar {
-          height: 6px;
-          display: none;
+          height: 4px;
+          display: block;
         }
         .scrollbar::-webkit-scrollbar-track {
           background: #f1f1f1;
-          border-radius: 10px;
+          border-radius: 8px;
         }
         .scrollbar::-webkit-scrollbar-thumb {
           background: #888;
-          border-radius: 10px;
+          border-radius: 8px;
         }
         .scrollbar::-webkit-scrollbar-thumb:hover {
           background: #555;
+        }
+        @media (min-width: 640px) {
+          .scrollbar::-webkit-scrollbar {
+            height: 6px;
+            display: none;
+          }
         }
       `}</style>
     </div>

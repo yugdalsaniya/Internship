@@ -765,8 +765,7 @@ function BasicDetails() {
               className="border border-gray-300 rounded-lg p-2 bg-white w-24 h-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               disabled={isProcessing}
             >
-              <option value="+91">+91</option>
-              <option value="+1">+1</option>
+              <option value="+63">+63</option>
             </select>
             <input
               type="tel"
