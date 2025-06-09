@@ -200,7 +200,7 @@ const SignIn = () => {
                   <span className="mx-2 text-xs xs:text-sm text-gray-500">or</span>
                   <hr className="flex-grow border-t" />
                 </div>
-                <div className="flex justify-center gap-3 xs:gap-4 mb-2">
+                {/* <div className="flex justify-center gap-3 xs:gap-4 mb-2">
                   <button className="border p-1.5 rounded-md hover:bg-gray-100">
                     <img
                       src="https://img.icons8.com/color/48/google-logo.png"
@@ -214,7 +214,7 @@ const SignIn = () => {
                   <button className="border p-1.5 rounded-md hover:bg-gray-100">
                     <img src={linkedin} alt="LinkedIn" className="w-4 h-4 xs:w-5 xs:h-5" />
                   </button>
-                </div>
+                </div> */}
               </>
             )}
             <p className="text-sm xs:text-sm text-center">
