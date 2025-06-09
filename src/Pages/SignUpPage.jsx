@@ -247,7 +247,7 @@ const SignUpPage = () => {
   };
 
   return (
-    <div className="flex h-screen font-sans">
+    <div className="flex h-screen">
       <div className="w-full lg:w-1/2 flex flex-col justify-center px-4 py-2 xs:px-6 sm:px-8">
         <div className="max-w-[20rem] xs:max-w-[24rem] sm:max-w-[28rem] mx-auto w-full">
           <div className="mb-3 flex flex-col items-center">
