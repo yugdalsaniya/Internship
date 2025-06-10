@@ -17,6 +17,7 @@ import StudentPostForm from "../Pages/student/StudentPostForm";
 import ApplyInternshipForm from "../Pages/student/ApplyInternshipForm";
 import InternshipCandidates from "../Pages/company/InternshipCandidates";
 import MyApplicationsPage from "../Pages/student/MyApplicationsPage";
+import RequestedInternshipsPage from "../Pages/student/RequestedInternshipsPage";
 import ScrollToTop from "../ScrollToTop";
 import AboutUsPage from "../Pages/AboutUsPage";
 import ContactUsPage from "../Pages/ContactUsPage";
@@ -41,15 +42,13 @@ export default function AppRoutes() {
           <Route path="/internshipdetail/:id" element={<InternshipDetailPage />} />
           <Route path="/applyinternshipform/:id" element={<ApplyInternshipForm />} />
           <Route path="/my-applications" element={<MyApplicationsPage />} />
+          <Route path="/requested-internships" element={<RequestedInternshipsPage />} />
           <Route path="/:categoryname/internships" element={<CategoryInternshipsPage />} />
           <Route path="/post-internship" element={<PostInternship />} />
           <Route path="/post-internship/form" element={<PostInternshipForm />} />
           <Route path="/manage-internships" element={<ManageInternships />} />
           <Route path="/internship/:id/candidates" element={<InternshipCandidates />} />
-
-          {/* <Route path="/StudentInternshipPage" element={<StudentInternshipPage />} /> */}
           <Route path="/StudentPostForm" element={<StudentPostForm />} />
-
         </Route>
       </Routes>
     </Router>

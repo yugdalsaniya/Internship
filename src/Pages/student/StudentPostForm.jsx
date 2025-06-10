@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { fetchSectionData } from '../../Utils/api'; // Import fetchSectionData from api.js
+import { fetchSectionData, addGeneralData, uploadAndStoreFile } from '../../Utils/api';
 import logo from '../../assets/Navbar/logo.png';
 
 const PostInternshipForm = () => {
@@ -8,6 +8,7 @@ const PostInternshipForm = () => {
   const user = JSON.parse(localStorage.getItem('user')) || {};
   const isStudent = user.role === 'student' && user.userid;
   const [categories, setCategories] = useState([]);
+  const [skills, setSkills] = useState([]);
   const [formData, setFormData] = useState({
     title: '',
     name: isStudent ? user.legalname || user.email : '',
@@ -18,51 +19,86 @@ const PostInternshipForm = () => {
     category: '',
     experienceLevel: '',
     deadline: '',
-    skills: '',
+    selectedSkills: [], // Array of skill IDs
     instructions: '',
     logo: null,
     duration: '',
+    currentSkill: '', // Temporary state for skill selection
   });
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  // Fetch categories from the category collection
+  // Fetch categories and skills
   useEffect(() => {
-    const fetchCategories = async () => {
+    const fetchData = async () => {
       try {
-        const response = await fetchSectionData({
+        // Fetch categories
+        const categoryResponse = await fetchSectionData({
           collectionName: 'category',
           query: {},
-          projection: { 'sectionData.category.titleofinternship': 1 },
+          projection: { 'sectionData.category.titleofinternship': 1, '_id': 1 },
           limit: 0,
           skip: 0,
           order: -1,
           sortedBy: 'createdAt',
         });
 
-        if (response && Array.isArray(response)) {
-          const categoryTitles = response
-            .filter(item => item.sectionData?.category?.titleofinternship)
-            .map(item => item.sectionData.category.titleofinternship);
-          setCategories(categoryTitles);
+        if (categoryResponse && Array.isArray(categoryResponse)) {
+          const categoryData = categoryResponse
+            .filter(item => item.sectionData?.category?.titleofinternship && item._id)
+            .map(item => ({
+              id: item._id,
+              title: item.sectionData.category.titleofinternship,
+            }));
+          setCategories(categoryData);
         } else {
-          throw new Error('Invalid response format');
+          throw new Error('Invalid category response format');
+        }
+
+        // Fetch skills
+        const skillsResponse = await fetchSectionData({
+          collectionName: 'skills',
+          query: {},
+          projection: { 'sectionData.skills.name': 1, '_id': 1 },
+          limit: 0,
+          skip: 0,
+          order: 1,
+          sortedBy: 'sectionData.skills.name',
+        });
+
+        if (skillsResponse && Array.isArray(skillsResponse)) {
+          const skillsData = skillsResponse
+            .filter(item => item.sectionData?.skills?.name && item._id)
+            .map(item => ({
+              id: item._id,
+              name: item.sectionData.skills.name,
+            }));
+          setSkills(skillsData);
+        } else {
+          throw new Error('Invalid skills response format');
         }
       } catch (err) {
-        console.error('Category Fetch Error:', err.message);
-        setError('Failed to load industries. Using default options.');
-        // Fallback to default categories
+        console.error('Data Fetch Error:', err.message);
+        setError('Failed to load industries or skills. Please try again.');
         setCategories([
-          'Commerce',
-          'Telecommunications',
-          'Hotels & Tourism',
-          'Education',
-          'Financial Services',
+          { id: 'default-commerce', title: 'Commerce' },
+          { id: 'default-telecom', title: 'Telecommunications' },
+          { id: 'default-tourism', title: 'Hotels & Tourism' },
+          { id: 'default-education', title: 'Education' },
+          { id: 'default-financial', title: 'Financial Services' },
+        ]);
+        setSkills([
+          { id: 'default-dl', name: 'Deep Learning' },
+          { id: 'default-sec', name: 'Securities' },
+          { id: 'default-math', name: 'Mathematical Proficiency' },
+          { id: 'default-tone', name: 'Tone of Voice' },
+          { id: 'default-crm', name: 'CRM Proficiency' },
         ]);
       }
     };
 
     if (isStudent) {
-      fetchCategories();
+      fetchData();
     }
   }, [isStudent]);
 
@@ -82,31 +118,133 @@ const PostInternshipForm = () => {
     });
   };
 
+  const handleAddSkill = () => {
+    if (formData.currentSkill && !formData.selectedSkills.includes(formData.currentSkill)) {
+      setFormData({
+        ...formData,
+        selectedSkills: [...formData.selectedSkills, formData.currentSkill],
+        currentSkill: '',
+      });
+    }
+  };
+
+  const handleRemoveSkill = (skillId) => {
+    setFormData({
+      ...formData,
+      selectedSkills: formData.selectedSkills.filter(id => id !== skillId),
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
 
     if (!isStudent) {
       setError('Only students can submit internship preferences.');
+      setLoading(false);
       return;
     }
-    if (!formData.title.trim()) return setError('Internship title is required.');
-    if (!formData.name.trim()) return setError('Your name is required.');
-    if (!formData.location.trim()) return setError('Preferred location is required.');
-    if (!formData.description.trim()) return setError('About you section is required.');
-    if (!formData.category) return setError('Category is required.');
-    if (!formData.experienceLevel) return setError('Education level is required.');
-    if (!formData.deadline) return setError('Deadline is required.');
-    if (!formData.duration.trim()) return setError('Availability duration is required.');
+    if (!formData.title.trim()) {
+      setError('Internship title is required.');
+      setLoading(false);
+      return;
+    }
+    if (!formData.name.trim()) {
+      setError('Your name is required.');
+      setLoading(false);
+      return;
+    }
+    if (!formData.location.trim()) {
+      setError('Preferred location is required.');
+      setLoading(false);
+      return;
+    }
+    if (!formData.description.trim()) {
+      setError('About you section is required.');
+      setLoading(false);
+      return;
+    }
+    if (!formData.category) {
+      setError('Category is required.');
+      setLoading(false);
+      return;
+    }
+    if (!formData.experienceLevel) {
+      setError('Education level is required.');
+      setLoading(false);
+      return;
+    }
+    if (!formData.deadline) {
+      setError('Deadline is required.');
+      setLoading(false);
+      return;
+    }
+    if (!formData.duration.trim()) {
+      setError('Availability duration is required.');
+      setLoading(false);
+      return;
+    }
 
     try {
-      console.log('Student Internship Request:', { ...formData, userid: user.userid });
-      alert('Internship preference submitted successfully!');
-      navigate('/post-internship');
+      let resumeUrl = '';
+      if (formData.logo) {
+        const uploadResponse = await uploadAndStoreFile({
+          appName: 'app8657281202648',
+          moduleName: 'application',
+          file: formData.logo,
+          userId: user.userid,
+        });
+        resumeUrl = uploadResponse.fileUrl || '';
+      }
+
+      const payload = {
+        dbName: 'internph',
+        collectionName: 'application',
+        data: {
+          sectionData: {
+            application: {
+              desiredinternshiptitle: formData.title.trim(),
+              preferredlocation: formData.location.trim(),
+              internshiptype: formData.type,
+              expectedstipend: formData.salary.trim(),
+              industry: formData.category,
+              currenteducationlevel: formData.experienceLevel,
+              startdate: formData.deadline,
+              availabilityduration: formData.duration.trim(),
+              skills: formData.selectedSkills, // Array of skill IDs
+              additionalnotes: formData.instructions.trim(),
+              uploadresume: resumeUrl,
+              aboutyou: formData.description.trim(),
+              student: user.userid,
+            },
+          },
+          createdBy: user.userid,
+        },
+      };
+
+      console.log('Submitting payload:', JSON.stringify(payload, null, 2));
+
+      const response = await addGeneralData(payload);
+      if (response.success) {
+        alert('Internship preference submitted successfully!');
+        navigate('/requested-internships');
+      } else {
+        setError(response.message || 'Failed to submit internship preference.');
+      }
     } catch (err) {
-      setError('Failed to submit. Please try again.');
-      console.error(err);
+      const errorMessage = err.message || 'Failed to submit. Please try again.';
+      setError(errorMessage);
+      console.error('Submission Error:', err);
+    } finally {
+      setLoading(false);
     }
+  };
+
+  // Map skill IDs to names for display
+  const getSkillName = (skillId) => {
+    const skill = skills.find(s => s.id === skillId);
+    return skill ? skill.name : 'Unknown';
   };
 
   return (
@@ -211,9 +349,9 @@ const PostInternshipForm = () => {
               required
             >
               <option value="">Select Industry</option>
-              {categories.map((category, index) => (
-                <option key={index} value={category}>
-                  {category}
+              {categories.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.title}
                 </option>
               ))}
             </select>
@@ -223,20 +361,20 @@ const PostInternshipForm = () => {
               Current Education Level <span className="text-red-500">*</span>
             </label>
             <select
-  name="experienceLevel"
-  value={formData.experienceLevel}
-  onChange={handleChange}
-  className="w-full px-4 py-3 border rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
-  required
->
-  <option value="">Select Level</option>
-  <option value="Senior High School (Grade 11/12)">Senior High School (Grade 11/12)</option>
-  <option value="Freshman (1st Year College)">Freshman (1st Year College)</option>
-  <option value="Sophomore (2nd Year College)">Sophomore (2nd Year College)</option>
-  <option value="Junior (3rd Year College)">Junior (3rd Year College)</option>
-  <option value="Senior (4th Year College)">Senior (4th Year College)</option>
-  <option value="Graduate">Graduate</option>
-</select>
+              name="experienceLevel"
+              value={formData.experienceLevel}
+              onChange={handleChange}
+              className="w-full px-4 py-3 border rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
+              required
+            >
+              <option value="">Select Level</option>
+              <option value="Senior High School (Grade 11/12)">Senior High School (Grade 11/12)</option>
+              <option value="Freshman (1st Year College)">Freshman (1st Year College)</option>
+              <option value="Sophomore (2nd Year College)">Sophomore (2nd Year College)</option>
+              <option value="Junior (3rd Year College)">Junior (3rd Year College)</option>
+              <option value="Senior (4th Year College)">Senior (4th Year College)</option>
+              <option value="Graduate">Graduate</option>
+            </select>
           </div>
           <div>
             <label className="block text-base font-medium text-gray-700">
@@ -269,14 +407,48 @@ const PostInternshipForm = () => {
             <label className="block text-base font-medium text-gray-700">
               Skills (Optional)
             </label>
-            <input
-              type="text"
-              name="skills"
-              value={formData.skills}
-              onChange={handleChange}
-              className="w-full px-4 py-3 border rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="e.g., JavaScript, Canva, Communication"
-            />
+            <div className="flex items-center gap-2">
+              <select
+                name="currentSkill"
+                value={formData.currentSkill}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Select Skill</option>
+                {skills.map((skill) => (
+                  <option key={skill.id} value={skill.id}>
+                    {skill.name}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={handleAddSkill}
+                className="bg-blue-500 text-white px-4 py-2 rounded-lg text-base hover:bg-blue-600"
+                disabled={!formData.currentSkill}
+              >
+                Add
+              </button>
+            </div>
+            {formData.selectedSkills.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {formData.selectedSkills.map((skillId) => (
+                  <div
+                    key={skillId}
+                    className="flex items-center bg-gray-100 px-3 py-1 rounded-full text-sm"
+                  >
+                    {getSkillName(skillId)}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveSkill(skillId)}
+                      className="ml-2 text-red-500 hover:text-red-700"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
           <div>
             <label className="block text-base font-medium text-gray-700">
@@ -321,14 +493,15 @@ const PostInternshipForm = () => {
             <button
               type="submit"
               className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 rounded-lg text-base font-bold hover:from-blue-600 hover:to-purple-700 transition-all"
-              disabled={!isStudent}
+              disabled={!isStudent || loading}
             >
-              Submit
+              {loading ? 'Submitting...' : 'Submit'}
             </button>
             <button
               type="button"
               onClick={() => navigate('/post-internship')}
               className="flex-1 border border-gray-400 text-gray-700 py-3 rounded-lg text-base font-bold hover:bg-gray-100"
+              disabled={loading}
             >
               Cancel
             </button>

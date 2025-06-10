@@ -29,7 +29,6 @@ const Navbar = () => {
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      // Only apply on desktop screens (>= 640px)
       if (window.innerWidth >= 640 && dropdownOpen && dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setDropdownOpen(false);
       }
@@ -133,7 +132,7 @@ const Navbar = () => {
                     <p className="text-xs sm:text-sm font-medium text-gray-800">{user.legalname}</p>
                     <p className="text-[10px] sm:text-xs text-gray-500">{user.email}</p>
                   </div>
-                 <Link
+                  <Link
                     to="/editprofile"
                     onClick={() => setDropdownOpen(false)}
                     className="block px-4 py-2 text-xs sm:text-sm text-gray-800 hover:bg-gray-100"
@@ -141,13 +140,22 @@ const Navbar = () => {
                     Edit Profile
                   </Link>
                   {role === 'student' && (
-                    <Link
-                      to="/my-applications"
-                      onClick={() => setDropdownOpen(false)}
-                      className="block px-4 py-2 text-xs sm:text-sm text-gray-800 hover:bg-gray-100"
-                    >
-                      My Applications
-                    </Link>
+                    <>
+                      <Link
+                        to="/my-applications"
+                        onClick={() => setDropdownOpen(false)}
+                        className="block px-4 py-2 text-xs sm:text-sm text-gray-800 hover:bg-gray-100"
+                      >
+                        My Applications
+                      </Link>
+                      <Link
+                        to="/requested-internships"
+                        onClick={() => setDropdownOpen(false)}
+                        className="block px-4 py-2 text-xs sm:text-sm text-gray-800 hover:bg-gray-100"
+                      >
+                        Requested Internships
+                      </Link>
+                    </>
                   )}
                   <button
                     onClick={handleLogout}
@@ -220,13 +228,22 @@ const Navbar = () => {
                 Edit Profile
               </Link>
               {role === 'student' && (
-                <Link
-                  to="/my-applications"
-                  className="text-gray-800 hover:text-blue-600 text-sm font-medium w-full text-center py-2"
-                  onClick={() => setIsOpen(false)}
-                >
-                  My Applications
-                </Link>
+                <>
+                  <Link
+                    to="/my-applications"
+                    className="text-gray-800 hover:text-blue-600 text-sm font-medium w-full text-center py-2"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    My Applications
+                  </Link>
+                  <Link
+                    to="/requested-internships"
+                    className="text-gray-800 hover:text-blue-600 text-sm font-medium w-full text-center py-2"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    Requested Internships
+                  </Link>
+                </>
               )}
               <button
                 onClick={handleLogout}
