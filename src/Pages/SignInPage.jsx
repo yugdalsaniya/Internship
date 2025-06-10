@@ -101,7 +101,7 @@ const SignIn = () => {
         localStorage.setItem('refreshToken', response.refreshToken);
 
         // Redirect to homepage for all roles
-        navigate('/');
+        navigate('/editprofile');
       } else {
         setError(response.message || 'Login failed');
       }
