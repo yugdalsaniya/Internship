@@ -5,6 +5,7 @@ import { fetchSectionData } from "../Utils/api";
 import { formatDistanceToNow, parse, sub } from "date-fns";
 import Hero from "../Components/home/Hero";
 import backgroundImg from "../assets/Hero/banner.jpg";
+import { generateInternshipSlug } from "../Utils/slugify";
 
 export default function InternshipPage() {
   const [internships, setInternships] = useState([]);
@@ -12,16 +13,13 @@ export default function InternshipPage() {
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [sortOption, setSortOption] = useState("latest");
-  // Temporary filter states
   const [tempCategories, setTempCategories] = useState([]);
   const [tempTypes, setTempTypes] = useState([]);
   const [tempExperienceLevels, setTempExperienceLevels] = useState([]);
   const [tempDatePosted, setTempDatePosted] = useState("All");
-  // Independent filter states
   const [searchQuery, setSearchQuery] = useState("");
   const [locationQuery, setLocationQuery] = useState("");
   const [maxSalary, setMaxSalary] = useState(100000);
-  // Applied filter states (excluding search, location, and salary)
   const [appliedCategories, setAppliedCategories] = useState([]);
   const [appliedTypes, setAppliedTypes] = useState([]);
   const [appliedExperienceLevels, setAppliedExperienceLevels] = useState([]);
@@ -29,7 +27,6 @@ export default function InternshipPage() {
   const internshipsPerPage = 6;
   const navigate = useNavigate();
 
-  // Category mapping from API response
   const categoryMap = {
     "1749121324626": "Technology",
     "1749121385325": "Analytics",
@@ -39,11 +36,13 @@ export default function InternshipPage() {
     "1749122138386": "E-commerce",
     "1749122277361": "Education",
     "1749122393285": "Tourism",
+    "TECHNOLOGY": "Technology",
+    "Education": "Education",
+    "Tourism": "Tourism",
   };
 
-  const categories = Object.values(categoryMap);
+  const categories = [...new Set(Object.values(categoryMap))];
 
-  // Debounce function for search inputs
   const debounce = (func, delay) => {
     let timeoutId;
     return (...args) => {
@@ -52,7 +51,6 @@ export default function InternshipPage() {
     };
   };
 
-  // Debounced search handlers
   const debouncedSetSearchQuery = useCallback(
     debounce((value) => {
       setSearchQuery(value);
@@ -69,7 +67,6 @@ export default function InternshipPage() {
     []
   );
 
-  // Fetch internships on mount
   useEffect(() => {
     const fetchInternships = async () => {
       try {
@@ -92,7 +89,6 @@ export default function InternshipPage() {
     fetchInternships();
   }, []);
 
-  // Handle filter changes for checkboxes and radio buttons
   const handleFilterChange = (filterType, value) => {
     switch (filterType) {
       case "category":
@@ -118,13 +114,11 @@ export default function InternshipPage() {
     }
   };
 
-  // Handle salary slider change
   const handleSalaryChange = (value) => {
     setMaxSalary(parseInt(value, 10));
     setCurrentPage(1);
   };
 
-  // Apply filters and scroll to top
   const handleApplyFilters = () => {
     setCurrentPage(1);
     setAppliedCategories(tempCategories);
@@ -134,7 +128,6 @@ export default function InternshipPage() {
     window.scrollTo(0, 0);
   };
 
-  // Clear all filters and scroll to top
   const handleClearFilters = () => {
     setTempCategories([]);
     setTempTypes([]);
@@ -151,73 +144,65 @@ export default function InternshipPage() {
     window.scrollTo(0, 0);
   };
 
-  // Filter and sort internships
   const filteredInternships = useMemo(() => {
     return internships
       .filter((job) => {
         const isInternship = job.sectionData?.jobpost?.type === "Internship";
         if (!isInternship) return false;
 
-        // Category filter (case-insensitive)
         const jobCategory = (
-          categoryMap[job.sectionData?.jobpost?.subtype] || job.sectionData?.jobpost?.subtype || ""
+          categoryMap[job.sectionData?.jobpost?.subtype] || job.sectionData?.jobpost?.subtype || "Unknown"
         ).toLowerCase();
         const matchesCategory =
           appliedCategories.length === 0 ||
           appliedCategories.some((cat) => cat.toLowerCase() === jobCategory);
 
-        // Type filter
-        const jobType = job.sectionData?.jobpost?.time || "";
+        const jobType = job.sectionData?.jobpost?.time || "Unknown";
         const matchesType = appliedTypes.length === 0 || appliedTypes.includes(jobType);
 
-        // Experience level filter
-        const jobExperience = job.sectionData?.jobpost?.experiencelevel || "";
+        const jobExperience = job.sectionData?.jobpost?.experiencelevel || "Unknown";
         const matchesExperience =
           appliedExperienceLevels.length === 0 || appliedExperienceLevels.includes(jobExperience);
 
-        // Date posted filter
         let matchesDatePosted = true;
         try {
           const jobDate = parse(job.createdDate, "dd/MM/yyyy, hh:mm:ss a", new Date());
           const now = new Date();
-          if (appliedDatePosted !== "All") {
-            let cutoffDate;
-            switch (appliedDatePosted) {
-              case "Last Hour":
-                cutoffDate = sub(now, { hours: 1 });
-                break;
-              case "Last 24 Hours":
-                cutoffDate = sub(now, { hours: 24 });
-                break;
-              case "Last 7 Days":
-                cutoffDate = sub(now, { days: 7 });
-                break;
-              case "Last 30 Days":
-                cutoffDate = sub(now, { days: 30 });
-                break;
-              default:
-                break;
+            if (appliedDatePosted !== "All") {
+              let cutoffDate;
+              switch (appliedDatePosted) {
+                case "Last Hour":
+                  cutoffDate = sub(now, { hours: 1 });
+                  break;
+                case "Last 24 Hours":
+                  cutoffDate = sub(now, { hours: 24 });
+                  break;
+                case "Last 7 Days":
+                  cutoffDate = sub(now, { days: 7 });
+                  break;
+                case "Last 30 Days":
+                  cutoffDate = sub(now, { days: 30 });
+                  break;
+                default:
+                  break;
+              }
+              matchesDatePosted = jobDate >= cutoffDate;
             }
-            matchesDatePosted = jobDate >= cutoffDate;
+          } catch (err) {
+            console.error("Date parsing error:", err);
           }
-        } catch (err) {
-          console.error("Date parsing error:", err);
-        }
 
-        // Title/company search filter (immediate)
         const searchLower = searchQuery.toLowerCase();
         const matchesSearch =
           searchQuery === "" ||
           job.sectionData?.jobpost?.title.toLowerCase().includes(searchLower) ||
           job.sectionData?.jobpost?.company.toLowerCase().includes(searchLower);
 
-        // Location search filter (immediate)
         const locationLower = locationQuery.toLowerCase();
         const matchesLocation =
           locationQuery === "" ||
           (job.sectionData?.jobpost?.location || "").toLowerCase().includes(locationLower);
 
-        // Salary filter (immediate)
         const jobSalary = parseFloat(job.sectionData?.jobpost?.salary) || 0;
         const matchesSalary = jobSalary <= maxSalary;
 
@@ -243,6 +228,13 @@ export default function InternshipPage() {
           console.error("Error parsing date for job", job._id, err);
         }
 
+        const slug = generateInternshipSlug(
+          job.sectionData?.jobpost?.title || "unknown-role",
+          job.sectionData?.jobpost?.location || "unknown",
+          job.sectionData?.jobpost?.company || "unknown-company",
+          job._id
+        );
+
         return {
           id: job._id,
           role: job.sectionData?.jobpost?.title || "Unknown Role",
@@ -260,7 +252,8 @@ export default function InternshipPage() {
           createdDate: job.createdDate,
           salaryValue: parseFloat(job.sectionData?.jobpost?.salary) || 0,
           category:
-            categoryMap[job.sectionData?.jobpost?.subtype] || job.sectionData?.jobpost?.subtype || "",
+            categoryMap[job.sectionData?.jobpost?.subtype] || job.sectionData?.jobpost?.subtype || "Unknown",
+          slug: slug,
         };
       })
       .sort((a, b) => {
@@ -308,8 +301,8 @@ export default function InternshipPage() {
     }
   };
 
-  const handleViewDetails = (internshipId) => {
-    navigate(`/internshipdetail/${internshipId}`);
+  const handleViewDetails = (internship) => {
+    navigate(`/internshipdetail/${internship.slug}`);
   };
 
   if (loading) {
@@ -331,12 +324,10 @@ export default function InternshipPage() {
         gradient="linear-gradient(to right, rgba(249, 220, 223, 0.8), rgba(181, 217, 211, 0.8))"
       />
       <div className="flex flex-col md:flex-row px-4 md:px-12 py-8 bg-[#fafafa]">
-        {/* Filter Sidebar */}
         <div className="w-full md:w-1/4 bg-gradient-to-b from-[#FFFCF2] to-[#FEEFF4] shadow-md rounded-xl p-6 mb-6 md:mb-0">
           {filteredInternships.length === 0 && (
             <div className="text-sm text-gray-600 mb-4">No internships found.</div>
           )}
-          {/* Title Search */}
           <h2 className="text-lg font-semibold mb-4">Search by Internship Title</h2>
           <div className="relative mb-4">
             <BsSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600" />
@@ -348,8 +339,6 @@ export default function InternshipPage() {
               onChange={(e) => debouncedSetSearchQuery(e.target.value)}
             />
           </div>
-
-          {/* Location Search */}
           <h3 className="font-medium text-sm mb-2">Search by Location</h3>
           <div className="relative mb-4">
             <BsGeoAlt className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600" />
@@ -361,8 +350,6 @@ export default function InternshipPage() {
               onChange={(e) => debouncedSetLocationQuery(e.target.value)}
             />
           </div>
-
-          {/* Categories Filter */}
           <div className="mb-4">
             <h3 className="font-medium text-sm mb-2">Category</h3>
             {categories.map((category) => (
@@ -380,8 +367,6 @@ export default function InternshipPage() {
               Show More
             </button>
           </div>
-
-          {/* Internship Type Filter */}
           <div className="mb-4">
             <h3 className="font-medium text-sm mb-2">Internship Type</h3>
             {["Full Time", "Part Time", "Freelance", "Seasonal", "Fixed-Price"].map((type) => (
@@ -396,8 +381,6 @@ export default function InternshipPage() {
               </label>
             ))}
           </div>
-
-          {/* Experience Level Filter */}
           <div className="mb-4">
             <h3 className="font-medium text-sm mb-2">Experience Level</h3>
             {["No-experience", "Fresher", "Intermediate", "Expert"].map((level) => (
@@ -412,8 +395,6 @@ export default function InternshipPage() {
               </label>
             ))}
           </div>
-
-          {/* Date Posted Filter */}
           <div className="mb-4">
             <h3 className="font-medium text-sm mb-2">Date Posted</h3>
             {["All", "Last Hour", "Last 24 Hours", "Last 7 Days", "Last 30 Days"].map((option) => (
@@ -429,8 +410,6 @@ export default function InternshipPage() {
               </label>
             ))}
           </div>
-
-          {/* Salary Filter */}
           <div className="mb-4">
             <h3 className="font-medium text-sm mb-2">Salary (Up to)</h3>
             <label className="text-xs text-gray-600">Max Salary: ₹{maxSalary}</label>
@@ -444,8 +423,6 @@ export default function InternshipPage() {
               className="w-full"
             />
           </div>
-
-          {/* Apply and Clear Buttons */}
           <div className="flex space-x-2">
             <button
               onClick={handleApplyFilters}
@@ -461,8 +438,6 @@ export default function InternshipPage() {
             </button>
           </div>
         </div>
-
-        {/* Internship Listings */}
         <div className="w-full md:w-3/4 md:pl-6">
           {filteredInternships.length === 0 ? (
             <div className="flex justify-center items-center h-64 text-gray-600 text-lg">
@@ -513,7 +488,6 @@ export default function InternshipPage() {
                           </div>
                         </div>
                         <div className="flex flex-wrap items-center space-x-2 mt-2 text-sm text-gray-600">
-                          {/* Internship Type */}
                           <span className="flex items-center gap-1">
                             <svg
                               className="w-4 h-4"
@@ -531,7 +505,6 @@ export default function InternshipPage() {
                             </svg>
                             {internship.type}
                           </span>
-                          {/* Salary */}
                           <span className="flex items-center gap-1">
                             <svg
                               className="w-4 h-4"
@@ -549,7 +522,6 @@ export default function InternshipPage() {
                             </svg>
                             {internship.salary}
                           </span>
-                          {/* Location */}
                           <span className="flex items-center gap-1">
                             <svg
                               className="w-4 h-4"
@@ -571,7 +543,7 @@ export default function InternshipPage() {
                       </div>
                       <div className="flex items-end">
                         <button
-                          onClick={() => handleViewDetails(internship.id)}
+                          onClick={() => handleViewDetails(internship)}
                           className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-medium py-2 px-4 rounded-full hover:from-blue-600 hover:to-purple-700"
                         >
                           Internship Details

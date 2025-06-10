@@ -8,7 +8,6 @@ import {
   FaUser,
   FaGraduationCap,
   FaTags,
-  FaBriefcase,
   FaPhoneAlt,
   FaEnvelope,
   FaCommentDots,
@@ -19,9 +18,10 @@ import { MdWork, MdDateRange } from "react-icons/md";
 import { PiTwitterLogoFill } from "react-icons/pi";
 import { fetchSectionData } from "../Utils/api";
 import { formatDistanceToNow, parse, format } from "date-fns";
+import { generateInternshipSlug } from "../Utils/slugify";
 
-const InternshipDetailsPage = () => {
-  const { id } = useParams();
+const InternshipDetailPage = () => {
+  const { id: urlId } = useParams();
   const navigate = useNavigate();
   const [internship, setInternship] = useState(null);
   const [relatedInternships, setRelatedInternships] = useState([]);
@@ -30,14 +30,15 @@ const InternshipDetailsPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Get the logged-in user from localStorage
+  // Extract actual ID from urlId (e.g., "python-internship-in-ahmedabad-at-work-24-1749464876315" -> "1749464876315")
+  const actualId = urlId.split('-').pop();
+
   const user = JSON.parse(localStorage.getItem("user")) || {};
   const userId = user.userid;
 
   useEffect(() => {
     const fetchCategoriesAndInternship = async () => {
       try {
-        // Fetch categories
         const categoriesData = await fetchSectionData({
           collectionName: "category",
           query: {},
@@ -47,33 +48,34 @@ const InternshipDetailsPage = () => {
           const categoryId = category._id;
           const categoryName = category.sectionData?.category?.titleofinternship || "Unknown Category";
           map[categoryId] = categoryName;
+          map[categoryName.toUpperCase()] = categoryName; // Map direct strings like TECHNOLOGY
           return map;
-        }, {});
+        }, {
+          "Education": "Education",
+          "Tourism": "Tourism",
+        });
         setCategoryMap(categoryMapping);
 
-        // Fetch the specific internship
         const internshipData = await fetchSectionData({
           collectionName: "jobpost",
-          query: { _id: id },
+          query: { _id: actualId },
         });
 
         if (internshipData && internshipData.length > 0) {
           setInternship(internshipData[0]);
 
-          // Check if the user has applied
           if (userId && user.role === "student") {
             const applicationData = await fetchSectionData({
               collectionName: "applications",
-              query: { userId, jobId: id },
+              query: { userId, jobId: actualId },
             });
             setHasApplied(applicationData.length > 0);
           }
 
-          // Fetch related internships
           const currentSubtype = internshipData[0]?.sectionData?.jobpost?.subtype;
           const relatedQuery = {
             "sectionData.jobpost.type": "Internship",
-            _id: { $ne: id },
+            _id: { $ne: actualId },
           };
 
           if (currentSubtype) {
@@ -94,14 +96,14 @@ const InternshipDetailsPage = () => {
         }
       } catch (err) {
         setError("Error fetching internship details.");
-        console.error("InternshipDetailsPage API Error:", err);
+        console.error("InternshipDetailPage API Error:", err);
       } finally {
         setLoading(false);
       }
     };
 
     fetchCategoriesAndInternship();
-  }, [id, userId]);
+  }, [actualId, userId]);
 
   const getRelativeTime = (dateString) => {
     try {
@@ -132,28 +134,33 @@ const InternshipDetailsPage = () => {
   const relativeTime = internship?.createdDate ? getRelativeTime(internship.createdDate) : "Just now";
   const categoryName = categoryMap[jobpost?.subtype] || jobpost?.subtype || "Unknown Category";
   const applicationDeadline = jobpost?.applicationdeadline ? formatDeadline(jobpost.applicationdeadline) : "Not specified";
-
-  // Join degree array into a comma-separated string
   const degreesList = jobpost?.degree?.length > 0 ? jobpost.degree.join(", ") : "Not specified";
 
-  const formattedRelatedInternships = relatedInternships.map((job) => ({
-    id: job._id,
-    title: job.sectionData?.jobpost?.title || "Unknown Role",
-    company: job.sectionData?.jobpost?.company || "Unknown Company",
-    time: job.sectionData?.jobpost?.time || "Unknown",
-    salary: job.sectionData?.jobpost?.salary
-      ? `₹${job.sectionData.jobpost.salary}`
-      : "Not specified",
-    location: job.sectionData?.jobpost?.location || "Unknown",
-    relativeTime: job.createdDate ? getRelativeTime(job.createdDate) : "Just now",
-  }));
+  const formattedRelatedInternships = relatedInternships.map((job) => {
+    const slug = generateInternshipSlug(
+      job.sectionData?.jobpost?.title || "unknown-role",
+      job.sectionData?.jobpost?.location || "unknown",
+      job.sectionData?.jobpost?.company || "unknown-company",
+      job._id
+    );
+    return {
+      id: job._id,
+      title: job.sectionData?.jobpost?.title || "Unknown Role",
+      company: job.sectionData?.jobpost?.company || "Unknown Company",
+      time: job.sectionData?.jobpost?.time || "Unknown",
+      salary: job.sectionData?.jobpost?.salary
+        ? `₹${job.sectionData.jobpost.salary}`
+        : "Not specified",
+      location: job.sectionData?.jobpost?.location || "Unknown",
+      relativeTime: job.createdDate ? getRelativeTime(job.createdDate) : "Just now",
+      slug: slug,
+    };
+  });
 
-  // Determine if the "Apply Internship" button should be shown
   const showApplyButton = user.role !== "company" || (user.role === "company" && user.companyId !== internship?.companyId);
 
   return (
     <div>
-      {/* Hero Section */}
       <div
         className="w-full h-[200px] sm:h-[300px] bg-cover bg-center relative flex items-center justify-center text-center"
         style={{
@@ -171,10 +178,7 @@ const InternshipDetailsPage = () => {
           </p>
         </div>
       </div>
-
-      {/* Main Content */}
       <div className="max-w-[95%] mx-auto px-3 py-6 sm:max-w-7xl sm:px-4 sm:py-10">
-        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-6 sm:mb-10 gap-4">
           <div>
             <div className="text-xs text-gray-400 mb-1">{relativeTime}</div>
@@ -210,26 +214,21 @@ const InternshipDetailsPage = () => {
             ) : (
               <button
                 className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-4 py-2 rounded-md text-sm w-full sm:w-auto"
-                onClick={() => navigate(`/applyinternshipform/${id}`)}
+                onClick={() => navigate(`/applyinternshipform/${actualId}`)}
               >
                 Apply Internship
               </button>
             )
           )}
         </div>
-
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-10">
-          {/* Left Section */}
           <div className="lg:col-span-2">
-            {/* Internship Description */}
             <section className="mb-6 sm:mb-8">
               <h2 className="text-lg sm:text-xl font-semibold mb-2">Internship Description</h2>
               <p className="text-sm sm:text-base text-gray-700">
                 {jobpost?.description || "No description available."}
               </p>
             </section>
-
-            {/* Key Responsibilities */}
             {jobpost?.keyResponsibilities && jobpost.keyResponsibilities.length > 0 && (
               <section className="mb-6 sm:mb-8">
                 <h2 className="text-lg sm:text-xl font-semibold mb-2">Key Responsibilities</h2>
@@ -240,8 +239,6 @@ const InternshipDetailsPage = () => {
                 </ul>
               </section>
             )}
-
-            {/* Professional Skills */}
             {jobpost?.professionalSkills && jobpost.professionalSkills.length > 0 && (
               <section className="mb-6 sm:mb-8">
                 <h2 className="text-lg sm:text-xl font-semibold mb-2">Professional Skills</h2>
@@ -252,8 +249,6 @@ const InternshipDetailsPage = () => {
                 </ul>
               </section>
             )}
-
-            {/* Tags + Share Internship */}
             <section className="mb-6 sm:mb-10">
               <h2 className="text-lg sm:text-xl font-semibold mb-2">Tags:</h2>
               <div className="flex flex-wrap gap-2 mb-3 sm:mb-4">
@@ -270,7 +265,6 @@ const InternshipDetailsPage = () => {
                   </span>
                 ))}
               </div>
-
               <div className="flex items-center gap-3 sm:gap-4">
                 <p className="text-xs sm:text-sm font-medium">Share Internship:</p>
                 <FaFacebookF className="text-[#4267B2] text-base sm:text-lg cursor-pointer" title="Facebook" />
@@ -278,8 +272,6 @@ const InternshipDetailsPage = () => {
                 <FaLinkedinIn className="text-[#0077b5] text-base sm:text-lg cursor-pointer" title="LinkedIn" />
               </div>
             </section>
-
-            {/* Related Internships */}
             {formattedRelatedInternships.length > 0 && (
               <section>
                 <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-5">Related Internships</h2>
@@ -288,10 +280,10 @@ const InternshipDetailsPage = () => {
                     key={item.id}
                     className="border p-3 sm:p-4 rounded-lg shadow-sm flex flex-col sm:flex-row sm:justify-between sm:items-center mb-3 sm:mb-4 bg-white min-h-[100px] sm:min-h-[120px]"
                   >
-                    <div className="flex flex-col justify-between h-full w-full sm:pr-4">
+                    <div className="flex flex-col justify-between h-full w-full sm:pr-3">
                       <div>
-                        <div className="text-xs text-gray-400 mb-1">{item.relativeTime}</div>
-                        <h4 className="font-semibold text-base sm:text-lg line-clamp-1">{item.title}</h4>
+                        <div className="text-xs text-gray-600 mb-1">{item.relativeTime}</div>
+                        <h3 className="text-base sm:text-lg font-semibold line-clamp-1">{item.title}</h3>
                         <div className="text-gray-500 text-xs sm:text-sm line-clamp-1">{item.company}</div>
                         <div className="flex flex-wrap gap-3 sm:gap-4 text-xs sm:text-sm text-gray-500 mt-1 sm:mt-2">
                           <div className="flex items-center gap-1">
@@ -307,7 +299,7 @@ const InternshipDetailsPage = () => {
                       </div>
                     </div>
                     <button
-                      onClick={() => navigate(`/internshipdetail/${item.id}`)}
+                      onClick={() => navigate(`/internshipdetail/${item.slug}`)}
                       className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm whitespace-nowrap mt-3 sm:mt-0 w-full sm:w-auto"
                     >
                       Internship Details
@@ -317,10 +309,7 @@ const InternshipDetailsPage = () => {
               </section>
             )}
           </div>
-
-          {/* Right Sidebar */}
           <div className="space-y-4 sm:space-y-6">
-            {/* Internship Overview */}
             <div className="bg-gradient-to-br from-[#fff7f9] to-[#f4f9fd] p-4 sm:p-5 rounded-2xl shadow-md">
               <h3 className="font-semibold text-base sm:text-lg mb-2 sm:mb-3">Internship Overview</h3>
               <div className="space-y-2 sm:space-y-3 text-xs sm:text-sm text-[#333]">
@@ -359,7 +348,7 @@ const InternshipDetailsPage = () => {
               </div>
               <div className="mt-3 sm:mt-4">
                 <iframe
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3670.005659035671!2d72.57136231534908!3d23.022505984951904!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x395e84f8f2a83b8f%3A0xc4bb2c3cccf0f0f!2sAhmedabad%2C%20Gujarat!5e0!3m2!1sen!2sin!4v1625215052287!5m2!1sen!2sin"
+                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3670.005659035671!2d72.57136231578908!3d23.022505984951904!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x395e84f8f2a83b8f%3A0xc4bb2c3cccf0f0f!2sAhmedabad%2C%20Gujarat!5e0!3m2!1sen!2sin!4v1625215052287!5m2!1sen!2sin"
                   width="100%"
                   height="150"
                   style={{ border: 0 }}
@@ -370,11 +359,9 @@ const InternshipDetailsPage = () => {
                 ></iframe>
               </div>
             </div>
-
-            {/* Contact Form */}
             <div className="bg-gradient-to-br from-[#fff7f9] to-[#f4f9fd] p-4 sm:p-5 rounded-2xl shadow-md">
               <h3 className="font-semibold text-base sm:text-lg mb-3 sm:mb-4">Send Us Message</h3>
-              <form className="space-y-2 sm:space-y-3 text-xs sm:text-sm">
+              <div className="space-y-2 sm:space-y-3 text-xs sm:text-sm">
                 <input
                   type="text"
                   placeholder="Full name"
@@ -398,7 +385,7 @@ const InternshipDetailsPage = () => {
                 <button className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white w-full py-2 rounded-md text-xs sm:text-sm font-medium">
                   Send Message
                 </button>
-              </form>
+              </div>
             </div>
           </div>
         </div>
@@ -407,4 +394,4 @@ const InternshipDetailsPage = () => {
   );
 };
 
-export default InternshipDetailsPage;
+export default InternshipDetailPage;
