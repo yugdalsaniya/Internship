@@ -25,7 +25,7 @@ import CategoryInternshipsPage from "../Pages/CategoryInternshipsPage";
 export default function AppRoutes() {
   return (
     <Router basename="/ph">
-      <ScrollToTop />
+      {/* <ScrollToTop /> */}
       <Routes>
         <Route path="/signup" element={<SignUpPage />} />
         <Route path="/signup/:role" element={<SignUpPage />} />
@@ -46,6 +46,10 @@ export default function AppRoutes() {
           <Route path="/post-internship/form" element={<PostInternshipForm />} />
           <Route path="/manage-internships" element={<ManageInternships />} />
           <Route path="/internship/:id/candidates" element={<InternshipCandidates />} />
+
+          {/* <Route path="/StudentInternshipPage" element={<StudentInternshipPage />} /> */}
+          <Route path="/StudentPostForm" element={<StudentPostForm />} />
+
         </Route>
       </Routes>
     </Router>

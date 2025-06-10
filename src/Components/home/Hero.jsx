@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import bannerImage from '../../assets/Hero/banner.jpg'; // Default background
 import { fetchSectionData } from '../../Utils/api';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate for navigation
 
 const Hero = ({
   title = 'Top Internships and OJT Programs in the Philippines for Career Launch',
@@ -12,10 +13,11 @@ const Hero = ({
   ],
   backgroundImage = bannerImage,
   gradient = 'linear-gradient(to right, rgba(249, 220, 223, 0.8), rgba(181, 217, 211, 0.8))',
+  showPostButton = false, // New prop to control button visibility
 }) => {
   const [stats, setStats] = useState([
     {
-      count: '0', // Placeholder, will be updated dynamically
+      count: '0',
       label: 'Internships',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -35,7 +37,7 @@ const Hero = ({
       bgColor: 'bg-[#6A6A8E]',
     },
     {
-      count: '0', // Placeholder, will be updated dynamically
+      count: '0',
       label: 'Companies',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -45,7 +47,7 @@ const Hero = ({
       bgColor: 'bg-[#6A6A8E]',
     },
     {
-      count: '0', // Placeholder, will be updated dynamically
+      count: '0',
       label: 'Academy',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -56,31 +58,29 @@ const Hero = ({
     },
   ]);
 
+  const navigate = useNavigate(); // Hook for navigation
+
   useEffect(() => {
     const fetchCounts = async () => {
       try {
-        // Fetch internship count
         const internshipResponse = await fetchSectionData({
           collectionName: 'jobpost',
           query: { 'sectionData.jobpost.type': 'Internship' },
         });
         const internshipCount = internshipResponse.length * 11;
 
-        // Fetch company count (role: 1747723485001)
         const companyResponse = await fetchSectionData({
           collectionName: 'appuser',
           query: { 'sectionData.appuser.role': '1747723485001' },
         });
         const companyCount = companyResponse.length * 11;
 
-        // Fetch academy count (role: 1747903042943)
         const academyResponse = await fetchSectionData({
           collectionName: 'appuser',
           query: { 'sectionData.appuser.role': '1747903042943' },
         });
         const academyCount = academyResponse.length * 11;
 
-        // Update stats with dynamic counts
         setStats((prevStats) =>
           prevStats.map((stat) => {
             if (stat.label === 'Internships') {
@@ -102,6 +102,10 @@ const Hero = ({
 
     fetchCounts();
   }, []);
+
+  const handlePostInternship = () => {
+    navigate('/StudentPostForm'); // Replace with the actual route for posting an internship
+  };
 
   return (
     <section
@@ -145,6 +149,16 @@ const Hero = ({
               Search
             </button>
           </div>
+        )}
+
+        {/* Post Internship Button (Conditional) */}
+        {showPostButton && (
+          <button
+            onClick={handlePostInternship}
+            className="mt-6 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-md py-2 px-6 text-sm font-medium hover:from-blue-600 hover:to-purple-700 transition-colors"
+          >
+            Post Internship
+          </button>
         )}
 
         {/* Stats Section */}

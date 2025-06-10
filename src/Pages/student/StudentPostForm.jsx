@@ -1,11 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { fetchSectionData } from '../../Utils/api'; // Import fetchSectionData from api.js
 import logo from '../../assets/Navbar/logo.png';
 
 const PostInternshipForm = () => {
+  const navigate = useNavigate();
+  const user = JSON.parse(localStorage.getItem('user')) || {};
+  const isStudent = user.role === 'student' && user.userid;
+  const [categories, setCategories] = useState([]);
   const [formData, setFormData] = useState({
     title: '',
-    name: '',
+    name: isStudent ? user.legalname || user.email : '',
     location: '',
     type: 'Full Time',
     salary: '',
@@ -19,8 +24,55 @@ const PostInternshipForm = () => {
     duration: '',
   });
   const [error, setError] = useState('');
-  const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem('user')) || {};
+
+  // Fetch categories from the category collection
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await fetchSectionData({
+          collectionName: 'category',
+          query: {},
+          projection: { 'sectionData.category.titleofinternship': 1 },
+          limit: 0,
+          skip: 0,
+          order: -1,
+          sortedBy: 'createdAt',
+        });
+
+        if (response && Array.isArray(response)) {
+          const categoryTitles = response
+            .filter(item => item.sectionData?.category?.titleofinternship)
+            .map(item => item.sectionData.category.titleofinternship);
+          setCategories(categoryTitles);
+        } else {
+          throw new Error('Invalid response format');
+        }
+      } catch (err) {
+        console.error('Category Fetch Error:', err.message);
+        setError('Failed to load industries. Using default options.');
+        // Fallback to default categories
+        setCategories([
+          'Commerce',
+          'Telecommunications',
+          'Hotels & Tourism',
+          'Education',
+          'Financial Services',
+        ]);
+      }
+    };
+
+    if (isStudent) {
+      fetchCategories();
+    }
+  }, [isStudent]);
+
+  // Redirect non-student users or show error
+  useEffect(() => {
+    if (!isStudent) {
+      setError('Only students can submit internship preferences.');
+      navigate('/');
+    }
+  }, [isStudent, navigate]);
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
@@ -34,6 +86,10 @@ const PostInternshipForm = () => {
     e.preventDefault();
     setError('');
 
+    if (!isStudent) {
+      setError('Only students can submit internship preferences.');
+      return;
+    }
     if (!formData.title.trim()) return setError('Internship title is required.');
     if (!formData.name.trim()) return setError('Your name is required.');
     if (!formData.location.trim()) return setError('Preferred location is required.');
@@ -44,7 +100,7 @@ const PostInternshipForm = () => {
     if (!formData.duration.trim()) return setError('Availability duration is required.');
 
     try {
-      console.log('Student Internship Request:', formData);
+      console.log('Student Internship Request:', { ...formData, userid: user.userid });
       alert('Internship preference submitted successfully!');
       navigate('/post-internship');
     } catch (err) {
@@ -54,7 +110,7 @@ const PostInternshipForm = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#fafafa] font-sans flex items-center justify-center px-4 py-8">
+    <div className="min-h-screen bg-[#fafafa] flex items-center justify-center px-4 py-8">
       <div className="max-w-4xl w-full bg-white rounded-lg shadow-md p-8">
         <div className="flex justify-center items-center mb-6">
           <img src={logo} alt="Logo" className="w-10 h-10 mr-2" />
@@ -95,6 +151,7 @@ const PostInternshipForm = () => {
               className="w-full px-4 py-3 border rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="e.g., Juan Dela Cruz"
               required
+              disabled={isStudent}
             />
           </div>
           <div>
@@ -154,11 +211,11 @@ const PostInternshipForm = () => {
               required
             >
               <option value="">Select Industry</option>
-              <option value="Commerce">Commerce</option>
-              <option value="Telecommunications">Telecommunications</option>
-              <option value="Hotels & Tourism">Hotels & Tourism</option>
-              <option value="Education">Education</option>
-              <option value="Financial Services">Financial Services</option>
+              {categories.map((category, index) => (
+                <option key={index} value={category}>
+                  {category}
+                </option>
+              ))}
             </select>
           </div>
           <div>
@@ -166,18 +223,20 @@ const PostInternshipForm = () => {
               Current Education Level <span className="text-red-500">*</span>
             </label>
             <select
-              name="experienceLevel"
-              value={formData.experienceLevel}
-              onChange={handleChange}
-              className="w-full px-4 py-3 border rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            >
-              <option value="">Select Level</option>
-              <option value="No-experience">High School Graduate</option>
-              <option value="Fresher">College Freshman</option>
-              <option value="Intermediate">College Sophomore/Junior</option>
-              <option value="Expert">College Senior</option>
-            </select>
+  name="experienceLevel"
+  value={formData.experienceLevel}
+  onChange={handleChange}
+  className="w-full px-4 py-3 border rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
+  required
+>
+  <option value="">Select Level</option>
+  <option value="Senior High School (Grade 11/12)">Senior High School (Grade 11/12)</option>
+  <option value="Freshman (1st Year College)">Freshman (1st Year College)</option>
+  <option value="Sophomore (2nd Year College)">Sophomore (2nd Year College)</option>
+  <option value="Junior (3rd Year College)">Junior (3rd Year College)</option>
+  <option value="Senior (4th Year College)">Senior (4th Year College)</option>
+  <option value="Graduate">Graduate</option>
+</select>
           </div>
           <div>
             <label className="block text-base font-medium text-gray-700">
@@ -262,6 +321,7 @@ const PostInternshipForm = () => {
             <button
               type="submit"
               className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 rounded-lg text-base font-bold hover:from-blue-600 hover:to-purple-700 transition-all"
+              disabled={!isStudent}
             >
               Submit
             </button>

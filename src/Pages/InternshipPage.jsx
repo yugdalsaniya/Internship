@@ -316,13 +316,14 @@ export default function InternshipPage() {
   return (
     <>
       <Hero
-        title="Internships"
-        subtitle="Empower Your Future: Unleash Limitless Career Possibilities!"
-        searchFields={[]}
-        stats={[]}
-        backgroundImage={backgroundImg}
-        gradient="linear-gradient(to right, rgba(249, 220, 223, 0.8), rgba(181, 217, 211, 0.8))"
-      />
+  title="Internships"
+  subtitle="Empower Your Future: Unleash Limitless Career Possibilities!"
+  searchFields={[]}
+  stats={[]}
+  backgroundImage={backgroundImg}
+  gradient="linear-gradient(to right, rgba(249, 220, 223, 0.8), rgba(181, 217, 211, 0.8))"
+  showPostButton={true} // Add this prop
+/>
       <div className="flex flex-col md:flex-row px-4 md:px-12 py-8 bg-[#fafafa]">
         <div className="w-full md:w-1/4 bg-gradient-to-b from-[#FFFCF2] to-[#FEEFF4] shadow-md rounded-xl p-6 mb-6 md:mb-0">
           {filteredInternships.length === 0 && (
