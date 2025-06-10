@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { BsBookmarkPlus } from "react-icons/bs";
 import { fetchSectionData } from "../Utils/api";
 import { formatDistanceToNow, parse } from "date-fns";
+import { slugify, generateInternshipSlug } from "../Utils/slugify"; // Import slug utilities
 
 export default function CategoryInternshipsPage() {
   const [internships, setInternships] = useState([]);
@@ -105,8 +106,16 @@ export default function CategoryInternshipsPage() {
     }
   };
 
-  const handleViewDetails = (internshipId) => {
-    navigate(`/internshipdetail/${internshipId}`);
+  const handleViewDetails = (internship) => {
+    // Generate the slug using title, location, company, and id
+    const slug = generateInternshipSlug(
+      internship.role,
+      internship.location,
+      internship.company,
+      internship.id
+    );
+    // Navigate to the internship detail page with the slug
+    navigate(`/internshipdetail/${slug}`);
   };
 
   if (loading) return <div className="mx-12 py-4">Loading...</div>;
@@ -223,7 +232,7 @@ export default function CategoryInternshipsPage() {
               </div>
               <div className="flex items-end">
                 <button
-                  onClick={() => handleViewDetails(internship.id)}
+                  onClick={() => handleViewDetails(internship)}
                   className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-medium py-2 px-4 rounded-full hover:from-blue-600 hover:to-purple-700"
                 >
                   Internship Details
