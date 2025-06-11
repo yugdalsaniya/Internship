@@ -19,20 +19,18 @@ const PostInternshipForm = () => {
     category: '',
     experienceLevel: '',
     deadline: '',
-    selectedSkills: [], // Array of skill IDs
+    selectedSkills: [],
     instructions: '',
     logo: null,
     duration: '',
-    currentSkill: '', // Temporary state for skill selection
+    currentSkill: '',
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Fetch categories and skills
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch categories
         const categoryResponse = await fetchSectionData({
           collectionName: 'category',
           query: {},
@@ -55,7 +53,6 @@ const PostInternshipForm = () => {
           throw new Error('Invalid category response format');
         }
 
-        // Fetch skills
         const skillsResponse = await fetchSectionData({
           collectionName: 'skills',
           query: {},
@@ -102,7 +99,6 @@ const PostInternshipForm = () => {
     }
   }, [isStudent]);
 
-  // Redirect non-student users or show error
   useEffect(() => {
     if (!isStudent) {
       setError('Only students can submit internship preferences.');
@@ -185,6 +181,19 @@ const PostInternshipForm = () => {
       setLoading(false);
       return;
     }
+    if (formData.logo) {
+      const validTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+      if (!validTypes.includes(formData.logo.type)) {
+        setError('Resume must be a PDF, DOC, or DOCX file.');
+        setLoading(false);
+        return;
+      }
+      if (formData.logo.size > 5 * 1024 * 1024) {
+        setError('Resume file size must be less than 5MB.');
+        setLoading(false);
+        return;
+      }
+    }
 
     try {
       let resumeUrl = '';
@@ -195,7 +204,13 @@ const PostInternshipForm = () => {
           file: formData.logo,
           userId: user.userid,
         });
-        resumeUrl = uploadResponse.fileUrl || '';
+        console.log('Upload Response:', uploadResponse);
+        resumeUrl = uploadResponse.filePath || '';
+        if (!resumeUrl) {
+          setError('Failed to upload resume. Please try again.');
+          setLoading(false);
+          return;
+        }
       }
 
       const payload = {
@@ -212,7 +227,7 @@ const PostInternshipForm = () => {
               currenteducationlevel: formData.experienceLevel,
               startdate: formData.deadline,
               availabilityduration: formData.duration.trim(),
-              skills: formData.selectedSkills, // Array of skill IDs
+              skills: formData.selectedSkills,
               additionalnotes: formData.instructions.trim(),
               uploadresume: resumeUrl,
               aboutyou: formData.description.trim(),
@@ -220,6 +235,7 @@ const PostInternshipForm = () => {
             },
           },
           createdBy: user.userid,
+          createdAt: new Date().toISOString(),
         },
       };
 
@@ -241,7 +257,6 @@ const PostInternshipForm = () => {
     }
   };
 
-  // Map skill IDs to names for display
   const getSkillName = (skillId) => {
     const skill = skills.find(s => s.id === skillId);
     return skill ? skill.name : 'Unknown';
