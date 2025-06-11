@@ -94,6 +94,7 @@ const SignIn = () => {
           userData.userid = response.user._id;
         } else if (roleName === 'company') {
           userData.companyId = response.user.companyId || '';
+          userData.userid = response.user._id ||'';
         }
 
         localStorage.setItem('user', JSON.stringify(userData));

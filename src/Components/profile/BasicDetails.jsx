@@ -21,6 +21,8 @@ import Select from "react-select";
 import { fetchSectionData, mUpdate, uploadAndStoreFile } from "../../Utils/api";
 import { toast } from "react-toastify";
 
+const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+
 const userTypes = [
   { label: "College Students", icon: <FaGraduationCap /> },
   { label: "Professional", icon: <FaBriefcase /> },
@@ -51,7 +53,9 @@ async function uploadProfilePicture(file, userId) {
     }
     const validTypes = ["image/jpeg", "image/png", "image/gif"];
     if (!validTypes.includes(file.type)) {
-      throw new Error("Invalid file type. Please upload a JPEG, PNG, or GIF image.");
+      throw new Error(
+        "Invalid file type. Please upload a JPEG, PNG, or GIF image."
+      );
     }
     if (file.size > 5 * 1024 * 1024) {
       throw new Error("File size exceeds 5MB limit.");
@@ -66,7 +70,9 @@ async function uploadProfilePicture(file, userId) {
     console.log("Upload Response:", response, "File");
 
     if (!response || !response.filePath) {
-      throw new Error("Failed to upload profile picture: No file path returned.");
+      throw new Error(
+        "Failed to upload profile picture: No file path returned."
+      );
     }
 
     return response.filePath;
@@ -248,7 +254,9 @@ function BasicDetails() {
         setRoleOptions(roles);
       } catch (err) {
         console.error("Error fetching data:", err); // Debug
-        setError("Failed to load user data or dropdown options: " + err.message);
+        setError(
+          "Failed to load user data or dropdown options: " + err.message
+        );
         setTimeout(() => setError(""), 5000);
       } finally {
         setIsLoadingOptions(false);
@@ -260,64 +268,72 @@ function BasicDetails() {
 
   // Initialize Google Places Autocomplete
   useEffect(() => {
-  // Function to load Google Maps script dynamically
-  const loadGoogleMapsScript = () => {
-    return new Promise((resolve, reject) => {
-      // Check if the script is already loaded
-      if (window.google && window.google.maps && window.google.maps.places) {
-        resolve();
-        return;
-      }
+    const loadGoogleMapsScript = () => {
+      return new Promise((resolve, reject) => {
+        // Check if already loaded
+        if (window.google && window.google.maps && window.google.maps.places) {
+          resolve();
+          return;
+        }
 
-      const script = document.createElement("script");
-      script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyCu9YGSvrE22iUL4Xhe3ISk-B0r8FTW9jI&libraries=places&loading=async`;
-      script.async = true;
-      script.defer = true;
-      script.onload = () => resolve();
-      script.onerror = () => reject(new Error("Failed to load Google Maps API"));
-      document.head.appendChild(script);
-    });
-  };
+        // Check if script already exists in DOM
+        const existingScript = document.querySelector(
+          `script[src*="maps.googleapis.com/maps/api/js"]`
+        );
+        if (existingScript) {
+          existingScript.addEventListener("load", resolve);
+          return;
+        }
 
-  // Initialize Google Places Autocomplete after script is loaded
-  loadGoogleMapsScript()
-    .then(() => {
-      if (window.google && window.google.maps && window.google.maps.places) {
+        // Create script
+        const script = document.createElement("script");
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places`;
+        script.async = true;
+        script.defer = true;
+        script.onload = () => resolve();
+        script.onerror = () =>
+          reject(new Error("Failed to load Google Maps API"));
+        document.head.appendChild(script);
+      });
+    };
+
+    loadGoogleMapsScript()
+      .then(() => {
+        if (!window.google?.maps?.places) {
+          console.error("Google Maps places library not loaded");
+          return;
+        }
+
         autocompleteRef.current = new window.google.maps.places.Autocomplete(
           locationInputRef.current,
           {
-            types: ["(cities)"], // Restrict to cities
-            fields: ["formatted_address", "name"], // Retrieve only necessary fields
+            types: ["(cities)"],
+            fields: ["formatted_address", "name"],
+            componentRestrictions: { country: "ph" } // Restrict to Philippines
           }
         );
 
         autocompleteRef.current.addListener("place_changed", () => {
           const place = autocompleteRef.current.getPlace();
-          if (place.formatted_address) {
-            setLocation(place.formatted_address);
-          } else {
-            setLocation(place.name || "");
-          }
+          setLocation(place.formatted_address || place.name || "");
         });
-      } else {
-        console.error("Google Maps API not loaded");
-        setError("Google Maps API failed to load. Location suggestions unavailable.");
+      })
+      .catch((err) => {
+        console.error("Error loading Google Maps:", err);
+        setError(
+          "Google Maps API failed to load. Location suggestions unavailable."
+        );
         setTimeout(() => setError(""), 5000);
-      }
-    })
-    .catch((err) => {
-      console.error("Error loading Google Maps API:", err);
-      setError("Google Maps API failed to load. Location suggestions unavailable.");
-      setTimeout(() => setError(""), 5000);
-    });
+      });
 
-  // Cleanup
-  return () => {
-    if (autocompleteRef.current) {
-      window.google.maps.event.clearInstanceListeners(autocompleteRef.current);
-    }
-  };
-}, []);
+    return () => {
+      if (autocompleteRef.current && window.google?.maps?.event) {
+        window.google.maps.event.clearInstanceListeners(
+          autocompleteRef.current
+        );
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (userType !== "Professional") {
@@ -444,8 +460,12 @@ function BasicDetails() {
       }
 
       if (!userId || !token) {
-        setError("Authentication token or user ID missing. Please log in again.");
-        toast.error("Authentication token or user ID missing. Please log in again.");
+        setError(
+          "Authentication token or user ID missing. Please log in again."
+        );
+        toast.error(
+          "Authentication token or user ID missing. Please log in again."
+        );
         setTimeout(() => setError(""), 2000);
         return;
       }
@@ -463,7 +483,9 @@ function BasicDetails() {
         setError(
           "User not found in database. Please sign up or contact support."
         );
-        toast.error("User not found in database. Please sign up or contact support.");
+        toast.error(
+          "User not found in database. Please sign up or contact support."
+        );
         setTimeout(() => {
           setError("");
           navigate("/signup");
@@ -481,7 +503,9 @@ function BasicDetails() {
         setError(
           "Multiple accounts detected for this email. Please contact support."
         );
-        toast.error("Multiple accounts detected for this email. Please contact support.");
+        toast.error(
+          "Multiple accounts detected for this email. Please contact support."
+        );
         setTimeout(() => setError(""), 5000);
         return;
       }
@@ -494,16 +518,24 @@ function BasicDetails() {
             ? existingUser.find((item) => item._id === userId)?.sectionData
                 ?.appuser || {}
             : existingUser.sectionData?.appuser || {};
-          creatorName = `${userData.fname || firstName} ${userData.lname || lastName}`.trim();
+          creatorName = `${userData.fname || firstName} ${
+            userData.lname || lastName
+          }`.trim();
         } catch (fetchError) {
-          console.warn("Failed to fetch user data for creatorName:", fetchError);
+          console.warn(
+            "Failed to fetch user data for creatorName:",
+            fetchError
+          );
         }
       }
 
       let profilePictureUrl = profilePicture;
       if (profilePictureFile) {
         try {
-          profilePictureUrl = await uploadProfilePicture(profilePictureFile, userId);
+          profilePictureUrl = await uploadProfilePicture(
+            profilePictureFile,
+            userId
+          );
           setProfilePicture(profilePictureUrl);
           setProfilePictureFile(null);
           setProfilePicturePreview("");
@@ -532,11 +564,13 @@ function BasicDetails() {
           "sectionData.appuser.academyname": "",
           "sectionData.appuser.role1": newCareerRole,
           "sectionData.appuser.teammember": "",
-          "sectionData.appuser.stream": userType === "School Student" ? stream : "",
+          "sectionData.appuser.stream":
+            userType === "School Student" ? stream : "",
           ...(userType === "Professional" && {
             "sectionData.appuser.designation": designation,
             "sectionData.appuser.workexperience": workExperienceType,
-            "sectionData.appuser.currentlyworkinginthisrole": isCurrentlyWorking,
+            "sectionData.appuser.currentlyworkinginthisrole":
+              isCurrentlyWorking,
             "sectionData.appuser.startyear": startYear,
             "sectionData.appuser.endyear": isCurrentlyWorking ? "" : endYear,
           }),
@@ -572,8 +606,12 @@ function BasicDetails() {
           return;
         }
         if (updateResponse.upsertedId) {
-          setError("Unexpected error: New user created instead of updating. Please contact support.");
-          toast.error("Unexpected error: New user created instead of updating. Please contact support.");
+          setError(
+            "Unexpected error: New user created instead of updating. Please contact support."
+          );
+          toast.error(
+            "Unexpected error: New user created instead of updating. Please contact support."
+          );
           setTimeout(() => setError(""), 5000);
           return;
         }
@@ -594,7 +632,9 @@ function BasicDetails() {
         setTimeout(() => navigate("/login"), 2000);
       }
       setError(errorMessage || "Failed to update details. Please try again.");
-      toast.error(errorMessage || "Failed to update details. Please try again.");
+      toast.error(
+        errorMessage || "Failed to update details. Please try again."
+      );
       setTimeout(() => setError(""), 5000);
     } finally {
       setIsProcessing(false);
@@ -850,7 +890,9 @@ function BasicDetails() {
                 ))}
               </select>
               {isLoadingOptions && (
-                <p className="text-sm text-gray-500 mt-1">Loading designations...</p>
+                <p className="text-sm text-gray-500 mt-1">
+                  Loading designations...
+                </p>
               )}
             </div>
 
@@ -1019,29 +1061,33 @@ function BasicDetails() {
             </div>
 
             <div className="mb-4">
-  <label className="text-sm font-medium block mb-1 text-gray-700">
-    Organisation/College <span className="text-red-500">*</span>
-  </label>
-  <Select
-    options={instituteOptions.map((option) => ({
-      value: option._id,
-      label: option.name,
-    }))}
-    value={instituteOptions
-      .filter((option) => option._id === college)
-      .map((option) => ({ value: option._id, label: option.name }))}
-    onChange={(selected) => setCollege(selected ? selected.value : "")}
-    styles={customSelectStyles}
-    isDisabled={isProcessing || isLoadingOptions}
-    placeholder="Search for your college..."
-    isClearable
-    isSearchable
-    menuPortalTarget={document.body}
-  />
-  {isLoadingOptions && (
-    <p className="text-sm text-gray-500 mt-1">Loading institutes...</p>
-  )}
-</div>
+              <label className="text-sm font-medium block mb-1 text-gray-700">
+                Organisation/College <span className="text-red-500">*</span>
+              </label>
+              <Select
+                options={instituteOptions.map((option) => ({
+                  value: option._id,
+                  label: option.name,
+                }))}
+                value={instituteOptions
+                  .filter((option) => option._id === college)
+                  .map((option) => ({ value: option._id, label: option.name }))}
+                onChange={(selected) =>
+                  setCollege(selected ? selected.value : "")
+                }
+                styles={customSelectStyles}
+                isDisabled={isProcessing || isLoadingOptions}
+                placeholder="Search for your college..."
+                isClearable
+                isSearchable
+                menuPortalTarget={document.body}
+              />
+              {isLoadingOptions && (
+                <p className="text-sm text-gray-500 mt-1">
+                  Loading institutes...
+                </p>
+              )}
+            </div>
           </>
         )}
 
@@ -1104,9 +1150,14 @@ function BasicDetails() {
                   }))}
                   value={roleOptions
                     .filter((option) => newCareerRole.includes(option._id))
-                    .map((option) => ({ value: option._id, label: option.name }))}
+                    .map((option) => ({
+                      value: option._id,
+                      label: option.name,
+                    }))}
                   onChange={(selected) =>
-                    setNewCareerRole(selected ? selected.map((item) => item.value) : [])
+                    setNewCareerRole(
+                      selected ? selected.map((item) => item.value) : []
+                    )
                   }
                   styles={customSelectStyles}
                   isDisabled={isProcessing || isLoadingOptions}
