@@ -1,5 +1,6 @@
+// InternshipDetailPage.jsx
 import React, { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom"; // Add useLocation
 import Hero from "../assets/Hero/banner.jpg";
 import {
   FaMapMarkerAlt,
@@ -23,6 +24,7 @@ import { generateInternshipSlug } from "../Utils/slugify";
 const InternshipDetailPage = () => {
   const { id: urlId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation(); // Get current location
   const [internship, setInternship] = useState(null);
   const [relatedInternships, setRelatedInternships] = useState([]);
   const [categoryMap, setCategoryMap] = useState({});
@@ -30,9 +32,7 @@ const InternshipDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Extract actual ID from urlId (e.g., "python-internship-in-ahmedabad-at-work-24-1749464876315" -> "1749464876315")
   const actualId = urlId.split('-').pop();
-
   const user = JSON.parse(localStorage.getItem("user")) || {};
   const userId = user.userid;
 
@@ -48,7 +48,7 @@ const InternshipDetailPage = () => {
           const categoryId = category._id;
           const categoryName = category.sectionData?.category?.titleofinternship || "Unknown Category";
           map[categoryId] = categoryName;
-          map[categoryName.toUpperCase()] = categoryName; // Map direct strings like TECHNOLOGY
+          map[categoryName.toUpperCase()] = categoryName;
           return map;
         }, {
           "Education": "Education",
@@ -124,6 +124,16 @@ const InternshipDetailPage = () => {
     } catch (err) {
       console.error("Error formatting deadline:", err);
       return "Not specified";
+    }
+  };
+
+  const handleApplyClick = () => {
+    if (!user.email) {
+      // Redirect to login with current InternshipDetailPage URL
+      navigate("/login", { state: { from: location.pathname } });
+    } else {
+      // Navigate to the application form if logged in
+      navigate(`/applyinternshipform/${actualId}`);
     }
   };
 
@@ -214,10 +224,10 @@ const InternshipDetailPage = () => {
             ) : (
               <button
                 className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-4 py-2 rounded-md text-sm w-full sm:w-auto"
-                onClick={() => navigate(`/applyinternshipform/${actualId}`)}
+                onClick={handleApplyClick}
               >
                 Apply Internship
-              </button>
+              </button>  
             )
           )}
         </div>

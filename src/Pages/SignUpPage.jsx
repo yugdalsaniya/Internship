@@ -1,3 +1,4 @@
+// SignUpPage.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { MdVisibility, MdVisibilityOff } from 'react-icons/md';
@@ -29,7 +30,6 @@ const SignUpPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
 
-  // Role IDs and names
   const roleIds = {
     student: '1747825619417',
     company: '1747723485001',
@@ -181,7 +181,10 @@ const SignUpPage = () => {
             roleId: roleIds[role],
             companyId: companyId,
           }));
-          navigate('/');
+          localStorage.setItem('accessToken', response.accessToken);
+          localStorage.setItem('refreshToken', response.refreshToken);
+          const from = location.state?.from || '/';
+          navigate(from, { replace: true });
         } else {
           localStorage.setItem('pendingUser', JSON.stringify({
             legalname: formData.name.trim(),
@@ -189,6 +192,7 @@ const SignUpPage = () => {
             role: roleNames[roleIds[role]],
             roleId: roleIds[role],
             ...(role === 'academy' && { academyname: formData.academyName.trim() }),
+            redirectTo: location.state?.from || '/editprofile',
           }));
           navigate('/otp');
         }
