@@ -12,10 +12,7 @@ import { fetchSectionData, mUpdate, uploadAndStoreFile } from '../../Utils/api';
 const genderOptions = [
   { label: 'Female', icon: <FaFemale size={20} /> },
   { label: 'Male', icon: <FaMale size={20} /> },
-  { label: 'Transgender', icon: <MdTransgender size={20} /> },
-  { label: 'Intersex', icon: <PiGenderIntersexBold size={25} /> },
-  { label: 'Non-binary', icon: <TbGenderBigender size={25} /> },
-  { label: 'Prefer not to say', icon: <BsEyeSlash size={20} /> },
+ 
   { label: 'Others', icon: <MdOutlineWc size={20} /> },
 ];
 
