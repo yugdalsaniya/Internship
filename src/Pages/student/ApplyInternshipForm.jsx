@@ -1,10 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { FaCloudUploadAlt, FaMale, FaFemale } from 'react-icons/fa';
-import { MdTransgender, MdOutlineWc } from 'react-icons/md';
-import { PiGenderIntersexBold } from 'react-icons/pi';
-import { TbGenderBigender } from 'react-icons/tb';
-import { BsEyeSlash } from 'react-icons/bs';
+import { MdOutlineWc } from 'react-icons/md';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { fetchSectionData, mUpdate, uploadAndStoreFile } from '../../Utils/api';
@@ -12,7 +9,6 @@ import { fetchSectionData, mUpdate, uploadAndStoreFile } from '../../Utils/api';
 const genderOptions = [
   { label: 'Female', icon: <FaFemale size={20} /> },
   { label: 'Male', icon: <FaMale size={20} /> },
- 
   { label: 'Others', icon: <MdOutlineWc size={20} /> },
 ];
 
@@ -48,6 +44,8 @@ const ApplyInternshipForm = () => {
   const [loading, setLoading] = useState(false);
   const [courseOptions, setCourseOptions] = useState([]);
   const [courseMap, setCourseMap] = useState({});
+  const [instituteOptions, setInstituteOptions] = useState([]);
+  const [instituteMap, setInstituteMap] = useState({});
   const [isResumeUploaded, setIsResumeUploaded] = useState(false);
 
   const user = JSON.parse(localStorage.getItem('user')) || {};
@@ -85,7 +83,7 @@ const ApplyInternshipForm = () => {
             firstName: firstName || '',
             lastName: lastNameParts.join(' ') || '',
             gender: userData.Gender || '',
-            organization: userData.organisationcollege || '',
+            organization: userData.organisationcollege || '', // Stores institute ID
             type: userData.usertype || '',
             passoutYear: userData.endyear || '',
             course: userData.course || '',
@@ -114,13 +112,33 @@ const ApplyInternshipForm = () => {
           name: item.sectionData.course.name,
         }));
 
-        const map = {};
+        const courseMap = {};
         courses.forEach((course) => {
-          map[course.id] = course.name;
+          courseMap[course.id] = course.name;
         });
 
-        setCourseMap(map);
+        setCourseMap(courseMap);
         setCourseOptions(courses);
+
+        // Fetch institute data
+        const instituteResponse = await fetchSectionData({
+          collectionName: 'institute',
+          query: {},
+          projection: { sectionData: 1, _id: 1 },
+        });
+
+        const institutes = instituteResponse.map((item) => ({
+          id: item._id,
+          name: item.sectionData.institute.institutionname,
+        }));
+
+        const instituteMap = {};
+        institutes.forEach((institute) => {
+          instituteMap[institute.id] = institute.name;
+        });
+
+        setInstituteMap(instituteMap);
+        setInstituteOptions(institutes);
       } catch (err) {
         setError('Failed to fetch data. Please try again.');
         console.error('Fetch Data Error:', err);
@@ -152,7 +170,7 @@ const ApplyInternshipForm = () => {
     if (!formData.mobile.trim()) return 'Mobile number is required.';
     if (!formData.firstName.trim()) return 'First name is required.';
     if (!formData.gender) return 'Gender is required.';
-    if (!formData.organization.trim()) return 'Organization name is required.';
+    if (!formData.organization) return 'Institution name is required.';
     if (!formData.type) return 'Type is required.';
     if (!formData.passoutYear) return 'Passout year is required.';
     if (!formData.consent) return 'You must agree to the terms and conditions.';
@@ -206,7 +224,6 @@ const ApplyInternshipForm = () => {
         if (!resumeUrl) {
           throw new Error('Failed to retrieve resume URL from upload response.');
         }
-        // Update formData with the new resume URL
         setFormData((prev) => ({ ...prev, resume: resumeUrl }));
         setFileName(resumeUrl.split('/').pop());
         setIsResumeUploaded(true);
@@ -226,7 +243,7 @@ const ApplyInternshipForm = () => {
             mobile: formData.mobile,
             legalname: `${formData.firstName} ${formData.lastName}`.trim(),
             Gender: formData.gender,
-            organisationcollege: formData.organization,
+            organisationcollege: formData.organization, // Stores institute ID
             usertype: formData.type,
             endyear: formData.passoutYear,
             course: formData.course,
@@ -272,6 +289,7 @@ const ApplyInternshipForm = () => {
             userId,
             jobId: id,
             appliedAt: new Date().toISOString(),
+            organisationcollege: formData.organization, // Store institute ID
           },
         },
         options: { upsert: true },
@@ -304,11 +322,10 @@ const ApplyInternshipForm = () => {
         pauseOnHover: true,
         draggable: true,
         theme: 'light',
-        onClose: () => navigate('/my-applications'), // Navigate after toast closes
+        onClose: () => navigate('/my-applications'),
       });
     } catch (err) {
       console.error('Submit Error:', err);
-      // Scroll to top before showing error toast
       window.scrollTo({ top: 0, behavior: 'instant' });
       toast.error(`Failed to submit form: ${err.message || 'Please try again.'}`, {
         position: 'top-right',
@@ -429,17 +446,22 @@ const ApplyInternshipForm = () => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Organization Name <span className="text-red-500">*</span>
+                  Institution Name <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="text"
+                <select
                   name="organization"
                   value={formData.organization}
                   onChange={handleChange}
-                  placeholder="e.g., ABC University"
                   required
                   className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+                >
+                  <option value="">Select Institution</option>
+                  {instituteOptions.map((institute) => (
+                    <option key={institute.id} value={institute.id}>
+                      {institute.name}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">
