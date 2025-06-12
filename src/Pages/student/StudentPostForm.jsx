@@ -14,7 +14,7 @@ const PostInternshipForm = () => {
     name: isStudent ? user.legalname || user.email : '',
     location: '',
     type: 'Full Time',
-    salary: '',
+    salary: '', // Only numeric value
     description: '',
     category: '',
     experienceLevel: '',
@@ -108,10 +108,20 @@ const PostInternshipForm = () => {
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
-    setFormData({
-      ...formData,
-      [name]: files ? files[0] : value,
-    });
+    if (name === 'salary') {
+      // Allow only numeric input
+      if (/^\d*$/.test(value)) {
+        setFormData({
+          ...formData,
+          [name]: value,
+        });
+      }
+    } else {
+      setFormData({
+        ...formData,
+        [name]: files ? files[0] : value,
+      });
+    }
   };
 
   const handleAddSkill = () => {
@@ -222,7 +232,7 @@ const PostInternshipForm = () => {
               desiredinternshiptitle: formData.title.trim(),
               preferredlocation: formData.location.trim(),
               internshiptype: formData.type,
-              expectedstipend: formData.salary.trim(),
+              expectedstipend: formData.salary.trim() ? `${formData.salary.trim()}/month` : '', // Append /month
               industry: formData.category,
               currenteducationlevel: formData.experienceLevel,
               startdate: formData.deadline,
@@ -343,14 +353,19 @@ const PostInternshipForm = () => {
             <label className="block text-base font-medium text-gray-700">
               Expected Stipend (Optional)
             </label>
-            <input
-              type="text"
-              name="salary"
-              value={formData.salary}
-              onChange={handleChange}
-              className="w-full px-4 py-3 border rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="e.g., ₱5,000/month"
-            />
+            <div className="relative">
+              <input
+                type="text"
+                name="salary"
+                value={formData.salary}
+                onChange={handleChange}
+                className="w-full px-4 py-3 pr-20 border rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="e.g., 5000"
+              />
+              <span className="absolute inset-y-0 right-0 flex items-center pr-4 text-gray-500">
+                /month
+              </span>
+            </div>
           </div>
           <div>
             <label className="block text-base font-medium text-gray-700">
