@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { BsBookmarkPlus } from "react-icons/bs";
 import { fetchSectionData } from "../../Utils/api";
 import { formatDistanceToNow, parse } from "date-fns";
+import { generateInternshipSlug } from "../../Utils/slugify";
 
 export default function RecentInternship() {
   const navigate = useNavigate();
@@ -55,6 +56,13 @@ export default function RecentInternship() {
           console.error("Error parsing date for job", job._id, err);
         }
 
+        const slug = generateInternshipSlug(
+          job.sectionData?.jobpost?.title || "unknown-role",
+          job.sectionData?.jobpost?.location || "unknown",
+          job.sectionData?.jobpost?.company || "unknown-company",
+          job._id
+        );
+
         return {
           id: job._id,
           role: job.sectionData?.jobpost?.title || "Unknown Role",
@@ -70,6 +78,7 @@ export default function RecentInternship() {
             ? job.sectionData.jobpost.logo
             : "https://placehold.co/40x40",
           createdDate: job.createdDate,
+          slug: slug,
         };
       })
       .sort((a, b) => {
@@ -220,7 +229,7 @@ export default function RecentInternship() {
               </div>
               <div className="flex items-end mt-4 md:mt-0">
                 <button
-                  onClick={() => navigate(`/internshipdetail/${internship.id}`)}
+                  onClick={() => navigate(`/internshipdetail/${internship.slug}`)}
                   className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-medium py-2 px-4 rounded-full hover:from-blue-600 hover:to-purple-700 whitespace-nowrap"
                 >
                   Internship Details
@@ -232,4 +241,4 @@ export default function RecentInternship() {
       </div>
     </div>
   );
-}
+} 

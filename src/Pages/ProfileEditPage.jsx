@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, Link, useLocation } from 'react-router-dom';
+import { Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
 import { FaChevronLeft, FaFileMedical, FaBars, FaTimes } from 'react-icons/fa';
 import SidebarItem from '../Components/profile/SidebarItem';
 import BasicDetails from '../Components/profile/BasicDetails';
@@ -11,31 +11,39 @@ import WorkExperience from '../Components/profile/WorkExperience';
 import Accomplishments from '../Components/profile/Accomplishments';
 import PersonalDetails from '../Components/profile/PersonalDetails';
 import SocialLinks from '../Components/profile/SocialLinks';
+import ComponyDetails from '../Components/profile/ComponyDetails';
+import OrganizationDetails from '../Components/profile/OrganizationDetails';
 
 const ProfileEditPage = () => {
-  const [activeSection, setActiveSection] = useState('Basic Details');
+  const [activeSection, setActiveSection] = useState('Compony Details');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const location = useLocation();
+
+  // Get user from localStorage
+  const user = JSON.parse(localStorage.getItem('user')) || {};
+  const allowedRoles = ['company', 'academy']; // Roles that can access ComponyDetails and OrganizationDetails
 
   // Map URL paths to section labels
   const pathToSection = {
     'basic-details': 'Basic Details',
-    'resume': 'Resume',
-    'about': 'About',
-    'skills': 'Skills',
-    'education': 'Education',
+    resume: 'Resume',
+    about: 'About',
+    skills: 'Skills',
+    education: 'Education',
     'work-experience': 'Work Experience',
     'accomplishments-and-initiatives': 'Accomplishments & Initiatives',
     'personal-details': 'Personal Details',
     'social-links': 'Social Links',
+    'compony-details': 'Compony Details',
+    'organization-details': 'Organization Details',
   };
 
   // Sync activeSection with URL on page load or URL change
   useEffect(() => {
     const path = location.pathname.split('/').pop();
-    const section = pathToSection[path] || 'Basic Details';
+    const section = pathToSection[path] || (allowedRoles.includes(user.role) ? 'Compony Details' : 'Basic Details');
     setActiveSection(section);
-  }, [location]);
+  }, [location, user.role]);
 
   // Toggle sidebar visibility
   const toggleSidebar = () => {
@@ -47,17 +55,23 @@ const ProfileEditPage = () => {
     setIsSidebarOpen(false);
   };
 
-  const sections = [
-    { label: 'Basic Details', path: 'basic-details', completed: true, required: true },
-    { label: 'Resume', path: 'resume', completed: false, required: true },
-    { label: 'About', path: 'about', completed: false, required: true },
-    { label: 'Skills', path: 'skills', completed: false, required: true },
-    { label: 'Education', path: 'education', completed: false, required: false },
-    // { label: 'Work Experience', path: 'work-experience', completed: false, required: false },
-    { label: 'Accomplishments & Initiatives', path: 'accomplishments-and-initiatives', completed: false, required: false },
-    { label: 'Personal Details', path: 'personal-details', completed: false, required: false },
-    { label: 'Social Links', path: 'social-links', completed: false, required: false },
-  ];
+  // Define sections based on user role
+  const sections = allowedRoles.includes(user.role)
+    ? [
+        { label: 'Compony Details', path: 'compony-details', completed: false, required: false },
+        { label: 'Organization Details', path: 'organization-details', completed: false, required: false },
+      ]
+    : [
+        { label: 'Basic Details', path: 'basic-details', completed: true, required: true },
+        { label: 'Resume', path: 'resume', completed: false, required: true },
+        { label: 'About', path: 'about', completed: false, required: true },
+        { label: 'Skills', path: 'skills', completed: false, required: true },
+        { label: 'Education', path: 'education', completed: false, required: false },
+        { label: 'Work Experience', path: 'work-experience', completed: false, required: false },
+        { label: 'Accomplishments & Initiatives', path: 'accomplishments-and-initiatives', completed: false, required: false },
+        { label: 'Personal Details', path: 'personal-details', completed: false, required: false },
+        { label: 'Social Links', path: 'social-links', completed: false, required: false },
+      ];
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -109,13 +123,15 @@ const ProfileEditPage = () => {
 
           {/* Static Top Content */}
           <div className="p-4 space-y-4">
-            {/* Resume Card */}
-            <div className="flex items-center justify-center">
-              <button className="bg-[#0073e6] text-white font-semibold px-14 py-2 rounded flex items-center gap-2">
-                <FaFileMedical className="text-white text-lg" />
-                Create your Resume
-              </button>
-            </div>
+            {/* Resume Card - Hidden for company/academy roles */}
+            {!allowedRoles.includes(user.role) && (
+              <div className="flex items-center justify-center">
+                <button className="bg-[#0073e6] text-white font-semibold px-14 py-2 rounded flex items-center gap-2">
+                  <FaFileMedical className="text-white text-lg" />
+                  Create your Resume
+                </button>
+              </div>
+            )}
 
             {/* Profile Progress */}
             <div className="bg-gray-100 p-4 rounded-lg">
@@ -159,16 +175,26 @@ const ProfileEditPage = () => {
           }`}
         >
           <Routes>
-            <Route path="basic-details" element={<BasicDetails />} />
-            <Route path="resume" element={<Resume />} />
-            <Route path="about" element={<About />} />
-            <Route path="skills" element={<Skills />} />
-            <Route path="education" element={<Education />} />
-            <Route path="work-experience" element={<WorkExperience />} />
-            <Route path="accomplishments-and-initiatives" element={<Accomplishments />} />
-            <Route path="personal-details" element={<PersonalDetails />} />
-            <Route path="social-links" element={<SocialLinks />} />
-            <Route path="*" element={<BasicDetails />} />
+            {allowedRoles.includes(user.role) ? (
+              <>
+                <Route path="compony-details" element={<ComponyDetails />} />
+                <Route path="organization-details" element={<OrganizationDetails />} />
+                <Route path="*" element={<Navigate to="/editprofile/compony-details" replace />} />
+              </>
+            ) : (
+              <>
+                <Route path="basic-details" element={<BasicDetails />} />
+                <Route path="resume" element={<Resume />} />
+                <Route path="about" element={<About />} />
+                <Route path="skills" element={<Skills />} />
+                <Route path="education" element={<Education />} />
+                <Route path="work-experience" element={<WorkExperience />} />
+                <Route path="accomplishments-and-initiatives" element={<Accomplishments />} />
+                <Route path="personal-details" element={<PersonalDetails />} />
+                <Route path="social-links" element={<SocialLinks />} />
+                <Route path="*" element={<BasicDetails />} />
+              </>
+            )}
           </Routes>
         </div>
       </div>

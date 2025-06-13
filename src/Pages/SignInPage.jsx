@@ -1,5 +1,6 @@
+// SignInPage.jsx (No changes needed, provided for reference)
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { MdVisibility, MdVisibilityOff } from 'react-icons/md';
 import { jwtDecode } from 'jwt-decode';
 import logo from '../assets/Navbar/logo.png';
@@ -14,9 +15,9 @@ const SignIn = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const user = JSON.parse(localStorage.getItem('user')) || {};
 
-  // Role IDs to names mapping
   const roleNames = {
     '1747825619417': 'student',
     '1747723485001': 'company',
@@ -59,7 +60,6 @@ const SignIn = () => {
       if (response.success) {
         console.log('API Response User:', response.user);
 
-        // Get roleId from response
         const roleId = response.user.role?.role || '';
         const roleName = roleNames[roleId];
 
@@ -69,7 +69,6 @@ const SignIn = () => {
           return;
         }
 
-        // Verify roleId with JWT
         const decodedToken = jwtDecode(response.accessToken);
         if (decodedToken.roleId !== roleId) {
           console.warn('Role ID mismatch between API response and JWT:', {
@@ -81,7 +80,6 @@ const SignIn = () => {
           return;
         }
 
-        // Prepare userData based on role
         const userData = {
           legalname: response.user.legalname || response.user.email,
           email: response.user.email,
@@ -89,19 +87,19 @@ const SignIn = () => {
           roleId: roleId,
         };
 
-        // Add role-specific ID
         if (roleName === 'student') {
           userData.userid = response.user._id;
         } else if (roleName === 'company') {
           userData.companyId = response.user.companyId || '';
+          userData.userid = response.user._id || '';
         }
 
         localStorage.setItem('user', JSON.stringify(userData));
         localStorage.setItem('accessToken', response.accessToken);
         localStorage.setItem('refreshToken', response.refreshToken);
 
-        // Redirect to homepage for all roles
-        navigate('/');
+        const from = location.state?.from || '/editprofile';
+        navigate(from, { replace: true });
       } else {
         setError(response.message || 'Login failed');
       }
@@ -123,7 +121,7 @@ const SignIn = () => {
   };
 
   return (
-    <div className="flex h-screen ">
+    <div className="flex h-screen">
       <div className="w-full lg:w-1/2 flex flex-col justify-center px-4 py-2 xs:px-6 sm:px-8">
         <div className="max-w-[20rem] xs:max-w-[24rem] sm:max-w-[28rem] mx-auto w-full">
           <div className="mb-3 flex flex-col items-center">
@@ -200,7 +198,7 @@ const SignIn = () => {
                   <span className="mx-2 text-xs xs:text-sm text-gray-500">or</span>
                   <hr className="flex-grow border-t" />
                 </div>
-                {/* <div className="flex justify-center gap-3 xs:gap-4 mb-2">
+                 {/* <div className="flex justify-center gap-3 xs:gap-4 mb-2">
                   <button className="border p-1.5 rounded-md hover:bg-gray-100">
                     <img
                       src="https://img.icons8.com/color/48/google-logo.png"
