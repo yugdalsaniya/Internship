@@ -1,4 +1,3 @@
-// SignInPage.jsx (No changes needed, provided for reference)
 import React, { useState } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { MdVisibility, MdVisibilityOff } from 'react-icons/md';
@@ -12,7 +11,7 @@ import { login } from '../Utils/api';
 const SignIn = () => {
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
+  const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -27,7 +26,9 @@ const SignIn = () => {
   };
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+    setErrors((prev) => ({ ...prev, [name]: '' }));
   };
 
   const togglePasswordVisibility = () => {
@@ -41,14 +42,30 @@ const SignIn = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-    setLoading(true);
+    const newErrors = {};
 
-    if (!validateEmail(formData.email)) {
-      setError('Please enter a valid email address.');
+    // Validate fields
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required.';
+    } else if (!validateEmail(formData.email)) {
+      newErrors.email = 'Please enter a valid email address.';
+    } else if (formData.email.trim().length > 100) {
+      newErrors.email = 'Email must be 100 characters or less.';
+    }
+    if (!formData.password.trim()) {
+      newErrors.password = 'Password is required.';
+    } else if (formData.password.length > 20) { // Changed from 8 to 20
+      newErrors.password = 'Password must be 20 characters or less.';
+    }
+
+    // If there are errors, set them and stop submission
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       setLoading(false);
       return;
     }
+
+    setLoading(true);
 
     try {
       const response = await login({
@@ -64,8 +81,7 @@ const SignIn = () => {
         const roleName = roleNames[roleId];
 
         if (!roleName) {
-          setError('Invalid or unrecognized role. Please contact support@conscor.com.');
-          setLoading(false);
+          setErrors({ general: 'Invalid or unrecognized role. Please contact support@conscor.com.' });
           return;
         }
 
@@ -75,8 +91,7 @@ const SignIn = () => {
             apiRoleId: roleId,
             jwtRoleId: decodedToken.roleId,
           });
-          setError('Role verification failed. Please contact support@conscor.com.');
-          setLoading(false);
+          setErrors({ general: 'Role verification failed. Please contact support@conscor.com.' });
           return;
         }
 
@@ -101,19 +116,25 @@ const SignIn = () => {
         const from = location.state?.from || '/editprofile';
         navigate(from, { replace: true });
       } else {
-        setError(response.message || 'Login failed');
+        setErrors({ general: response.message || 'Login failed' });
       }
     } catch (err) {
       const errorMessage = err.response?.data?.message || err.message || 'Invalid email or password';
       console.error('Login Error:', err.response?.data);
       if (errorMessage.includes('OTP not verified')) {
-        setError('Please verify your email with OTP before logging in.');
+        setErrors({ general: 'Please verify your email with OTP before logging in.' });
       } else if (errorMessage.includes('Invalid credentials')) {
-        setError('Incorrect email or password. Please try again.');
+        setErrors({
+          email: 'Invalid email address. Please check and try again.',
+          password: 'Incorrect password. Please try again.',
+        });
       } else if (err.response?.status === 401) {
-        setError('Unauthorized access. Please check your credentials.');
+        setErrors({
+          email: 'Unauthorized access. Please check your email.',
+          password: 'Unauthorized access. Please check your password.',
+        });
       } else {
-        setError(`${errorMessage}. Please try again or contact support@conscor.com.`);
+        setErrors({ general: `${errorMessage}. Please try again or contact support@conscor.com.` });
       }
     } finally {
       setLoading(false);
@@ -141,37 +162,59 @@ const SignIn = () => {
           <div className="w-full">
             <h2 className="text-base xs:text-lg sm:text-xl font-bold mb-1 text-black">Sign in</h2>
             <p className="text-xs xs:text-sm text-gray-500 mb-2">Please login to continue to your account.</p>
-            {error && <p className="text-red-500 text-xs xs:text-sm mb-2">{error}</p>}
-            <form className="space-y-2" onSubmit={handleSubmit}>
-              <input
-                type="email"
-                name="email"
-                placeholder="Email"
-                className="w-full px-3 py-2 xs:px-4 xs:py-2.5 border rounded-md outline-none text-xs xs:text-sm sm:text-base focus:ring-2 focus:ring-[#3D7EFF]"
-                value={formData.email}
-                onChange={handleChange}
-                required
-              />
-              <div className="relative">
+            {errors.general && <p className="text-red-500 text-xs xs:text-sm mb-2" aria-live="polite">{errors.general}</p>}
+            <form className="space-y-2" onSubmit={handleSubmit} aria-busy={loading}>
+              <div className="relative flex flex-col">
                 <input
-                  type={showPassword ? 'text' : 'password'}
-                  name="password"
-                  placeholder="Password"
-                  className="w-full px-3 py-2 xs:px-4 xs:py-2.5 border rounded-md outline-none text-xs xs:text-sm sm:text-base focus:ring-2 focus:ring-[#3D7EFF]"
-                  value={formData.password}
+                  type="email"
+                  name="email"
+                  placeholder="Email"
+                  className={`w-full px-3 py-2 xs:px-4 xs:py-2.5 border rounded-md outline-none text-xs xs:text-sm sm:text-base focus:ring-2 focus:ring-[#3D7EFF] ${
+                    errors.email ? 'border-red-500' : ''
+                  }`}
+                  value={formData.email}
                   onChange={handleChange}
                   required
+                  maxLength={100}
+                  aria-describedby={errors.email ? 'error-email' : undefined}
                 />
-                {showPassword ? (
-                  <MdVisibility
-                    className="absolute top-1/2 right-2 xs:right-3 transform -translate-y-1/2 text-gray-500 cursor-pointer text-base xs:text-lg"
-                    onClick={togglePasswordVisibility}
+                {errors.email && (
+                  <p id="error-email" className="text-red-500 text-xs xs:text-sm mt-1">
+                    {errors.email}
+                  </p>
+                )}
+              </div>
+              <div className="relative flex flex-col">
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    name="password"
+                    placeholder="Password"
+                    className={`w-full px-3 py-2 xs:px-4 xs:py-2.5 border rounded-md outline-none text-xs xs:text-sm sm:text-base focus:ring-2 focus:ring-[#3D7EFF] ${
+                      errors.password ? 'border-red-500' : ''
+                    }`}
+                    value={formData.password}
+                    onChange={handleChange}
+                    required
+                    maxLength={20} // Changed from 8 to 20
+                    aria-describedby={errors.password ? 'error-password' : undefined}
                   />
-                ) : (
-                  <MdVisibilityOff
-                    className="absolute top-1/2 right-2 xs:right-3 transform -translate-y-1/2 text-gray-500 cursor-pointer text-base xs:text-lg"
-                    onClick={togglePasswordVisibility}
-                  />
+                  {showPassword ? (
+                    <MdVisibility
+                      className="absolute top-1/2 right-2 xs:right-3 transform -translate-y-1/2 text-gray-500 cursor-pointer text-base xs:text-lg"
+                      onClick={togglePasswordVisibility}
+                    />
+                  ) : (
+                    <MdVisibilityOff
+                      className="absolute top-1/2 right-2 xs:right-3 transform -translate-y-1/2 text-gray-500 cursor-pointer text-base xs:text-lg"
+                      onClick={togglePasswordVisibility}
+                    />
+                  )}
+                </div>
+                {errors.password && (
+                  <p id="error-password" className="text-red-500 text-xs xs:text-sm mt-1">
+                    {errors.password}
+                  </p>
                 )}
               </div>
               <div className="flex items-center justify-between text-xs xs:text-sm">
@@ -185,10 +228,18 @@ const SignIn = () => {
               </div>
               <button
                 type="submit"
-                className="w-full bg-[#3D7EFF] text-white py-2 xs:py-2.5 rounded-md font-semibold text-xs xs:text-sm sm:text-base hover:bg-[#2b66cc] transition-colors"
+                className={`w-full bg-[#3D7EFF] text-white py-2 xs:py-2.5 rounded-md font-semibold text-xs xs:text-sm sm:text-base hover:bg-[#2b66cc] transition-colors flex items-center justify-center ${
+                  loading ? 'opacity-75 cursor-not-allowed' : ''
+                }`}
                 disabled={loading}
               >
-                {loading ? 'Signing in...' : 'Sign in'}
+                {loading ? (
+                  <>
+                    Signing in...
+                  </>
+                ) : (
+                  'Sign in'
+                )}
               </button>
             </form>
             {user.role !== 'company' && (
@@ -198,7 +249,7 @@ const SignIn = () => {
                   <span className="mx-2 text-xs xs:text-sm text-gray-500">or</span>
                   <hr className="flex-grow border-t" />
                 </div>
-                 {/* <div className="flex justify-center gap-3 xs:gap-4 mb-2">
+                {/* <div className="flex justify-center gap-3 xs:gap-4 mb-2">
                   <button className="border p-1.5 rounded-md hover:bg-gray-100">
                     <img
                       src="https://img.icons8.com/color/48/google-logo.png"
