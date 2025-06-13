@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import logo from '../../assets/Navbar/logo.png';
 
@@ -8,6 +8,7 @@ const Navbar = () => {
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user')) || {};
   const role = user.role || '';
+  const dropdownRef = useRef(null);
 
   const toggleMenu = () => {
     setIsOpen(!isOpen);
@@ -25,6 +26,19 @@ const Navbar = () => {
     setIsOpen(false);
     navigate('/');
   };
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (window.innerWidth >= 640 && dropdownOpen && dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [dropdownOpen]);
 
   // Define navigation links based on role
   const navLinks = {
@@ -105,7 +119,7 @@ const Navbar = () => {
 
         <div className="flex items-center space-x-3 sm:space-x-4 mr-0 sm:mr-4">
           {user.email ? (
-            <div className="relative">
+            <div className="relative" ref={dropdownRef}>
               <button
                 onClick={toggleDropdown}
                 className="w-9 sm:w-10 h-9 sm:h-10 rounded-full bg-blue-500 text-white flex items-center justify-center text-sm font-medium"
@@ -126,13 +140,22 @@ const Navbar = () => {
                     Edit Profile
                   </Link>
                   {role === 'student' && (
-                    <Link
-                      to="/my-applications"
-                      onClick={() => setDropdownOpen(false)}
-                      className="block px-4 py-2 text-xs sm:text-sm text-gray-800 hover:bg-gray-100"
-                    >
-                      My Applications
-                    </Link>
+                    <>
+                      <Link
+                        to="/my-applications"
+                        onClick={() => setDropdownOpen(false)}
+                        className="block px-4 py-2 text-xs sm:text-sm text-gray-800 hover:bg-gray-100"
+                      >
+                        My Applications
+                      </Link>
+                      <Link
+                        to="/requested-internships"
+                        onClick={() => setDropdownOpen(false)}
+                        className="block px-4 py-2 text-xs sm:text-sm text-gray-800 hover:bg-gray-100"
+                      >
+                        Requested Internships
+                      </Link>
+                    </>
                   )}
                   <button
                     onClick={handleLogout}
@@ -205,13 +228,22 @@ const Navbar = () => {
                 Edit Profile
               </Link>
               {role === 'student' && (
-                <Link
-                  to="/my-applications"
-                  className="text-gray-800 hover:text-blue-600 text-sm font-medium w-full text-center py-2"
-                  onClick={() => setIsOpen(false)}
-                >
-                  My Applications
-                </Link>
+                <>
+                  <Link
+                    to="/my-applications"
+                    className="text-gray-800 hover:text-blue-600 text-sm font-medium w-full text-center py-2"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    My Applications
+                  </Link>
+                  <Link
+                    to="/requested-internships"
+                    className="text-gray-800 hover:text-blue-600 text-sm font-medium w-full text-center py-2"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    Requested Internships
+                  </Link>
+                </>
               )}
               <button
                 onClick={handleLogout}
