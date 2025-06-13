@@ -100,7 +100,7 @@ function Resume() {
       console.log('mUpdate response for resume:', updateResponse);
 
       if (updateResponse && updateResponse.success) {
-        toast.success('Resume uploaded successfully!', {
+        toast.success('uploaded successfully!', {
           position: 'top-right',
           autoClose: 3000,
         });
@@ -157,7 +157,7 @@ function Resume() {
       console.log('mUpdate response for delete:', updateResponse);
 
       if (updateResponse && updateResponse.success) {
-        toast.success('Resume deleted successfully!', {
+        toast.success('deleted successfully!', {
           position: 'top-right',
           autoClose: 3000,
         });

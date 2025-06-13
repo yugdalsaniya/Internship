@@ -166,8 +166,8 @@ const PersonalDetails = () => {
         options: { upsert: false },
       });
 
-      console.log('Data updated successfully:', userData);
-      toast.success('Personal details updated successfully!', {
+      console.log('updated successfully:', userData);
+      toast.success('updated successfully!', {
         position: "top-right",
         autoClose: 3000,
         hideProgressBar: false,

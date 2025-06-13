@@ -169,8 +169,8 @@ function Skills() {
         update: { $set: { 'sectionData.appuser.skills': selectedSkillIds } },
         options: { upsert: false }
       });
-      console.log('Skills updated successfully:', selectedSkillIds, response);
-      toast.success('Skills saved successfully!', { autoClose: 5000 });
+      console.log('updated successfully:', selectedSkillIds, response);
+      toast.success('saved successfully!', { autoClose: 5000 });
       setLoading(false);
     } catch (err) {
       console.error('Failed to update skills:', err);

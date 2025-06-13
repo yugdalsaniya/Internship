@@ -88,7 +88,7 @@ function About() {
       console.log('mUpdate response for about:', updateResponse);
 
       if (updateResponse && updateResponse.success) {
-        toast.success('About text saved successfully!', {
+        toast.success('saved successfully!', {
           position: 'top-right',
           autoClose: 3000,
         });

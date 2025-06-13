@@ -114,6 +114,7 @@ function BasicDetails() {
   const [courseOptions, setCourseOptions] = useState([]);
   const [instituteOptions, setInstituteOptions] = useState([]);
   const [roleOptions, setRoleOptions] = useState([]);
+  const [specializationOptions, setSpecializationOptions] = useState([]);
   const [isLoadingOptions, setIsLoadingOptions] = useState(false);
   const [profilePicture, setProfilePicture] = useState("");
   const [profilePictureFile, setProfilePictureFile] = useState(null);
@@ -203,7 +204,7 @@ function BasicDetails() {
         const designations = designationData.map((item) => ({
           _id: item._id,
           name: item.sectionData.designation.name,
-        }));
+        })).sort((a, b) => a.name.localeCompare(b.name)); // Sort designations alphabetically
         setDesignationOptions(designations);
 
         const courseData = await fetchSectionData({
@@ -217,6 +218,18 @@ function BasicDetails() {
           name: item.sectionData.course.name,
         }));
         setCourseOptions(courses);
+
+        const specializationData = await fetchSectionData({
+          dbName: "internph",
+          collectionName: "coursespecialization",
+          query: {},
+        });
+        console.log("Specialization Data:", specializationData); // Debug
+        const specializations = specializationData.map((item) => ({
+          _id: item._id,
+          name: item.sectionData.coursespecialization.name,
+        }));
+        setSpecializationOptions(specializations);
 
         const instituteData = await fetchSectionData({
           dbName: "internph",
@@ -1022,13 +1035,20 @@ function BasicDetails() {
                 className="w-full border border-gray-300 rounded-lg p-2 h-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={specialization}
                 onChange={(e) => setSpecialization(e.target.value)}
-                disabled={isProcessing}
+                disabled={isProcessing || isLoadingOptions}
               >
                 <option value="">Select Specialization</option>
-                <option value="Computer Science">Computer Science</option>
-                <option value="Mechanical">Mechanical</option>
-                <option value="Marketing">Marketing</option>
+                {specializationOptions.map((option) => (
+                  <option key={option._id} value={option._id}>
+                    {option.name}
+                  </option>
+                ))}
               </select>
+              {isLoadingOptions && (
+                <p className="text-sm text-gray-500 mt-1">
+                  Loading specializations...
+                </p>
+              )}
             </div>
 
             <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-4">

@@ -30,6 +30,14 @@ const Education = () => {
   const [intermediateEducationList, setIntermediateEducationList] = useState([]);
   const [highSchoolEducationList, setHighSchoolEducationList] = useState([]);
   const [courseOptions, setCourseOptions] = useState([]);
+  const [specializationOptions, setSpecializationOptions] = useState([]);
+  const [collegeOptions, setCollegeOptions] = useState([]);
+  const [filteredColleges, setFilteredColleges] = useState([]);
+  const [showCollegeDropdown, setShowCollegeDropdown] = useState(false);
+  const [allSkills, setAllSkills] = useState([]);
+  const [filteredSkills, setFilteredSkills] = useState([]);
+  const [skillInput, setSkillInput] = useState("");
+  const [isSkillsDropdownOpen, setIsSkillsDropdownOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [userId, setUserId] = useState(null);
@@ -40,11 +48,28 @@ const Education = () => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [isQualificationLocked, setIsQualificationLocked] = useState(false);
   const dropdownRef = useRef(null);
+  const collegeDropdownRef = useRef(null);
+  const skillInputRef = useRef(null);
+  const skillDropdownRef = useRef(null);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setShowDropdown(false);
+      }
+      if (
+        collegeDropdownRef.current &&
+        !collegeDropdownRef.current.contains(event.target)
+      ) {
+        setShowCollegeDropdown(false);
+      }
+      if (
+        skillInputRef.current &&
+        !skillInputRef.current.contains(event.target) &&
+        skillDropdownRef.current &&
+        !skillDropdownRef.current.contains(event.target)
+      ) {
+        setIsSkillsDropdownOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -74,21 +99,28 @@ const Education = () => {
   }, []);
 
   useEffect(() => {
-    const fetchCourses = async () => {
+    const fetchDropdownOptions = async () => {
       try {
         setIsProcessing(true);
-        console.log("Fetching courses from database...");
-        const response = await fetchSectionData({
+        console.log(
+          "Fetching courses, specializations, colleges, and skills from database..."
+        );
+
+        // Fetch courses
+        const courseResponse = await fetchSectionData({
           dbName: "internph",
           collectionName: "course",
           query: {},
           projection: { _id: 1, "sectionData.course.name": 1 },
         });
 
-        console.log("fetchCourses raw response:", response);
+        console.log("fetchCourses raw response:", courseResponse);
 
-        if (!response || !Array.isArray(response)) {
-          console.error("Response is not an array or is null:", response);
+        if (!courseResponse || !Array.isArray(courseResponse)) {
+          console.error(
+            "Course response is not an array or is null:",
+            courseResponse
+          );
           toast.error("Invalid response from server while fetching courses.", {
             position: "top-right",
             autoClose: 5000,
@@ -96,7 +128,7 @@ const Education = () => {
           return;
         }
 
-        if (response.length === 0) {
+        if (courseResponse.length === 0) {
           console.warn("No courses found in the database.");
           toast.error(
             "No courses found in the database. Please add courses to continue.",
@@ -105,7 +137,7 @@ const Education = () => {
           return;
         }
 
-        const courses = response
+        const courses = courseResponse
           .map((item, index) => {
             if (!item._id) {
               console.warn(`Course at index ${index} missing _id:`, item);
@@ -119,7 +151,7 @@ const Education = () => {
               return null;
             }
             return {
-              id: item._id,
+              id: item._id.toString(),
               name: item.sectionData.course.name,
             };
           })
@@ -136,9 +168,202 @@ const Education = () => {
         }
 
         setCourseOptions(courses);
+
+        // Fetch specializations
+        const specializationResponse = await fetchSectionData({
+          dbName: "internph",
+          collectionName: "coursespecialization",
+          query: {},
+          projection: { _id: 1, "sectionData.coursespecialization.name": 1 },
+        });
+
+        console.log(
+          "fetchSpecializations raw response:",
+          specializationResponse
+        );
+
+        if (!specializationResponse || !Array.isArray(specializationResponse)) {
+          console.error(
+            "Specialization response is not an array or is null:",
+            specializationResponse
+          );
+          toast.error(
+            "Invalid response from server while fetching specializations.",
+            {
+              position: "top-right",
+              autoClose: 5000,
+            }
+          );
+          return;
+        }
+
+        if (specializationResponse.length === 0) {
+          console.warn("No specializations found in the database.");
+          toast.error(
+            "No specializations found in the database. Please add specializations to continue.",
+            { position: "top-right", autoClose: 5000 }
+          );
+          return;
+        }
+
+        const specializations = specializationResponse
+          .map((item, index) => {
+            if (!item._id) {
+              console.warn(`Specialization at index ${index} missing _id:`, item);
+              return null;
+            }
+            if (!item.sectionData?.coursespecialization?.name) {
+              console.warn(
+                `Specialization at index ${index} missing sectionData.coursespecialization.name:`,
+                item
+              );
+              return null;
+            }
+            return {
+              id: item._id.toString(),
+              name: item.sectionData.coursespecialization.name,
+            };
+          })
+          .filter(Boolean);
+
+        console.log("Processed specializations:", specializations);
+
+        if (specializations.length === 0) {
+          toast.error("No valid specializations found in the database.", {
+            position: "top-right",
+            autoClose: 5000,
+          });
+          return;
+        }
+
+        setSpecializationOptions(specializations);
+
+        // Fetch colleges
+        const collegeResponse = await fetchSectionData({
+          dbName: "internph",
+          collectionName: "institute",
+          query: {},
+          projection: { _id: 1, "sectionData.institute.institutionname": 1 },
+        });
+
+        console.log("fetchColleges raw response:", collegeResponse);
+
+        if (!collegeResponse || !Array.isArray(collegeResponse)) {
+          console.error(
+            "College response is not an array or is null:",
+            collegeResponse
+          );
+          toast.error("Invalid response from server while fetching colleges.", {
+            position: "top-right",
+            autoClose: 5000,
+          });
+          return;
+        }
+
+        if (collegeResponse.length === 0) {
+          console.warn("No colleges found in the database.");
+          toast.error(
+            "No colleges found in the database. Please add colleges to continue.",
+            { position: "top-right", autoClose: 5000 }
+          );
+          return;
+        }
+
+        const colleges = collegeResponse
+          .map((item, index) => {
+            if (!item._id) {
+              console.warn(`College at index ${index} missing _id:`, item);
+              return null;
+            }
+            if (!item.sectionData?.institute?.institutionname) {
+              console.warn(
+                `College at index ${index} missing sectionData.institute.institutionname:`,
+                item
+              );
+              return null;
+            }
+            return {
+              id: item._id.toString(),
+              name: item.sectionData.institute.institutionname,
+            };
+          })
+          .filter(Boolean);
+
+        console.log("Processed colleges:", colleges);
+
+        if (colleges.length === 0) {
+          toast.error("No valid colleges found in the database.", {
+            position: "top-right",
+            autoClose: 5000,
+          });
+          return;
+        }
+
+        setCollegeOptions(colleges);
+        setFilteredColleges(colleges);
+
+        // Fetch skills
+        const skillResponse = await fetchSectionData({
+          dbName: "internph",
+          collectionName: "skills",
+          query: {},
+          projection: { _id: 1, "sectionData.skills.name": 1 },
+        });
+
+        console.log("fetchSkills raw response:", skillResponse);
+
+        if (!skillResponse || !Array.isArray(skillResponse)) {
+          console.error("Skill response is not an array or is null:", skillResponse);
+          toast.error("Invalid response from server while fetching skills.", {
+            position: "top-right",
+            autoClose: 5000,
+          });
+          return;
+        }
+
+        if (skillResponse.length === 0) {
+          console.warn("No skills found in the database.");
+          toast.error(
+            "No skills found in the database. Please add skills to continue.",
+            { position: "top-right", autoClose: 5000 }
+          );
+          return;
+        }
+
+        const skills = skillResponse
+          .map((item, index) => {
+            if (!item._id) {
+              console.warn(`Skill at index ${index} missing _id:`, item);
+              return null;
+            }
+            if (!item.sectionData?.skills?.name) {
+              console.warn(
+                `Skill at index ${index} missing sectionData.skills.name:`,
+                item
+              );
+              return null;
+            }
+            return {
+              id: item._id.toString(),
+              name: item.sectionData.skills.name,
+            };
+          })
+          .filter(Boolean);
+
+        console.log("Processed skills:", skills);
+
+        if (skills.length === 0) {
+          toast.error("No valid skills found in the database.", {
+            position: "top-right",
+            autoClose: 5000,
+          });
+          return;
+        }
+
+        setAllSkills(skills);
       } catch (err) {
-        console.error("fetchCourses error:", err);
-        toast.error(`Failed to load course data: ${err.message}`, {
+        console.error("fetchDropdownOptions error:", err);
+        toast.error(`Failed to load dropdown data: ${err.message}`, {
           position: "top-right",
           autoClose: 5000,
         });
@@ -147,7 +372,7 @@ const Education = () => {
       }
     };
 
-    fetchCourses();
+    fetchDropdownOptions();
   }, []);
 
   useEffect(() => {
@@ -191,8 +416,8 @@ const Education = () => {
         setHighSchoolEducationList(fetchedHighSchoolEducation);
         setShowForm(
           fetchedEducation.length === 0 &&
-            fetchedIntermediateEducation.length === 0 &&
-            fetchedHighSchoolEducation.length === 0
+          fetchedIntermediateEducation.length === 0 &&
+          fetchedHighSchoolEducation.length === 0
         );
       } catch (err) {
         toast.error("Failed to load education data.", {
@@ -209,6 +434,56 @@ const Education = () => {
 
   const handleChange = (field, value) => {
     setFormData({ ...formData, [field]: value });
+    if (field === "college") {
+      const filtered = collegeOptions.filter((college) =>
+        college.name.toLowerCase().includes(value.toLowerCase())
+      );
+      setFilteredColleges(filtered);
+      setShowCollegeDropdown(true);
+    }
+  };
+
+  const handleCollegeSelect = (collegeName) => {
+    setFormData({ ...formData, college: collegeName });
+    setShowCollegeDropdown(false);
+    setFilteredColleges(collegeOptions);
+  };
+
+  const handleSkillInputChange = (value) => {
+    setSkillInput(value);
+    if (!value.trim()) {
+      setFilteredSkills([]);
+      setIsSkillsDropdownOpen(false);
+      return;
+    }
+    const filtered = allSkills.filter(
+      (skill) =>
+        skill.name.toLowerCase().includes(value.toLowerCase()) &&
+        !formData.skills.split(",").map((s) => s.trim()).includes(skill.name)
+    );
+    setFilteredSkills(filtered);
+    setIsSkillsDropdownOpen(filtered.length > 0);
+  };
+
+  const handleSkillSelect = (skill) => {
+    const currentSkills = formData.skills
+      ? formData.skills.split(",").map((s) => s.trim())
+      : [];
+    const newSkills = [...currentSkills, skill.name].filter(Boolean).join(", ");
+    setFormData({ ...formData, skills: newSkills });
+    setSkillInput("");
+    setIsSkillsDropdownOpen(false);
+  };
+
+  const handleSkillRemove = (skillName) => {
+    const currentSkills = formData.skills
+      ? formData.skills.split(",").map((s) => s.trim())
+      : [];
+    const newSkills = currentSkills
+      .filter((s) => s !== skillName)
+      .filter(Boolean)
+      .join(", ");
+    setFormData({ ...formData, skills: newSkills });
   };
 
   const handleFileUpload = (e) => {
@@ -410,8 +685,8 @@ const Education = () => {
           editingIndex !== null ||
             editingIntermediateIndex !== null ||
             editingHighSchoolIndex !== null
-            ? "Education details updated successfully!"
-            : "Education details saved successfully!",
+            ? "updated successfully!"
+            : "saved successfully!",
           { position: "top-right", autoClose: 3000 }
         );
         setFormData({
@@ -431,12 +706,15 @@ const Education = () => {
           description: "",
           fileUrl: "",
         });
+        setSkillInput("");
         setSelectedFile(null);
         setEditingIndex(null);
         setEditingIntermediateIndex(null);
         setEditingHighSchoolIndex(null);
         setShowForm(false);
         setIsQualificationLocked(false);
+        setShowCollegeDropdown(false);
+        setIsSkillsDropdownOpen(false);
       } else {
         throw new Error("Failed to save education data to database.");
       }
@@ -512,10 +790,16 @@ const Education = () => {
         )?.id ||
         edu.course1 ||
         "";
+      const specializationValue =
+        specializationOptions.find(
+          (s) => s.id === edu.specialization1 || s.name === edu.specialization1
+        )?.id ||
+        edu.specialization1 ||
+        "";
       setFormData({
-        qualification: edu.assetname1 || "",
+        qualification: edu.qualification1 || "",
         course: courseValue,
-        specialization: edu.specialization1 || "",
+        specialization: specializationValue,
         stream: edu.stream1 || "",
         college: edu.college1 || "",
         startYear: edu.startyear1 || "",
@@ -537,6 +821,10 @@ const Education = () => {
     setSelectedFile(null);
     setShowForm(true);
     setShowDropdown(false);
+    setShowCollegeDropdown(false);
+    setFilteredColleges(collegeOptions);
+    setSkillInput("");
+    setIsSkillsDropdownOpen(false);
   };
 
   const handleRemoveEducation = async (index, type) => {
@@ -552,7 +840,7 @@ const Education = () => {
       setIsProcessing(true);
       let updatePayload = {};
       let updatedEducationList = [...educationList];
-      let updatedIntermediateList = [...intermediateEducationList];
+      let updatedIntermediateEducationList = [...intermediateEducationList];
       let updatedHighSchoolList = [...highSchoolEducationList];
 
       if (type === "highschool") {
@@ -565,11 +853,11 @@ const Education = () => {
           setEditingHighSchoolIndex(null);
         }
       } else if (type === "intermediate") {
-        updatedIntermediateList.splice(index, 1);
+        updatedIntermediateEducationList.splice(index, 1);
         updatePayload = {
-          "sectionData.appuser.intermediateeducation": updatedIntermediateList,
+          "sectionData.appuser.intermediateeducation": updatedIntermediateEducationList,
         };
-        setIntermediateEducationList(updatedIntermediateList);
+        setIntermediateEducationList(updatedIntermediateEducationList);
         if (editingIntermediateIndex === index) {
           setEditingIntermediateIndex(null);
         }
@@ -595,7 +883,7 @@ const Education = () => {
       });
 
       if (response && response.success) {
-        toast.success("Education entry removed successfully!", {
+        toast.success("removed successfully!", {
           position: "top-right",
           autoClose: 3000,
         });
@@ -616,13 +904,16 @@ const Education = () => {
           description: "",
           fileUrl: "",
         });
+        setSkillInput("");
         setSelectedFile(null);
         setShowForm(
           updatedEducationList.length === 0 &&
-            updatedIntermediateList.length === 0 &&
-            updatedHighSchoolList.length === 0
+          updatedIntermediateEducationList.length === 0 &&
+          updatedHighSchoolList.length === 0
         );
         setIsQualificationLocked(false);
+        setShowCollegeDropdown(false);
+        setIsSkillsDropdownOpen(false);
       } else {
         throw new Error("Failed to remove education entry from database.");
       }
@@ -670,12 +961,12 @@ const Education = () => {
         updatePayload = {
           [`sectionData.appuser.intermediateeducation.${index}.files2`]: "",
         };
-        const updatedIntermediateList = [...intermediateEducationList];
-        updatedIntermediateList[index] = {
-          ...updatedIntermediateList[index],
+        const updatedIntermediateEducationList = [...intermediateEducationList];
+        updatedIntermediateEducationList[index] = {
+          ...updatedIntermediateEducationList[index],
           files2: "",
         };
-        setIntermediateEducationList(updatedIntermediateList);
+        setIntermediateEducationList(updatedIntermediateEducationList);
       } else {
         updatePayload = {
           [`sectionData.appuser.education.${index}.files1`]: "",
@@ -755,11 +1046,15 @@ const Education = () => {
       description: "",
       fileUrl: "",
     });
+    setSkillInput("");
     setSelectedFile(null);
     setEditingIndex(null);
     setEditingIntermediateIndex(null);
     setEditingHighSchoolIndex(null);
     setShowDropdown(false);
+    setShowCollegeDropdown(false);
+    setFilteredColleges(collegeOptions);
+    setIsSkillsDropdownOpen(false);
     setIsQualificationLocked(false);
   };
 
@@ -782,11 +1077,15 @@ const Education = () => {
       description: "",
       fileUrl: "",
     });
+    setSkillInput("");
     setSelectedFile(null);
     setEditingIndex(null);
     setEditingIntermediateIndex(null);
     setEditingHighSchoolIndex(null);
     setShowDropdown(false);
+    setShowCollegeDropdown(false);
+    setFilteredColleges(collegeOptions);
+    setIsSkillsDropdownOpen(false);
     setIsQualificationLocked(true);
   };
 
@@ -809,11 +1108,15 @@ const Education = () => {
       description: "",
       fileUrl: "",
     });
+    setSkillInput("");
     setSelectedFile(null);
     setEditingIndex(null);
     setEditingIntermediateIndex(null);
     setEditingHighSchoolIndex(null);
     setShowDropdown(false);
+    setShowCollegeDropdown(false);
+    setFilteredColleges(collegeOptions);
+    setIsSkillsDropdownOpen(false);
     setIsQualificationLocked(true);
   };
 
@@ -827,20 +1130,19 @@ const Education = () => {
     ],
     stream: ["STEM", "ABM", "HUMSS"],
     courseType: ["Full Time", "Part Time", "Distance Learning"],
-    specialization: [
-      "Computer Science",
-      "Mechanical Engineering",
-      "Electrical Engineering",
-      "Civil Engineering",
-      "Business Administration",
-      "Other",
-    ],
     lateralEntry: ["Yes", "No"],
   };
 
   const getCourseNameById = (id) => {
     const course = courseOptions.find((c) => c.id === id || c.name === id);
     return course ? course.name : id || "Unknown Course";
+  };
+
+  const getSpecializationNameById = (id) => {
+    const specialization = specializationOptions.find(
+      (s) => s.id === id || s.name === id
+    );
+    return specialization ? specialization.name : id || "";
   };
 
   const renderSelect = (label, field, options, required = false) => (
@@ -864,30 +1166,64 @@ const Education = () => {
           <option value="" disabled>
             Select {label}
           </option>
-          {field === "course" ? (
+          {field === "course" || field === "specialization" ? (
             <>
               {options.length === 0 ? (
                 <option value="" disabled>
-                  No courses available
+                  No {field === "course" ? "courses" : "specializations"} available
                 </option>
               ) : (
-                options.map((opt) => (
-                  <option key={opt.id} value={opt.id}>
-                    {opt.name}
-                  </option>
-                ))
+                options
+                  .filter((opt) => opt && opt.id && opt.name)
+                  .map((opt) => (
+                    <option key={opt.id} value={opt.id}>
+                      {opt.name}
+                    </option>
+                  ))
               )}
             </>
           ) : (
-            options.map((opt, i) => (
-              <option key={i} value={opt}>
-                {opt}
-              </option>
-            ))
+            options
+              .filter((opt) => typeof opt === "string" && opt.trim() !== "")
+              .map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt}
+                </option>
+              ))
           )}
         </select>
         <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
       </div>
+    </div>
+  );
+
+  const renderCollegeInput = (label, field, required = false) => (
+    <div className="mb-4 relative" ref={collegeDropdownRef}>
+      <label className="block text-sm font-medium text-gray-700 mb-1">
+        {label} {required && <span className="text-red-500">*</span>}
+      </label>
+      <input
+        type="text"
+        placeholder="Type to search colleges..."
+        value={formData[field]}
+        onChange={(e) => handleChange(field, e.target.value)}
+        onFocus={() => setShowCollegeDropdown(true)}
+        className="w-full border border-gray-300 rounded-lg p-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+        disabled={isProcessing}
+      />
+      {showCollegeDropdown && filteredColleges.length > 0 && (
+        <ul className="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto mt-1">
+          {filteredColleges.map((college) => (
+            <li
+              key={college.id}
+              className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+              onClick={() => handleCollegeSelect(college.name)}
+            >
+              {college.name}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 
@@ -923,9 +1259,66 @@ const Education = () => {
     </div>
   );
 
+  const renderSkillsInput = () => (
+    <div className="mb-4">
+      <label className="block text-sm font-medium text-gray-700 mb-1">
+        Skills
+      </label>
+      <div className="flex flex-wrap gap-2 mb-2">
+        {formData.skills &&
+          formData.skills
+            .split(",")
+            .map((skill) => skill.trim())
+            .filter(Boolean)
+            .map((skill, index) => (
+              <button
+                key={index}
+                onClick={() => handleSkillRemove(skill)}
+                className="px-3 py-1 bg-blue-100 text-blue-600 rounded-full flex items-center gap-1"
+                disabled={isProcessing}
+              >
+                {skill}
+                <span className="text-sm">✕</span>
+              </button>
+            ))}
+      </div>
+      <div className="relative">
+        <input
+          ref={skillInputRef}
+          type="text"
+          placeholder="Search skills..."
+          value={skillInput}
+          onChange={(e) => handleSkillInputChange(e.target.value)}
+          onFocus={() =>
+            skillInput.trim() && filteredSkills.length > 0 && setIsSkillsDropdownOpen(true)
+          }
+          className="w-full border border-gray-300 rounded-lg p-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+          disabled={isProcessing}
+        />
+        {isSkillsDropdownOpen && filteredSkills.length > 0 && (
+          <div
+            ref={skillDropdownRef}
+            className="absolute z-10 w-full bg-white border border-gray-200 rounded-lg shadow-lg mt-1 max-h-40 overflow-y-auto"
+          >
+            {filteredSkills.map((skill) => (
+              <button
+                key={skill.id}
+                className="w-full text-left px-3 py-2 text-gray-700 hover:bg-gray-100 transition"
+                onClick={() => handleSkillSelect(skill)}
+                disabled={isProcessing}
+              >
+                {skill.name}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
   const renderSkeletonCard = () => (
-   <div
-      className={`border border-gray-200 rounded-lg p-3 bg-white shadow-sm w-full animate-pulse `}
+    <div
+      className="border border-gray-200 rounded-lg p-3 bg-white shadow-sm w-full animate-pulse"
       aria-hidden="true"
     >
       <div className="flex items-start gap-3">
@@ -1058,13 +1451,13 @@ const Education = () => {
                   {renderSelect(
                     "Specialization",
                     "specialization",
-                    dropdownOptions.specialization
+                    specializationOptions
                   )}
                 </>
               )}
             {formData.qualification === "Senior High School (SHS)" &&
               renderSelect("Stream", "stream", dropdownOptions.stream, true)}
-            {renderInput("College", "college", "text", true)}
+            {renderCollegeInput("College", "college", true)}
 
             <div className="grid md:grid-cols-2 gap-4">
               {renderInput("Start Year", "startYear", "text", true)}
@@ -1091,7 +1484,7 @@ const Education = () => {
                     "lateralEntry",
                     dropdownOptions.lateralEntry
                   )}
-                  {renderInput("Skills", "skills")}
+                  {renderSkillsInput()}
                   {renderTextarea("Description", "description")}
                 </>
               )}
@@ -1254,10 +1647,7 @@ const Education = () => {
                   </div>
                 </div>
               ) : (
-                <label
-                  htmlFor="educationFileId"
-                  className="cursor-pointer block"
-                >
+                <label htmlFor="educationFileId" className="cursor-pointer block">
                   <div className="border-dashed border-2 border-gray-300 rounded-md px-4 py-6 text-center text-gray-600">
                     <span className="text-xl">+</span> Attachments
                   </div>
@@ -1332,7 +1722,7 @@ const Education = () => {
                             {edu.college1}
                           </p>
                           <p className="text-sm text-gray-600">
-                            {edu.assetname1}
+                            {edu.qualification1}
                           </p>
                           {edu.course1 && (
                             <p className="text-sm text-gray-600">
@@ -1341,7 +1731,7 @@ const Education = () => {
                           )}
                           {edu.specialization1 && (
                             <p className="text-sm text-gray-600">
-                              {edu.specialization1}
+                              {getSpecializationNameById(edu.specialization1)}
                             </p>
                           )}
                           {edu.areyoualateralentrystudent1 && (
