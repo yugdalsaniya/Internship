@@ -384,12 +384,7 @@ const ComponyDetails = ({ onBack }) => {
               className="flex-1 border border-gray-300 rounded-lg p-2 h-10 min-w-0 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               disabled={isProcessing}
             />
-            <button
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm min-w-[70px] h-10 hover:bg-blue-700 transition disabled:opacity-50"
-              disabled
-            >
-              Verify
-            </button>
+           
           </div>
         </div>
 
