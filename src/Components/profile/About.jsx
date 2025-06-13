@@ -1,5 +1,7 @@
+
 import { useState, useEffect } from 'react';
 import { FaCheckCircle, FaEye, FaRegLightbulb } from 'react-icons/fa';
+import { BiTime } from 'react-icons/bi';
 import { mUpdate, fetchSectionData } from '../../Utils/api'; // Import API functions
 import { ToastContainer, toast } from 'react-toastify'; // Import react-toastify
 import 'react-toastify/dist/ReactToastify.css'; // Import toastify CSS
@@ -7,6 +9,7 @@ import 'react-toastify/dist/ReactToastify.css'; // Import toastify CSS
 function About() {
   const [aboutText, setAboutText] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isFirstSaveSuccessful, setIsFirstSaveSuccessful] = useState(false); // State for first successful save
   const maxLength = 1000; // Maximum character limit
 
   // Fetch existing about text when the component mounts
@@ -17,6 +20,10 @@ function About() {
         const userId = user.userid;
         if (!userId) {
           console.error('User ID not found in localStorage');
+          toast.error('Please log in to view your about text.', {
+            position: 'top-right',
+            autoClose: 5000,
+          });
           return;
         }
 
@@ -29,6 +36,11 @@ function About() {
         const userData = response[0]; // Assuming the response is an array with one user
         const existingAbout = userData?.sectionData?.appuser?.about || '';
         setAboutText(existingAbout);
+        // If about text exists, assume a successful save has occurred previously
+        if (existingAbout.trim()) {
+          setIsFirstSaveSuccessful(true);
+          console.log('Existing about text found, setting isFirstSaveSuccessful to true');
+        }
       } catch (err) {
         console.error('Error fetching about text:', err);
         toast.error('Failed to load existing about text. Please try again.', {
@@ -74,24 +86,40 @@ function About() {
 
       // Update the user document with the about text
       const updateResponse = await mUpdate({
-        appName: 'app8657281202648', // Match the appName from your API response
+        appName: 'app8657281202648',
         collectionName: 'appuser',
         query: { _id: userId },
         update: {
           $set: {
-            'sectionData.appuser.about': aboutText,
+            'sectionData.appuser.about': aboutText.trim(),
           },
         },
-        options: { upsert: true, writeConcern: { w: 'majority' } },
+        options: { upsert: false, writeConcern: { w: 'majority' } },
       });
 
       console.log('mUpdate response for about:', updateResponse);
 
-      if (updateResponse && updateResponse.success) {
-        toast.success('saved successfully!', {
+      // Check for success using multiple possible response properties
+      if (
+        updateResponse &&
+        (updateResponse.success ||
+          updateResponse.modifiedCount > 0 ||
+          updateResponse.matchedCount > 0)
+      ) {
+        if (updateResponse.matchedCount === 0) {
+          throw new Error('Failed to update user data: User not found.');
+        }
+        if (updateResponse.upsertedId) {
+          throw new Error('Unexpected error: New user created instead of updating.');
+        }
+        toast.success('About text saved successfully!', {
           position: 'top-right',
           autoClose: 3000,
         });
+        if (!isFirstSaveSuccessful) {
+          setIsFirstSaveSuccessful(true);
+          console.log('Setting isFirstSaveSuccessful to true');
+        }
       } else {
         throw new Error('Failed to save about text to database.');
       }
@@ -112,6 +140,8 @@ function About() {
     }
   };
 
+  console.log('Rendering with isFirstSaveSuccessful:', isFirstSaveSuccessful);
+
   return (
     <div className="bg-white rounded-xl shadow-md">
       {/* Toast Container */}
@@ -120,7 +150,11 @@ function About() {
       {/* Fixed Header */}
       <div className="sticky top-0 bg-white z-10 px-4 py-4 shadow-sm flex justify-between items-center border-b border-gray-200">
         <div className="flex items-center gap-2 text-gray-700 text-lg font-medium">
-          <FaCheckCircle className="text-green-500" />
+          {isFirstSaveSuccessful ? (
+            <FaCheckCircle className="text-green-500" />
+          ) : (
+            <BiTime className="text-xl" />
+          )}
           <span>About</span>
         </div>
         {/* <div className="flex items-center gap-4 text-gray-600 text-xl">
@@ -147,8 +181,9 @@ function About() {
             maxLength={maxLength}
             disabled={isProcessing}
           />
-          <button className="mt-2 px-4 py-2 border rounded-full text-blue-600 opacity-50 cursor-not-allowed hover:bg-blue-50 transition"
-          disabled
+          <button
+            className="mt-2 px-4 py-2 border rounded-full text-blue-600 opacity-50 cursor-not-allowed hover:bg-blue-50 transition"
+            disabled
           >
             Generate with AI
           </button>

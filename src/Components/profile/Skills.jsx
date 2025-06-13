@@ -1,6 +1,7 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { BiTime } from 'react-icons/bi';
-import { FaEye, FaRegLightbulb } from 'react-icons/fa';
+import { FaCheckCircle, FaEye, FaRegLightbulb } from 'react-icons/fa';
 import { fetchSectionData, mUpdate } from '../../Utils/api';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -10,6 +11,7 @@ function Skills() {
   const [allSkills, setAllSkills] = useState([]); // For suggestions (showinsuggestions: true)
   const [allSearchableSkills, setAllSearchableSkills] = useState([]); // For search dropdown (all skills)
   const [selectedSkillIds, setSelectedSkillIds] = useState([]);
+  const [isFirstSaveSuccessful, setIsFirstSaveSuccessful] = useState(false); // State for first successful save
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(0);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -62,7 +64,8 @@ function Skills() {
 
         setLoading(false);
       } catch (err) {
-        toast.error('Failed to load skills:', { autoClose: err.message });
+        console.error('Failed to load skills:', err);
+        toast.error('Failed to load skills: ' + err.message, { autoClose: 5000 });
         setLoading(false);
       }
     };
@@ -86,10 +89,15 @@ function Skills() {
 
         if (response && response[0]?.sectionData?.appuser?.skills) {
           setSelectedSkillIds(response[0].sectionData.appuser.skills);
+          if (response[0].sectionData.appuser.skills.length > 0) {
+            setIsFirstSaveSuccessful(true);
+            console.log('Existing skills found, setting isFirstSaveSuccessful to true');
+          }
         }
         setLoading(false);
       } catch (err) {
-        toast.error('Failed to load saved skills', { autoClose: 5000 });
+        console.error('Failed to load saved skills:', err);
+        toast.error('Failed to load saved skills: ' + err.message, { autoClose: 5000 });
         setLoading(false);
       }
     };
@@ -173,6 +181,11 @@ function Skills() {
       return;
     }
 
+    if (selectedSkillIds.length === 0) {
+      toast.error('Please select at least one skill.', { autoClose: 5000 });
+      return;
+    }
+
     try {
       setLoading(true);
       const response = await mUpdate({
@@ -180,17 +193,53 @@ function Skills() {
         collectionName: 'appuser',
         query: { _id: userId },
         update: { $set: { 'sectionData.appuser.skills': selectedSkillIds } },
-        options: { upsert: false }
+        options: { upsert: false, writeConcern: { w: 'majority' } },
       });
-      console.log('updated successfully:', selectedSkillIds, response);
-      toast.success('saved successfully!', { autoClose: 5000 });
-      setLoading(false);
+
+      console.log('mUpdate response for skills:', response);
+
+      // Check for success using multiple possible response properties
+      if (
+        response &&
+        (response.success ||
+          response.modifiedCount > 0 ||
+          response.matchedCount > 0)
+      ) {
+        if (response.matchedCount === 0) {
+          throw new Error('Failed to update user data: User not found.');
+        }
+        if (response.upsertedId) {
+          throw new Error('Unexpected error: New user created instead of updating.');
+        }
+        toast.success('Skills saved successfully!', {
+          position: 'top-right',
+          autoClose: 3000,
+        });
+        if (!isFirstSaveSuccessful) {
+          setIsFirstSaveSuccessful(true);
+          console.log('Setting isFirstSaveSuccessful to true');
+        }
+      } else {
+        throw new Error('Failed to save skills to database.');
+      }
     } catch (err) {
-      console.error('Failed to update skills:', err);
-      toast.error('Failed to save skills', { autoClose: 5000 });
+      console.error('Failed to save skills:', err.response?.data || err.message);
+      let errorMessage = err.message;
+      if (err.response?.status === 404) {
+        errorMessage = 'API endpoint not found. Please contact support.';
+      } else if (err.response?.status === 401) {
+        errorMessage = 'Authentication failed. Please log in again.';
+      }
+      toast.error(errorMessage || 'Failed to save skills. Please try again.', {
+        position: 'top-right',
+        autoClose: 5000,
+      });
+    } finally {
       setLoading(false);
     }
   };
+
+  console.log('Rendering with isFirstSaveSuccessful:', isFirstSaveSuccessful);
 
   return (
     <div className="bg-white rounded-xl shadow-md">
@@ -198,7 +247,11 @@ function Skills() {
 
       <div className="sticky top-0 bg-white z-10 px-4 py-4 shadow-sm flex justify-between items-center border-b border-gray-200">
         <div className="flex items-center gap-2 text-gray-700 text-lg font-medium">
-          <BiTime className="text-xl" />
+          {isFirstSaveSuccessful ? (
+            <FaCheckCircle className="text-green-500" />
+          ) : (
+            <BiTime className="text-xl" />
+          )}
           <span>Skills</span>
         </div>
         {/* <div className="flex items-center gap-4 text-gray-600 text-xl">
@@ -283,7 +336,12 @@ function Skills() {
             }`}
             disabled={loading}
           >
-            <span className="text-lg">✓</span> Save
+            {loading ? (
+              <span className="text-lg">⏳</span>
+            ) : (
+              <span className="text-lg">✓</span>
+            )}
+            {loading ? 'Saving...' : 'Save'}
           </button>
         </div>
       </div>

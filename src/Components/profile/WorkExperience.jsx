@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { ChevronDown, Plus } from "lucide-react";
 import { BiTime } from "react-icons/bi";
-import { FaCrosshairs } from "react-icons/fa";
+import { FaCheckCircle } from "react-icons/fa";
 import { MdDelete, MdEdit } from "react-icons/md";
 import { AiFillFilePdf } from "react-icons/ai";
 import { ToastContainer, toast } from "react-toastify";
@@ -35,13 +35,13 @@ const WorkExperience = () => {
   const [error, setError] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSkillsDropdownOpen, setIsSkillsDropdownOpen] = useState(false);
-  const [isInstitutesDropdownOpen, setIsInstitutesDropdownOpen] =
-    useState(false);
+  const [isInstitutesDropdownOpen, setIsInstitutesDropdownOpen] = useState(false);
   const [workExperienceList, setWorkExperienceList] = useState([]);
   const [editingIndex, setEditingIndex] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [isFirstSaveSuccessful, setIsFirstSaveSuccessful] = useState(false); // State for first successful save
   const skillInputRef = useRef(null);
   const skillDropdownRef = useRef(null);
   const instituteInputRef = useRef(null);
@@ -89,7 +89,15 @@ const WorkExperience = () => {
             : [];
         setWorkExperienceList(fetchedWorkExperience);
         setShowForm(fetchedWorkExperience.length === 0);
+        // Set isFirstSaveSuccessful if any work experience data exists
+        if (fetchedWorkExperience.length > 0) {
+          setIsFirstSaveSuccessful(true);
+          console.log(
+            "Existing work experience data found, setting isFirstSaveSuccessful to true"
+          );
+        }
       } catch (err) {
+        console.error("Failed to load work experience data:", err);
         toast.error("Failed to load work experience data.", {
           position: "top-right",
           autoClose: 5000,
@@ -561,14 +569,23 @@ const WorkExperience = () => {
         options: { upsert: false },
       });
 
-      if (response && response.success) {
+      // Check for success using multiple possible response properties
+      if (
+        response &&
+        (response.success ||
+          response.modifiedCount > 0 ||
+          response.matchedCount > 0)
+      ) {
         if (response.matchedCount === 0) {
-          throw new Error("Failed to update work experience.");
+          throw new Error("Failed to update work experience: User not found.");
+        }
+        if (response.upsertedId) {
+          throw new Error("Unexpected error: New user created instead of updating.");
         }
         toast.success(
           editingIndex !== null
-            ? "Updated successfully!"
-            : "Saved successfully!",
+            ? "Work experience updated successfully!"
+            : "Work experience saved successfully!",
           { position: "top-right", autoClose: 3000 }
         );
         setFormData({
@@ -590,10 +607,15 @@ const WorkExperience = () => {
         setSelectedFile(null);
         setEditingIndex(null);
         setShowForm(false);
+        if (!isFirstSaveSuccessful) {
+          setIsFirstSaveSuccessful(true);
+          console.log("Setting isFirstSaveSuccessful to true");
+        }
       } else {
         throw new Error("Failed to update work experience in database.");
       }
     } catch (error) {
+      console.error("Error updating work experience:", error.response?.data || error.message);
       let errorMessage = error.message;
       if (error.response?.status === 404) {
         errorMessage = "API endpoint not found. Please contact support.";
@@ -605,7 +627,6 @@ const WorkExperience = () => {
       }
       setError(errorMessage);
       toast.error(errorMessage, { position: "top-right", autoClose: 5000 });
-      console.error("Error updating work experience:", error);
       setTimeout(() => setError(""), 5000);
     } finally {
       setIsProcessing(false);
@@ -669,8 +690,16 @@ const WorkExperience = () => {
         options: { upsert: false },
       });
 
-      if (response && response.success) {
-        toast.success("Removed successfully!", {
+      if (
+        response &&
+        (response.success ||
+          response.modifiedCount > 0 ||
+          response.matchedCount > 0)
+      ) {
+        if (response.matchedCount === 0) {
+          throw new Error("Failed to update user data: User not found.");
+        }
+        toast.success("Work experience removed successfully!", {
           position: "top-right",
           autoClose: 3000,
         });
@@ -693,10 +722,16 @@ const WorkExperience = () => {
         });
         setInstituteInput("");
         setSelectedFile(null);
+        // Check if all work experience entries are removed
+        if (updatedList.length === 0) {
+          setIsFirstSaveSuccessful(false);
+          console.log("All work experience entries removed, setting isFirstSaveSuccessful to false");
+        }
       } else {
         throw new Error("Failed to remove work experience from database.");
       }
     } catch (error) {
+      console.error("Failed to remove work experience:", error.response?.data || error.message);
       let errorMessage = error.message;
       if (error.response?.status === 404) {
         errorMessage = "API endpoint not found. Please contact support.";
@@ -737,7 +772,15 @@ const WorkExperience = () => {
         options: { upsert: false },
       });
 
-      if (response && response.success) {
+      if (
+        response &&
+        (response.success ||
+          response.modifiedCount > 0 ||
+          response.matchedCount > 0)
+      ) {
+        if (response.matchedCount === 0) {
+          throw new Error("Failed to update user data: User not found.");
+        }
         toast.success("File removed successfully!", {
           position: "top-right",
           autoClose: 3000,
@@ -751,6 +794,7 @@ const WorkExperience = () => {
         throw new Error("Failed to remove file from database.");
       }
     } catch (error) {
+      console.error("Failed to remove file:", error.response?.data || error.message);
       let errorMessage = error.message;
       if (error.response?.status === 404) {
         errorMessage = "API endpoint not found. Please contact support.";
@@ -1051,6 +1095,8 @@ const WorkExperience = () => {
     </div>
   );
 
+  console.log("Rendering with isFirstSaveSuccessful:", isFirstSaveSuccessful);
+
   return (
     <div className="bg-white rounded-xl shadow-md">
       <style>{`
@@ -1081,7 +1127,11 @@ const WorkExperience = () => {
       />
       <div className="sticky top-0 bg-white z-10 px-4 py-4 shadow-sm flex justify-between items-center border-b border-gray-200">
         <div className="flex items-center gap-2 text-gray-700 text-lg font-medium">
-          <BiTime className="text-xl" />
+          {isFirstSaveSuccessful ? (
+            <FaCheckCircle className="text-green-500" />
+          ) : (
+            <BiTime className="text-xl" />
+          )}
           <span>Work Experience</span>
         </div>
         <div className="flex items-center gap-4 text-gray-600 text-xl">
@@ -1163,12 +1213,11 @@ const WorkExperience = () => {
                   onChange={(e) => handleChange("location4", e.target.value)}
                   ref={locationInputRef}
                   placeholder="Enter Location"
-                  className={`w-full border rounded-lg p-2 pr-10 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  className={`w-full border rounded-lg p-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                     formData.remote4 ? "bg-gray-100 cursor-not-allowed" : ""
                   }`}
                   disabled={formData.remote4 || isProcessing}
                 />
-                <FaCrosshairs className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
               </div>
             </div>
 

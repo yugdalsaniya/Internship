@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { BiTime } from "react-icons/bi";
-import { BsEye, BsLightbulb } from "react-icons/bs";
+import { FaCheckCircle, FaEye, FaRegLightbulb } from "react-icons/fa";
 import { AiFillFilePdf } from "react-icons/ai";
 import { MdDelete, MdEdit } from "react-icons/md";
 import { ChevronDown, Plus } from "lucide-react";
@@ -47,6 +47,7 @@ const Education = () => {
   const [showForm, setShowForm] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [isQualificationLocked, setIsQualificationLocked] = useState(false);
+  const [isFirstSaveSuccessful, setIsFirstSaveSuccessful] = useState(false); // State for first successful save
   const dropdownRef = useRef(null);
   const collegeDropdownRef = useRef(null);
   const skillInputRef = useRef(null);
@@ -419,8 +420,20 @@ const Education = () => {
           fetchedIntermediateEducation.length === 0 &&
           fetchedHighSchoolEducation.length === 0
         );
+        // Set isFirstSaveSuccessful if any education data exists
+        if (
+          fetchedEducation.length > 0 ||
+          fetchedIntermediateEducation.length > 0 ||
+          fetchedHighSchoolEducation.length > 0
+        ) {
+          setIsFirstSaveSuccessful(true);
+          console.log(
+            "Existing education data found, setting isFirstSaveSuccessful to true"
+          );
+        }
       } catch (err) {
-        toast.error("Failed to load education data.", {
+        console.error("Failed to load education data:", err);
+        toast.error("Failed to load education data: " + err.message, {
           position: "top-right",
           autoClose: 5000,
         });
@@ -680,13 +693,27 @@ const Education = () => {
         options: { upsert: false, writeConcern: { w: "majority" } },
       });
 
-      if (response && response.success) {
+      console.log("mUpdate response for education:", response);
+
+      // Check for success using multiple possible response properties
+      if (
+        response &&
+        (response.success ||
+          response.modifiedCount > 0 ||
+          response.matchedCount > 0)
+      ) {
+        if (response.matchedCount === 0) {
+          throw new Error("Failed to update user data: User not found.");
+        }
+        if (response.upsertedId) {
+          throw new Error("Unexpected error: New user created instead of updating.");
+        }
         toast.success(
           editingIndex !== null ||
             editingIntermediateIndex !== null ||
             editingHighSchoolIndex !== null
-            ? "updated successfully!"
-            : "saved successfully!",
+            ? "Education updated successfully!"
+            : "Education saved successfully!",
           { position: "top-right", autoClose: 3000 }
         );
         setFormData({
@@ -715,11 +742,15 @@ const Education = () => {
         setIsQualificationLocked(false);
         setShowCollegeDropdown(false);
         setIsSkillsDropdownOpen(false);
+        if (!isFirstSaveSuccessful) {
+          setIsFirstSaveSuccessful(true);
+          console.log("Setting isFirstSaveSuccessful to true");
+        }
       } else {
         throw new Error("Failed to save education data to database.");
       }
     } catch (error) {
-      console.error("Failed to save education data:", error);
+      console.error("Failed to save education data:", error.response?.data || error.message);
       let errorMessage = error.message;
       if (error.response?.status === 404) {
         errorMessage = "API endpoint not found. Please contact support.";
@@ -882,8 +913,18 @@ const Education = () => {
         options: { upsert: false, writeConcern: { w: "majority" } },
       });
 
-      if (response && response.success) {
-        toast.success("removed successfully!", {
+      console.log("mUpdate response for remove education:", response);
+
+      if (
+        response &&
+        (response.success ||
+          response.modifiedCount > 0 ||
+          response.matchedCount > 0)
+      ) {
+        if (response.matchedCount === 0) {
+          throw new Error("Failed to update user data: User not found.");
+        }
+        toast.success("Education removed successfully!", {
           position: "top-right",
           autoClose: 3000,
         });
@@ -914,11 +955,20 @@ const Education = () => {
         setIsQualificationLocked(false);
         setShowCollegeDropdown(false);
         setIsSkillsDropdownOpen(false);
+        // Check if all education lists are empty to reset isFirstSaveSuccessful
+        if (
+          updatedEducationList.length === 0 &&
+          updatedIntermediateEducationList.length === 0 &&
+          updatedHighSchoolList.length === 0
+        ) {
+          setIsFirstSaveSuccessful(false);
+          console.log("All education entries removed, setting isFirstSaveSuccessful to false");
+        }
       } else {
         throw new Error("Failed to remove education entry from database.");
       }
     } catch (error) {
-      console.error("Failed to remove education data:", error);
+      console.error("Failed to remove education data:", error.response?.data || error.message);
       let errorMessage = error.message;
       if (error.response?.status === 404) {
         errorMessage = "API endpoint not found. Please contact support.";
@@ -989,7 +1039,17 @@ const Education = () => {
         options: { upsert: false, writeConcern: { w: "majority" } },
       });
 
-      if (response && response.success) {
+      console.log("mUpdate response for delete file:", response);
+
+      if (
+        response &&
+        (response.success ||
+          response.modifiedCount > 0 ||
+          response.matchedCount > 0)
+      ) {
+        if (response.matchedCount === 0) {
+          throw new Error("Failed to update user data: User not found.");
+        }
         toast.success("File removed successfully!", {
           position: "top-right",
           autoClose: 3000,
@@ -1011,7 +1071,7 @@ const Education = () => {
         throw new Error("Failed to remove file from database.");
       }
     } catch (error) {
-      console.error("Failed to remove file:", error);
+      console.error("Failed to remove file:", error.response?.data || error.message);
       let errorMessage = error.message;
       if (error.response?.status === 404) {
         errorMessage = "API endpoint not found. Please contact support.";
@@ -1376,6 +1436,8 @@ const Education = () => {
     </div>
   );
 
+  console.log("Rendering with isFirstSaveSuccessful:", isFirstSaveSuccessful);
+
   return (
     <div className="bg-white rounded-xl shadow-md">
       <style jsx>{`
@@ -1409,10 +1471,24 @@ const Education = () => {
 
       <div className="sticky top-0 bg-white z-10 px-4 py-4 shadow-sm flex justify-between items-center border-b border-gray-200">
         <div className="flex items-center gap-2 text-gray-700 text-lg font-medium">
-          <BiTime className="text-xl" />
+          {isFirstSaveSuccessful ? (
+            <FaCheckCircle className="text-green-500" />
+          ) : (
+            <BiTime className="text-xl" />
+          )}
           <span>Education</span>
         </div>
         <div className="flex items-center gap-4 text-gray-600 text-xl">
+          <FaEye
+            className="cursor-pointer hover:text-blue-600"
+            title="Preview"
+            aria-label="Preview Education"
+          />
+          <FaRegLightbulb
+            className="cursor-pointer hover:text-yellow-500"
+            title="Suggestions"
+            aria-label="Education Suggestions"
+          />
           <button
             onClick={handleAddNew}
             className="text-green-600 hover:text-green-700 cursor-pointer"
@@ -1686,7 +1762,11 @@ const Education = () => {
                       : "Save Education"
                   }
                 >
-                  <span className="text-lg">✓</span>{" "}
+                  {isProcessing ? (
+                    <span className="text-lg">⏳</span>
+                  ) : (
+                    <span className="text-lg">✓</span>
+                  )}
                   {editingIndex !== null ||
                   editingIntermediateIndex !== null ||
                   editingHighSchoolIndex !== null

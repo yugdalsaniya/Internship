@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { BiTime } from 'react-icons/bi';
-import { FaEye, FaRegLightbulb } from 'react-icons/fa';
+import { FaCheckCircle } from 'react-icons/fa'; // Corrected import
 import { CalendarDays } from 'lucide-react';
 import { fetchSectionData, mUpdate } from './../../Utils/api';
 import { jwtDecode } from 'jwt-decode';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+
 
 const PersonalDetails = () => {
   const [formData, setFormData] = useState({
@@ -30,7 +31,8 @@ const PersonalDetails = () => {
   });
   const [userId, setUserId] = useState(null);
   const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false); // New loading state
+  const [isLoading, setIsLoading] = useState(false);
+  const [isFirstSaveSuccessful, setIsFirstSaveSuccessful] = useState(false); // State for first successful save
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -39,6 +41,10 @@ const PersonalDetails = () => {
         let userIdLocal;
         if (!userString) {
           setError('Please log in to view your details.');
+          toast.error('Please log in to view your details.', {
+            position: "top-right",
+            autoClose: 5000,
+          });
           return;
         }
         try {
@@ -47,9 +53,14 @@ const PersonalDetails = () => {
           setUserId(userIdLocal);
         } catch (parseError) {
           setError('Invalid user data. Please log in again.');
+          toast.error('Invalid user data. Please log in again.', {
+            position: "top-right",
+            autoClose: 5000,
+          });
           return;
         }
 
+        setIsLoading(true);
         const data = await fetchSectionData({
           collectionName: 'appuser',
           query: { _id: userIdLocal },
@@ -58,7 +69,7 @@ const PersonalDetails = () => {
 
         if (data.length > 0 && data[0].sectionData?.appuser) {
           const user = data[0].sectionData.appuser;
-          setFormData({
+          const fetchedFormData = {
             pronouns: user.pronouns || '',
             dob: user.dOB || '',
             currentAddress: {
@@ -77,13 +88,41 @@ const PersonalDetails = () => {
             },
             copyAddress: user.copycurrentaddress || false,
             hobbies: user.hobbies ? user.hobbies.join(', ') : '',
-          });
+          };
+          setFormData(fetchedFormData);
+          // Set isFirstSaveSuccessful if any relevant fields are populated
+          if (
+            fetchedFormData.pronouns ||
+            fetchedFormData.dob ||
+            fetchedFormData.currentAddress.line1 ||
+            fetchedFormData.currentAddress.ZIPcode ||
+            fetchedFormData.currentAddress.location ||
+            fetchedFormData.permanentAddress.line1 ||
+            fetchedFormData.permanentAddress.ZIPcode ||
+            fetchedFormData.permanentAddress.location ||
+            fetchedFormData.hobbies
+          ) {
+            setIsFirstSaveSuccessful(true);
+            console.log(
+              "Existing personal details data found, setting isFirstSaveSuccessful to true"
+            );
+          }
         } else {
           setError('User data not found. Please ensure your account exists.');
+          toast.error('User data not found. Please ensure your account exists.', {
+            position: "top-right",
+            autoClose: 5000,
+          });
         }
       } catch (error) {
         console.error('Error fetching user data:', error);
         setError('Failed to load user data. Please try again.');
+        toast.error('Failed to load user data. Please try again.', {
+          position: "top-right",
+          autoClose: 5000,
+        });
+      } finally {
+        setIsLoading(false);
       }
     };
     fetchUserData();
@@ -119,10 +158,18 @@ const PersonalDetails = () => {
   const validateForm = () => {
     if (!formData.currentAddress.line1 || !formData.currentAddress.ZIPcode || !formData.currentAddress.location) {
       setError('Please fill all required current address fields.');
+      toast.error('Please fill all required current address fields.', {
+        position: "top-right",
+        autoClose: 5000,
+      });
       return false;
     }
     if (!formData.copyAddress && (!formData.permanentAddress.line1 || !formData.permanentAddress.ZIPcode || !formData.permanentAddress.location)) {
       setError('Please fill all required permanent address fields or check "Copy Current Address".');
+      toast.error('Please fill all required permanent address fields or check "Copy Current Address".', {
+        position: "top-right",
+        autoClose: 5000,
+      });
       return false;
     }
     return true;
@@ -130,9 +177,13 @@ const PersonalDetails = () => {
 
   const handleSave = async () => {
     try {
-      setIsLoading(true); // Set loading to true
+      setIsLoading(true);
       if (!userId) {
         setError('Please log in to save details.');
+        toast.error('Please log in to save details.', {
+          position: "top-right",
+          autoClose: 5000,
+        });
         return;
       }
 
@@ -158,7 +209,7 @@ const PersonalDetails = () => {
         'editedAt': new Date().toISOString(),
       };
 
-      await mUpdate({
+      const response = await mUpdate({
         appName: 'app8657281202648',
         collectionName: 'appuser',
         query: { _id: userId },
@@ -166,28 +217,50 @@ const PersonalDetails = () => {
         options: { upsert: false },
       });
 
-      console.log('updated successfully:', userData);
-      toast.success('updated successfully!', {
-        position: "top-right",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-      });
+      // Check for success using multiple possible response properties
+      if (
+        response &&
+        (response.success ||
+          response.modifiedCount > 0 ||
+          response.matchedCount > 0)
+      ) {
+        if (response.matchedCount === 0) {
+          throw new Error("Failed to update personal details: User not found.");
+        }
+        if (response.upsertedId) {
+          throw new Error("Unexpected error: New user created instead of updating.");
+        }
+        console.log('Personal details updated successfully:', userData);
+        toast.success('Personal details updated successfully!', {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
+        if (!isFirstSaveSuccessful) {
+          setIsFirstSaveSuccessful(true);
+          console.log("Setting isFirstSaveSuccessful to true");
+        }
+      } else {
+        throw new Error("Failed to update personal details in database.");
+      }
     } catch (error) {
-      console.error('Error updating data:', error);
-      setError(error.message || 'Failed to update personal details. Please try again.');
-      toast.error('Failed to update personal details. Please try again.', {
+      console.error('Error updating personal details:', error.response?.data || error.message);
+      let errorMessage = error.message || 'Failed to update personal details. Please try again.';
+      if (error.response?.status === 404) {
+        errorMessage = "API endpoint not found. Please contact support.";
+      } else if (error.response?.status === 401) {
+        errorMessage = "Authentication failed. Please log in again.";
+      }
+      setError(errorMessage);
+      toast.error(errorMessage, {
         position: "top-right",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
+        autoClose: 5000,
       });
     } finally {
-      setIsLoading(false); // Reset loading state
+      setIsLoading(false);
     }
   };
 
@@ -202,9 +275,12 @@ const PersonalDetails = () => {
         value={section ? formData[section][field] : formData[field]}
         onChange={(e) => handleChange(field, e.target.value, section === 'permanentAddress')}
         className="w-full border rounded-lg p-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        disabled={isLoading}
       />
     </div>
   );
+
+  console.log("Rendering with isFirstSaveSuccessful:", isFirstSaveSuccessful);
 
   return (
     <div className="bg-white rounded-xl shadow-md">
@@ -219,13 +295,13 @@ const PersonalDetails = () => {
       {/* Fixed Header */}
       <div className="sticky top-0 bg-white z-10 px-4 py-4 shadow-sm flex justify-between items-center border-b border-gray-200">
         <div className="flex items-center gap-2 text-gray-700 text-lg font-medium">
-          <BiTime className="text-xl" />
+          {isFirstSaveSuccessful ? (
+            <FaCheckCircle className="text-green-500" />
+          ) : (
+            <BiTime className="text-xl" />
+          )}
           <span>Personal Details</span>
         </div>
-        {/* <div className="flex items-center gap-4 text-gray-600 text-xl">
-          <FaEye className="cursor-pointer hover:text-blue-600" />
-          <FaRegLightbulb className="cursor-pointer hover:text-yellow-500" />
-        </div> */}
       </div>
 
       {/* Scrollable Content */}
@@ -243,6 +319,7 @@ const PersonalDetails = () => {
                     : 'border-gray-300 text-gray-700 hover:bg-gray-50'
                 }`}
                 onClick={() => handleChange('pronouns', option)}
+                disabled={isLoading}
               >
                 {option}
               </button>
@@ -259,6 +336,7 @@ const PersonalDetails = () => {
               value={formData.dob}
               onChange={(e) => handleChange('dob', e.target.value)}
               className="w-full border rounded-lg p-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 pr-5"
+              disabled={isLoading}
             />
           </div>
         </div>
@@ -283,6 +361,7 @@ const PersonalDetails = () => {
                 checked={formData.copyAddress}
                 onChange={handleCopyAddress}
                 className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                disabled={isLoading}
               />
               Copy Current Address
             </label>
@@ -303,6 +382,7 @@ const PersonalDetails = () => {
             value={formData.hobbies}
             onChange={(e) => handleChange('hobbies', e.target.value)}
             className="w-full border rounded-lg p-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            disabled={isLoading}
           />
         </div>
       </div>
@@ -316,6 +396,7 @@ const PersonalDetails = () => {
               isLoading || error ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700'
             }`}
             disabled={isLoading || !!error}
+            aria-label="Save Personal Details"
           >
             <span className="text-lg">✓</span> {isLoading ? 'Saving...' : 'Save'}
           </button>
