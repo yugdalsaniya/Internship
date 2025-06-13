@@ -77,12 +77,13 @@ async function uploadProfilePicture(file, userId) {
   }
 }
 
-function BasicDetails() {
+function BasicDetails({ userData }) {
   const navigate = useNavigate();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [mobile, setMobile] = useState("");
+  const [countryCode, setCountryCode] = useState("+63");
   const [gender, setGender] = useState("");
   const [userType, setUserType] = useState("");
   const [location, setLocation] = useState("");
@@ -114,6 +115,26 @@ function BasicDetails() {
 
   // Get current year for validation and calculation
   const currentYear = new Date().getFullYear();
+  useEffect(() => {
+    if (userData && userData.legalname) {
+      const [fname = "", lname = ""] = userData.legalname.split(" ");
+      setFirstName(fname);
+      setLastName(lname);
+      setEmail(userData.email || "");
+      if (userData.mobile) {
+        if (userData.mobile.startsWith("+63")) {
+          setCountryCode("+63");
+          setMobile(userData.mobile.slice(3));
+        } else {
+          setMobile(userData.mobile);
+          setCountryCode("+63");
+        }
+      }
+      if (userData.role === "academy" && userData.academyname) {
+        setSchoolName(userData.academyname);
+      }
+    }
+  }, [userData]);
 
   useEffect(() => {
     const fetchUserDataAndDropdownOptions = async () => {
@@ -124,6 +145,8 @@ function BasicDetails() {
           toast.error("Please log in to view your details.", {
             autoClose: 5000,
           });
+          setError("Please log in to view your details. Using local data.");
+          setTimeout(() => setError(""), 5000);
           return;
         }
 
@@ -136,6 +159,13 @@ function BasicDetails() {
           toast.error("Invalid user data. Please log in again.", {
             autoClose: 5000,
           });
+          setError("Invalid user data. Using local data.");
+          setTimeout(() => setError(""), 5000);
+          return;
+        }
+
+        if (!userId) {
+          console.log("No userId found, using localStorage data.");
           return;
         }
 
@@ -152,6 +182,8 @@ function BasicDetails() {
           toast.error("User data not found. Please contact support.", {
             autoClose: 5000,
           });
+          setError("User data not found. Using local data.");
+          setTimeout(() => setError(""), 5000);
           return;
         }
 
@@ -164,10 +196,18 @@ function BasicDetails() {
           ? userData.legalname.split(" ")
           : [userData.fname || "", userData.lname || ""];
 
-        setFirstName(fname);
+        setFirstName(fname || userData.legalname || "");
         setLastName(lname);
         setEmail(userData.email || "");
-        setMobile(userData.mobile || "");
+        if (userData.mobile) {
+          if (userData.mobile.startsWith("+63")) {
+            setCountryCode("+63");
+            setMobile(userData.mobile.slice(3));
+          } else {
+            setMobile(userData.mobile);
+            setCountryCode("+63");
+          }
+        }
         setGender(userData.Gender || "");
         setUserType(userData.usertype || "");
         setLocation(userData.location || "");
@@ -237,6 +277,7 @@ function BasicDetails() {
         });
         console.log("Institute Data:", instituteData);
         if (!Array.isArray(instituteData))
+        if (!Array.isArray(instituteData)) {
           throw new Error("Institute data is not an array");
         const institutes = instituteData
           .map((item) => {
@@ -269,6 +310,8 @@ function BasicDetails() {
           "Failed to load user data or dropdown options: " + err.message,
           { autoClose: 5000 }
         );
+        setError("Failed to load server data. Using local data.");
+        setTimeout(() => setError(""), 5000);
       } finally {
         setIsLoadingOptions(false);
       }
@@ -277,7 +320,6 @@ function BasicDetails() {
     fetchUserDataAndDropdownOptions();
   }, []);
 
-  // Initialize Google Places Autocomplete
   useEffect(() => {
     const loadGoogleMapsScript = () => {
       return new Promise((resolve, reject) => {
@@ -428,6 +470,23 @@ function BasicDetails() {
         errors.push("End year must be after start year.");
       if (!isCurrentlyWorking && endYear && parseInt(endYear, 10) > currentYear)
         errors.push("End year cannot be in the future.");
+    if (mobile.length > 10 || !/^\d+$/.test(mobile)) {
+      return "Mobile number must be up to 10 digits.";
+    }
+    if (
+      userType === "Professional" &&
+      (!designation ||
+        !workExperienceType ||
+        !startYear ||
+        (!isCurrentlyWorking && !endYear))
+    ) {
+      return "Please fill all required professional fields.";
+    }
+    if (userType === "School Student" && !schoolName) {
+      return "Please fill all required school student fields.";
+    }
+    if (userType === "School Student" && !stream) {
+      return "Please select a stream.";
     }
     if (userType === "School Student" && !schoolName)
       errors.push("School name is required.");
@@ -576,6 +635,7 @@ function BasicDetails() {
           "sectionData.appuser.name": email,
           "sectionData.appuser.legalname": creatorName,
           "sectionData.appuser.email": email,
+          "sectionData.appuser.countryCode": countryCode,
           "sectionData.appuser.mobile": mobile,
           "sectionData.appuser.Gender": gender,
           "sectionData.appuser.usertype": userType,
@@ -765,7 +825,7 @@ function BasicDetails() {
 
         <div className="mb-4">
           <label className="text-sm font-medium text-gray-700 flex items-center justify-between">
-            Email
+            Email <span className="text-red-500"></span>
           </label>
           <div className="relative">
             <input
@@ -785,6 +845,8 @@ function BasicDetails() {
           <div className="flex gap-2 mt-1">
             <select
               className="border border-gray-300 rounded-lg p-2 bg-white w-24 h-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={countryCode}
+              onChange={(e) => setCountryCode(e.target.value)}
               disabled={isProcessing}
             >
               <option value="+63">+63</option>
@@ -792,8 +854,14 @@ function BasicDetails() {
             <input
               type="tel"
               value={mobile}
-              onChange={(e) => setMobile(e.target.value)}
+              onChange={(e) => {
+                const value = e.target.value.replace(/\D/g, "");
+                if (value.length <= 10) {
+                  setMobile(value);
+                }
+              }}
               className="flex-1 border border-gray-300 rounded-lg p-2 h-10 min-w-0 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Enter mobile number"
               disabled={isProcessing}
             />
             <button

@@ -96,9 +96,10 @@ const OtpVerification = () => {
       const response = await verifyOtp(otpPayload);
       if (response.success) {
         localStorage.setItem('user', JSON.stringify({
-          legalname: pendingUser.legalname,
-          email,
-          role: pendingUser.role,
+          ...pendingUser, // Copy all fields from pendingUser
+          userid: response.user?.userId || response.userId || '', // Add userid if available
+          // Remove redirectTo if not needed in user
+          redirectTo: undefined,
         }));
         localStorage.removeItem('pendingUser');
         MySwal.fire({
@@ -108,7 +109,7 @@ const OtpVerification = () => {
           showConfirmButton: false,
           timer: 2000,
         }).then(() => {
-          navigate('/');
+          navigate(pendingUser.redirectTo || '/editprofile'); // Use redirectTo
         });
       } else {
         setError(response.message || 'OTP verification failed');
