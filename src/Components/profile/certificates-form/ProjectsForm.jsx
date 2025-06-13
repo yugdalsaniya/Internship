@@ -4,8 +4,7 @@ import { FaPlus } from "react-icons/fa";
 import { RxCross2 } from "react-icons/rx";
 import { IoCheckmark } from "react-icons/io5";
 import { fetchSectionData, mUpdate } from "../../../Utils/api";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { toast } from "react-toastify";
 
 const ProjectsForm = ({ onBack, existingProject, isEditing }) => {
   const [formData, setFormData] = useState({
@@ -20,19 +19,32 @@ const ProjectsForm = ({ onBack, existingProject, isEditing }) => {
   });
 
   const [userId, setUserId] = useState(null);
-  const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const projectTypes = ["Full time", "Part time", "Freelance"];
+  // Get today's date for validation (YYYY-MM-DD format)
+  const today = new Date().toISOString().split("T")[0];
 
   useEffect(() => {
+    console.log(
+      "ProjectsForm useEffect: isEditing=",
+      isEditing,
+      "existingProject=",
+      existingProject
+    );
     // Populate form data if editing an existing project
     if (isEditing && existingProject) {
       setFormData({
         titleofproject: existingProject.titleofproject || "",
         projecttype: existingProject.projecttype || "",
-        projectstartdate: existingProject.projectstartdate || "",
-        projectenddate: existingProject.projectenddate || "",
+        projectstartdate: existingProject.projectstartdate
+          ? new Date(existingProject.projectstartdate)
+              .toISOString()
+              .split("T")[0]
+          : "",
+        projectenddate: existingProject.projectenddate
+          ? new Date(existingProject.projectenddate).toISOString().split("T")[0]
+          : "",
         ongoing: existingProject.ongoing || false,
         projectdescription: existingProject.projectdescription || "",
         projectskill: existingProject.projectskill
@@ -41,25 +53,33 @@ const ProjectsForm = ({ onBack, existingProject, isEditing }) => {
         projectattachment: existingProject.projectattachment || [],
       });
     } else {
-      // Reset form if not editing or if existingProject is null
       resetForm();
     }
 
+    // Fetch user ID from localStorage
     const userString = localStorage.getItem("user");
     if (userString) {
       try {
         const user = JSON.parse(userString);
         setUserId(user.userid);
+        console.log("User ID set:", user.userid);
       } catch (parseError) {
-        setError("Invalid user data. Please log in again.");
+        console.error("Error parsing user data:", parseError);
+        toast.error("Invalid user data. Please log in again.", {
+          position: "top-right",
+          autoClose: 5000,
+        });
       }
     } else {
-      setError("Please log in to manage your projects.");
+      console.error("No user data in localStorage");
+      toast.error("Please log in to manage your projects.", {
+        position: "top-right",
+        autoClose: 5000,
+      });
     }
   }, [isEditing, existingProject]);
 
   const handleChange = (field, value) => {
-    setError("");
     setFormData((prev) => ({
       ...prev,
       [field]: value,
@@ -68,6 +88,22 @@ const ProjectsForm = ({ onBack, existingProject, isEditing }) => {
 
   const handleTypeSelect = (type) => {
     handleChange("projecttype", type);
+  };
+
+  const handleDateChange = (field, value) => {
+    setFormData((prev) => {
+      const newData = { ...prev, [field]: value };
+      // Reset end date if start date changes to a later date
+      if (
+        field === "projectstartdate" &&
+        !newData.ongoing &&
+        newData.projectenddate &&
+        newData.projectenddate <= value
+      ) {
+        newData.projectenddate = "";
+      }
+      return newData;
+    });
   };
 
   const handleOngoingChange = (checked) => {
@@ -79,40 +115,42 @@ const ProjectsForm = ({ onBack, existingProject, isEditing }) => {
   };
 
   const validateForm = () => {
-    if (!formData.titleofproject.trim()) {
-      setError("Project title is required.");
-      return false;
-    }
-    if (!formData.projecttype) {
-      setError("Project type is required.");
-      return false;
-    }
-    if (!formData.projectstartdate) {
-      setError("Start date is required.");
-      return false;
-    }
-    if (!formData.ongoing && !formData.projectenddate) {
-      setError("End date is required when project is not ongoing.");
-      return false;
-    }
-    if (
+    const errors = [];
+    if (!formData.titleofproject.trim())
+      errors.push("Project title is required.");
+    if (!formData.projecttype) errors.push("Project type is required.");
+    if (!formData.projectstartdate) errors.push("Start date is required.");
+    else if (formData.projectstartdate > today)
+      errors.push("Start date cannot be in the future.");
+    if (!formData.ongoing && !formData.projectenddate)
+      errors.push("End date is required when project is not ongoing.");
+    else if (
       !formData.ongoing &&
       formData.projectenddate &&
-      new Date(formData.projectenddate) <= new Date(formData.projectstartdate)
-    ) {
-      setError("End date must be after start date.");
+      formData.projectenddate <= formData.projectstartdate
+    )
+      errors.push("End date must be after start date.");
+    else if (!formData.ongoing && formData.projectenddate > today)
+      errors.push("End date cannot be in the future.");
+
+    if (errors.length > 0) {
+      console.log("Validation errors:", errors);
+      toast.error(errors.join(" "), {
+        position: "top-right",
+        autoClose: 5000,
+      });
       return false;
     }
     return true;
   };
 
   const handleSave = async () => {
+    console.log("handleSave called with formData:", formData);
     try {
       setIsLoading(true);
 
       if (!userId) {
-        setError("Please log in to save projects.");
-        return;
+        throw new Error("Please log in to save projects.");
       }
 
       if (!validateForm()) {
@@ -133,7 +171,6 @@ const ProjectsForm = ({ onBack, existingProject, isEditing }) => {
               .filter((skill) => skill)
           : [],
         projectattachment: formData.projectattachment || [],
-        // Keep existing createdAt for edits, otherwise set new
         createdAt:
           isEditing && existingProject
             ? existingProject.createdAt
@@ -141,7 +178,8 @@ const ProjectsForm = ({ onBack, existingProject, isEditing }) => {
         updatedAt: new Date().toISOString(),
       };
 
-      // Fetch current projects to update the array
+      console.log("Project data to save:", projectData);
+
       const existingUserData = await fetchSectionData({
         collectionName: "appuser",
         query: { _id: userId },
@@ -152,9 +190,8 @@ const ProjectsForm = ({ onBack, existingProject, isEditing }) => {
 
       let updatedProjects;
       if (isEditing) {
-        // Find the index of the project being edited and replace it
         updatedProjects = currentProjects.map((project) =>
-          project.createdAt === existingProject.createdAt // Assuming createdAt is unique for identification
+          project.createdAt === existingProject.createdAt
             ? projectData
             : project
         );
@@ -175,9 +212,7 @@ const ProjectsForm = ({ onBack, existingProject, isEditing }) => {
         options: { upsert: false },
       });
 
-      resetForm();
-      onBack(); // Go back to accomplishments page after saving
-
+      console.log("Project saved successfully");
       toast.success(
         isEditing
           ? "Project updated successfully!"
@@ -191,17 +226,21 @@ const ProjectsForm = ({ onBack, existingProject, isEditing }) => {
           draggable: true,
         }
       );
+      resetForm();
+      setTimeout(() => onBack(), 500); // Delay onBack to ensure toast renders
     } catch (error) {
       console.error("Error saving project:", error);
-      setError(error.message || "Failed to save project. Please try again.");
-      toast.error("Failed to save project. Please try again.", {
-        position: "top-right",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-      });
+      toast.error(
+        error.message || "Failed to save project. Please try again.",
+        {
+          position: "top-right",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        }
+      );
     } finally {
       setIsLoading(false);
     }
@@ -218,23 +257,10 @@ const ProjectsForm = ({ onBack, existingProject, isEditing }) => {
       projectskill: "",
       projectattachment: [],
     });
-    setError("");
   };
 
   return (
     <div className="bg-white rounded-xl shadow-md">
-      <ToastContainer />
-
-      {/* Error Message */}
-      {error && (
-        <div
-          className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative m-4"
-          role="alert"
-        >
-          <span>{error}</span>
-        </div>
-      )}
-
       {/* Fixed Header */}
       <div className="sticky top-0 bg-white z-10 px-4 py-4 shadow-sm flex justify-between items-center border-b border-gray-200">
         <div className="flex items-center gap-2 text-gray-700 text-lg font-medium">
@@ -308,15 +334,20 @@ const ProjectsForm = ({ onBack, existingProject, isEditing }) => {
                 type="date"
                 value={formData.projectstartdate}
                 onChange={(e) =>
-                  handleChange("projectstartdate", e.target.value)
+                  handleDateChange("projectstartdate", e.target.value)
                 }
+                max={today}
                 className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring focus:ring-blue-200 w-1/2"
               />
               <input
                 type="date"
                 value={formData.projectenddate}
-                onChange={(e) => handleChange("projectenddate", e.target.value)}
+                onChange={(e) =>
+                  handleDateChange("projectenddate", e.target.value)
+                }
                 disabled={formData.ongoing}
+                min={formData.projectstartdate || undefined}
+                max={today}
                 className={`border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring focus:ring-blue-200 w-1/2 ${
                   formData.ongoing ? "bg-gray-100 cursor-not-allowed" : ""
                 }`}
@@ -356,7 +387,15 @@ const ProjectsForm = ({ onBack, existingProject, isEditing }) => {
 
           {/* Attachments */}
           <div className="w-full border border-dashed border-gray-400 rounded-md">
-            <button className="flex items-center justify-center gap-2 w-full px-4 py-2 text-gray-700">
+            <button
+              className="flex items-center justify-center gap-2 w-full px-4 py-2 text-gray-700"
+              onClick={() => {
+                toast.info("Attachment upload not implemented yet.", {
+                  position: "top-right",
+                  autoClose: 3000,
+                });
+              }}
+            >
               <FaPlus />
               Attachments
             </button>
