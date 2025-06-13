@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
@@ -14,8 +14,32 @@ const OtpVerification = () => {
   const [error, setError] = useState('');
   const [verifyLoading, setVerifyLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(120); // 2 minutes in seconds
+  const [timerKey, setTimerKey] = useState(0); // To force timer restart
   const navigate = useNavigate();
   const formRef = useRef(null);
+
+  // Countdown timer logic
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 0) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer); // Cleanup on unmount
+  }, [timerKey]); // Depend on timerKey to restart timer
+
+  // Format time as MM:SS
+  const formatTime = (seconds) => {
+    const minutes = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${minutes}:${secs < 10 ? '0' : ''}${secs}`;
+  };
 
   const handleChange = (index, value) => {
     if (/^\d?$/.test(value)) {
@@ -33,6 +57,19 @@ const OtpVerification = () => {
     e.stopPropagation();
     setError('');
     setVerifyLoading(true);
+
+    // Block submission if OTP is expired
+    if (timeLeft <= 0) {
+      setError('OTP has expired. Please request a new one.');
+      setVerifyLoading(false);
+      MySwal.fire({
+        icon: 'error',
+        title: 'OTP Expired',
+        text: 'The OTP has expired. Please request a new one.',
+        confirmButtonText: 'OK',
+      });
+      return;
+    }
 
     const otpCode = otp.join('');
     if (otpCode.length !== 4) {
@@ -124,6 +161,8 @@ const OtpVerification = () => {
     try {
       await forgotPassword(email, 'app8657281202648');
       setOtp(['', '', '', '']);
+      setTimeLeft(120); // Reset timer
+      setTimerKey((prev) => prev + 1); // Force timer restart
       MySwal.fire({
         icon: 'success',
         title: 'OTP Resent',
@@ -180,6 +219,9 @@ const OtpVerification = () => {
             <div className="text-center">
               <h2 className="text-base xs:text-lg sm:text-xl font-bold mb-1 text-black">Verify Your Email Address</h2>
               <p className="text-xs xs:text-sm text-gray-500 mb-2">Verify your email with the OTP sent</p>
+              <p className="text-xs xs:text-sm text-gray-500 mb-2">
+                {timeLeft > 0 ? `OTP valid for ${formatTime(timeLeft)}` : 'OTP expired! Please resend.'}
+              </p>
               {error && (
                 <p className={`text-xs xs:text-sm mb-2 ${error.includes('successfully') ? 'text-green-500' : 'text-red-500'}`}>
                   {error}
@@ -204,9 +246,9 @@ const OtpVerification = () => {
 
                 <button
                   type="submit"
-                  disabled={verifyLoading || resendLoading}
+                  disabled={verifyLoading || resendLoading || timeLeft <= 0}
                   className={`w-full bg-[#3D7EFF] text-white py-2 xs:py-2.5 rounded-md font-semibold text-xs xs:text-sm sm:text-base hover:bg-[#2b66cc] transition-colors ${
-                    verifyLoading || resendLoading ? 'opacity-70 cursor-not-allowed' : ''
+                    verifyLoading || resendLoading || timeLeft <= 0 ? 'opacity-70 cursor-not-allowed' : ''
                   }`}
                 >
                   {verifyLoading ? 'Verifying...' : 'Verify OTP'}
