@@ -1,13 +1,16 @@
+// CertificatesForm.jsx - No changes from previous version.
+// It continues to act as a dedicated form for adding/editing a single certificate.
+
 import React, { useState, useEffect } from "react";
 import { BiTime } from "react-icons/bi";
-import { FaPlus, FaEye, FaRegLightbulb } from "react-icons/fa";
+import { FaPlus } from "react-icons/fa";
 import { RxCross2 } from "react-icons/rx";
 import { IoCheckmark } from "react-icons/io5";
 import { fetchSectionData, mUpdate } from "../../../Utils/api";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-const CertificatesForm = ({ onBack }) => {
+const CertificatesForm = ({ onBack, existingCertificate, isEditing }) => {
   const [formData, setFormData] = useState({
     titleofcertificates: "",
     issuingorganization: "",
@@ -20,50 +23,44 @@ const CertificatesForm = ({ onBack }) => {
     certificateattachment: [],
   });
 
-  const [certificates, setCertificates] = useState([]);
   const [userId, setUserId] = useState(null);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editingIndex, setEditingIndex] = useState(-1);
 
   useEffect(() => {
-    const fetchUserData = async () => {
+    // Populate form data if editing an existing certificate
+    if (isEditing && existingCertificate) {
+      setFormData({
+        titleofcertificates: existingCertificate.titleofcertificates || "",
+        issuingorganization: existingCertificate.issuingorganization || "",
+        certificatestartdate: existingCertificate.certificatestartdate || "",
+        certificateenddate: existingCertificate.certificateenddate || "",
+        hasexpirydate: existingCertificate.hasexpirydate || false,
+        certificatelink: existingCertificate.certificatelink || "",
+        certificateskill: existingCertificate.certificateskill
+          ? existingCertificate.certificateskill.join(", ")
+          : "",
+        certificatedescription:
+          existingCertificate.certificatedescription || "",
+        certificateattachment: existingCertificate.certificateattachment || [],
+      });
+    } else {
+      // Reset form if not editing or if existingCertificate is null
+      resetForm();
+    }
+
+    const userString = localStorage.getItem("user");
+    if (userString) {
       try {
-        const userString = localStorage.getItem("user");
-        let userIdLocal;
-
-        if (!userString) {
-          setError("Please log in to view your certificates.");
-          return;
-        }
-
-        try {
-          const user = JSON.parse(userString);
-          userIdLocal = user.userid;
-          setUserId(userIdLocal);
-        } catch (parseError) {
-          setError("Invalid user data. Please log in again.");
-          return;
-        }
-
-        const data = await fetchSectionData({
-          collectionName: "appuser",
-          query: { _id: userIdLocal },
-          dbName: "internph",
-        });
-
-        if (data.length > 0 && data[0].sectionData?.appuser?.certificatesdetails) {
-          setCertificates(data[0].sectionData.appuser.certificatesdetails);
-        }
-      } catch (error) {
-        console.error("Error fetching certificates data:", error);
-        setError("Failed to load certificates data. Please try again.");
+        const user = JSON.parse(userString);
+        setUserId(user.userid);
+      } catch (parseError) {
+        setError("Invalid user data. Please log in again.");
       }
-    };
-
-    fetchUserData();
-  }, []);
+    } else {
+      setError("Please log in to manage your certificates.");
+    }
+  }, [isEditing, existingCertificate]);
 
   const handleChange = (field, value) => {
     setError("");
@@ -140,18 +137,33 @@ const CertificatesForm = ({ onBack }) => {
           : [],
         certificatedescription: formData.certificatedescription.trim(),
         certificateattachment: formData.certificateattachment || [],
-        createdAt: isEditing
-          ? certificates[editingIndex].createdAt
-          : new Date().toISOString(),
+        // Keep existing createdAt for edits, otherwise set new
+        createdAt:
+          isEditing && existingCertificate
+            ? existingCertificate.createdAt
+            : new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
 
+      // Fetch current certificates to update the array
+      const existingUserData = await fetchSectionData({
+        collectionName: "appuser",
+        query: { _id: userId },
+        dbName: "internph",
+      });
+      const currentCertificates =
+        existingUserData[0]?.sectionData?.appuser?.certificatesdetails || [];
+
       let updatedCertificates;
       if (isEditing) {
-        updatedCertificates = [...certificates];
-        updatedCertificates[editingIndex] = certificateData;
+        // Find the index of the certificate being edited and replace it
+        updatedCertificates = currentCertificates.map((cert) =>
+          cert.createdAt === existingCertificate.createdAt // Assuming createdAt is unique for identification
+            ? certificateData
+            : cert
+        );
       } else {
-        updatedCertificates = [...certificates, certificateData];
+        updatedCertificates = [...currentCertificates, certificateData];
       }
 
       await mUpdate({
@@ -160,15 +172,15 @@ const CertificatesForm = ({ onBack }) => {
         query: { _id: userId },
         update: {
           $set: {
-            "sectionData.appuser.certificatesdetails": updatedCertificates, // Corrected field name here
+            "sectionData.appuser.certificatesdetails": updatedCertificates,
             editedAt: new Date().toISOString(),
           },
         },
         options: { upsert: false },
       });
 
-      setCertificates(updatedCertificates);
       resetForm();
+      onBack(); // Go back to accomplishments page after saving
 
       toast.success(
         isEditing
@@ -201,57 +213,6 @@ const CertificatesForm = ({ onBack }) => {
     }
   };
 
-  const handleEdit = (index) => {
-    const cert = certificates[index];
-    setFormData({
-      titleofcertificates: cert.titleofcertificates || "",
-      issuingorganization: cert.issuingorganization || "",
-      certificatestartdate: cert.certificatestartdate || "",
-      certificateenddate: cert.certificateenddate || "",
-      hasexpirydate: cert.hasexpirydate || false,
-      certificatelink: cert.certificatelink || "",
-      certificateskill: cert.certificateskill
-        ? cert.certificateskill.join(", ")
-        : "",
-      certificatedescription: cert.certificatedescription || "",
-      certificateattachment: cert.certificateattachment || [],
-    });
-    setIsEditing(true);
-    setEditingIndex(index);
-  };
-
-  const handleDelete = async (index) => {
-    if (!window.confirm("Are you sure you want to delete this certificate?")) {
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      const updatedCertificates = certificates.filter((_, i) => i !== index);
-
-      await mUpdate({
-        appName: "app8657281202648",
-        collectionName: "appuser",
-        query: { _id: userId },
-        update: {
-          $set: {
-            "sectionData.appuser.certificatesdetails": updatedCertificates, // Corrected field name here
-            editedAt: new Date().toISOString(),
-          },
-        },
-        options: { upsert: false },
-      });
-
-      setCertificates(updatedCertificates);
-      toast.success("Certificate deleted successfully!");
-    } catch (error) {
-      console.error("Error deleting certificate:", error);
-      toast.error("Failed to delete certificate. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const resetForm = () => {
     setFormData({
       titleofcertificates: "",
@@ -264,19 +225,7 @@ const CertificatesForm = ({ onBack }) => {
       certificatedescription: "",
       certificateattachment: [],
     });
-    setIsEditing(false);
-    setEditingIndex(-1);
     setError("");
-  };
-
-  const formatDate = (dateString) => {
-    if (!dateString) return "";
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
   };
 
   return (
@@ -297,72 +246,12 @@ const CertificatesForm = ({ onBack }) => {
       <div className="sticky top-0 bg-white z-10 px-4 py-4 shadow-sm flex justify-between items-center border-b border-gray-200">
         <div className="flex items-center gap-2 text-gray-700 text-lg font-medium">
           <BiTime className="text-xl" />
-          <span>Certificates</span>
+          <span>{isEditing ? "Edit Certificate" : "Add Certificate"}</span>
         </div>
       </div>
 
       {/* Scrollable Content */}
       <div className="p-6 space-y-6">
-        {/* Existing Certificates */}
-        {certificates.length > 0 && (
-          <div className="space-y-4 mb-6">
-            <h3 className="text-lg font-semibold text-gray-800">
-              Your Certificates
-            </h3>
-            {certificates.map((cert, index) => (
-              <div key={index} className="border rounded-lg p-4 space-y-2">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <h4 className="font-semibold text-gray-800">
-                      {cert.titleofcertificates}
-                    </h4>
-                    <p className="text-gray-600">{cert.issuingorganization}</p>
-                    <p className="text-sm text-gray-500">
-                      {formatDate(cert.certificatestartdate)}
-                      {cert.hasexpirydate &&
-                        cert.certificateenddate &&
-                        ` - ${formatDate(cert.certificateenddate)}`}
-                      {!cert.hasexpirydate && " - No Expiry"}
-                    </p>
-                    {cert.certificateskill &&
-                      cert.certificateskill.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-2">
-                          {cert.certificateskill.map((skill, i) => (
-                            <span
-                              key={i}
-                              className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded"
-                            >
-                              {skill}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    {cert.certificatedescription && (
-                      <p className="text-sm text-gray-600 mt-2">
-                        {cert.certificatedescription}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex gap-2 ml-4">
-                    <button
-                      onClick={() => handleEdit(index)}
-                      className="text-blue-600 hover:text-blue-800 text-sm"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDelete(index)}
-                      className="text-red-600 hover:text-red-800 text-sm"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
         {/* Add/Edit Certificate Form */}
         <div className="border rounded-lg p-6 space-y-4">
           <h3 className="text-lg font-semibold text-gray-800">
@@ -495,13 +384,10 @@ const CertificatesForm = ({ onBack }) => {
 
           {/* Form Actions */}
           <div className="flex justify-between mt-4">
-            {/* Discard Button */}
+            {/* Discard/Cancel Button */}
             <div className="flex items-center gap-2 border border-gray-300 rounded-3xl px-4 py-2 cursor-pointer hover:bg-gray-100 transition">
               <RxCross2 className="text-gray-600" />
-              <button
-                onClick={isEditing ? resetForm : onBack}
-                className="text-gray-700 font-medium"
-              >
+              <button onClick={onBack} className="text-gray-700 font-medium">
                 {isEditing ? "Cancel" : "Discard"}
               </button>
             </div>

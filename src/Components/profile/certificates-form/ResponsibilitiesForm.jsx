@@ -7,7 +7,11 @@ import { fetchSectionData, mUpdate } from "../../../Utils/api";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-const ResponsibilitiesForm = ({ onBack }) => {
+const ResponsibilitiesForm = ({
+  onBack,
+  existingResponsibility = null,
+  isEditing = false,
+}) => {
   const [formData, setFormData] = useState({
     positionofresponsibility: "",
     responsibilityorganization: "",
@@ -21,61 +25,65 @@ const ResponsibilitiesForm = ({ onBack }) => {
     responsibilityattachment: [],
   });
 
-  const [responsibilities, setResponsibilities] = useState([]);
   const [userId, setUserId] = useState(null);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editingIndex, setEditingIndex] = useState(-1);
 
   useEffect(() => {
-    const fetchUserData = async () => {
+    // Populate form data if editing an existing responsibility
+    if (isEditing && existingResponsibility) {
+      setFormData({
+        positionofresponsibility:
+          existingResponsibility.positionofresponsibility || "",
+        responsibilityorganization:
+          existingResponsibility.responsibilityorganization || "",
+        responsibilitylocation:
+          existingResponsibility.responsibilitylocation || "",
+        remote: existingResponsibility.remote || false,
+        responsibilitystartdate:
+          existingResponsibility.responsibilitystartdate || "",
+        responsibilityenddate:
+          existingResponsibility.responsibilityenddate || "",
+        currentlyworking: existingResponsibility.currentlyworking || false,
+        responsibilityskill: existingResponsibility.responsibilityskill
+          ? existingResponsibility.responsibilityskill.join(", ")
+          : "",
+        responsibilitydescription:
+          existingResponsibility.responsibilitydescription || "",
+        responsibilityattachment:
+          existingResponsibility.responsibilityattachment || [],
+      });
+    } else {
+      // Reset form if not editing or if existingResponsibility is null
+      resetForm();
+    }
+
+    const userString = localStorage.getItem("user");
+    if (userString) {
       try {
-        const userString = localStorage.getItem("user");
-        let userIdLocal;
-
-        if (!userString) {
-          setError("Please log in to view your responsibilities.");
-          return;
-        }
-
-        try {
-          const user = JSON.parse(userString);
-          userIdLocal = user.userid;
-          setUserId(userIdLocal);
-        } catch (parseError) {
-          setError("Invalid user data. Please log in again.");
-          return;
-        }
-
-        const data = await fetchSectionData({
-          collectionName: "appuser",
-          query: { _id: userIdLocal },
-          dbName: "internph",
-        });
-
-        if (
-          data.length > 0 &&
-          data[0].sectionData?.appuser?.responsibilitydetails
-        ) {
-          setResponsibilities(
-            data[0].sectionData.appuser.responsibilitydetails
-          );
-        }
-      } catch (error) {
-        console.error("Error fetching responsibilities data:", error);
-        setError("Failed to load responsibilities data. Please try again.");
+        const user = JSON.parse(userString);
+        setUserId(user.userid);
+      } catch (parseError) {
+        setError("Invalid user data. Please log in again.");
       }
-    };
-
-    fetchUserData();
-  }, []);
+    } else {
+      setError("Please log in to manage your responsibilities.");
+    }
+  }, [isEditing, existingResponsibility]);
 
   const handleChange = (field, value) => {
     setError("");
     setFormData((prev) => ({
       ...prev,
       [field]: value,
+    }));
+  };
+
+  const handleCurrentlyWorkingChange = (checked) => {
+    setFormData((prev) => ({
+      ...prev,
+      currentlyworking: checked,
+      responsibilityenddate: checked ? "" : prev.responsibilityenddate,
     }));
   };
 
@@ -100,6 +108,15 @@ const ResponsibilitiesForm = ({ onBack }) => {
       setError("End date is required when not currently working in this role.");
       return false;
     }
+    if (
+      !formData.currentlyworking &&
+      formData.responsibilityenddate &&
+      new Date(formData.responsibilityenddate) <=
+        new Date(formData.responsibilitystartdate)
+    ) {
+      setError("End date must be after start date.");
+      return false;
+    }
     return true;
   };
 
@@ -119,11 +136,13 @@ const ResponsibilitiesForm = ({ onBack }) => {
       const responsibilityData = {
         positionofresponsibility: formData.positionofresponsibility.trim(),
         responsibilityorganization: formData.responsibilityorganization.trim(),
-        responsibilitylocation: formData.responsibilitylocation.trim(),
+        responsibilitylocation: formData.remote
+          ? ""
+          : formData.responsibilitylocation.trim(),
         remote: formData.remote,
         responsibilitystartdate: formData.responsibilitystartdate,
         responsibilityenddate: formData.currentlyworking
-          ? ""
+          ? null
           : formData.responsibilityenddate,
         currentlyworking: formData.currentlyworking,
         responsibilityskill: formData.responsibilityskill
@@ -134,18 +153,35 @@ const ResponsibilitiesForm = ({ onBack }) => {
           : [],
         responsibilitydescription: formData.responsibilitydescription.trim(),
         responsibilityattachment: formData.responsibilityattachment || [],
-        createdAt: isEditing
-          ? responsibilities[editingIndex].createdAt
-          : new Date().toISOString(),
+        createdAt:
+          isEditing && existingResponsibility
+            ? existingResponsibility.createdAt
+            : new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
 
+      // Fetch current responsibilities to update the array
+      const existingUserData = await fetchSectionData({
+        collectionName: "appuser",
+        query: { _id: userId },
+        dbName: "internph",
+      });
+      const currentResponsibilities =
+        existingUserData[0]?.sectionData?.appuser?.responsibilitydetails || [];
+
       let updatedResponsibilities;
       if (isEditing) {
-        updatedResponsibilities = [...responsibilities];
-        updatedResponsibilities[editingIndex] = responsibilityData;
+        updatedResponsibilities = currentResponsibilities.map(
+          (responsibility) =>
+            responsibility.createdAt === existingResponsibility.createdAt
+              ? responsibilityData
+              : responsibility
+        );
       } else {
-        updatedResponsibilities = [...responsibilities, responsibilityData];
+        updatedResponsibilities = [
+          ...currentResponsibilities,
+          responsibilityData,
+        ];
       }
 
       await mUpdate({
@@ -162,8 +198,8 @@ const ResponsibilitiesForm = ({ onBack }) => {
         options: { upsert: false },
       });
 
-      setResponsibilities(updatedResponsibilities);
       resetForm();
+      onBack(); // Go back to the previous page after saving
 
       toast.success(
         isEditing
@@ -196,64 +232,6 @@ const ResponsibilitiesForm = ({ onBack }) => {
     }
   };
 
-  const handleEdit = (index) => {
-    const responsibility = responsibilities[index];
-    setFormData({
-      positionofresponsibility: responsibility.positionofresponsibility || "",
-      responsibilityorganization:
-        responsibility.responsibilityorganization || "",
-      responsibilitylocation: responsibility.responsibilitylocation || "",
-      remote: responsibility.remote || false,
-      responsibilitystartdate: responsibility.responsibilitystartdate || "",
-      responsibilityenddate: responsibility.responsibilityenddate || "",
-      currentlyworking: responsibility.currentlyworking || false,
-      responsibilityskill: responsibility.responsibilityskill
-        ? responsibility.responsibilityskill.join(", ")
-        : "",
-      responsibilitydescription: responsibility.responsibilitydescription || "",
-      responsibilityattachment: responsibility.responsibilityattachment || [],
-    });
-    setIsEditing(true);
-    setEditingIndex(index);
-  };
-
-  const handleDelete = async (index) => {
-    if (
-      !window.confirm("Are you sure you want to delete this responsibility?")
-    ) {
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      const updatedResponsibilities = responsibilities.filter(
-        (_, i) => i !== index
-      );
-
-      await mUpdate({
-        appName: "app8657281202648",
-        collectionName: "appuser",
-        query: { _id: userId },
-        update: {
-          $set: {
-            "sectionData.appuser.responsibilitydetails":
-              updatedResponsibilities,
-            editedAt: new Date().toISOString(),
-          },
-        },
-        options: { upsert: false },
-      });
-
-      setResponsibilities(updatedResponsibilities);
-      toast.success("Responsibility deleted successfully!");
-    } catch (error) {
-      console.error("Error deleting responsibility:", error);
-      toast.error("Failed to delete responsibility. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const resetForm = () => {
     setFormData({
       positionofresponsibility: "",
@@ -267,14 +245,7 @@ const ResponsibilitiesForm = ({ onBack }) => {
       responsibilitydescription: "",
       responsibilityattachment: [],
     });
-    setIsEditing(false);
-    setEditingIndex(-1);
     setError("");
-  };
-
-  const formatDate = (dateString) => {
-    if (!dateString) return "";
-    return new Date(dateString).toLocaleDateString();
   };
 
   return (
@@ -295,83 +266,14 @@ const ResponsibilitiesForm = ({ onBack }) => {
       <div className="sticky top-0 bg-white z-10 px-4 py-4 shadow-sm flex justify-between items-center border-b border-gray-200">
         <div className="flex items-center gap-2 text-gray-700 text-lg font-medium">
           <BiTime className="text-xl" />
-          <span>Responsibilities</span>
+          <span>
+            {isEditing ? "Edit Responsibility" : "Add Responsibility"}
+          </span>
         </div>
       </div>
 
       {/* Scrollable Content */}
       <div className="p-6 space-y-6">
-        {/* Existing Responsibilities */}
-        {responsibilities.length > 0 && (
-          <div className="space-y-4 mb-6">
-            <h3 className="text-lg font-semibold text-gray-800">
-              Your Responsibilities
-            </h3>
-            {responsibilities.map((responsibility, index) => (
-              <div key={index} className="border rounded-lg p-4 space-y-2">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <h4 className="font-semibold text-gray-800">
-                      {responsibility.positionofresponsibility}
-                    </h4>
-                    <p className="text-sm text-gray-600">
-                      {responsibility.responsibilityorganization}
-                    </p>
-                    <div className="flex items-center gap-2 text-sm text-gray-600 mt-1">
-                      <span>
-                        {responsibility.remote
-                          ? "Remote"
-                          : responsibility.responsibilitylocation}
-                      </span>
-                      <span>•</span>
-                      <span>
-                        {formatDate(responsibility.responsibilitystartdate)} -{" "}
-                        {responsibility.currentlyworking
-                          ? "Present"
-                          : formatDate(responsibility.responsibilityenddate)}
-                      </span>
-                    </div>
-                    {responsibility.responsibilitydescription && (
-                      <p className="text-sm text-gray-600 mt-2">
-                        {responsibility.responsibilitydescription}
-                      </p>
-                    )}
-                    {responsibility.responsibilityskill &&
-                      responsibility.responsibilityskill.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-2">
-                          {responsibility.responsibilityskill.map(
-                            (skill, i) => (
-                              <span
-                                key={i}
-                                className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded"
-                              >
-                                {skill}
-                              </span>
-                            )
-                          )}
-                        </div>
-                      )}
-                  </div>
-                  <div className="flex gap-2 ml-4">
-                    <button
-                      onClick={() => handleEdit(index)}
-                      className="text-blue-600 hover:text-blue-800 text-sm"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDelete(index)}
-                      className="text-red-600 hover:text-red-800 text-sm"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
         {/* Add/Edit Responsibility Form */}
         <div className="border rounded-lg p-6 space-y-4">
           <h3 className="text-lg font-semibold text-gray-800">
@@ -434,7 +336,7 @@ const ResponsibilitiesForm = ({ onBack }) => {
               }
               disabled={formData.remote}
               className={`w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring focus:ring-blue-200 ${
-                formData.remote ? "bg-gray-100" : ""
+                formData.remote ? "bg-gray-100 cursor-not-allowed" : ""
               }`}
             />
           </div>
@@ -450,7 +352,7 @@ const ResponsibilitiesForm = ({ onBack }) => {
                   type="checkbox"
                   checked={formData.currentlyworking}
                   onChange={(e) =>
-                    handleChange("currentlyworking", e.target.checked)
+                    handleCurrentlyWorkingChange(e.target.checked)
                   }
                 />
                 Currently working in this role
@@ -463,7 +365,7 @@ const ResponsibilitiesForm = ({ onBack }) => {
                 onChange={(e) =>
                   handleChange("responsibilitystartdate", e.target.value)
                 }
-                className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring focus:ring-blue-200 w-1/2"
+                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring focus:ring-blue-200 w-1/2"
               />
               <input
                 type="date"
@@ -472,27 +374,13 @@ const ResponsibilitiesForm = ({ onBack }) => {
                   handleChange("responsibilityenddate", e.target.value)
                 }
                 disabled={formData.currentlyworking}
-                className={`border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring focus:ring-blue-200 w-1/2 ${
-                  formData.currentlyworking ? "bg-gray-100" : ""
+                className={`w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring focus:ring-blue-200 w-1/2 ${
+                  formData.currentlyworking
+                    ? "bg-gray-100 cursor-not-allowed"
+                    : ""
                 }`}
               />
             </div>
-          </div>
-
-          {/* Skills */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Skills
-            </label>
-            <input
-              type="text"
-              placeholder="Add skills (comma-separated)"
-              value={formData.responsibilityskill}
-              onChange={(e) =>
-                handleChange("responsibilityskill", e.target.value)
-              }
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring focus:ring-blue-200"
-            />
           </div>
 
           {/* Description */}
@@ -511,6 +399,22 @@ const ResponsibilitiesForm = ({ onBack }) => {
             />
           </div>
 
+          {/* Skills */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Skills
+            </label>
+            <input
+              type="text"
+              placeholder="Add skills (comma-separated)"
+              value={formData.responsibilityskill}
+              onChange={(e) =>
+                handleChange("responsibilityskill", e.target.value)
+              }
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring focus:ring-blue-200"
+            />
+          </div>
+
           {/* Attachments */}
           <div className="w-full border border-dashed border-gray-400 rounded-md">
             <button className="flex items-center justify-center gap-2 w-full px-4 py-2 text-gray-700">
@@ -521,13 +425,10 @@ const ResponsibilitiesForm = ({ onBack }) => {
 
           {/* Form Actions */}
           <div className="flex justify-between mt-4">
-            {/* Discard Button */}
+            {/* Discard/Cancel Button */}
             <div className="flex items-center gap-2 border border-gray-300 rounded-3xl px-4 py-2 cursor-pointer hover:bg-gray-100 transition">
               <RxCross2 className="text-gray-600" />
-              <button
-                onClick={isEditing ? resetForm : onBack}
-                className="text-gray-700 font-medium"
-              >
+              <button onClick={onBack} className="text-gray-700 font-medium">
                 {isEditing ? "Cancel" : "Discard"}
               </button>
             </div>

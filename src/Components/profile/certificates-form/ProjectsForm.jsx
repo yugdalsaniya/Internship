@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { BiTime } from "react-icons/bi";
-import { FaPlus, FaEye, FaRegLightbulb } from "react-icons/fa";
+import { FaPlus } from "react-icons/fa";
 import { RxCross2 } from "react-icons/rx";
 import { IoCheckmark } from "react-icons/io5";
 import { fetchSectionData, mUpdate } from "../../../Utils/api";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-const ProjectsForm = ({ onBack }) => {
+const ProjectsForm = ({ onBack, existingProject, isEditing }) => {
   const [formData, setFormData] = useState({
     titleofproject: "",
     projecttype: "",
@@ -19,52 +19,44 @@ const ProjectsForm = ({ onBack }) => {
     projectattachment: [],
   });
 
-  const [projects, setProjects] = useState([]);
   const [userId, setUserId] = useState(null);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editingIndex, setEditingIndex] = useState(-1);
 
   const projectTypes = ["Full time", "Part time", "Freelance"];
 
   useEffect(() => {
-    const fetchUserData = async () => {
+    // Populate form data if editing an existing project
+    if (isEditing && existingProject) {
+      setFormData({
+        titleofproject: existingProject.titleofproject || "",
+        projecttype: existingProject.projecttype || "",
+        projectstartdate: existingProject.projectstartdate || "",
+        projectenddate: existingProject.projectenddate || "",
+        ongoing: existingProject.ongoing || false,
+        projectdescription: existingProject.projectdescription || "",
+        projectskill: existingProject.projectskill
+          ? existingProject.projectskill.join(", ")
+          : "",
+        projectattachment: existingProject.projectattachment || [],
+      });
+    } else {
+      // Reset form if not editing or if existingProject is null
+      resetForm();
+    }
+
+    const userString = localStorage.getItem("user");
+    if (userString) {
       try {
-        const userString = localStorage.getItem("user");
-        let userIdLocal;
-
-        if (!userString) {
-          setError("Please log in to view your projects.");
-          return;
-        }
-
-        try {
-          const user = JSON.parse(userString);
-          userIdLocal = user.userid;
-          setUserId(userIdLocal);
-        } catch (parseError) {
-          setError("Invalid user data. Please log in again.");
-          return;
-        }
-
-        const data = await fetchSectionData({
-          collectionName: "appuser",
-          query: { _id: userIdLocal },
-          dbName: "internph",
-        });
-
-        if (data.length > 0 && data[0].sectionData?.appuser?.projectdetails) {
-          setProjects(data[0].sectionData.appuser.projectdetails);
-        }
-      } catch (error) {
-        console.error("Error fetching projects data:", error);
-        setError("Failed to load projects data. Please try again.");
+        const user = JSON.parse(userString);
+        setUserId(user.userid);
+      } catch (parseError) {
+        setError("Invalid user data. Please log in again.");
       }
-    };
-
-    fetchUserData();
-  }, []);
+    } else {
+      setError("Please log in to manage your projects.");
+    }
+  }, [isEditing, existingProject]);
 
   const handleChange = (field, value) => {
     setError("");
@@ -141,18 +133,33 @@ const ProjectsForm = ({ onBack }) => {
               .filter((skill) => skill)
           : [],
         projectattachment: formData.projectattachment || [],
-        createdAt: isEditing
-          ? projects[editingIndex].createdAt
-          : new Date().toISOString(),
+        // Keep existing createdAt for edits, otherwise set new
+        createdAt:
+          isEditing && existingProject
+            ? existingProject.createdAt
+            : new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
 
+      // Fetch current projects to update the array
+      const existingUserData = await fetchSectionData({
+        collectionName: "appuser",
+        query: { _id: userId },
+        dbName: "internph",
+      });
+      const currentProjects =
+        existingUserData[0]?.sectionData?.appuser?.projectdetails || [];
+
       let updatedProjects;
       if (isEditing) {
-        updatedProjects = [...projects];
-        updatedProjects[editingIndex] = projectData;
+        // Find the index of the project being edited and replace it
+        updatedProjects = currentProjects.map((project) =>
+          project.createdAt === existingProject.createdAt // Assuming createdAt is unique for identification
+            ? projectData
+            : project
+        );
       } else {
-        updatedProjects = [...projects, projectData];
+        updatedProjects = [...currentProjects, projectData];
       }
 
       await mUpdate({
@@ -168,8 +175,8 @@ const ProjectsForm = ({ onBack }) => {
         options: { upsert: false },
       });
 
-      setProjects(updatedProjects);
       resetForm();
+      onBack(); // Go back to accomplishments page after saving
 
       toast.success(
         isEditing
@@ -186,9 +193,7 @@ const ProjectsForm = ({ onBack }) => {
       );
     } catch (error) {
       console.error("Error saving project:", error);
-      setError(
-        error.message || "Failed to save project. Please try again."
-      );
+      setError(error.message || "Failed to save project. Please try again.");
       toast.error("Failed to save project. Please try again.", {
         position: "top-right",
         autoClose: 3000,
@@ -197,56 +202,6 @@ const ProjectsForm = ({ onBack }) => {
         pauseOnHover: true,
         draggable: true,
       });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleEdit = (index) => {
-    const project = projects[index];
-    setFormData({
-      titleofproject: project.titleofproject || "",
-      projecttype: project.projecttype || "",
-      projectstartdate: project.projectstartdate || "",
-      projectenddate: project.projectenddate || "",
-      ongoing: project.ongoing || false,
-      projectdescription: project.projectdescription || "",
-      projectskill: project.projectskill
-        ? project.projectskill.join(", ")
-        : "",
-      projectattachment: project.projectattachment || [],
-    });
-    setIsEditing(true);
-    setEditingIndex(index);
-  };
-
-  const handleDelete = async (index) => {
-    if (!window.confirm("Are you sure you want to delete this project?")) {
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      const updatedProjects = projects.filter((_, i) => i !== index);
-
-      await mUpdate({
-        appName: "app8657281202648",
-        collectionName: "appuser",
-        query: { _id: userId },
-        update: {
-          $set: {
-            "sectionData.appuser.projectdetails": updatedProjects,
-            editedAt: new Date().toISOString(),
-          },
-        },
-        options: { upsert: false },
-      });
-
-      setProjects(updatedProjects);
-      toast.success("Project deleted successfully!");
-    } catch (error) {
-      console.error("Error deleting project:", error);
-      toast.error("Failed to delete project. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -263,19 +218,7 @@ const ProjectsForm = ({ onBack }) => {
       projectskill: "",
       projectattachment: [],
     });
-    setIsEditing(false);
-    setEditingIndex(-1);
     setError("");
-  };
-
-  const formatDate = (dateString) => {
-    if (!dateString) return "";
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
   };
 
   return (
@@ -296,73 +239,12 @@ const ProjectsForm = ({ onBack }) => {
       <div className="sticky top-0 bg-white z-10 px-4 py-4 shadow-sm flex justify-between items-center border-b border-gray-200">
         <div className="flex items-center gap-2 text-gray-700 text-lg font-medium">
           <BiTime className="text-xl" />
-          <span>Projects</span>
+          <span>{isEditing ? "Edit Project" : "Add Project"}</span>
         </div>
       </div>
 
       {/* Scrollable Content */}
       <div className="p-6 space-y-6">
-        {/* Existing Projects */}
-        {projects.length > 0 && (
-          <div className="space-y-4 mb-6">
-            <h3 className="text-lg font-semibold text-gray-800">
-              Your Projects
-            </h3>
-            {projects.map((project, index) => (
-              <div key={index} className="border rounded-lg p-4 space-y-2">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <h4 className="font-semibold text-gray-800">
-                      {project.titleofproject}
-                    </h4>
-                    <p className="text-gray-600">{project.projecttype}</p>
-                    <p className="text-sm text-gray-500">
-                      {formatDate(project.projectstartdate)}
-                      {project.ongoing
-                        ? " - Ongoing"
-                        : project.projectenddate
-                        ? ` - ${formatDate(project.projectenddate)}`
-                        : ""}
-                    </p>
-                    {project.projectskill &&
-                      project.projectskill.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-2">
-                          {project.projectskill.map((skill, i) => (
-                            <span
-                              key={i}
-                              className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded"
-                            >
-                              {skill}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    {project.projectdescription && (
-                      <p className="text-sm text-gray-600 mt-2">
-                        {project.projectdescription}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex gap-2 ml-4">
-                    <button
-                      onClick={() => handleEdit(index)}
-                      className="text-blue-600 hover:text-blue-800 text-sm"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDelete(index)}
-                      className="text-red-600 hover:text-red-800 text-sm"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
         {/* Add/Edit Project Form */}
         <div className="border rounded-lg p-6 space-y-4">
           <h3 className="text-lg font-semibold text-gray-800">
@@ -378,9 +260,7 @@ const ProjectsForm = ({ onBack }) => {
               type="text"
               placeholder="Project name"
               value={formData.titleofproject}
-              onChange={(e) =>
-                handleChange("titleofproject", e.target.value)
-              }
+              onChange={(e) => handleChange("titleofproject", e.target.value)}
               className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring focus:ring-blue-200"
             />
           </div>
@@ -435,14 +315,10 @@ const ProjectsForm = ({ onBack }) => {
               <input
                 type="date"
                 value={formData.projectenddate}
-                onChange={(e) =>
-                  handleChange("projectenddate", e.target.value)
-                }
+                onChange={(e) => handleChange("projectenddate", e.target.value)}
                 disabled={formData.ongoing}
                 className={`border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring focus:ring-blue-200 w-1/2 ${
-                  formData.ongoing
-                    ? "bg-gray-100 cursor-not-allowed"
-                    : ""
+                  formData.ongoing ? "bg-gray-100 cursor-not-allowed" : ""
                 }`}
               />
             </div>
@@ -488,13 +364,10 @@ const ProjectsForm = ({ onBack }) => {
 
           {/* Form Actions */}
           <div className="flex justify-between mt-4">
-            {/* Discard Button */}
+            {/* Discard/Cancel Button */}
             <div className="flex items-center gap-2 border border-gray-300 rounded-3xl px-4 py-2 cursor-pointer hover:bg-gray-100 transition">
               <RxCross2 className="text-gray-600" />
-              <button
-                onClick={isEditing ? resetForm : onBack}
-                className="text-gray-700 font-medium"
-              >
+              <button onClick={onBack} className="text-gray-700 font-medium">
                 {isEditing ? "Cancel" : "Discard"}
               </button>
             </div>

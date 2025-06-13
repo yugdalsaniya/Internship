@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { BiTime } from "react-icons/bi";
-import { FaPlus, FaEye, FaRegLightbulb } from "react-icons/fa";
+import { FaPlus } from "react-icons/fa";
 import { RxCross2 } from "react-icons/rx";
 import { IoCheckmark } from "react-icons/io5";
 import { fetchSectionData, mUpdate } from "../../../Utils/api";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-const AchievementsForm = ({ onBack }) => {
+const AchievementsForm = ({ onBack, existingAchievement, isEditing }) => {
   const [formData, setFormData] = useState({
     titleofachievement: "",
     achievementdescription: "",
@@ -15,53 +15,39 @@ const AchievementsForm = ({ onBack }) => {
     achievementattachment: [],
   });
 
-  const [achievements, setAchievements] = useState([]);
   const [userId, setUserId] = useState(null);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editingIndex, setEditingIndex] = useState(-1);
 
   useEffect(() => {
-    const fetchUserData = async () => {
+    // Populate form data if editing an existing achievement
+    if (isEditing && existingAchievement) {
+      setFormData({
+        titleofachievement: existingAchievement.titleofachievement || "",
+        achievementdescription:
+          existingAchievement.achievementdescription || "",
+        achievementskill: existingAchievement.achievementskill
+          ? existingAchievement.achievementskill.join(", ")
+          : "",
+        achievementattachment: existingAchievement.achievementattachment || [],
+      });
+    } else {
+      // Reset form if not editing or if existingAchievement is null
+      resetForm();
+    }
+
+    const userString = localStorage.getItem("user");
+    if (userString) {
       try {
-        const userString = localStorage.getItem("user");
-        let userIdLocal;
-
-        if (!userString) {
-          setError("Please log in to view your achievements.");
-          return;
-        }
-
-        try {
-          const user = JSON.parse(userString);
-          userIdLocal = user.userid;
-          setUserId(userIdLocal);
-        } catch (parseError) {
-          setError("Invalid user data. Please log in again.");
-          return;
-        }
-
-        const data = await fetchSectionData({
-          collectionName: "appuser",
-          query: { _id: userIdLocal },
-          dbName: "internph",
-        });
-
-        if (
-          data.length > 0 &&
-          data[0].sectionData?.appuser?.achievementsdetails
-        ) {
-          setAchievements(data[0].sectionData.appuser.achievementsdetails);
-        }
-      } catch (error) {
-        console.error("Error fetching achievements data:", error);
-        setError("Failed to load achievements data. Please try again.");
+        const user = JSON.parse(userString);
+        setUserId(user.userid);
+      } catch (parseError) {
+        setError("Invalid user data. Please log in again.");
       }
-    };
-
-    fetchUserData();
-  }, []);
+    } else {
+      setError("Please log in to manage your achievements.");
+    }
+  }, [isEditing, existingAchievement]);
 
   const handleChange = (field, value) => {
     setError("");
@@ -102,18 +88,32 @@ const AchievementsForm = ({ onBack }) => {
               .filter((skill) => skill)
           : [],
         achievementattachment: formData.achievementattachment || [],
-        createdAt: isEditing
-          ? achievements[editingIndex].createdAt
-          : new Date().toISOString(),
+        createdAt:
+          isEditing && existingAchievement
+            ? existingAchievement.createdAt
+            : new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
 
+      // Fetch current achievements to update the array
+      const existingUserData = await fetchSectionData({
+        collectionName: "appuser",
+        query: { _id: userId },
+        dbName: "internph",
+      });
+      const currentAchievements =
+        existingUserData[0]?.sectionData?.appuser?.achievementsdetails || [];
+
       let updatedAchievements;
       if (isEditing) {
-        updatedAchievements = [...achievements];
-        updatedAchievements[editingIndex] = achievementData;
+        // Find the index of the achievement being edited and replace it
+        updatedAchievements = currentAchievements.map((achievement) =>
+          achievement.createdAt === existingAchievement.createdAt
+            ? achievementData
+            : achievement
+        );
       } else {
-        updatedAchievements = [...achievements, achievementData];
+        updatedAchievements = [...currentAchievements, achievementData];
       }
 
       await mUpdate({
@@ -129,8 +129,8 @@ const AchievementsForm = ({ onBack }) => {
         options: { upsert: false },
       });
 
-      setAchievements(updatedAchievements);
       resetForm();
+      onBack(); // Go back to the previous page after saving
 
       toast.success(
         isEditing
@@ -163,52 +163,6 @@ const AchievementsForm = ({ onBack }) => {
     }
   };
 
-  const handleEdit = (index) => {
-    const achievement = achievements[index];
-    setFormData({
-      titleofachievement: achievement.titleofachievement || "",
-      achievementdescription: achievement.achievementdescription || "",
-      achievementskill: achievement.achievementskill
-        ? achievement.achievementskill.join(", ")
-        : "",
-      achievementattachment: achievement.achievementattachment || [],
-    });
-    setIsEditing(true);
-    setEditingIndex(index);
-  };
-
-  const handleDelete = async (index) => {
-    if (!window.confirm("Are you sure you want to delete this achievement?")) {
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      const updatedAchievements = achievements.filter((_, i) => i !== index);
-
-      await mUpdate({
-        appName: "app8657281202648",
-        collectionName: "appuser",
-        query: { _id: userId },
-        update: {
-          $set: {
-            "sectionData.appuser.achievementsdetails": updatedAchievements,
-            editedAt: new Date().toISOString(),
-          },
-        },
-        options: { upsert: false },
-      });
-
-      setAchievements(updatedAchievements);
-      toast.success("Achievement deleted successfully!");
-    } catch (error) {
-      console.error("Error deleting achievement:", error);
-      toast.error("Failed to delete achievement. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const resetForm = () => {
     setFormData({
       titleofachievement: "",
@@ -216,8 +170,6 @@ const AchievementsForm = ({ onBack }) => {
       achievementskill: "",
       achievementattachment: [],
     });
-    setIsEditing(false);
-    setEditingIndex(-1);
     setError("");
   };
 
@@ -239,64 +191,12 @@ const AchievementsForm = ({ onBack }) => {
       <div className="sticky top-0 bg-white z-10 px-4 py-4 shadow-sm flex justify-between items-center border-b border-gray-200">
         <div className="flex items-center gap-2 text-gray-700 text-lg font-medium">
           <BiTime className="text-xl" />
-          <span>Achievements</span>
+          <span>{isEditing ? "Edit Achievement" : "Add Achievement"}</span>
         </div>
       </div>
 
       {/* Scrollable Content */}
       <div className="p-6 space-y-6">
-        {/* Existing Achievements */}
-        {achievements.length > 0 && (
-          <div className="space-y-4 mb-6">
-            <h3 className="text-lg font-semibold text-gray-800">
-              Your Achievements
-            </h3>
-            {achievements.map((achievement, index) => (
-              <div key={index} className="border rounded-lg p-4 space-y-2">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <h4 className="font-semibold text-gray-800">
-                      {achievement.titleofachievement}
-                    </h4>
-                    {achievement.achievementdescription && (
-                      <p className="text-sm text-gray-600 mt-2">
-                        {achievement.achievementdescription}
-                      </p>
-                    )}
-                    {achievement.achievementskill &&
-                      achievement.achievementskill.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-2">
-                          {achievement.achievementskill.map((skill, i) => (
-                            <span
-                              key={i}
-                              className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded"
-                            >
-                              {skill}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                  </div>
-                  <div className="flex gap-2 ml-4">
-                    <button
-                      onClick={() => handleEdit(index)}
-                      className="text-blue-600 hover:text-blue-800 text-sm"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDelete(index)}
-                      className="text-red-600 hover:text-red-800 text-sm"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
         {/* Add/Edit Achievement Form */}
         <div className="border rounded-lg p-6 space-y-4">
           <h3 className="text-lg font-semibold text-gray-800">
@@ -359,13 +259,10 @@ const AchievementsForm = ({ onBack }) => {
 
           {/* Form Actions */}
           <div className="flex justify-between mt-4">
-            {/* Discard Button */}
+            {/* Discard/Cancel Button */}
             <div className="flex items-center gap-2 border border-gray-300 rounded-3xl px-4 py-2 cursor-pointer hover:bg-gray-100 transition">
               <RxCross2 className="text-gray-600" />
-              <button
-                onClick={isEditing ? resetForm : onBack}
-                className="text-gray-700 font-medium"
-              >
+              <button onClick={onBack} className="text-gray-700 font-medium">
                 {isEditing ? "Cancel" : "Discard"}
               </button>
             </div>
