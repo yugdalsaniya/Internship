@@ -67,7 +67,6 @@ async function uploadProfilePicture(file, userId) {
       file,
       userId,
     });
-    console.log("Upload Response:", response, "File");
 
     if (!response || !response.filePath) {
       throw new Error(
@@ -85,12 +84,13 @@ async function uploadProfilePicture(file, userId) {
   }
 }
 
-function BasicDetails() {
+function BasicDetails({ userData }) {
   const navigate = useNavigate();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [mobile, setMobile] = useState("");
+  const [countryCode, setCountryCode] = useState("+63");
   const [gender, setGender] = useState("");
   const [userType, setUserType] = useState("");
   const [location, setLocation] = useState("");
@@ -118,8 +118,29 @@ function BasicDetails() {
   const [profilePicture, setProfilePicture] = useState("");
   const [profilePictureFile, setProfilePictureFile] = useState(null);
   const [profilePicturePreview, setProfilePicturePreview] = useState("");
-  const locationInputRef = useRef(null); // Ref for the location input field
-  const autocompleteRef = useRef(null); // Ref to store the Autocomplete instance
+  const locationInputRef = useRef(null);
+  const autocompleteRef = useRef(null);
+
+  useEffect(() => {
+    if (userData && userData.legalname) {
+      const [fname = "", lname = ""] = userData.legalname.split(" ");
+      setFirstName(fname);
+      setLastName(lname);
+      setEmail(userData.email || "");
+      if (userData.mobile) {
+        if (userData.mobile.startsWith("+63")) {
+          setCountryCode("+63");
+          setMobile(userData.mobile.slice(3));
+        } else {
+          setMobile(userData.mobile);
+          setCountryCode("+63");
+        }
+      }
+      if (userData.role === "academy" && userData.academyname) {
+        setSchoolName(userData.academyname);
+      }
+    }
+  }, [userData]);
 
   useEffect(() => {
     const fetchUserDataAndDropdownOptions = async () => {
@@ -127,7 +148,7 @@ function BasicDetails() {
       try {
         const userString = localStorage.getItem("user");
         if (!userString) {
-          setError("Please log in to view your details.");
+          setError("Please log in to view your details. Using local data.");
           setTimeout(() => setError(""), 5000);
           return;
         }
@@ -137,8 +158,13 @@ function BasicDetails() {
           const user = JSON.parse(userString);
           userId = user.userid;
         } catch (parseError) {
-          setError("Invalid user data. Please log in again.");
+          setError("Invalid user data. Using local data.");
           setTimeout(() => setError(""), 5000);
+          return;
+        }
+
+        if (!userId) {
+          console.log("No userId found, using localStorage data.");
           return;
         }
 
@@ -152,7 +178,7 @@ function BasicDetails() {
           !userDataResponse ||
           (Array.isArray(userDataResponse) && userDataResponse.length === 0)
         ) {
-          setError("User data not found. Please contact support.");
+          setError("User data not found. Using local data.");
           setTimeout(() => setError(""), 5000);
           return;
         }
@@ -166,10 +192,18 @@ function BasicDetails() {
           ? userData.legalname.split(" ")
           : [userData.fname || "", userData.lname || ""];
 
-        setFirstName(fname);
+        setFirstName(fname || userData.legalname || "");
         setLastName(lname);
         setEmail(userData.email || "");
-        setMobile(userData.mobile || "");
+        if (userData.mobile) {
+          if (userData.mobile.startsWith("+63")) {
+            setCountryCode("+63");
+            setMobile(userData.mobile.slice(3));
+          } else {
+            setMobile(userData.mobile);
+            setCountryCode("+63");
+          }
+        }
         setGender(userData.Gender || "");
         setUserType(userData.usertype || "");
         setLocation(userData.location || "");
@@ -199,7 +233,6 @@ function BasicDetails() {
           collectionName: "designation",
           query: {},
         });
-        console.log("Designation Data:", designationData); // Debug
         const designations = designationData.map((item) => ({
           _id: item._id,
           name: item.sectionData.designation.name,
@@ -211,7 +244,6 @@ function BasicDetails() {
           collectionName: "course",
           query: {},
         });
-        console.log("Course Data:", courseData); // Debug
         const courses = courseData.map((item) => ({
           _id: item._id,
           name: item.sectionData.course.name,
@@ -223,7 +255,6 @@ function BasicDetails() {
           collectionName: "institute",
           query: {},
         });
-        console.log("Institute Data:", instituteData); // Debug
         if (!Array.isArray(instituteData)) {
           throw new Error("Institute data is not an array");
         }
@@ -246,17 +277,14 @@ function BasicDetails() {
           collectionName: "role",
           query: {},
         });
-        console.log("Role Data:", roleData); // Debug
         const roles = roleData.map((item) => ({
           _id: item._id,
           name: item.sectionData.role.name.trim(),
         }));
         setRoleOptions(roles);
       } catch (err) {
-        console.error("Error fetching data:", err); // Debug
-        setError(
-          "Failed to load user data or dropdown options: " + err.message
-        );
+        console.error("Error fetching data:", err);
+        setError("Failed to load server data. Using local data.");
         setTimeout(() => setError(""), 5000);
       } finally {
         setIsLoadingOptions(false);
@@ -266,17 +294,13 @@ function BasicDetails() {
     fetchUserDataAndDropdownOptions();
   }, []);
 
-  // Initialize Google Places Autocomplete
   useEffect(() => {
     const loadGoogleMapsScript = () => {
       return new Promise((resolve, reject) => {
-        // Check if already loaded
         if (window.google && window.google.maps && window.google.maps.places) {
           resolve();
           return;
         }
-
-        // Check if script already exists in DOM
         const existingScript = document.querySelector(
           `script[src*="maps.googleapis.com/maps/api/js"]`
         );
@@ -284,8 +308,6 @@ function BasicDetails() {
           existingScript.addEventListener("load", resolve);
           return;
         }
-
-        // Create script
         const script = document.createElement("script");
         script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places`;
         script.async = true;
@@ -303,16 +325,14 @@ function BasicDetails() {
           console.error("Google Maps places library not loaded");
           return;
         }
-
         autocompleteRef.current = new window.google.maps.places.Autocomplete(
           locationInputRef.current,
           {
             types: ["(cities)"],
             fields: ["formatted_address", "name"],
-            componentRestrictions: { country: "ph" } // Restrict to Philippines
+            componentRestrictions: { country: "ph" },
           }
         );
-
         autocompleteRef.current.addListener("place_changed", () => {
           const place = autocompleteRef.current.getPlace();
           setLocation(place.formatted_address || place.name || "");
@@ -386,6 +406,9 @@ function BasicDetails() {
       !selectedPurpose.length
     ) {
       return "Please fill all required fields.";
+    }
+    if (mobile.length > 10 || !/^\d+$/.test(mobile)) {
+      return "Mobile number must be up to 10 digits.";
     }
     if (
       userType === "Professional" &&
@@ -554,6 +577,7 @@ function BasicDetails() {
           "sectionData.appuser.name": email,
           "sectionData.appuser.legalname": creatorName,
           "sectionData.appuser.email": email,
+          "sectionData.appuser.countryCode": countryCode,
           "sectionData.appuser.mobile": mobile,
           "sectionData.appuser.Gender": gender,
           "sectionData.appuser.usertype": userType,
@@ -702,10 +726,6 @@ function BasicDetails() {
           <FaCheckCircle className="text-green-500" />
           Basic Details
         </div>
-        {/* <div className="flex items-center gap-4 text-gray-600 text-lg">
-          <FaEye className="cursor-pointer hover:text-gray-800" />
-          <FaRegLightbulb className="cursor-pointer hover:text-gray-800" />
-        </div> */}
       </div>
 
       <div className="p-4 sm:p-6 space-y-6">
@@ -780,10 +800,6 @@ function BasicDetails() {
         <div className="mb-4">
           <label className="text-sm font-medium text-gray-700 flex items-center justify-between">
             Email <span className="text-red-500"></span>
-            {/* <button className="text-blue-600 text-sm flex items-center gap-1 hover:text-blue-800">
-              <FaEdit size={14} />
-              Update Email
-            </button> */}
           </label>
           <div className="relative">
             <input
@@ -803,6 +819,8 @@ function BasicDetails() {
           <div className="flex gap-2 mt-1">
             <select
               className="border border-gray-300 rounded-lg p-2 bg-white w-24 h-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={countryCode}
+              onChange={(e) => setCountryCode(e.target.value)}
               disabled={isProcessing}
             >
               <option value="+63">+63</option>
@@ -810,16 +828,16 @@ function BasicDetails() {
             <input
               type="tel"
               value={mobile}
-              onChange={(e) => setMobile(e.target.value)}
+              onChange={(e) => {
+                const value = e.target.value.replace(/\D/g, "");
+                if (value.length <= 10) {
+                  setMobile(value);
+                }
+              }}
               className="flex-1 border border-gray-300 rounded-lg p-2 h-10 min-w-0 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Enter mobile number"
               disabled={isProcessing}
             />
-            <button
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm min-w-[70px] h-10 hover:bg-blue-700 transition disabled:opacity-50"
-              disabled={isProcessing}
-            >
-              Verify
-            </button>
           </div>
         </div>
 
