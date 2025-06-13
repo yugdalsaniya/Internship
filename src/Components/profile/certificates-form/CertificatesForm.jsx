@@ -1,14 +1,10 @@
-// CertificatesForm.jsx - No changes from previous version.
-// It continues to act as a dedicated form for adding/editing a single certificate.
-
 import React, { useState, useEffect } from "react";
 import { BiTime } from "react-icons/bi";
 import { FaPlus } from "react-icons/fa";
 import { RxCross2 } from "react-icons/rx";
 import { IoCheckmark } from "react-icons/io5";
 import { fetchSectionData, mUpdate } from "../../../Utils/api";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { toast } from "react-toastify";
 
 const CertificatesForm = ({ onBack, existingCertificate, isEditing }) => {
   const [formData, setFormData] = useState({
@@ -24,17 +20,33 @@ const CertificatesForm = ({ onBack, existingCertificate, isEditing }) => {
   });
 
   const [userId, setUserId] = useState(null);
-  const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
+  // Get today's date for validation (YYYY-MM-DD format)
+  const today = new Date().toISOString().split("T")[0];
+
   useEffect(() => {
+    console.log(
+      "CertificatesForm useEffect: isEditing=",
+      isEditing,
+      "existingCertificate=",
+      existingCertificate
+    );
     // Populate form data if editing an existing certificate
     if (isEditing && existingCertificate) {
       setFormData({
         titleofcertificates: existingCertificate.titleofcertificates || "",
         issuingorganization: existingCertificate.issuingorganization || "",
-        certificatestartdate: existingCertificate.certificatestartdate || "",
-        certificateenddate: existingCertificate.certificateenddate || "",
+        certificatestartdate: existingCertificate.certificatestartdate
+          ? new Date(existingCertificate.certificatestartdate)
+              .toISOString()
+              .split("T")[0]
+          : "",
+        certificateenddate: existingCertificate.certificateenddate
+          ? new Date(existingCertificate.certificateenddate)
+              .toISOString()
+              .split("T")[0]
+          : "",
         hasexpirydate: existingCertificate.hasexpirydate || false,
         certificatelink: existingCertificate.certificatelink || "",
         certificateskill: existingCertificate.certificateskill
@@ -45,29 +57,53 @@ const CertificatesForm = ({ onBack, existingCertificate, isEditing }) => {
         certificateattachment: existingCertificate.certificateattachment || [],
       });
     } else {
-      // Reset form if not editing or if existingCertificate is null
       resetForm();
     }
 
+    // Fetch user ID from localStorage
     const userString = localStorage.getItem("user");
     if (userString) {
       try {
         const user = JSON.parse(userString);
         setUserId(user.userid);
+        console.log("User ID set:", user.userid);
       } catch (parseError) {
-        setError("Invalid user data. Please log in again.");
+        console.error("Error parsing user data:", parseError);
+        toast.error("Invalid user data. Please log in again.", {
+          position: "top-right",
+          autoClose: 5000,
+        });
       }
     } else {
-      setError("Please log in to manage your certificates.");
+      console.error("No user data in localStorage");
+      toast.error("Please log in to manage your certificates.", {
+        position: "top-right",
+        autoClose: 5000,
+      });
     }
   }, [isEditing, existingCertificate]);
 
   const handleChange = (field, value) => {
-    setError("");
     setFormData((prev) => ({
       ...prev,
       [field]: value,
     }));
+  };
+
+  const handleDateChange = (field, value) => {
+    setFormData((prev) => {
+      const newData = { ...prev, [field]: value };
+      // Reset end date if start date changes to a later date
+      if (
+        field === "certificatestartdate" &&
+        newData.hasexpirydate &&
+        newData.certificateenddate &&
+        newData.certificateenddate <= value
+      ) {
+        newData.certificateenddate = "";
+      }
+      return newData;
+    });
   };
 
   const handleExpiryDateChange = (checked) => {
@@ -79,41 +115,48 @@ const CertificatesForm = ({ onBack, existingCertificate, isEditing }) => {
   };
 
   const validateForm = () => {
-    if (!formData.titleofcertificates.trim()) {
-      setError("Certificate title is required.");
-      return false;
-    }
-    if (!formData.issuingorganization.trim()) {
-      setError("Issuing organization is required.");
-      return false;
-    }
-    if (!formData.certificatestartdate) {
-      setError("Start date is required.");
-      return false;
-    }
-    if (formData.hasexpirydate && !formData.certificateenddate) {
-      setError("End date is required when expiry date is selected.");
-      return false;
-    }
-    if (
+    const errors = [];
+    if (!formData.titleofcertificates.trim())
+      errors.push("Certificate title is required.");
+    if (!formData.issuingorganization.trim())
+      errors.push("Issuing organization is required.");
+    if (!formData.certificatestartdate) errors.push("Start date is required.");
+    else if (formData.certificatestartdate > today)
+      errors.push("Start date cannot be in the future.");
+    if (formData.hasexpirydate && !formData.certificateenddate)
+      errors.push("End date is required when expiry date is selected.");
+    else if (
       formData.hasexpirydate &&
       formData.certificateenddate &&
-      new Date(formData.certificateenddate) <=
-        new Date(formData.certificatestartdate)
-    ) {
-      setError("End date must be after start date.");
+      formData.certificateenddate <= formData.certificatestartdate
+    )
+      errors.push("End date must be after start date.");
+    else if (formData.hasexpirydate && formData.certificateenddate > today)
+      errors.push("End date cannot be in the future.");
+    if (
+      formData.certificatelink &&
+      !/^https?:\/\/[^\s/$.?#].[^\s]*$/.test(formData.certificatelink)
+    )
+      errors.push("Invalid URL format for certificate link.");
+
+    if (errors.length > 0) {
+      console.log("Validation errors:", errors);
+      toast.error(errors.join(" "), {
+        position: "top-right",
+        autoClose: 5000,
+      });
       return false;
     }
     return true;
   };
 
   const handleSave = async () => {
+    console.log("handleSave called with formData:", formData);
     try {
       setIsLoading(true);
 
       if (!userId) {
-        setError("Please log in to save certificates.");
-        return;
+        throw new Error("Please log in to save certificates.");
       }
 
       if (!validateForm()) {
@@ -137,7 +180,6 @@ const CertificatesForm = ({ onBack, existingCertificate, isEditing }) => {
           : [],
         certificatedescription: formData.certificatedescription.trim(),
         certificateattachment: formData.certificateattachment || [],
-        // Keep existing createdAt for edits, otherwise set new
         createdAt:
           isEditing && existingCertificate
             ? existingCertificate.createdAt
@@ -145,7 +187,8 @@ const CertificatesForm = ({ onBack, existingCertificate, isEditing }) => {
         updatedAt: new Date().toISOString(),
       };
 
-      // Fetch current certificates to update the array
+      console.log("Certificate data to save:", certificateData);
+
       const existingUserData = await fetchSectionData({
         collectionName: "appuser",
         query: { _id: userId },
@@ -156,9 +199,8 @@ const CertificatesForm = ({ onBack, existingCertificate, isEditing }) => {
 
       let updatedCertificates;
       if (isEditing) {
-        // Find the index of the certificate being edited and replace it
         updatedCertificates = currentCertificates.map((cert) =>
-          cert.createdAt === existingCertificate.createdAt // Assuming createdAt is unique for identification
+          cert.createdAt === existingCertificate.createdAt
             ? certificateData
             : cert
         );
@@ -179,9 +221,7 @@ const CertificatesForm = ({ onBack, existingCertificate, isEditing }) => {
         options: { upsert: false },
       });
 
-      resetForm();
-      onBack(); // Go back to accomplishments page after saving
-
+      console.log("Certificate saved successfully");
       toast.success(
         isEditing
           ? "Certificate updated successfully!"
@@ -195,19 +235,21 @@ const CertificatesForm = ({ onBack, existingCertificate, isEditing }) => {
           draggable: true,
         }
       );
+      resetForm();
+      setTimeout(() => onBack(), 500); // Delay onBack to ensure toast renders
     } catch (error) {
       console.error("Error saving certificate:", error);
-      setError(
-        error.message || "Failed to save certificate. Please try again."
+      toast.error(
+        error.message || "Failed to save certificate. Please try again.",
+        {
+          position: "top-right",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        }
       );
-      toast.error("Failed to save certificate. Please try again.", {
-        position: "top-right",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-      });
     } finally {
       setIsLoading(false);
     }
@@ -225,23 +267,10 @@ const CertificatesForm = ({ onBack, existingCertificate, isEditing }) => {
       certificatedescription: "",
       certificateattachment: [],
     });
-    setError("");
   };
 
   return (
     <div className="bg-white rounded-xl shadow-md">
-      <ToastContainer />
-
-      {/* Error Message */}
-      {error && (
-        <div
-          className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative m-4"
-          role="alert"
-        >
-          <span>{error}</span>
-        </div>
-      )}
-
       {/* Fixed Header */}
       <div className="sticky top-0 bg-white z-10 px-4 py-4 shadow-sm flex justify-between items-center border-b border-gray-200">
         <div className="flex items-center gap-2 text-gray-700 text-lg font-medium">
@@ -310,17 +339,20 @@ const CertificatesForm = ({ onBack, existingCertificate, isEditing }) => {
                 type="date"
                 value={formData.certificatestartdate}
                 onChange={(e) =>
-                  handleChange("certificatestartdate", e.target.value)
+                  handleDateChange("certificatestartdate", e.target.value)
                 }
+                max={today}
                 className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring focus:ring-blue-200 w-1/2"
               />
               <input
                 type="date"
                 value={formData.certificateenddate}
                 onChange={(e) =>
-                  handleChange("certificateenddate", e.target.value)
+                  handleDateChange("certificateenddate", e.target.value)
                 }
                 disabled={!formData.hasexpirydate}
+                min={formData.certificatestartdate || undefined}
+                max={today}
                 className={`border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring focus:ring-blue-200 w-1/2 ${
                   !formData.hasexpirydate
                     ? "bg-gray-100 cursor-not-allowed"
@@ -376,7 +408,15 @@ const CertificatesForm = ({ onBack, existingCertificate, isEditing }) => {
 
           {/* Attachments */}
           <div className="w-full border border-dashed border-gray-400 rounded-md">
-            <button className="flex items-center justify-center gap-2 w-full px-4 py-2 text-gray-700">
+            <button
+              className="flex items-center justify-center gap-2 w-full px-4 py-2 text-gray-700"
+              onClick={() => {
+                toast.info("Attachment upload not implemented yet.", {
+                  position: "top-right",
+                  autoClose: 3000,
+                });
+              }}
+            >
               <FaPlus />
               Attachment
             </button>

@@ -4,8 +4,7 @@ import { FaPlus } from "react-icons/fa";
 import { RxCross2 } from "react-icons/rx";
 import { IoCheckmark } from "react-icons/io5";
 import { fetchSectionData, mUpdate } from "../../../Utils/api";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { toast } from "react-toastify";
 
 const ResponsibilitiesForm = ({
   onBack,
@@ -26,10 +25,18 @@ const ResponsibilitiesForm = ({
   });
 
   const [userId, setUserId] = useState(null);
-  const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
+  // Get today's date for validation (YYYY-MM-DD format)
+  const today = new Date().toISOString().split("T")[0];
+
   useEffect(() => {
+    console.log(
+      "ResponsibilitiesForm useEffect: isEditing=",
+      isEditing,
+      "existingResponsibility=",
+      existingResponsibility
+    );
     // Populate form data if editing an existing responsibility
     if (isEditing && existingResponsibility) {
       setFormData({
@@ -40,10 +47,16 @@ const ResponsibilitiesForm = ({
         responsibilitylocation:
           existingResponsibility.responsibilitylocation || "",
         remote: existingResponsibility.remote || false,
-        responsibilitystartdate:
-          existingResponsibility.responsibilitystartdate || "",
-        responsibilityenddate:
-          existingResponsibility.responsibilityenddate || "",
+        responsibilitystartdate: existingResponsibility.responsibilitystartdate
+          ? new Date(existingResponsibility.responsibilitystartdate)
+              .toISOString()
+              .split("T")[0]
+          : "",
+        responsibilityenddate: existingResponsibility.responsibilityenddate
+          ? new Date(existingResponsibility.responsibilityenddate)
+              .toISOString()
+              .split("T")[0]
+          : "",
         currentlyworking: existingResponsibility.currentlyworking || false,
         responsibilityskill: existingResponsibility.responsibilityskill
           ? existingResponsibility.responsibilityskill.join(", ")
@@ -54,29 +67,53 @@ const ResponsibilitiesForm = ({
           existingResponsibility.responsibilityattachment || [],
       });
     } else {
-      // Reset form if not editing or if existingResponsibility is null
       resetForm();
     }
 
+    // Fetch user ID from localStorage
     const userString = localStorage.getItem("user");
     if (userString) {
       try {
         const user = JSON.parse(userString);
         setUserId(user.userid);
+        console.log("User ID set:", user.userid);
       } catch (parseError) {
-        setError("Invalid user data. Please log in again.");
+        console.error("Error parsing user data:", parseError);
+        toast.error("Invalid user data. Please log in again.", {
+          position: "top-right",
+          autoClose: 5000,
+        });
       }
     } else {
-      setError("Please log in to manage your responsibilities.");
+      console.error("No user data in localStorage");
+      toast.error("Please log in to manage your responsibilities.", {
+        position: "top-right",
+        autoClose: 5000,
+      });
     }
   }, [isEditing, existingResponsibility]);
 
   const handleChange = (field, value) => {
-    setError("");
     setFormData((prev) => ({
       ...prev,
       [field]: value,
     }));
+  };
+
+  const handleDateChange = (field, value) => {
+    setFormData((prev) => {
+      const newData = { ...prev, [field]: value };
+      // Reset end date if start date changes to a later date
+      if (
+        field === "responsibilitystartdate" &&
+        !newData.currentlyworking &&
+        newData.responsibilityenddate &&
+        newData.responsibilityenddate <= value
+      ) {
+        newData.responsibilityenddate = "";
+      }
+      return newData;
+    });
   };
 
   const handleCurrentlyWorkingChange = (checked) => {
@@ -88,45 +125,51 @@ const ResponsibilitiesForm = ({
   };
 
   const validateForm = () => {
-    if (!formData.positionofresponsibility.trim()) {
-      setError("Position of responsibility is required.");
-      return false;
-    }
-    if (!formData.responsibilityorganization.trim()) {
-      setError("Organization is required.");
-      return false;
-    }
-    if (!formData.responsibilitylocation.trim() && !formData.remote) {
-      setError("Location is required when not working remotely.");
-      return false;
-    }
-    if (!formData.responsibilitystartdate) {
-      setError("Start date is required.");
-      return false;
-    }
-    if (!formData.currentlyworking && !formData.responsibilityenddate) {
-      setError("End date is required when not currently working in this role.");
-      return false;
-    }
-    if (
+    const errors = [];
+    if (!formData.positionofresponsibility.trim())
+      errors.push("Position of responsibility is required.");
+    if (!formData.responsibilityorganization.trim())
+      errors.push("Organization is required.");
+    if (!formData.responsibilitylocation.trim() && !formData.remote)
+      errors.push("Location is required when not working remotely.");
+    if (!formData.responsibilitystartdate)
+      errors.push("Start date is required.");
+    else if (formData.responsibilitystartdate > today)
+      errors.push("Start date cannot be in the future.");
+    if (!formData.currentlyworking && !formData.responsibilityenddate)
+      errors.push(
+        "End date is required when not currently working in this role."
+      );
+    else if (
       !formData.currentlyworking &&
       formData.responsibilityenddate &&
-      new Date(formData.responsibilityenddate) <=
-        new Date(formData.responsibilitystartdate)
-    ) {
-      setError("End date must be after start date.");
+      formData.responsibilityenddate <= formData.responsibilitystartdate
+    )
+      errors.push("End date must be after start date.");
+    else if (
+      !formData.currentlyworking &&
+      formData.responsibilityenddate > today
+    )
+      errors.push("End date cannot be in the future.");
+
+    if (errors.length > 0) {
+      console.log("Validation errors:", errors);
+      toast.error(errors.join(" "), {
+        position: "top-right",
+        autoClose: 5000,
+      });
       return false;
     }
     return true;
   };
 
   const handleSave = async () => {
+    console.log("handleSave called with formData:", formData);
     try {
       setIsLoading(true);
 
       if (!userId) {
-        setError("Please log in to save responsibilities.");
-        return;
+        throw new Error("Please log in to save responsibilities.");
       }
 
       if (!validateForm()) {
@@ -160,7 +203,8 @@ const ResponsibilitiesForm = ({
         updatedAt: new Date().toISOString(),
       };
 
-      // Fetch current responsibilities to update the array
+      console.log("Responsibility data to save:", responsibilityData);
+
       const existingUserData = await fetchSectionData({
         collectionName: "appuser",
         query: { _id: userId },
@@ -198,9 +242,7 @@ const ResponsibilitiesForm = ({
         options: { upsert: false },
       });
 
-      resetForm();
-      onBack(); // Go back to the previous page after saving
-
+      console.log("Responsibility saved successfully");
       toast.success(
         isEditing
           ? "Responsibility updated successfully!"
@@ -214,19 +256,21 @@ const ResponsibilitiesForm = ({
           draggable: true,
         }
       );
+      resetForm();
+      setTimeout(() => onBack(), 500); // Delay onBack to ensure toast renders
     } catch (error) {
       console.error("Error saving responsibility:", error);
-      setError(
-        error.message || "Failed to save responsibility. Please try again."
+      toast.error(
+        error.message || "Failed to save responsibility. Please try again.",
+        {
+          position: "top-right",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        }
       );
-      toast.error("Failed to save responsibility. Please try again.", {
-        position: "top-right",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-      });
     } finally {
       setIsLoading(false);
     }
@@ -245,23 +289,10 @@ const ResponsibilitiesForm = ({
       responsibilitydescription: "",
       responsibilityattachment: [],
     });
-    setError("");
   };
 
   return (
     <div className="bg-white rounded-xl shadow-md">
-      <ToastContainer />
-
-      {/* Error Message */}
-      {error && (
-        <div
-          className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative m-4"
-          role="alert"
-        >
-          <span>{error}</span>
-        </div>
-      )}
-
       {/* Fixed Header */}
       <div className="sticky top-0 bg-white z-10 px-4 py-4 shadow-sm flex justify-between items-center border-b border-gray-200">
         <div className="flex items-center gap-2 text-gray-700 text-lg font-medium">
@@ -363,17 +394,20 @@ const ResponsibilitiesForm = ({
                 type="date"
                 value={formData.responsibilitystartdate}
                 onChange={(e) =>
-                  handleChange("responsibilitystartdate", e.target.value)
+                  handleDateChange("responsibilitystartdate", e.target.value)
                 }
+                max={today}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring focus:ring-blue-200 w-1/2"
               />
               <input
                 type="date"
                 value={formData.responsibilityenddate}
                 onChange={(e) =>
-                  handleChange("responsibilityenddate", e.target.value)
+                  handleDateChange("responsibilityenddate", e.target.value)
                 }
                 disabled={formData.currentlyworking}
+                min={formData.responsibilitystartdate || undefined}
+                max={today}
                 className={`w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring focus:ring-blue-200 w-1/2 ${
                   formData.currentlyworking
                     ? "bg-gray-100 cursor-not-allowed"
@@ -417,7 +451,15 @@ const ResponsibilitiesForm = ({
 
           {/* Attachments */}
           <div className="w-full border border-dashed border-gray-400 rounded-md">
-            <button className="flex items-center justify-center gap-2 w-full px-4 py-2 text-gray-700">
+            <button
+              className="flex items-center justify-center gap-2 w-full px-4 py-2 text-gray-700"
+              onClick={() => {
+                toast.info("Attachment upload not implemented yet.", {
+                  position: "top-right",
+                  autoClose: 3000,
+                });
+              }}
+            >
               <FaPlus />
               Attachments
             </button>
