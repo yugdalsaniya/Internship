@@ -7,7 +7,8 @@ import 'react-toastify/dist/ReactToastify.css';
 
 function Skills() {
   const [skillsText, setSkillsText] = useState('');
-  const [allSkills, setAllSkills] = useState([]);
+  const [allSkills, setAllSkills] = useState([]); // For suggestions (showinsuggestions: true)
+  const [allSearchableSkills, setAllSearchableSkills] = useState([]); // For search dropdown (all skills)
   const [selectedSkillIds, setSelectedSkillIds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(0);
@@ -32,7 +33,7 @@ function Skills() {
     }
   }
 
-  // Fetch skills suggestions
+  // Fetch skills
   useEffect(() => {
     const fetchSkills = async () => {
       try {
@@ -43,20 +44,31 @@ function Skills() {
           projection: { 'sectionData.skills': 1, '_id': 1 },
         });
 
-        const skillData = response.map(item => ({
+        // All skills for search dropdown
+        const searchableSkills = response.map(item => ({
           id: item._id,
           name: item.sectionData.skills.name,
         }));
-        setAllSkills(skillData);
+        setAllSearchableSkills(searchableSkills);
+
+        // Filtered skills for suggestions
+        const suggestionSkills = response
+          .filter(item => item.sectionData.skills.showinsuggestions === true)
+          .map(item => ({
+            id: item._id,
+            name: item.sectionData.skills.name,
+          }));
+        setAllSkills(suggestionSkills);
+
         setLoading(false);
       } catch (err) {
         toast.error('Failed to load skills:', { autoClose: err.message });
         setLoading(false);
-        }
-      };
+      }
+    };
 
-      fetchSkills();
-    }, []);
+    fetchSkills();
+  }, []);
 
   // Fetch user's saved skills
   useEffect(() => {
@@ -104,7 +116,7 @@ function Skills() {
     };
   }, []);
 
-  // Filter skills based on textarea input
+  // Filter skills based on textarea input for search dropdown
   useEffect(() => {
     if (skillsText.trim() === '') {
       setFilteredSkills([]);
@@ -112,15 +124,16 @@ function Skills() {
       return;
     }
 
-    const filtered = allSkills.filter((skill) =>
-      skill.name.toLowerCase().includes(skillsText.toLowerCase()) &&
-      !selectedSkillIds.includes(skill.id)
+    const filtered = allSearchableSkills.filter(
+      (skill) =>
+        skill.name.toLowerCase().includes(skillsText.toLowerCase()) &&
+        !selectedSkillIds.includes(skill.id)
     );
     setFilteredSkills(filtered);
     setShowDropdown(filtered.length > 0);
-  }, [skillsText, allSkills, selectedSkillIds]);
+  }, [skillsText, allSearchableSkills, selectedSkillIds]);
 
-  // Compute suggestions to display (up to 10, excluding selected skills)
+  // Compute suggestions to display (up to 10, only showinsuggestions: true)
   const getSuggestions = () => {
     const availableSkills = allSkills.filter(skill => !selectedSkillIds.includes(skill.id));
     const startIndex = currentPage * 10;
@@ -201,7 +214,7 @@ function Skills() {
           </p>
           <div className="flex flex-wrap gap-2 mb-4">
             {selectedSkillIds.map((skillId) => {
-              const skill = allSkills.find(s => s.id === skillId);
+              const skill = allSearchableSkills.find(s => s.id === skillId);
               return skill ? (
                 <button
                   key={skillId}
