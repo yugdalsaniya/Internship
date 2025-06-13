@@ -162,7 +162,7 @@ const RequestedInternshipsPage = () => {
   return (
     <div className="mx-auto max-w-7xl px-4 py-10">
       <h1 className="mb-6 text-2xl font-bold text-gray-900">
-        My Applied Internships
+        My Published Internships
       </h1>
       {internships.length === 0 ? (
         <p className="text-center text-gray-500">
