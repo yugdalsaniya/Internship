@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import bannerImage from '../../assets/Hero/banner.jpg'; // Default background
 import { fetchSectionData } from '../../Utils/api';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate for navigation
+import { useNavigate } from 'react-router-dom';
 
 const Hero = ({
   title = 'Top Internships and OJT Programs in the Philippines for Career Launch',
@@ -13,7 +13,7 @@ const Hero = ({
   ],
   backgroundImage = bannerImage,
   gradient = 'linear-gradient(to right, rgba(249, 220, 223, 0.8), rgba(181, 217, 211, 0.8))',
-  showPostButton = false, // New prop to control button visibility
+  showPostButton = false, // Prop to control button visibility
 }) => {
   const [stats, setStats] = useState([
     {
@@ -58,7 +58,8 @@ const Hero = ({
     },
   ]);
 
-  const navigate = useNavigate(); // Hook for navigation
+  const navigate = useNavigate();
+  const [error, setError] = useState('');
 
   useEffect(() => {
     const fetchCounts = async () => {
@@ -104,7 +105,18 @@ const Hero = ({
   }, []);
 
   const handlePostInternship = () => {
-    navigate('/StudentPostForm'); // Replace with the actual route for posting an internship
+    const user = JSON.parse(localStorage.getItem('user'));
+    const isAuthenticated = !!user && !!localStorage.getItem('accessToken');
+
+    if (isAuthenticated) {
+      if (user.roleId === '1747723485001') { // Company role
+        navigate('/StudentPostForm');
+      } else {
+        setError('Only company users can post internships.');
+      }
+    } else {
+      navigate('/login', { state: { from: '/StudentPostForm' } });
+    }
   };
 
   return (
@@ -153,12 +165,15 @@ const Hero = ({
 
         {/* Post Internship Button (Conditional) */}
         {showPostButton && (
-          <button
-            onClick={handlePostInternship}
-            className="mt-6 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-md py-2 px-6 text-sm font-medium hover:from-blue-600 hover:to-purple-700 transition-colors"
-          >
-            Post Internship
-          </button>
+          <div className="flex flex-col items-center">
+            <button
+              onClick={handlePostInternship}
+              className="mt-6 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-md py-2 px-6 text-sm font-medium hover:from-blue-600 hover:to-purple-700 transition-colors"
+            >
+              Post Internship
+            </button>
+            {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+          </div>
         )}
 
         {/* Stats Section */}

@@ -1,12 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import { MdVisibility, MdVisibilityOff } from "react-icons/md";
-import { jwtDecode } from "jwt-decode";
 import rightImage from "../assets/SignUp/wallpaper.jpg";
 import logo from "../assets/Navbar/logo.png";
 import student from "../assets/SignUp/student.png";
-import linkedin from "../assets/SignUp/linkedin.png";
-import facebook from "../assets/SignUp/facebook.png";
 import company from "../assets/SignUp/company.png";
 import academy from "../assets/SignUp/academy.png";
 import recruiter from "../assets/SignUp/recruiter.png";
@@ -22,6 +19,7 @@ const SignUpPage = () => {
     companyName: "",
     academyName: "",
     mobile: "",
+    countryCode: "+63",
     email: "",
     password: "",
     confirmPassword: "",
@@ -60,7 +58,14 @@ const SignUpPage = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    if (name === "mobile") {
+      const digitsOnly = value.replace(/\D/g, "");
+      if (digitsOnly.length <= 10) {
+        setFormData({ ...formData, [name]: digitsOnly });
+      }
+    } else {
+      setFormData({ ...formData, [name]: value });
+    }
     setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
@@ -92,6 +97,7 @@ const SignUpPage = () => {
       companyName: "",
       academyName: "",
       mobile: "",
+      countryCode: "+63",
       email: "",
       password: "",
       confirmPassword: "",
@@ -103,7 +109,6 @@ const SignUpPage = () => {
     e.preventDefault();
     const newErrors = {};
 
-    // Validate fields
     if (!formData.name.trim()) {
       newErrors.name = "Name is required.";
     } else if (formData.name.trim().length > 100) {
@@ -121,8 +126,10 @@ const SignUpPage = () => {
     if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = "Passwords do not match.";
     }
-    if (!validateMobile(formData.mobile)) {
-      newErrors.mobile = "Mobile number must contain only digits or be empty.";
+    if (!formData.mobile.trim()) {
+      newErrors.mobile = "Mobile number is required.";
+    } else if (!validateMobile(formData.mobile)) {
+      newErrors.mobile = "Mobile number must contain only digits.";
     } else if (formData.mobile.trim().length > 10) {
       newErrors.mobile = "Mobile number must be 10 digits or less.";
     }
@@ -137,7 +144,6 @@ const SignUpPage = () => {
       newErrors.academyName = "Academy Name must be 100 characters or less.";
     }
 
-    // If there are errors, set them and stop submission
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       setIsLoading(false);
@@ -150,11 +156,14 @@ const SignUpPage = () => {
       let payload;
       let response;
 
+      // Construct the combined mobile number with country code
+      const fullMobileNumber = `${formData.countryCode}${formData.mobile.trim()}`;
+
       if (role === "company") {
         payload = {
           appName: "app8657281202648",
           companyName: formData.companyName.trim(),
-          mobile: formData.mobile.trim() ? `+63${formData.mobile.trim()}` : "",
+          mobile: fullMobileNumber, // Use the combined mobile number
           legalname: formData.name.trim(),
           role: roleIds[role],
           email: formData.email.toLowerCase().trim(),
@@ -172,7 +181,7 @@ const SignUpPage = () => {
           role: roleIds[role],
           legalname: formData.name.trim(),
           email: formData.email.toLowerCase().trim(),
-          mobile: formData.mobile.trim() ? `+63${formData.mobile.trim()}` : "",
+          mobile: fullMobileNumber, // Use the combined mobile number
           ...(role === "academy" && {
             academyname: formData.academyName.trim(),
           }),
@@ -188,6 +197,7 @@ const SignUpPage = () => {
             companyName: "",
             academyName: "",
             mobile: "",
+            countryCode: "+63",
             email: "",
             password: "",
             confirmPassword: "",
@@ -202,6 +212,7 @@ const SignUpPage = () => {
               role: roleNames[roleIds[role]],
               roleId: roleIds[role],
               companyId: companyId,
+              mobile: fullMobileNumber, // Store the combined mobile number
             })
           );
           localStorage.setItem("accessToken", response.accessToken);
@@ -216,6 +227,7 @@ const SignUpPage = () => {
               email: formData.email.toLowerCase().trim(),
               role: roleNames[roleIds[role]],
               roleId: roleIds[role],
+              mobile: fullMobileNumber, // Store the combined mobile number
               ...(role === "academy" && {
                 academyname: formData.academyName.trim(),
               }),
@@ -253,173 +265,41 @@ const SignUpPage = () => {
 
   const formFields = {
     student: [
-      {
-        name: "name",
-        placeholder: "Name",
-        type: "text",
-        required: true,
-        maxLength: 100,
-      },
-      { name: "mobile", type: "text", maxLength: 10 },
-      {
-        name: "email",
-        placeholder: "Email",
-        type: "email",
-        required: true,
-        maxLength: 100,
-      },
-      {
-        name: "password",
-        placeholder: "Password",
-        type: showPassword ? "text" : "password",
-        required: true,
-        maxLength: 20, // Changed from 8 to 20
-      },
-      {
-        name: "confirmPassword",
-        placeholder: "Confirm Password",
-        type: showPassword ? "text" : "password",
-        required: true,
-        maxLength: 20, // Changed from 8 to 20
-      },
+      { name: "name", placeholder: "Name", type: "text", required: true, maxLength: 100 },
+      { name: "mobile", type: "text", maxLength: 10, placeholder: "Mobile Number", required: true },
+      { name: "email", placeholder: "Email", type: "email", required: true, maxLength: 100 },
+      { name: "password", placeholder: "Password", type: showPassword ? "text" : "password", required: true, maxLength: 20 },
+      { name: "confirmPassword", placeholder: "Confirm Password", type: showPassword ? "text" : "password", required: true, maxLength: 20 },
     ],
     company: [
-      {
-        name: "name",
-        placeholder: "Name",
-        type: "text",
-        required: true,
-        maxLength: 100,
-      },
-      {
-        name: "companyName",
-        placeholder: "Company Name",
-        type: "text",
-        required: true,
-        maxLength: 100,
-      },
-      { name: "mobile", type: "text", maxLength: 10 },
-      {
-        name: "email",
-        placeholder: "Email",
-        type: "email",
-        required: true,
-        maxLength: 100,
-      },
-      {
-        name: "password",
-        placeholder: "Password",
-        type: showPassword ? "text" : "password",
-        required: true,
-        maxLength: 20, // Changed from 8 to 20
-      },
-      {
-        name: "confirmPassword",
-        placeholder: "Confirm Password",
-        type: showPassword ? "text" : "password",
-        required: true,
-        maxLength: 20, // Changed from 8 to 20
-      },
+      { name: "name", placeholder: "Name", type: "text", required: true, maxLength: 100 },
+      { name: "companyName", placeholder: "Company Name", type: "text", required: true, maxLength: 100 },
+      { name: "mobile", type: "text", maxLength: 10, placeholder: "Mobile Number", required: true },
+      { name: "email", placeholder: "Email", type: "email", required: true, maxLength: 100 },
+      { name: "password", placeholder: "Password", type: showPassword ? "text" : "password", required: true, maxLength: 20 },
+      { name: "confirmPassword", placeholder: "Confirm Password", type: showPassword ? "text" : "password", required: true, maxLength: 20 },
     ],
     academy: [
-      {
-        name: "name",
-        placeholder: "Name",
-        type: "text",
-        required: true,
-        maxLength: 100,
-      },
-      {
-        name: "academyName",
-        placeholder: "Academy Name",
-        type: "text",
-        required: true,
-        maxLength: 100,
-      },
-      { name: "mobile", type: "text", maxLength: 10 },
-      {
-        name: "email",
-        placeholder: "Email",
-        type: "email",
-        required: true,
-        maxLength: 100,
-      },
-      {
-        name: "password",
-        placeholder: "Password",
-        type: showPassword ? "text" : "password",
-        required: true,
-        maxLength: 20, // Changed from 8 to 20
-      },
-      {
-        name: "confirmPassword",
-        placeholder: "Confirm Password",
-        type: showPassword ? "text" : "password",
-        required: true,
-        maxLength: 20, // Changed from 8 to 20
-      },
+      { name: "name", placeholder: "Name", type: "text", required: true, maxLength: 100 },
+      { name: "academyName", placeholder: "Academy Name", type: "text", required: true, maxLength: 100 },
+      { name: "mobile", type: "text", maxLength: 10, placeholder: "Mobile Number", required: true },
+      { name: "email", placeholder: "Email", type: "email", required: true, maxLength: 100 },
+      { name: "password", placeholder: "Password", type: showPassword ? "text" : "password", required: true, maxLength: 20 },
+      { name: "confirmPassword", placeholder: "Confirm Password", type: showPassword ? "text" : "password", required: true, maxLength: 20 },
     ],
     recruiter: [
-      {
-        name: "name",
-        placeholder: "Name",
-        type: "text",
-        required: true,
-        maxLength: 100,
-      },
-      { name: "mobile", type: "text", maxLength: 10 },
-      {
-        name: "email",
-        placeholder: "Email",
-        type: "email",
-        required: true,
-        maxLength: 100,
-      },
-      {
-        name: "password",
-        placeholder: "Password",
-        type: showPassword ? "text" : "password",
-        required: true,
-        maxLength: 20, // Changed from 8 to 20
-      },
-      {
-        name: "confirmPassword",
-        placeholder: "Confirm Password",
-        type: showPassword ? "text" : "password",
-        required: true,
-        maxLength: 20, // Changed from 8 to 20
-      },
+      { name: "name", placeholder: "Name", type: "text", required: true, maxLength: 100 },
+      { name: "mobile", type: "text", maxLength: 10, placeholder: "Mobile Number", required: true },
+      { name: "email", placeholder: "Email", type: "email", required: true, maxLength: 100 },
+      { name: "password", placeholder: "Password", type: showPassword ? "text" : "password", required: true, maxLength: 20 },
+      { name: "confirmPassword", placeholder: "Confirm Password", type: showPassword ? "text" : "password", required: true, maxLength: 20 },
     ],
     mentor: [
-      {
-        name: "name",
-        placeholder: "Name",
-        type: "text",
-        required: true,
-        maxLength: 100,
-      },
-      { name: "mobile", type: "text", maxLength: 10 },
-      {
-        name: "email",
-        placeholder: "Email",
-        type: "email",
-        required: true,
-        maxLength: 100,
-      },
-      {
-        name: "password",
-        placeholder: "Password",
-        type: showPassword ? "text" : "password",
-        required: true,
-        maxLength: 20, // Changed from 8 to 20
-      },
-      {
-        name: "confirmPassword",
-        placeholder: "Confirm Password",
-        type: showPassword ? "text" : "password",
-        required: true,
-        maxLength: 20, // Changed from 8 to 20
-      },
+      { name: "name", placeholder: "Name", type: "text", required: true, maxLength: 100 },
+      { name: "mobile", type: "text", maxLength: 10, placeholder: "Mobile Number", required: true },
+      { name: "email", placeholder: "Email", type: "email", required: true, maxLength: 100 },
+      { name: "password", placeholder: "Password", type: showPassword ? "text" : "password", required: true, maxLength: 20 },
+      { name: "confirmPassword", placeholder: "Confirm Password", type: showPassword ? "text" : "password", required: true, maxLength: 20 },
     ],
   };
 
@@ -504,41 +384,69 @@ const SignUpPage = () => {
               >
                 {formFields[role].map((field) => (
                   <div key={field.name} className="relative flex flex-col">
-                    <div className="relative flex items-center">
-                      {field.name === "mobile" && (
-                        <span className="absolute left-3 text-gray-500 text-xs xs:text-sm sm:text-base">
-                          +63
-                        </span>
-                      )}
-                      <input
-                        type={field.type}
-                        name={field.name}
-                        placeholder={field.placeholder}
-                        className={`w-full px-3 py-2 xs:px-4 xs:py-2.5 border rounded-md outline-none text-xs xs:text-sm sm:text-base focus:ring-2 focus:ring-[#3D7EFF] ${
-                          field.name === "mobile" ? "pl-12" : ""
-                        } ${errors[field.name] ? "border-red-500" : ""}`}
-                        value={formData[field.name]}
-                        onChange={handleChange}
-                        required={field.required}
-                        maxLength={field.maxLength}
-                        aria-describedby={
-                          errors[field.name] ? `error-${field.name}` : undefined
-                        }
-                      />
-                      {(field.name === "password" ||
-                        field.name === "confirmPassword") &&
-                        (showPassword ? (
-                          <MdVisibility
-                            className="absolute top-1/2 right-2 xs:right-3 transform -translate-y-1/2 text-gray-500 cursor-pointer text-base xs:text-lg"
-                            onClick={togglePasswordVisibility}
-                          />
-                        ) : (
-                          <MdVisibilityOff
-                            className="absolute top-1/2 right-2 xs:right-3 transform -translate-y-1/2 text-gray-500 cursor-pointer text-base xs:text-lg"
-                            onClick={togglePasswordVisibility}
-                          />
-                        ))}
-                    </div>
+                    {field.name === "mobile" ? (
+                      <div className="flex gap-2 items-center">
+                        <select
+                          name="countryCode"
+                          value={formData.countryCode}
+                          onChange={handleChange}
+                          className="border border-gray-300 rounded-md px-3 py-2 text-xs xs:text-sm focus:ring-2 focus:ring-[#3D7EFF]"
+                          disabled={isLoading}
+                        >
+                          <option value="+63">+63</option>
+                        </select>
+                        <input
+                          type={field.type}
+                          name={field.name}
+                          placeholder={field.placeholder}
+                          className={`w-full px-3 py-2 xs:px-4 xs:py-2.5 border rounded-md outline-none text-xs xs:text-sm sm:text-base focus:ring-2 focus:ring-[#3D7EFF] ${
+                            errors[field.name] ? "border-red-500" : ""
+                          }`}
+                          value={formData[field.name]}
+                          onChange={handleChange}
+                          maxLength={field.maxLength}
+                          required={field.required}
+                          aria-describedby={
+                            errors[field.name]
+                              ? `error-${field.name}`
+                              : undefined
+                          }
+                        />
+                      </div>
+                    ) : (
+                      <div className="relative flex items-center">
+                        <input
+                          type={field.type}
+                          name={field.name}
+                          placeholder={field.placeholder}
+                          className={`w-full px-3 py-2 xs:px-4 xs:py-2.5 border rounded-md outline-none text-xs xs:text-sm sm:text-base focus:ring-2 focus:ring-[#3D7EFF] ${
+                            errors[field.name] ? "border-red-500" : ""
+                          }`}
+                          value={formData[field.name]}
+                          onChange={handleChange}
+                          required={field.required}
+                          maxLength={field.maxLength}
+                          aria-describedby={
+                            errors[field.name]
+                              ? `error-${field.name}`
+                              : undefined
+                          }
+                        />
+                        {(field.name === "password" ||
+                          field.name === "confirmPassword") &&
+                          (showPassword ? (
+                            <MdVisibility
+                              className="absolute top-1/2 right-2 xs:right-3 transform -translate-y-1/2 text-gray-500 cursor-pointer text-base xs:text-lg"
+                              onClick={togglePasswordVisibility}
+                            />
+                          ) : (
+                            <MdVisibilityOff
+                              className="absolute top-1/2 right-2 xs:right-3 transform -translate-y-1/2 text-gray-500 cursor-pointer text-base xs:text-lg"
+                              onClick={togglePasswordVisibility}
+                            />
+                          ))}
+                      </div>
+                    )}
                     {errors[field.name] && (
                       <p
                         id={`error-${field.name}`}
@@ -558,7 +466,6 @@ const SignUpPage = () => {
                 >
                   {isLoading ? (
                     <>
-                    
                       Signing up...
                     </>
                   ) : (

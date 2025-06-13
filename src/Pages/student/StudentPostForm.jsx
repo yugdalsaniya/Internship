@@ -1,5 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Select from 'react-select';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { fetchSectionData, addGeneralData, uploadAndStoreFile } from '../../Utils/api';
 import logo from '../../assets/Navbar/logo.png';
 
@@ -9,12 +12,15 @@ const PostInternshipForm = () => {
   const isStudent = user.role === 'student' && user.userid;
   const [categories, setCategories] = useState([]);
   const [skills, setSkills] = useState([]);
+  const [location, setLocation] = useState('');
+  const [existingResumeUrl, setExistingResumeUrl] = useState('');
+  const [useExistingResume, setUseExistingResume] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     name: isStudent ? user.legalname || user.email : '',
     location: '',
     type: 'Full Time',
-    salary: '', // Only numeric value
+    salary: '',
     description: '',
     category: '',
     experienceLevel: '',
@@ -27,7 +33,103 @@ const PostInternshipForm = () => {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const locationInputRef = useRef(null);
+  const autocompleteRef = useRef(null);
 
+  // Fetch existing resume and about from appuser collection
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        if (!isStudent) return;
+        const response = await fetchSectionData({
+          collectionName: 'appuser',
+          query: { _id: user.userid },
+          projection: { 'sectionData.appuser.resume': 1, 'sectionData.appuser.about': 1 },
+        });
+
+        const userData = response[0];
+        const resume = userData?.sectionData?.appuser?.resume || '';
+        const about = userData?.sectionData?.appuser?.about || '';
+        setExistingResumeUrl(resume);
+        setFormData((prev) => ({ ...prev, description: about }));
+      } catch (err) {
+        console.error('Error fetching user data:', err);
+        setError('Failed to load user data. Please try again.');
+        setTimeout(() => setError(''), 5000);
+      }
+    };
+
+    if (isStudent) {
+      fetchUserData();
+    }
+  }, [isStudent, user.userid]);
+
+  // Google Maps Autocomplete
+  useEffect(() => {
+    const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+
+    const loadGoogleMapsScript = () => {
+      return new Promise((resolve, reject) => {
+        if (window.google && window.google.maps && window.google.maps.places) {
+          resolve();
+          return;
+        }
+
+        const existingScript = document.querySelector(
+          'script[src*="maps.googleapis.com/maps/api/js"]'
+        );
+        if (existingScript) {
+          existingScript.addEventListener('load', resolve);
+          return;
+        }
+
+        const script = document.createElement('script');
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places`;
+        script.async = true;
+        script.defer = true;
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error('Failed to load Google Maps API'));
+        document.head.appendChild(script);
+      });
+    };
+
+    loadGoogleMapsScript()
+      .then(() => {
+        if (!window.google?.maps?.places) {
+          console.error('Google Maps places library not loaded');
+          return;
+        }
+
+        autocompleteRef.current = new window.google.maps.places.Autocomplete(
+          locationInputRef.current,
+          {
+            types: ['(cities)'],
+            fields: ['formatted_address', 'name'],
+            componentRestrictions: { country: 'ph' },
+          }
+        );
+
+        autocompleteRef.current.addListener('place_changed', () => {
+          const place = autocompleteRef.current.getPlace();
+          const newLocation = place.formatted_address || place.name || '';
+          setLocation(newLocation);
+          setFormData((prev) => ({ ...prev, location: newLocation }));
+        });
+      })
+      .catch((err) => {
+        console.error('Error loading Google Maps:', err);
+        setError('Google Maps API failed to load. Location suggestions unavailable.');
+        setTimeout(() => setError(''), 5000);
+      });
+
+    return () => {
+      if (autocompleteRef.current && window.google?.maps?.event) {
+        window.google.maps.event.clearInstanceListeners(autocompleteRef.current);
+      }
+    };
+  }, []);
+
+  // Fetch categories and skills
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -43,8 +145,8 @@ const PostInternshipForm = () => {
 
         if (categoryResponse && Array.isArray(categoryResponse)) {
           const categoryData = categoryResponse
-            .filter(item => item.sectionData?.category?.titleofinternship && item._id)
-            .map(item => ({
+            .filter((item) => item.sectionData?.category?.titleofinternship && item._id)
+            .map((item) => ({
               id: item._id,
               title: item.sectionData.category.titleofinternship,
             }));
@@ -65,10 +167,10 @@ const PostInternshipForm = () => {
 
         if (skillsResponse && Array.isArray(skillsResponse)) {
           const skillsData = skillsResponse
-            .filter(item => item.sectionData?.skills?.name && item._id)
-            .map(item => ({
-              id: item._id,
-              name: item.sectionData.skills.name,
+            .filter((item) => item.sectionData?.skills?.name && item._id)
+            .map((item) => ({
+              value: item._id,
+              label: item.sectionData.skills.name,
             }));
           setSkills(skillsData);
         } else {
@@ -85,11 +187,11 @@ const PostInternshipForm = () => {
           { id: 'default-financial', title: 'Financial Services' },
         ]);
         setSkills([
-          { id: 'default-dl', name: 'Deep Learning' },
-          { id: 'default-sec', name: 'Securities' },
-          { id: 'default-math', name: 'Mathematical Proficiency' },
-          { id: 'default-tone', name: 'Tone of Voice' },
-          { id: 'default-crm', name: 'CRM Proficiency' },
+          { value: 'default-dl', label: 'Deep Learning' },
+          { value: 'default-sec', label: 'Securities' },
+          { value: 'default-math', label: 'Mathematical Proficiency' },
+          { value: 'default-tone', label: 'Tone of Voice' },
+          { value: 'default-crm', label: 'CRM Proficiency' },
         ]);
       }
     };
@@ -99,6 +201,7 @@ const PostInternshipForm = () => {
     }
   }, [isStudent]);
 
+  // Redirect non-students
   useEffect(() => {
     if (!isStudent) {
       setError('Only students can submit internship preferences.');
@@ -107,38 +210,27 @@ const PostInternshipForm = () => {
   }, [isStudent, navigate]);
 
   const handleChange = (e) => {
-    const { name, value, files } = e.target;
+    const { name, value, files, type, checked } = e.target;
     if (name === 'salary') {
-      // Allow only numeric input
       if (/^\d*$/.test(value)) {
-        setFormData({
-          ...formData,
-          [name]: value,
-        });
+        setFormData({ ...formData, [name]: value });
+      }
+    } else if (name === 'location') {
+      setLocation(value);
+      setFormData({ ...formData, [name]: value });
+    } else if (name === 'useExistingResume') {
+      setUseExistingResume(checked);
+      if (checked) {
+        setFormData({ ...formData, logo: null });
       }
     } else {
-      setFormData({
-        ...formData,
-        [name]: files ? files[0] : value,
-      });
+      setFormData({ ...formData, [name]: files ? files[0] : value });
     }
   };
 
-  const handleAddSkill = () => {
-    if (formData.currentSkill && !formData.selectedSkills.includes(formData.currentSkill)) {
-      setFormData({
-        ...formData,
-        selectedSkills: [...formData.selectedSkills, formData.currentSkill],
-        currentSkill: '',
-      });
-    }
-  };
-
-  const handleRemoveSkill = (skillId) => {
-    setFormData({
-      ...formData,
-      selectedSkills: formData.selectedSkills.filter(id => id !== skillId),
-    });
+  const handleSkillChange = (selectedOptions) => {
+    const selectedSkillIds = selectedOptions ? selectedOptions.map((option) => option.value) : [];
+    setFormData({ ...formData, selectedSkills: selectedSkillIds });
   };
 
   const handleSubmit = async (e) => {
@@ -182,17 +274,27 @@ const PostInternshipForm = () => {
       return;
     }
     if (!formData.deadline) {
-      setError('Deadline is required.');
+      setError('Start date is required.');
       setLoading(false);
       return;
     }
-    if (!formData.duration.trim()) {
+    const today = new Date().toISOString().split('T')[0];
+    if (formData.deadline < today) {
+      setError('Start date cannot be in the past.');
+      setLoading(false);
+      return;
+    }
+    if (!formData.duration) {
       setError('Availability duration is required.');
       setLoading(false);
       return;
     }
-    if (formData.logo) {
-      const validTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    if (!useExistingResume && formData.logo) {
+      const validTypes = [
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      ];
       if (!validTypes.includes(formData.logo.type)) {
         setError('Resume must be a PDF, DOC, or DOCX file.');
         setLoading(false);
@@ -206,15 +308,14 @@ const PostInternshipForm = () => {
     }
 
     try {
-      let resumeUrl = '';
-      if (formData.logo) {
+      let resumeUrl = useExistingResume ? existingResumeUrl : '';
+      if (!useExistingResume && formData.logo) {
         const uploadResponse = await uploadAndStoreFile({
           appName: 'app8657281202648',
           moduleName: 'application',
           file: formData.logo,
           userId: user.userid,
         });
-        console.log('Upload Response:', uploadResponse);
         resumeUrl = uploadResponse.filePath || '';
         if (!resumeUrl) {
           setError('Failed to upload resume. Please try again.');
@@ -232,11 +333,11 @@ const PostInternshipForm = () => {
               desiredinternshiptitle: formData.title.trim(),
               preferredlocation: formData.location.trim(),
               internshiptype: formData.type,
-              expectedstipend: formData.salary.trim() ? `${formData.salary.trim()}/month` : '', // Append /month
+              expectedstipend: formData.salary.trim() ? `${formData.salary.trim()}/month` : '',
               industry: formData.category,
               currenteducationlevel: formData.experienceLevel,
               startdate: formData.deadline,
-              availabilityduration: formData.duration.trim(),
+              availabilityduration: formData.duration,
               skills: formData.selectedSkills,
               additionalnotes: formData.instructions.trim(),
               uploadresume: resumeUrl,
@@ -249,296 +350,337 @@ const PostInternshipForm = () => {
         },
       };
 
-      console.log('Submitting payload:', JSON.stringify(payload, null, 2));
-
       const response = await addGeneralData(payload);
       if (response.success) {
-        alert('Internship preference submitted successfully!');
-        navigate('/requested-internships');
+        toast.success('submitted successfully!', {
+          position: 'top-right',
+          autoClose: 3000,
+        });
+        setTimeout(() => navigate('/requested-internships'), 3000); // Delay redirect to match toast duration
       } else {
         setError(response.message || 'Failed to submit internship preference.');
+        toast.error(response.message || 'Failed to submit internship preference.', {
+          position: 'top-right',
+          autoClose: 5000,
+        });
       }
     } catch (err) {
       const errorMessage = err.message || 'Failed to submit. Please try again.';
       setError(errorMessage);
       console.error('Submission Error:', err);
+      toast.error(errorMessage, {
+        position: 'top-right',
+        autoClose: 5000,
+      });
     } finally {
       setLoading(false);
     }
   };
 
   const getSkillName = (skillId) => {
-    const skill = skills.find(s => s.id === skillId);
-    return skill ? skill.name : 'Unknown';
+    const skill = skills.find((s) => s.value === skillId);
+    return skill ? skill.label : 'Unknown';
   };
 
   return (
-    <div className="min-h-screen bg-[#fafafa] flex items-center justify-center px-4 py-8">
-      <div className="max-w-4xl w-full bg-white rounded-lg shadow-md p-8">
-        <div className="flex justify-center items-center mb-6">
-          <img src={logo} alt="Logo" className="w-10 h-10 mr-2" />
-          <div>
-            <h1 className="text-2xl font-bold text-[#050748] tracking-wide">INTERNSHIP–OJT</h1>
-            <div className="w-full h-[2px] bg-[#050748] mt-1 mb-1" />
-            <p className="text-base text-black font-bold text-center">WORK24 PHILIPPINES</p>
-          </div>
-        </div>
-        <h2 className="text-2xl font-bold text-[#050748] mb-4 text-center">
-          Student Internship Form
-        </h2>
-        {error && <p className="text-red-500 text-base mb-4 text-center">{error}</p>}
-        <form className="space-y-4" onSubmit={handleSubmit}>
-          <div>
-            <label className="block text-base font-medium text-gray-700">
-              Desired Internship Title <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              name="title"
-              value={formData.title}
-              onChange={handleChange}
-              className="w-full px-4 py-3 border rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="e.g., Software Engineering Intern"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-base font-medium text-gray-700">
-              Your Name <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              className="w-full px-4 py-3 border rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="e.g., Juan Dela Cruz"
-              required
-              disabled={isStudent}
-            />
-          </div>
-          <div>
-            <label className="block text-base font-medium text-gray-700">
-              Preferred Location <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              name="location"
-              value={formData.location}
-              onChange={handleChange}
-              className="w-full px-4 py-3 border rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="e.g., Manila, Philippines"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-base font-medium text-gray-700">
-              Internship Type <span className="text-red-500">*</span>
-            </label>
-            <select
-              name="type"
-              value={formData.type}
-              onChange={handleChange}
-              className="w-full px-4 py-3 border rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            >
-              <option value="Full Time">Full Time</option>
-              <option value="Part Time">Part Time</option>
-              <option value="Freelance">Freelance</option>
-              <option value="Seasonal">Seasonal</option>
-              <option value="Fixed-Price">Fixed-Price</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-base font-medium text-gray-700">
-              Expected Stipend (Optional)
-            </label>
-            <div className="relative">
-              <input
-                type="text"
-                name="salary"
-                value={formData.salary}
-                onChange={handleChange}
-                className="w-full px-4 py-3 pr-20 border rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="e.g., 5000"
-              />
-              <span className="absolute inset-y-0 right-0 flex items-center pr-4 text-gray-500">
-                /month
-              </span>
+    <>
+      <ToastContainer position="top-right" autoClose={3000} />
+      <div className="min-h-screen bg-[#fafafa] flex items-center justify-center px-4 py-8">
+        <div className="max-w-4xl w-full bg-white rounded-lg shadow-md p-8">
+          <div className="flex justify-center items-center mb-6">
+            <img src={logo} alt="Logo" className="w-10 h-10 mr-2" />
+            <div>
+              <h1 className="text-2xl font-bold text-[#050748] tracking-wide">INTERNSHIP–OJT</h1>
+              <div className="w-full h-[2px] bg-[#050748] mt-1 mb-1" />
+              <p className="text-base text-black font-bold text-center">WORK24 PHILIPPINES</p>
             </div>
           </div>
-          <div>
-            <label className="block text-base font-medium text-gray-700">
-              Industry <span className="text-red-500">*</span>
-            </label>
-            <select
-              name="category"
-              value={formData.category}
-              onChange={handleChange}
-              className="w-full px-4 py-3 border rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            >
-              <option value="">Select Industry</option>
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.title}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-base font-medium text-gray-700">
-              Current Education Level <span className="text-red-500">*</span>
-            </label>
-            <select
-              name="experienceLevel"
-              value={formData.experienceLevel}
-              onChange={handleChange}
-              className="w-full px-4 py-3 border rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            >
-              <option value="">Select Level</option>
-              <option value="Senior High School (Grade 11/12)">Senior High School (Grade 11/12)</option>
-              <option value="Freshman (1st Year College)">Freshman (1st Year College)</option>
-              <option value="Sophomore (2nd Year College)">Sophomore (2nd Year College)</option>
-              <option value="Junior (3rd Year College)">Junior (3rd Year College)</option>
-              <option value="Senior (4th Year College)">Senior (4th Year College)</option>
-              <option value="Graduate">Graduate</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-base font-medium text-gray-700">
-              Start Date <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="date"
-              name="deadline"
-              value={formData.deadline}
-              onChange={handleChange}
-              className="w-full px-4 py-3 border rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-base font-medium text-gray-700">
-              Availability Duration <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              name="duration"
-              value={formData.duration}
-              onChange={handleChange}
-              className="w-full px-4 py-3 border rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="e.g., 3 months"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-base font-medium text-gray-700">
-              Skills (Optional)
-            </label>
-            <div className="flex items-center gap-2">
-              <select
-                name="currentSkill"
-                value={formData.currentSkill}
+          <h2 className="text-2xl font-bold text-[#050748] mb-4 text-center">
+            Student Internship Form
+          </h2>
+          {error && <p className="text-red-500 text-base mb-4 text-center">{error}</p>}
+          <form className="space-y-4" onSubmit={handleSubmit}>
+            <div>
+              <label className="block text-base font-medium text-gray-700">
+                Desired Internship Title <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                name="title"
+                value={formData.title}
                 onChange={handleChange}
                 className="w-full px-4 py-3 border rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="e.g., Software Engineering Intern"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-base font-medium text-gray-700">
+                Your Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="e.g., Juan Dela Cruz"
+                required
+                disabled={isStudent}
+              />
+            </div>
+            <div>
+              <label className="block text-base font-medium text-gray-700">
+                Preferred Location <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                name="location"
+                value={location}
+                onChange={handleChange}
+                ref={locationInputRef}
+                className="w-full px-4 py-3 border rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="e.g., Manila, Philippines"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-base font-medium text-gray-700">
+                Internship Type <span className="text-red-500">*</span>
+              </label>
+              <select
+                name="type"
+                value={formData.type}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
               >
-                <option value="">Select Skill</option>
-                {skills.map((skill) => (
-                  <option key={skill.id} value={skill.id}>
-                    {skill.name}
+                <option value="Full Time">Full Time</option>
+                <option value="Part Time">Part Time</option>
+                <option value="Freelance">Freelance</option>
+                <option value="Seasonal">Seasonal</option>
+                <option value="Fixed-Price">Fixed-Price</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-base font-medium text-gray-700">
+                Expected Stipend (Optional)
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  name="salary"
+                  value={formData.salary}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 pr-20 border rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g., 5000/php"
+                />
+                <span className="absolute inset-y-0 right-0 flex items-center pr-4 text-gray-500">
+                  /month
+                </span>
+              </div>
+            </div>
+            <div>
+              <label className="block text-base font-medium text-gray-700">
+                Industry <span className="text-red-500">*</span>
+              </label>
+              <select
+                name="category"
+                value={formData.category}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              >
+                <option value="">Select Industry</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.title}
                   </option>
                 ))}
               </select>
+            </div>
+            <div>
+              <label className="block text-base font-medium text-gray-700">
+                Current Education Level <span className="text-red-500">*</span>
+              </label>
+              <select
+                name="experienceLevel"
+                value={formData.experienceLevel}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              >
+                <option value="">Select Level</option>
+                <option value="Senior High School (Grade 11/12)">Senior High School (Grade 11/12)</option>
+                <option value="Freshman (1st Year College)">Freshman (1st Year College)</option>
+                <option value="Sophomore (2nd Year College)">Sophomore (2nd Year College)</option>
+                <option value="Junior (3rd Year College)">Junior (3rd Year College)</option>
+                <option value="Senior (4th Year College)">Senior (4th Year College)</option>
+                <option value="Graduate">Graduate</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-base font-medium text-gray-700">
+                Start Date <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="date"
+                name="deadline"
+                value={formData.deadline}
+                onChange={handleChange}
+                min={new Date().toISOString().split('T')[0]}
+                className="w-full px-4 py-3 border rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-base font-medium text-gray-700">
+                Availability Duration <span className="text-red-500">*</span>
+              </label>
+              <select
+                name="duration"
+                value={formData.duration}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              >
+                <option value="">Select Duration</option>
+                <option value="3 months">3 months</option>
+                <option value="6 months">6 months</option>
+                <option value="12 months">12 months</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-base font-medium text-gray-700">
+                Skills (Optional)
+              </label>
+              <Select
+                isMulti
+                options={skills}
+                value={skills.filter((skill) => formData.selectedSkills.includes(skill.value))}
+                onChange={handleSkillChange}
+                className="w-full text-base"
+                placeholder="Search and select skills..."
+                styles={{
+                  control: (base) => ({
+                    ...base,
+                    borderColor: '#d1d5db',
+                    padding: '4px',
+                    borderRadius: '0.5rem',
+                    '&:hover': {
+                      borderColor: '#3b82f6',
+                    },
+                  }),
+                  option: (base, { isFocused, isSelected }) => ({
+                    ...base,
+                    backgroundColor: isSelected ? '#3b82f6' : isFocused ? '#e5e7eb' : 'white',
+                    color: isSelected ? 'white' : '#374151',
+                    cursor: 'pointer',
+                  }),
+                }}
+              />
+              {formData.selectedSkills.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {formData.selectedSkills.map((skillId) => (
+                    <div
+                      key={skillId}
+                      className="flex items-center bg-gray-100 px-3 py-1 rounded-full text-sm"
+                    >
+                      {getSkillName(skillId)}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleSkillChange(
+                            skills.filter(
+                              (s) => formData.selectedSkills.includes(s.value) && s.value !== skillId
+                            )
+                          )
+                        }
+                        className="ml-2 text-red-500 hover:text-red-700"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div>
+              <label className="block text-base font-medium text-gray-700">
+                Additional Notes (Optional)
+              </label>
+              <textarea
+                name="instructions"
+                value={formData.instructions}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
+                rows="4"
+                placeholder="e.g., Available for remote only..."
+              />
+            </div>
+            <div>
+              <label className="block text-base font-medium text-gray-700">
+                Resume (Optional)
+              </label>
+              {existingResumeUrl && (
+                <div className="mb-2">
+                  <label className="flex items-center">
+                    <input
+                      type="checkbox"
+                      name="useExistingResume"
+                      checked={useExistingResume}
+                      onChange={handleChange}
+                      className="mr-2"
+                    />
+                    <span>Use my previously uploaded resume</span>
+                  </label>
+                </div>
+              )}
+              {!useExistingResume && (
+                <input
+                  type="file"
+                  name="logo"
+                  accept=".pdf,.doc,.docx"
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              )}
+            </div>
+            <div>
+              <label className="block text-base font-medium text-gray-700">
+                About You <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                name="description"
+                value={formData.description}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
+                rows="5"
+                placeholder="Tell us about your goals, background, and why you want an internship..."
+                required
+              />
+            </div>
+            <div className="flex gap-4">
+              <button
+                type="submit"
+                className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 rounded-lg text-base font-bold hover:from-blue-600 hover:to-purple-700 transition-all"
+                disabled={!isStudent || loading}
+              >
+                {loading ? 'Submitting...' : 'Submit'}
+              </button>
               <button
                 type="button"
-                onClick={handleAddSkill}
-                className="bg-blue-500 text-white px-4 py-2 rounded-lg text-base hover:bg-blue-600"
-                disabled={!formData.currentSkill}
+                onClick={() => navigate('/post-internship')}
+                className="flex-1 border border-gray-400 text-gray-700 py-3 rounded-lg text-base font-bold hover:bg-gray-100"
+                disabled={loading}
               >
-                Add
+                Cancel
               </button>
             </div>
-            {formData.selectedSkills.length > 0 && (
-              <div className="mt-2 flex flex-wrap gap-2">
-                {formData.selectedSkills.map((skillId) => (
-                  <div
-                    key={skillId}
-                    className="flex items-center bg-gray-100 px-3 py-1 rounded-full text-sm"
-                  >
-                    {getSkillName(skillId)}
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveSkill(skillId)}
-                      className="ml-2 text-red-500 hover:text-red-700"
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-          <div>
-            <label className="block text-base font-medium text-gray-700">
-              Additional Notes (Optional)
-            </label>
-            <textarea
-              name="instructions"
-              value={formData.instructions}
-              onChange={handleChange}
-              className="w-full px-4 py-3 border rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
-              rows="4"
-              placeholder="e.g., Available for remote only..."
-            />
-          </div>
-          <div>
-            <label className="block text-base font-medium text-gray-700">
-              Upload Resume (Optional)
-            </label>
-            <input
-              type="file"
-              name="logo"
-              accept=".pdf,.doc,.docx"
-              onChange={handleChange}
-              className="w-full px-4 py-3 border rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-          <div>
-            <label className="block text-base font-medium text-gray-700">
-              About You <span className="text-red-500">*</span>
-            </label>
-            <textarea
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              className="w-full px-4 py-3 border rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
-              rows="5"
-              placeholder="Tell us about your goals, background, and why you want an internship..."
-              required
-            />
-          </div>
-          <div className="flex gap-4">
-            <button
-              type="submit"
-              className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 rounded-lg text-base font-bold hover:from-blue-600 hover:to-purple-700 transition-all"
-              disabled={!isStudent || loading}
-            >
-              {loading ? 'Submitting...' : 'Submit'}
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate('/post-internship')}
-              className="flex-1 border border-gray-400 text-gray-700 py-3 rounded-lg text-base font-bold hover:bg-gray-100"
-              disabled={loading}
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 
