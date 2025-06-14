@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaCloudUploadAlt } from 'react-icons/fa';
+import { FaCloudUploadAlt, FaCheckCircle } from 'react-icons/fa';
 import { BsEye, BsLightbulb } from 'react-icons/bs';
 import { BiTime } from 'react-icons/bi';
 import { AiFillFilePdf } from 'react-icons/ai'; // Icon for PDF
@@ -13,6 +14,7 @@ function Resume() {
   const [selectedFile, setSelectedFile] = useState(null); // State for selected file
   const [isProcessing, setIsProcessing] = useState(false); // State for processing status
   const [resumeUrl, setResumeUrl] = useState(''); // State for existing resume URL
+  const [isFirstUploadSuccessful, setIsFirstUploadSuccessful] = useState(false); // State for first successful upload
   const navigate = useNavigate();
 
   // Fetch the existing resume URL when the component mounts
@@ -23,6 +25,10 @@ function Resume() {
         const userId = user.userid;
         if (!userId) {
           console.error('User ID not found in localStorage');
+          toast.error('Please log in to view your resume.', {
+            position: 'top-right',
+            autoClose: 5000,
+          });
           return;
         }
 
@@ -35,6 +41,11 @@ function Resume() {
         const userData = response[0]; // Assuming the response is an array with one user
         const existingResume = userData?.sectionData?.appuser?.resume || '';
         setResumeUrl(existingResume);
+        // If a resume exists, assume a successful upload has occurred previously
+        if (existingResume) {
+          setIsFirstUploadSuccessful(true);
+          console.log('Existing resume found, setting isFirstUploadSuccessful to true');
+        }
       } catch (err) {
         console.error('Error fetching resume:', err);
         toast.error('Failed to load existing resume. Please try again.', {
@@ -68,6 +79,15 @@ function Resume() {
         throw new Error('Authentication token missing. Please log in again.');
       }
 
+      // Validate file type and size
+      const validTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+      if (!validTypes.includes(file.type)) {
+        throw new Error('Invalid file type. Please upload a DOC, DOCX, or PDF file.');
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        throw new Error('File size exceeds 10 MB limit.');
+      }
+
       // Upload file using uploadAndStoreFile
       console.log('Attempting to upload resume:', file.name, 'for user:', userId);
       const uploadResponse = await uploadAndStoreFile({
@@ -94,17 +114,33 @@ function Resume() {
             'sectionData.appuser.resume': uploadedFilePath,
           },
         },
-        options: { upsert: true, writeConcern: { w: 'majority' } },
+        options: { upsert: false, writeConcern: { w: 'majority' } },
       });
 
       console.log('mUpdate response for resume:', updateResponse);
 
-      if (updateResponse && updateResponse.success) {
-        toast.success('uploaded successfully!', {
+      // Check for success using multiple possible response properties
+      if (
+        updateResponse &&
+        (updateResponse.success ||
+          updateResponse.modifiedCount > 0 ||
+          updateResponse.matchedCount > 0)
+      ) {
+        if (updateResponse.matchedCount === 0) {
+          throw new Error('Failed to update user data: User not found.');
+        }
+        if (updateResponse.upsertedId) {
+          throw new Error('Unexpected error: New user created instead of updating.');
+        }
+        toast.success('Resume uploaded successfully!', {
           position: 'top-right',
           autoClose: 3000,
         });
         setResumeUrl(uploadedFilePath); // Update the UI with the new resume URL
+        if (!isFirstUploadSuccessful) {
+          setIsFirstUploadSuccessful(true);
+          console.log('Setting isFirstUploadSuccessful to true');
+        }
       } else {
         throw new Error('Failed to save resume to database.');
       }
@@ -115,6 +151,7 @@ function Resume() {
         errorMessage = 'API endpoint not found. Please contact support.';
       } else if (err.response?.status === 401) {
         errorMessage = 'Authentication failed. Please log in again.';
+        setTimeout(() => navigate('/login'), 2000);
       }
       toast.error(errorMessage || 'Failed to upload resume. Please try again.', {
         position: 'top-right',
@@ -151,17 +188,31 @@ function Resume() {
             'sectionData.appuser.resume': '', // Clear the resume field
           },
         },
-        options: { upsert: true, writeConcern: { w: 'majority' } },
+        options: { upsert: false, writeConcern: { w: 'majority' } },
       });
 
       console.log('mUpdate response for delete:', updateResponse);
 
-      if (updateResponse && updateResponse.success) {
-        toast.success('deleted successfully!', {
+      // Check for success using multiple possible response properties
+      if (
+        updateResponse &&
+        (updateResponse.success ||
+          updateResponse.modifiedCount > 0 ||
+          updateResponse.matchedCount > 0)
+      ) {
+        if (updateResponse.matchedCount === 0) {
+          throw new Error('Failed to update user data: User not found.');
+        }
+        if (updateResponse.upsertedId) {
+          throw new Error('Unexpected error: New user created instead of updating.');
+        }
+        toast.success('Resume deleted successfully!', {
           position: 'top-right',
           autoClose: 3000,
         });
         setResumeUrl(''); // Clear the UI
+        setIsFirstUploadSuccessful(false); // Reset icon to BiTime after deletion
+        console.log('Setting isFirstUploadSuccessful to false after deletion');
       } else {
         throw new Error('Failed to delete resume from database.');
       }
@@ -172,6 +223,7 @@ function Resume() {
         errorMessage = 'API endpoint not found. Please contact support.';
       } else if (err.response?.status === 401) {
         errorMessage = 'Authentication failed. Please log in again.';
+        setTimeout(() => navigate('/login'), 2000);
       }
       toast.error(errorMessage || 'Failed to delete resume. Please try again.', {
         position: 'top-right',
@@ -188,6 +240,8 @@ function Resume() {
     }
   };
 
+  console.log('Rendering with isFirstUploadSuccessful:', isFirstUploadSuccessful);
+
   return (
     <div className="bg-white rounded-xl shadow-md">
       {/* Toast Container */}
@@ -196,7 +250,11 @@ function Resume() {
       {/* Fixed Header */}
       <div className="sticky top-0 bg-white z-10 px-4 py-4 shadow-sm flex justify-between items-center border-b border-gray-200">
         <div className="flex items-center gap-2 text-gray-700 text-lg font-medium">
-          <BiTime className="text-xl" />
+          {isFirstUploadSuccessful ? (
+            <FaCheckCircle className="text-green-500" />
+          ) : (
+            <BiTime className="text-xl" />
+          )}
           <span>Resume</span>
         </div>
         {/* <div className="flex items-center gap-4 text-gray-600 text-xl">
@@ -226,7 +284,7 @@ function Resume() {
             <div className="flex items-center">
               <AiFillFilePdf className="text-red-500 text-2xl mr-3" />
               <span className="text-gray-700">
-                {selectedFile?.name || 'Yash Varmora-resume'} {/* Display file name */}
+                {selectedFile?.name || resumeUrl.split('/').pop() || 'Resume'} {/* Display file name */}
               </span>
             </div>
             <div className="flex items-center gap-3">
