@@ -109,7 +109,7 @@ const Hero = ({
     const isAuthenticated = !!user && !!localStorage.getItem('accessToken');
 
     if (isAuthenticated) {
-      if (user.roleId === '1747723485001') { // Company role
+      if (user.roleId === '1747825619417') { // Student role
         navigate('/StudentPostForm');
       } else {
         setError('Only company users can post internships.');
