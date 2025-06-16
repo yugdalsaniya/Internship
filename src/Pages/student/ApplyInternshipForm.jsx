@@ -15,7 +15,6 @@ const genderOptions = [
 const typeOptions = ['College Students', 'Professional', 'Others', 'Fresher'];
 const yearOptions = ['2020', '2021', '2022', '2023', '2024'];
 const differentlyAbledOptions = ['No', 'Yes'];
-const specializationOptions = ['Computer Science', 'Mechanical', 'Marketing'];
 
 const ApplyInternshipForm = () => {
   const { id } = useParams();
@@ -47,107 +46,135 @@ const ApplyInternshipForm = () => {
   const [instituteOptions, setInstituteOptions] = useState([]);
   const [instituteMap, setInstituteMap] = useState({});
   const [isResumeUploaded, setIsResumeUploaded] = useState(false);
+  const [specializationOptions, setSpecializationOptions] = useState([]);
+  const [specializationMap, setSpecializationMap] = useState({});
 
   const user = JSON.parse(localStorage.getItem('user')) || {};
   const userId = user.userid;
 
+  const fetchData = async () => {
+    if (!userId) {
+      setError('User not logged in. Please log in to continue.');
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      // Fetch user data
+      const userResponse = await fetchSectionData({
+        collectionName: 'appuser',
+        query: { _id: userId },
+        projection: { sectionData: 1 },
+      });
+
+      if (userResponse.length > 0) {
+        const userData = userResponse[0].sectionData.appuser;
+        setExistingUserData(userData);
+        const [firstName, ...lastNameParts] = userData.legalname?.split(' ') || [''];
+        const duration =
+          userData.startyear && userData.endyear
+            ? `${parseInt(userData.endyear) - parseInt(userData.startyear)} years`
+            : '';
+
+        setFormData({
+          email: userData.email || '',
+          mobile: userData.mobile || '',
+          firstName: firstName || '',
+          lastName: lastNameParts.join(' ') || '',
+          gender: userData.Gender || '',
+          organization: userData.organisationcollege || '',
+          type: userData.usertype || '',
+          passoutYear: userData.endyear || '',
+          course: userData.course || '',
+          specialization: userData.coursespecialization || '',
+          duration: duration,
+          differentlyAbled: userData.differentlyAbled || 'No',
+          consent: false,
+          resume: userData.resume || '',
+        });
+
+        setFileName(userData.resume ? userData.resume.split('/').pop() : '');
+        setIsResumeUploaded(!!userData.resume);
+      } else {
+        setError('User data not found.');
+      }
+
+      // Fetch course data
+      const courseResponse = await fetchSectionData({
+        collectionName: 'course',
+        query: {},
+        projection: { sectionData: 1, _id: 1 },
+      });
+
+      const courses = courseResponse.map((item) => ({
+        id: item._id,
+        name: item.sectionData.course.name,
+      }));
+
+      const courseMap = {};
+      courses.forEach((course) => {
+        courseMap[course.id] = course.name;
+      });
+
+      setCourseMap(courseMap);
+      setCourseOptions(courses);
+
+      // Fetch institute data
+      const instituteResponse = await fetchSectionData({
+        collectionName: 'institute',
+        query: {},
+        projection: { sectionData: 1, _id: 1 },
+      });
+
+      const institutes = instituteResponse.map((item) => ({
+        id: item._id,
+        name: item.sectionData.institute.institutionname,
+      }));
+
+      const instituteMap = {};
+      institutes.forEach((institute) => {
+        instituteMap[institute.id] = institute.name;
+      });
+
+      setInstituteMap(instituteMap);
+      setInstituteOptions(institutes);
+
+      // Fetch specialization data
+      const specializationResponse = await fetchSectionData({
+        collectionName: 'coursespecialization',
+        query: {},
+        projection: { sectionData: 1, _id: 1 },
+      });
+
+      const specializations = specializationResponse.map((item) => ({
+        id: item._id,
+        name: item.sectionData.coursespecialization.name,
+      }));
+
+      const specializationMap = {};
+      specializations.forEach((spec) => {
+        specializationMap[spec.id] = spec.name;
+      });
+
+      setSpecializationMap(specializationMap);
+      setSpecializationOptions(specializations);
+    } catch (err) {
+      setError('Failed to fetch data. Please try again.');
+      console.error('Fetch Data Error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchData = async () => {
-      if (!userId) {
-        setError('User not logged in. Please log in to continue.');
-        return;
-      }
-
-      try {
-        setLoading(true);
-
-        // Fetch user data
-        const userResponse = await fetchSectionData({
-          collectionName: 'appuser',
-          query: { _id: userId },
-          projection: { sectionData: 1 },
-        });
-
-        if (userResponse.length > 0) {
-          const userData = userResponse[0].sectionData.appuser;
-          setExistingUserData(userData);
-          const [firstName, ...lastNameParts] = userData.legalname?.split(' ') || [''];
-          const duration =
-            userData.startyear && userData.endyear
-              ? `${parseInt(userData.endyear) - parseInt(userData.startyear)} years`
-              : '';
-
-          setFormData({
-            email: userData.email || '',
-            mobile: userData.mobile || '',
-            firstName: firstName || '',
-            lastName: lastNameParts.join(' ') || '',
-            gender: userData.Gender || '',
-            organization: userData.organisationcollege || '', // Stores institute ID
-            type: userData.usertype || '',
-            passoutYear: userData.endyear || '',
-            course: userData.course || '',
-            specialization: userData.coursespecialization || '',
-            duration: duration,
-            differentlyAbled: userData.differentlyAbled || 'No',
-            consent: false,
-            resume: userData.resume || '',
-          });
-
-          setFileName(userData.resume ? userData.resume.split('/').pop() : '');
-          setIsResumeUploaded(!!userData.resume);
-        } else {
-          setError('User data not found.');
-        }
-
-        // Fetch course data
-        const courseResponse = await fetchSectionData({
-          collectionName: 'course',
-          query: {},
-          projection: { sectionData: 1, _id: 1 },
-        });
-
-        const courses = courseResponse.map((item) => ({
-          id: item._id,
-          name: item.sectionData.course.name,
-        }));
-
-        const courseMap = {};
-        courses.forEach((course) => {
-          courseMap[course.id] = course.name;
-        });
-
-        setCourseMap(courseMap);
-        setCourseOptions(courses);
-
-        // Fetch institute data
-        const instituteResponse = await fetchSectionData({
-          collectionName: 'institute',
-          query: {},
-          projection: { sectionData: 1, _id: 1 },
-        });
-
-        const institutes = instituteResponse.map((item) => ({
-          id: item._id,
-          name: item.sectionData.institute.institutionname,
-        }));
-
-        const instituteMap = {};
-        institutes.forEach((institute) => {
-          instituteMap[institute.id] = institute.name;
-        });
-
-        setInstituteMap(instituteMap);
-        setInstituteOptions(institutes);
-      } catch (err) {
-        setError('Failed to fetch data. Please try again.');
-        console.error('Fetch Data Error:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchData();
+
+    // Add focus listener to refetch data when the window gains focus
+    window.addEventListener('focus', fetchData);
+    return () => {
+      window.removeEventListener('focus', fetchData);
+    };
   }, [userId]);
 
   const handleChange = (e) => {
@@ -243,7 +270,7 @@ const ApplyInternshipForm = () => {
             mobile: formData.mobile,
             legalname: `${formData.firstName} ${formData.lastName}`.trim(),
             Gender: formData.gender,
-            organisationcollege: formData.organization, // Stores institute ID
+            organisationcollege: formData.organization,
             usertype: formData.type,
             endyear: formData.passoutYear,
             course: formData.course,
@@ -289,7 +316,7 @@ const ApplyInternshipForm = () => {
             userId,
             jobId: id,
             appliedAt: new Date().toISOString(),
-            organisationcollege: formData.organization, // Store institute ID
+            organisationcollege: formData.organization,
           },
         },
         options: { upsert: true },
@@ -519,9 +546,9 @@ const ApplyInternshipForm = () => {
                   className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Select Specialization</option>
-                  {specializationOptions.map((s) => (
-                    <option key={s} value={s}>
-                      {s}
+                  {specializationOptions.map((spec) => (
+                    <option key={spec.id} value={spec.id}>
+                      {spec.name}
                     </option>
                   ))}
                 </select>

@@ -352,16 +352,26 @@ const PostInternshipForm = () => {
 
       const response = await addGeneralData(payload);
       if (response.success) {
-        toast.success('submitted successfully!', {
+        toast.success('Submitted successfully!', {
           position: 'top-right',
           autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          theme: 'light',
         });
-        setTimeout(() => navigate('/requested-internships'), 3000); // Delay redirect to match toast duration
+        setTimeout(() => navigate('/requested-internships'), 3000);
       } else {
         setError(response.message || 'Failed to submit internship preference.');
         toast.error(response.message || 'Failed to submit internship preference.', {
           position: 'top-right',
           autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          theme: 'light',
         });
       }
     } catch (err) {
@@ -371,6 +381,11 @@ const PostInternshipForm = () => {
       toast.error(errorMessage, {
         position: 'top-right',
         autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        theme: 'light',
       });
     } finally {
       setLoading(false);
@@ -384,286 +399,306 @@ const PostInternshipForm = () => {
 
   return (
     <>
-      <ToastContainer position="top-right" autoClose={3000} />
+      <ToastContainer />
       <div className="min-h-screen bg-[#fafafa] flex items-center justify-center px-4 py-8">
-        <div className="max-w-4xl w-full bg-white rounded-lg shadow-md p-8">
+        <div className="max-w-4xl w-full bg-white rounded-lg shadow-md p-6">
           <div className="flex justify-center items-center mb-6">
-            <img src={logo} alt="Logo" className="w-10 h-10 mr-2" />
+            <img src={logo} alt="Logo" className="w-8 h-8 mr-2" />
             <div>
-              <h1 className="text-2xl font-bold text-[#050748] tracking-wide">INTERNSHIP–OJT</h1>
+              <h1 className="text-xl font-bold text-[#050748] tracking-wide">INTERNSHIP–OJT</h1>
               <div className="w-full h-[2px] bg-[#050748] mt-1 mb-1" />
-              <p className="text-base text-black font-bold text-center">WORK24 PHILIPPINES</p>
+              <p className="text-sm text-black font-bold text-center">WORK24 PHILIPPINES</p>
             </div>
           </div>
-          <h2 className="text-2xl font-bold text-[#050748] mb-4 text-center">
+          <h2 className="text-xl md:text-2xl font-bold text-[#050748] mb-4 text-center">
             Student Internship Form
           </h2>
-          {error && <p className="text-red-500 text-base mb-4 text-center">{error}</p>}
-          <form className="space-y-4" onSubmit={handleSubmit}>
-            <div>
-              <label className="block text-base font-medium text-gray-700">
-                Desired Internship Title <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                name="title"
-                value={formData.title}
-                onChange={handleChange}
-                className="w-full px-4 py-3 border rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="e.g., Software Engineering Intern"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-base font-medium text-gray-700">
-                Your Name <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                className="w-full px-4 py-3 border rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="e.g., Juan Dela Cruz"
-                required
-                disabled={isStudent}
-              />
-            </div>
-            <div>
-              <label className="block text-base font-medium text-gray-700">
-                Preferred Location <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                name="location"
-                value={location}
-                onChange={handleChange}
-                ref={locationInputRef}
-                className="w-full px-4 py-3 border rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="e.g., Manila, Philippines"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-base font-medium text-gray-700">
-                Internship Type <span className="text-red-500">*</span>
-              </label>
-              <select
-                name="type"
-                value={formData.type}
-                onChange={handleChange}
-                className="w-full px-4 py-3 border rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-              >
-                <option value="Full Time">Full Time</option>
-                <option value="Part Time">Part Time</option>
-                <option value="Freelance">Freelance</option>
-                <option value="Seasonal">Seasonal</option>
-                <option value="Fixed-Price">Fixed-Price</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-base font-medium text-gray-700">
-                Expected Stipend (Optional)
-              </label>
-              <div className="relative">
+          {error && <p className="text-red-500 text-sm mb-4 text-center">{error}</p>}
+          {loading && <p className="text-blue-500 text-sm mb-4 text-center">Loading...</p>}
+          <form className="space-y-6" onSubmit={handleSubmit}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Desired Internship Title <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="text"
-                  name="salary"
-                  value={formData.salary}
+                  name="title"
+                  value={formData.title}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 pr-20 border rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="e.g., 5000/php"
+                  className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g., Software Engineering Intern"
+                  required
                 />
-                <span className="absolute inset-y-0 right-0 flex items-center pr-4 text-gray-500">
-                  /month
-                </span>
               </div>
-            </div>
-            <div>
-              <label className="block text-base font-medium text-gray-700">
-                Industry <span className="text-red-500">*</span>
-              </label>
-              <select
-                name="category"
-                value={formData.category}
-                onChange={handleChange}
-                className="w-full px-4 py-3 border rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-              >
-                <option value="">Select Industry</option>
-                {categories.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.title}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-base font-medium text-gray-700">
-                Current Education Level <span className="text-red-500">*</span>
-              </label>
-              <select
-                name="experienceLevel"
-                value={formData.experienceLevel}
-                onChange={handleChange}
-                className="w-full px-4 py-3 border rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-              >
-                <option value="">Select Level</option>
-                <option value="Senior High School (Grade 11/12)">Senior High School (Grade 11/12)</option>
-                <option value="Freshman (1st Year College)">Freshman (1st Year College)</option>
-                <option value="Sophomore (2nd Year College)">Sophomore (2nd Year College)</option>
-                <option value="Junior (3rd Year College)">Junior (3rd Year College)</option>
-                <option value="Senior (4th Year College)">Senior (4th Year College)</option>
-                <option value="Graduate">Graduate</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-base font-medium text-gray-700">
-                Start Date <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="date"
-                name="deadline"
-                value={formData.deadline}
-                onChange={handleChange}
-                min={new Date().toISOString().split('T')[0]}
-                className="w-full px-4 py-3 border rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-base font-medium text-gray-700">
-                Availability Duration <span className="text-red-500">*</span>
-              </label>
-              <select
-                name="duration"
-                value={formData.duration}
-                onChange={handleChange}
-                className="w-full px-4 py-3 border rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-              >
-                <option value="">Select Duration</option>
-                <option value="3 months">3 months</option>
-                <option value="6 months">6 months</option>
-                <option value="12 months">12 months</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-base font-medium text-gray-700">
-                Skills (Optional)
-              </label>
-              <Select
-                isMulti
-                options={skills}
-                value={skills.filter((skill) => formData.selectedSkills.includes(skill.value))}
-                onChange={handleSkillChange}
-                className="w-full text-base"
-                placeholder="Search and select skills..."
-                styles={{
-                  control: (base) => ({
-                    ...base,
-                    borderColor: '#d1d5db',
-                    padding: '4px',
-                    borderRadius: '0.5rem',
-                    '&:hover': {
-                      borderColor: '#3b82f6',
-                    },
-                  }),
-                  option: (base, { isFocused, isSelected }) => ({
-                    ...base,
-                    backgroundColor: isSelected ? '#3b82f6' : isFocused ? '#e5e7eb' : 'white',
-                    color: isSelected ? 'white' : '#374151',
-                    cursor: 'pointer',
-                  }),
-                }}
-              />
-              {formData.selectedSkills.length > 0 && (
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {formData.selectedSkills.map((skillId) => (
-                    <div
-                      key={skillId}
-                      className="flex items-center bg-gray-100 px-3 py-1 rounded-full text-sm"
-                    >
-                      {getSkillName(skillId)}
-                      <button
-                        type="button"
-                        onClick={() =>
-                          handleSkillChange(
-                            skills.filter(
-                              (s) => formData.selectedSkills.includes(s.value) && s.value !== skillId
-                            )
-                          )
-                        }
-                        className="ml-2 text-red-500 hover:text-red-700"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ))}
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Your Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g., Juan Dela Cruz"
+                  required
+                  disabled={isStudent}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Preferred Location <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="location"
+                  value={location}
+                  onChange={handleChange}
+                  ref={locationInputRef}
+                  className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g., Manila, Philippines"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Internship Type <span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="type"
+                  value={formData.type}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                >
+                  <option value="Full Time">Full Time</option>
+                  <option value="Part Time">Part Time</option>
+                  <option value="Freelance">Freelance</option>
+                  <option value="Seasonal">Seasonal</option>
+                  <option value="Fixed-Price">Fixed-Price</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Expected Stipend (Optional)
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    name="salary"
+                    value={formData.salary}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., 5000"
+                  />
+                  <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 text-sm">
+                    /month
+                  </span>
                 </div>
-              )}
-            </div>
-            <div>
-              <label className="block text-base font-medium text-gray-700">
-                Additional Notes (Optional)
-              </label>
-              <textarea
-                name="instructions"
-                value={formData.instructions}
-                onChange={handleChange}
-                className="w-full px-4 py-3 border rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
-                rows="4"
-                placeholder="e.g., Available for remote only..."
-              />
-            </div>
-            <div>
-              <label className="block text-base font-medium text-gray-700">
-                Resume (Optional)
-              </label>
-              {existingResumeUrl && (
-                <div className="mb-2">
-                  <label className="flex items-center">
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Industry <span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="category"
+                  value={formData.category}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                >
+                  <option value="">Select Industry</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Current Education Level <span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="experienceLevel"
+                  value={formData.experienceLevel}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                >
+                  <option value="">Select Level</option>
+                  <option value="Senior High School (Grade 11/12)">Senior High School (Grade 11/12)</option>
+                  <option value="Freshman (1st Year College)">Freshman (1st Year College)</option>
+                  <option value="Sophomore (2nd Year College)">Sophomore (2nd Year College)</option>
+                  <option value="Junior (3rd Year College)">Junior (3rd Year College)</option>
+                  <option value="Senior (4th Year College)">Senior (4th Year College)</option>
+                  <option value="Graduate">Graduate</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Start Date <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  name="deadline"
+                  value={formData.deadline}
+                  onChange={handleChange}
+                  min={new Date().toISOString().split('T')[0]}
+                  className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Availability Duration <span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="duration"
+                  value={formData.duration}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                >
+                  <option value="">Select Duration</option>
+                  <option value="3 months">3 months</option>
+                  <option value="6 months">6 months</option>
+                  <option value="12 months">12 months</option>
+                </select>
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Skills (Optional)
+                </label>
+                <Select
+                  isMulti
+                  options={skills}
+                  value={skills.filter((skill) => formData.selectedSkills.includes(skill.value))}
+                  onChange={handleSkillChange}
+                  className="w-full text-sm"
+                  placeholder="Search and select skills..."
+                  styles={{
+                    control: (base) => ({
+                      ...base,
+                      borderColor: '#d1d5db',
+                      padding: '2px',
+                      borderRadius: '0.5rem',
+                      '&:hover': {
+                        borderColor: '#3b82f6',
+                      },
+                    }),
+                    option: (base, { isFocused, isSelected }) => ({
+                      ...base,
+                      backgroundColor: isSelected ? '#3b82f6' : isFocused ? '#e5e7eb' : 'white',
+                      color: isSelected ? 'white' : '#374151',
+                      cursor: 'pointer',
+                    }),
+                  }}
+                />
+                {formData.selectedSkills.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {formData.selectedSkills.map((skillId) => (
+                      <div
+                        key={skillId}
+                        className="flex items-center bg-gray-100 px-2 py-1 rounded-full text-sm text-gray-700"
+                      >
+                        {getSkillName(skillId)}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleSkillChange(
+                              skills.filter(
+                                (s) => formData.selectedSkills.includes(s.value) && s.value !== skillId
+                              )
+                            )
+                          }
+                          className="ml-1 text-red-500 hover:text-red-700 text-sm"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Additional Notes (Optional)
+                </label>
+                <textarea
+                  name="instructions"
+                  value={formData.instructions}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  rows="4"
+                  placeholder="e.g., Available for remote only..."
+                />
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Resume (Optional)
+                </label>
+                {existingResumeUrl && (
+                  <div className="mb-2 flex items-center gap-2">
                     <input
                       type="checkbox"
                       name="useExistingResume"
                       checked={useExistingResume}
                       onChange={handleChange}
-                      className="mr-2"
+                      className="h-4 w-4 text-blue-500 border-gray-300 rounded focus:ring-blue-500"
+                      id="useExistingResume"
                     />
-                    <span>Use my previously uploaded resume</span>
-                  </label>
-                </div>
-              )}
-              {!useExistingResume && (
-                <input
-                  type="file"
-                  name="logo"
-                  accept=".pdf,.doc,.docx"
+                    <label htmlFor="useExistingResume" className="text-sm text-gray-700">
+                      Use my previously uploaded resume
+                    </label>
+                  </div>
+                )}
+                {!useExistingResume && (
+                  <div>
+                    <label
+                      htmlFor="resume-upload"
+                      className="flex flex-col items-center justify-center border border-dashed border-gray-400 bg-gray-50 p-4 rounded-lg text-center cursor-pointer hover:bg-gray-100 transition-all"
+                    >
+                      <span className="text-blue-600 font-medium text-sm">Click to Upload file</span>
+                      <span className="text-xs text-gray-500">
+                        Maximum file size is 5 MB{' '}
+                        <span className="text-red-500">(File type: pdf, doc, docx)</span>
+                      </span>
+                      <input
+                        id="resume-upload"
+                        type="file"
+                        name="logo"
+                        accept=".pdf,.doc,.docx"
+                        onChange={handleChange}
+                        className="hidden"
+                      />
+                    </label>
+                    {formData.logo && (
+                      <p className="mt-2 text-sm text-gray-600">Selected: {formData.logo.name}</p>
+                    )}
+                  </div>
+                )}
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  About You <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  name="description"
+                  value={formData.description}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 border rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  rows="5"
+                  placeholder="Tell us about your goals, background, and why you want an internship..."
+                  required
                 />
-              )}
+              </div>
             </div>
-            <div>
-              <label className="block text-base font-medium text-gray-700">
-                About You <span className="text-red-500">*</span>
-              </label>
-              <textarea
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                className="w-full px-4 py-3 border rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
-                rows="5"
-                placeholder="Tell us about your goals, background, and why you want an internship..."
-                required
-              />
-            </div>
-            <div className="flex gap-4">
+            <div className="flex gap-4 mt-6">
               <button
                 type="submit"
-                className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 rounded-lg text-base font-bold hover:from-blue-600 hover:to-purple-700 transition-all"
+                className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white py-2 rounded-lg text-sm font-bold hover:from-blue-600 hover:to-purple-700 transition-all"
                 disabled={!isStudent || loading}
               >
                 {loading ? 'Submitting...' : 'Submit'}
@@ -671,7 +706,7 @@ const PostInternshipForm = () => {
               <button
                 type="button"
                 onClick={() => navigate('/post-internship')}
-                className="flex-1 border border-gray-400 text-gray-700 py-3 rounded-lg text-base font-bold hover:bg-gray-100"
+                className="flex-1 border border-gray-400 text-gray-700 py-2 rounded-lg text-sm font-bold hover:bg-gray-100"
                 disabled={loading}
               >
                 Cancel
