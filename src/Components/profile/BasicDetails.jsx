@@ -16,7 +16,7 @@ import {
   FaBullhorn,
   FaUsers,
 } from "react-icons/fa";
-import { FaEye, FaRegLightbulb } from "react-icons/fa6";
+import { BiTime } from "react-icons/bi"; // Added import
 import Select from "react-select";
 import { fetchSectionData, mUpdate, uploadAndStoreFile } from "../../Utils/api";
 import { toast } from "react-toastify";
@@ -112,12 +112,14 @@ function BasicDetails({ userData }) {
   const [newCareerRole, setNewCareerRole] = useState([]);
   const [designationOptions, setDesignationOptions] = useState([]);
   const [courseOptions, setCourseOptions] = useState([]);
+  const [specializationOptions, setSpecializationOptions] = useState([]);
   const [instituteOptions, setInstituteOptions] = useState([]);
   const [roleOptions, setRoleOptions] = useState([]);
   const [isLoadingOptions, setIsLoadingOptions] = useState(false);
   const [profilePicture, setProfilePicture] = useState("");
   const [profilePictureFile, setProfilePictureFile] = useState(null);
   const [profilePicturePreview, setProfilePicturePreview] = useState("");
+  const [isFirstSaveSuccessful, setIsFirstSaveSuccessful] = useState(false); // Added state
   const locationInputRef = useRef(null);
   const autocompleteRef = useRef(null);
 
@@ -149,6 +151,10 @@ function BasicDetails({ userData }) {
         const userString = localStorage.getItem("user");
         if (!userString) {
           setError("Please log in to view your details. Using local data.");
+          toast.error("Please log in to view your details.", {
+            position: "top-right",
+            autoClose: 5000,
+          });
           setTimeout(() => setError(""), 5000);
           return;
         }
@@ -159,6 +165,10 @@ function BasicDetails({ userData }) {
           userId = user.userid;
         } catch (parseError) {
           setError("Invalid user data. Using local data.");
+          toast.error("Invalid user data. Using local data.", {
+            position: "top-right",
+            autoClose: 5000,
+          });
           setTimeout(() => setError(""), 5000);
           return;
         }
@@ -179,6 +189,10 @@ function BasicDetails({ userData }) {
           (Array.isArray(userDataResponse) && userDataResponse.length === 0)
         ) {
           setError("User data not found. Using local data.");
+          toast.error("User data not found. Using local data.", {
+            position: "top-right",
+            autoClose: 5000,
+          });
           setTimeout(() => setError(""), 5000);
           return;
         }
@@ -228,15 +242,35 @@ function BasicDetails({ userData }) {
         setNewCareerRole(userData.role1 || []);
         setProfilePicture(userData.profile || "");
 
+        // Set isFirstSaveSuccessful if any relevant fields are populated
+        if (
+          fname ||
+          lname ||
+          userData.email ||
+          userData.mobile ||
+          userData.Gender ||
+          userData.usertype ||
+          userData.location ||
+          userData.purpose?.length ||
+          userData.profile
+        ) {
+          setIsFirstSaveSuccessful(true);
+          console.log(
+            "Existing basic details data found, setting isFirstSaveSuccessful to true"
+          );
+        }
+
         const designationData = await fetchSectionData({
           dbName: "internph",
           collectionName: "designation",
           query: {},
         });
-        const designations = designationData.map((item) => ({
-          _id: item._id,
-          name: item.sectionData.designation.name,
-        }));
+        const designations = designationData
+          .map((item) => ({
+            _id: item._id,
+            name: item.sectionData.designation.name,
+          }))
+          .sort((a, b) => a.name.localeCompare(b.name));
         setDesignationOptions(designations);
 
         const courseData = await fetchSectionData({
@@ -249,6 +283,17 @@ function BasicDetails({ userData }) {
           name: item.sectionData.course.name,
         }));
         setCourseOptions(courses);
+
+        const specializationData = await fetchSectionData({
+          dbName: "internph",
+          collectionName: "coursespecialization",
+          query: {},
+        });
+        const specializations = specializationData.map((item) => ({
+          _id: item._id,
+          name: item.sectionData.coursespecialization.name,
+        }));
+        setSpecializationOptions(specializations);
 
         const instituteData = await fetchSectionData({
           dbName: "internph",
@@ -285,6 +330,10 @@ function BasicDetails({ userData }) {
       } catch (err) {
         console.error("Error fetching data:", err);
         setError("Failed to load server data. Using local data.");
+        toast.error("Failed to load server data. Using local data.", {
+          position: "top-right",
+          autoClose: 5000,
+        });
         setTimeout(() => setError(""), 5000);
       } finally {
         setIsLoadingOptions(false);
@@ -302,7 +351,7 @@ function BasicDetails({ userData }) {
           return;
         }
         const existingScript = document.querySelector(
-          script[src*="maps.googleapis.com/maps/api/js"]
+          'script[src*="maps.googleapis.com/maps/api/js"]'
         );
         if (existingScript) {
           existingScript.addEventListener("load", resolve);
@@ -342,6 +391,13 @@ function BasicDetails({ userData }) {
         console.error("Error loading Google Maps:", err);
         setError(
           "Google Maps API failed to load. Location suggestions unavailable."
+        );
+        toast.error(
+          "Google Maps API failed to load. Location suggestions unavailable.",
+          {
+            position: "top-right",
+            autoClose: 5000,
+          }
         );
         setTimeout(() => setError(""), 5000);
       });
@@ -451,7 +507,10 @@ function BasicDetails({ userData }) {
     const validationError = validateForm();
     if (validationError) {
       setError(validationError);
-      toast.error(validationError);
+      toast.error(validationError, {
+        position: "top-right",
+        autoClose: 5000,
+      });
       setTimeout(() => setError(""), 5000);
       return;
     }
@@ -466,8 +525,11 @@ function BasicDetails({ userData }) {
 
       if (!userString) {
         setError("Please log in to save your details.");
-        toast.error("Please log in to save your details.");
-        setTimeout(() => setError(""), 2000);
+        toast.error("Please log in to save your details.", {
+          position: "top-right",
+          autoClose: 5000,
+        });
+        setTimeout(() => setError(""), 5000);
         return;
       }
 
@@ -477,8 +539,11 @@ function BasicDetails({ userData }) {
         userId = user.userid;
       } catch (parseError) {
         setError("Invalid user data. Please log in again.");
-        toast.error("Invalid user data. Please log in again.");
-        setTimeout(() => setError(""), 2000);
+        toast.error("Invalid user data. Please log in again.", {
+          position: "top-right",
+          autoClose: 5000,
+        });
+        setTimeout(() => setError(""), 5000);
         return;
       }
 
@@ -487,9 +552,13 @@ function BasicDetails({ userData }) {
           "Authentication token or user ID missing. Please log in again."
         );
         toast.error(
-          "Authentication token or user ID missing. Please log in again."
+          "Authentication token or user ID missing. Please log in again.",
+          {
+            position: "top-right",
+            autoClose: 5000,
+          }
         );
-        setTimeout(() => setError(""), 2000);
+        setTimeout(() => setError(""), 5000);
         return;
       }
 
@@ -507,12 +576,16 @@ function BasicDetails({ userData }) {
           "User not found in database. Please sign up or contact support."
         );
         toast.error(
-          "User not found in database. Please sign up or contact support."
+          "User not found in database. Please sign up or contact support.",
+          {
+            position: "top-right",
+            autoClose: 5000,
+          }
         );
         setTimeout(() => {
           setError("");
           navigate("/signup");
-        }, 2000);
+        }, 5000);
         return;
       }
 
@@ -527,7 +600,11 @@ function BasicDetails({ userData }) {
           "Multiple accounts detected for this email. Please contact support."
         );
         toast.error(
-          "Multiple accounts detected for this email. Please contact support."
+          "Multiple accounts detected for this email. Please contact support.",
+          {
+            position: "top-right",
+            autoClose: 5000,
+          }
         );
         setTimeout(() => setError(""), 5000);
         return;
@@ -564,7 +641,10 @@ function BasicDetails({ userData }) {
           setProfilePicturePreview("");
         } catch (uploadErr) {
           setError(uploadErr.message);
-          toast.error(uploadErr.message);
+          toast.error(uploadErr.message, {
+            position: "top-right",
+            autoClose: 5000,
+          });
           setTimeout(() => setError(""), 5000);
           setIsProcessing(false);
           return;
@@ -622,10 +702,18 @@ function BasicDetails({ userData }) {
         options: { upsert: false, writeConcern: { w: "majority" } },
       });
 
-      if (updateResponse && updateResponse.success) {
+      if (
+        updateResponse &&
+        (updateResponse.success ||
+          updateResponse.modifiedCount > 0 ||
+          updateResponse.matchedCount > 0)
+      ) {
         if (updateResponse.matchedCount === 0) {
           setError("Failed to update user data: User not found.");
-          toast.error("Failed to update user data: User not found.");
+          toast.error("Failed to update user data: User not found.", {
+            position: "top-right",
+            autoClose: 5000,
+          });
           setTimeout(() => setError(""), 5000);
           return;
         }
@@ -634,16 +722,31 @@ function BasicDetails({ userData }) {
             "Unexpected error: New user created instead of updating. Please contact support."
           );
           toast.error(
-            "Unexpected error: New user created instead of updating. Please contact support."
+            "Unexpected error: New user created instead of updating. Please contact support.",
+            {
+              position: "top-right",
+              autoClose: 5000,
+            }
           );
           setTimeout(() => setError(""), 5000);
           return;
         }
         setSuccess("Details updated successfully!");
-        toast.success("Details updated successfully!");
+        toast.success("Details updated successfully!", {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
+        if (!isFirstSaveSuccessful) {
+          setIsFirstSaveSuccessful(true);
+          console.log("Setting isFirstSaveSuccessful to true");
+        }
         setTimeout(() => {
           setSuccess("");
-        }, 2000);
+        }, 3000);
       } else {
         throw new Error("Failed to update details in database.");
       }
@@ -653,11 +756,15 @@ function BasicDetails({ userData }) {
         errorMessage = "API endpoint not found. Please contact support.";
       } else if (err.response?.status === 401) {
         errorMessage = "Authentication failed. Please log in again.";
-        setTimeout(() => navigate("/login"), 2000);
+        setTimeout(() => navigate("/login"), 5000);
       }
       setError(errorMessage || "Failed to update details. Please try again.");
       toast.error(
-        errorMessage || "Failed to update details. Please try again."
+        errorMessage || "Failed to update details. Please try again.",
+        {
+          position: "top-right",
+          autoClose: 5000,
+        }
       );
       setTimeout(() => setError(""), 5000);
     } finally {
@@ -719,11 +826,17 @@ function BasicDetails({ userData }) {
     }),
   };
 
+  console.log("Rendering with isFirstSaveSuccessful:", isFirstSaveSuccessful);
+
   return (
     <div className="bg-white rounded-xl shadow-md">
       <div className="sticky top-0 z-10 bg-white border-b px-6 py-4 flex justify-between items-center">
         <div className="flex items-center gap-2 text-gray-800 font-semibold text-lg">
-          <FaCheckCircle className="text-green-500" />
+          {isFirstSaveSuccessful ? (
+            <FaCheckCircle className="text-green-500" />
+          ) : (
+            <BiTime className="text-xl" />
+          )}
           Basic Details
         </div>
       </div>
@@ -1040,13 +1153,20 @@ function BasicDetails({ userData }) {
                 className="w-full border border-gray-300 rounded-lg p-2 h-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={specialization}
                 onChange={(e) => setSpecialization(e.target.value)}
-                disabled={isProcessing}
+                disabled={isProcessing || isLoadingOptions}
               >
                 <option value="">Select Specialization</option>
-                <option value="Computer Science">Computer Science</option>
-                <option value="Mechanical">Mechanical</option>
-                <option value="Marketing">Marketing</option>
+                {specializationOptions.map((option) => (
+                  <option key={option._id} value={option._id}>
+                    {option.name}
+                  </option>
+                ))}
               </select>
+              {isLoadingOptions && (
+                <p className="text-sm text-gray-500 mt-1">
+                  Loading specializations...
+                </p>
+              )}
             </div>
 
             <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1220,6 +1340,7 @@ function BasicDetails({ userData }) {
             onClick={handleSave}
             className="bg-blue-600 text-white px-6 py-2 rounded-full flex items-center gap-2 text-sm font-medium hover:bg-blue-700 transition disabled:opacity-50"
             disabled={isProcessing}
+            aria-label="Save Basic Details"
           >
             {isProcessing ? (
               "Processing..."
