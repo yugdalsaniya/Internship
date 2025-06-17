@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { BiTime } from 'react-icons/bi';
-import { FaCheckCircle } from 'react-icons/fa'; // Correct import
+import { FaCheckCircle } from 'react-icons/fa';
 import { fetchSectionData, mUpdate } from './../../Utils/api';
-import { jwtDecode } from 'jwt-decode';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-function SocialLinks() {
+function SocialLinks({ userData, updateCompletionStatus }) {
   const [links, setLinks] = useState({
     LinkedIn: '',
     Facebook: '',
@@ -22,14 +21,13 @@ function SocialLinks() {
   const [userId, setUserId] = useState(null);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isFirstSaveSuccessful, setIsFirstSaveSuccessful] = useState(false); // State for first successful save
+  const [isCompleted, setIsCompleted] = useState(false);
 
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const userString = localStorage.getItem('user');
-        let userIdLocal;
-        if (!userString) {
+        const userIdLocal = userData.userid;
+        if (!userIdLocal) {
           setError('Please log in to view your details.');
           toast.error('Please log in to view your details.', {
             position: "top-right",
@@ -37,19 +35,7 @@ function SocialLinks() {
           });
           return;
         }
-        try {
-          const user = JSON.parse(userString);
-          userIdLocal = user.userid;
-          setUserId(userIdLocal);
-        } catch (parseError) {
-          setError('Invalid user data. Please log in again.');
-          toast.error('Invalid user data. Please log in again.', {
-            position: "top-right",
-            autoClose: 5000,
-          });
-          return;
-        }
-
+        setUserId(userIdLocal);
         setIsLoading(true);
         const data = await fetchSectionData({
           collectionName: 'appuser',
@@ -72,15 +58,8 @@ function SocialLinks() {
             Behance: user.behance || '',
           };
           setLinks(fetchedLinks);
-          // Set isFirstSaveSuccessful if any social link fields are populated
-          if (
-            Object.values(fetchedLinks).some((link) => link.trim() !== '')
-          ) {
-            setIsFirstSaveSuccessful(true);
-            console.log(
-              "Existing social links data found, setting isFirstSaveSuccessful to true"
-            );
-          }
+          const hasLinks = Object.values(fetchedLinks).some((link) => link.trim() !== '');
+          setIsCompleted(hasLinks);
         } else {
           setError('User data not found. Please ensure your account exists.');
           toast.error('User data not found. Please ensure your account exists.', {
@@ -100,7 +79,13 @@ function SocialLinks() {
       }
     };
     fetchUserData();
-  }, []);
+  }, [userData]);
+
+  useEffect(() => {
+    if (updateCompletionStatus) {
+      updateCompletionStatus('Social Links', isCompleted);
+    }
+  }, [isCompleted, updateCompletionStatus]);
 
   const handleInputChange = (platform, value) => {
     setError('');
@@ -144,7 +129,6 @@ function SocialLinks() {
         options: { upsert: false },
       });
 
-      // Check for success using multiple possible response properties
       if (
         response &&
         (response.success ||
@@ -157,7 +141,6 @@ function SocialLinks() {
         if (response.upsertedId) {
           throw new Error("Unexpected error: New user created instead of updating.");
         }
-        console.log('Social links updated successfully:', updateData);
         toast.success('Social links updated successfully!', {
           position: "top-right",
           autoClose: 3000,
@@ -166,10 +149,8 @@ function SocialLinks() {
           pauseOnHover: true,
           draggable: true,
         });
-        if (!isFirstSaveSuccessful) {
-          setIsFirstSaveSuccessful(true);
-          console.log("Setting isFirstSaveSuccessful to true");
-        }
+        const hasLinks = Object.values(links).some((link) => link.trim() !== '');
+        setIsCompleted(hasLinks);
       } else {
         throw new Error("Failed to update social links in database.");
       }
@@ -191,31 +172,26 @@ function SocialLinks() {
     }
   };
 
-  console.log("Rendering with isFirstSaveSuccessful:", isFirstSaveSuccessful);
-
   return (
     <div className="bg-white rounded-xl shadow-md">
       <ToastContainer />
-      {/* Error Message */}
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative m-4" role="alert">
           <span>{error}</span>
         </div>
       )}
 
-      {/* Fixed Header */}
       <div className="sticky top-0 bg-white z-10 px-4 py-4 shadow-sm flex justify-between items-center border-b border-gray-200">
         <div className="flex items-center gap-2 text-gray-700 text-lg font-medium">
-          {isFirstSaveSuccessful ? (
+          {isCompleted ? (
             <FaCheckCircle className="text-green-500" />
           ) : (
-            <BiTime className="text-xl" />
+            <BiTime className="text-gray-400 text-xl" />
           )}
           <span>Social Links</span>
         </div>
       </div>
 
-      {/* Scrollable Content */}
       <div className="p-6 space-y-6">
         <div className="mb-4">
           <p className="text-sm font-medium text-gray-700 mb-1">
@@ -250,7 +226,6 @@ function SocialLinks() {
         </div>
       </div>
 
-      {/* Fixed Save Button */}
       <div className="sticky bottom-0 bg-white border-t p-4">
         <div className="flex justify-end">
           <button

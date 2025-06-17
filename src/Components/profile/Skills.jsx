@@ -1,59 +1,42 @@
-
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { BiTime } from 'react-icons/bi';
 import { FaCheckCircle, FaEye, FaRegLightbulb } from 'react-icons/fa';
 import { fetchSectionData, mUpdate } from '../../Utils/api';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-function Skills() {
+function Skills({ userData, updateCompletionStatus }) {
   const [skillsText, setSkillsText] = useState('');
-  const [allSkills, setAllSkills] = useState([]); // For suggestions (showinsuggestions: true)
-  const [allSearchableSkills, setAllSearchableSkills] = useState([]); // For search dropdown (all skills)
+  const [allSkills, setAllSkills] = useState([]);
+  const [allSearchableSkills, setAllSearchableSkills] = useState([]);
   const [selectedSkillIds, setSelectedSkillIds] = useState([]);
-  const [isFirstSaveSuccessful, setIsFirstSaveSuccessful] = useState(false); // State for first successful save
+  const [isCompleted, setIsCompleted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(0);
   const [showDropdown, setShowDropdown] = useState(false);
   const [filteredSkills, setFilteredSkills] = useState([]);
   const textareaRef = useRef(null);
   const dropdownRef = useRef(null);
+  const navigate = useNavigate();
 
-  // Retrieve userId from localStorage
-  const userString = localStorage.getItem('user');
-  let userId;
-  if (!userString) {
-    toast.error('Please log in to view your details.', { autoClose: 5000 });
-    userId = null;
-  } else {
-    try {
-      const user = JSON.parse(userString);
-      userId = user.userid;
-    } catch (parseError) {
-      toast.error('Invalid user data. Please log in again.', { autoClose: 5000 });
-      userId = null;
-    }
-  }
-
-  // Fetch skills
   useEffect(() => {
+    console.log('Skills useEffect triggered for fetching skills');
     const fetchSkills = async () => {
       try {
         setLoading(true);
         const response = await fetchSectionData({
-          dbName: 'internph',
+          appName: 'app8657281202648',
           collectionName: 'skills',
           projection: { 'sectionData.skills': 1, '_id': 1 },
         });
 
-        // All skills for search dropdown
         const searchableSkills = response.map(item => ({
           id: item._id,
           name: item.sectionData.skills.name,
         }));
         setAllSearchableSkills(searchableSkills);
 
-        // Filtered skills for suggestions
         const suggestionSkills = response
           .filter(item => item.sectionData.skills.showinsuggestions === true)
           .map(item => ({
@@ -73,39 +56,85 @@ function Skills() {
     fetchSkills();
   }, []);
 
-  // Fetch user's saved skills
   useEffect(() => {
-    if (!userId) return;
+    if (!userData.userid) {
+      console.error('User ID not found in userData:', userData);
+      toast.error('Please log in to view your skills.', { autoClose: 5000 });
+      navigate('/login');
+      return;
+    }
 
+    console.log('Skills useEffect triggered for fetching user skills with userId:', userData.userid);
     const fetchUserSkills = async () => {
       try {
         setLoading(true);
-        const response = await fetchSectionData({
-          dbName: 'internph',
-          collectionName: 'appuser',
-          query: { _id: userId },
-          projection: { 'sectionData.appuser.skills': 1 }
-        });
+        const token = localStorage.getItem('accessToken');
+        if (!token) {
+          throw new Error('Authentication token missing.');
+        }
 
-        if (response && response[0]?.sectionData?.appuser?.skills) {
-          setSelectedSkillIds(response[0].sectionData.appuser.skills);
-          if (response[0].sectionData.appuser.skills.length > 0) {
-            setIsFirstSaveSuccessful(true);
-            console.log('Existing skills found, setting isFirstSaveSuccessful to true');
+        const fetchWithRetry = async (fn, retries = 3, delay = 1000) => {
+          for (let i = 0; i < retries; i++) {
+            try {
+              return await fn();
+            } catch (err) {
+              if (i === retries - 1) throw err;
+              console.warn(`Retry ${i + 1} for fetchSectionData:`, err.message);
+              await new Promise((resolve) => setTimeout(resolve, delay));
+            }
           }
+        };
+
+        const response = await fetchWithRetry(() =>
+          fetchSectionData({
+            appName: 'app8657281202648',
+            collectionName: 'appuser',
+            query: { _id: userData.userid },
+            projection: { 'sectionData.appuser.skills': 1 },
+          })
+        );
+
+        console.log('fetchSectionData response for Skills:', JSON.stringify(response, null, 2));
+        const apiData = response[0];
+        if (!apiData) {
+          console.warn('No user data returned from API, setting default skills state');
+          setSelectedSkillIds([]);
+          setIsCompleted(false);
+          if (updateCompletionStatus) {
+            updateCompletionStatus('Skills', false);
+          }
+          return;
+        }
+
+        const existingSkills = apiData?.sectionData?.appuser?.skills || [];
+        setSelectedSkillIds(existingSkills);
+        setIsCompleted(!!existingSkills.length);
+        if (updateCompletionStatus) {
+          updateCompletionStatus('Skills', !!existingSkills.length);
+          console.log('Updated completion status for Skills:', !!existingSkills.length);
         }
         setLoading(false);
       } catch (err) {
         console.error('Failed to load saved skills:', err);
-        toast.error('Failed to load saved skills: ' + err.message, { autoClose: 5000 });
+        let errorMessage = 'Failed to load saved skills. Please try again.';
+        if (err.response?.status === 404) {
+          errorMessage = 'API endpoint not found. Please contact support.';
+        } else if (err.response?.status === 401) {
+          errorMessage = 'Authentication failed. Please log in again.';
+          navigate('/login');
+        }
+        toast.error(errorMessage, { autoClose: 5000 });
+        setIsCompleted(false);
+        if (updateCompletionStatus) {
+          updateCompletionStatus('Skills', false);
+        }
         setLoading(false);
       }
     };
 
     fetchUserSkills();
-  }, [userId]);
+  }, [userData.userid, updateCompletionStatus, navigate]);
 
-  // Handle clicks outside textarea to hide dropdown
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
@@ -124,7 +153,6 @@ function Skills() {
     };
   }, []);
 
-  // Filter skills based on textarea input for search dropdown
   useEffect(() => {
     if (skillsText.trim() === '') {
       setFilteredSkills([]);
@@ -141,7 +169,6 @@ function Skills() {
     setShowDropdown(filtered.length > 0);
   }, [skillsText, allSearchableSkills, selectedSkillIds]);
 
-  // Compute suggestions to display (up to 10, only showinsuggestions: true)
   const getSuggestions = () => {
     const availableSkills = allSkills.filter(skill => !selectedSkillIds.includes(skill.id));
     const startIndex = currentPage * 10;
@@ -149,35 +176,39 @@ function Skills() {
   };
 
   const handleSkillClick = (skillId, skillName) => {
+    console.log('handleSkillClick:', { skillId, skillName, selectedSkillIds });
     if (selectedSkillIds.includes(skillId)) {
-      // Deselect skill: remove from selectedSkillIds
       setSelectedSkillIds(selectedSkillIds.filter(id => id !== skillId));
-      // Adjust currentPage if necessary to ensure suggestions are populated
       const availableSkills = allSkills.filter(skill => !selectedSkillIds.includes(skill.id) || skill.id === skillId);
       const maxPage = Math.ceil(availableSkills.length / 10) - 1;
       if (currentPage > maxPage) {
         setCurrentPage(maxPage >= 0 ? maxPage : 0);
       }
     } else {
-      // Select skill: add to selectedSkillIds
-      setSelectedSkillIds([...selectedSkillIds, skillId]);
-      // Move to next page if current page is empty
+      const newSelectedSkillIds = [...selectedSkillIds, skillId];
+      setSelectedSkillIds(newSelectedSkillIds);
       const availableSkills = allSkills.filter(skill => !selectedSkillIds.includes(skill.id) && skill.id !== skillId);
       const currentSuggestions = availableSkills.slice(currentPage * 10, currentPage * 10 + 10);
       if (currentSuggestions.length === 0 && availableSkills.length > 0) {
         setCurrentPage(prev => prev + 1);
       }
-      // Clear textarea and hide dropdown if selected from dropdown
-      if (showDropdown) {
+      if (showDropdown && skillName.toLowerCase() === skillsText.toLowerCase().trim()) {
         setSkillsText('');
         setShowDropdown(false);
       }
     }
   };
 
+  const handleTextChange = (e) => {
+    const newText = e.target.value;
+    console.log('handleTextChange:', { oldText: skillsText, newText });
+    setSkillsText(newText);
+  };
+
   const handleSave = async () => {
-    if (!userId) {
+    if (!userData.userid) {
       toast.error('Please log in to save skills.', { autoClose: 5000 });
+      navigate('/login');
       return;
     }
 
@@ -186,82 +217,88 @@ function Skills() {
       return;
     }
 
+    setLoading(true);
+
     try {
-      setLoading(true);
-      const response = await mUpdate({
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        throw new Error('Authentication token missing.');
+      }
+
+      const updateResponse = await mUpdate({
         appName: 'app8657281202648',
         collectionName: 'appuser',
-        query: { _id: userId },
+        query: { _id: userData.userid },
         update: { $set: { 'sectionData.appuser.skills': selectedSkillIds } },
         options: { upsert: false, writeConcern: { w: 'majority' } },
       });
 
-      console.log('mUpdate response for skills:', response);
+      console.log('mUpdate response for skills:', updateResponse);
 
-      // Check for success using multiple possible response properties
       if (
-        response &&
-        (response.success ||
-          response.modifiedCount > 0 ||
-          response.matchedCount > 0)
+        updateResponse &&
+        (updateResponse.success ||
+          updateResponse.modifiedCount > 0 ||
+          updateResponse.matchedCount > 0)
       ) {
-        if (response.matchedCount === 0) {
+        if (updateResponse.matchedCount === 0) {
           throw new Error('Failed to update user data: User not found.');
         }
-        if (response.upsertedId) {
+        if (updateResponse.upsertedId) {
           throw new Error('Unexpected error: New user created instead of updating.');
         }
         toast.success('Skills saved successfully!', {
           position: 'top-right',
           autoClose: 3000,
         });
-        if (!isFirstSaveSuccessful) {
-          setIsFirstSaveSuccessful(true);
-          console.log('Setting isFirstSaveSuccessful to true');
+        setIsCompleted(true);
+        if (updateCompletionStatus) {
+          updateCompletionStatus('Skills', true);
+          console.log('Updated completion status for Skills: true');
         }
       } else {
         throw new Error('Failed to save skills to database.');
       }
     } catch (err) {
-      console.error('Failed to save skills:', err.response?.data || err.message);
+      console.error('Error saving skills:', err.response?.data || err.message);
       let errorMessage = err.message;
       if (err.response?.status === 404) {
         errorMessage = 'API endpoint not found. Please contact support.';
       } else if (err.response?.status === 401) {
         errorMessage = 'Authentication failed. Please log in again.';
+        navigate('/login');
       }
       toast.error(errorMessage || 'Failed to save skills. Please try again.', {
         position: 'top-right',
         autoClose: 5000,
       });
+      setIsCompleted(false);
+      if (updateCompletionStatus) {
+        updateCompletionStatus('Skills', false);
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  console.log('Rendering with isFirstSaveSuccessful:', isFirstSaveSuccessful);
+  console.log('Rendering Skills:', { isCompleted, selectedSkillIds, skillsText });
 
   return (
     <div className="bg-white rounded-xl shadow-md">
-      <ToastContainer position="top-right" autoClose={5000} hideProgressBar={false} newestOnTop closeOnClick pauseOnHover draggable />
-
+      <ToastContainer />
       <div className="sticky top-0 bg-white z-10 px-4 py-4 shadow-sm flex justify-between items-center border-b border-gray-200">
         <div className="flex items-center gap-2 text-gray-700 text-lg font-medium">
-          {isFirstSaveSuccessful ? (
+          {isCompleted ? (
             <FaCheckCircle className="text-green-500" />
           ) : (
-            <BiTime className="text-xl" />
+            <BiTime className="text-gray-400 text-xl" />
           )}
           <span>Skills</span>
         </div>
-        {/* <div className="flex items-center gap-4 text-gray-600 text-xl">
-          <FaEye className="cursor-pointer hover:text-blue-600" />
-          <FaRegLightbulb className="cursor-pointer hover:text-yellow-500" />
-        </div> */}
       </div>
 
       <div className="p-6 space-y-6">
-        <div className="mb-4">
+        <div>
           <p className="text-sm font-medium text-gray-700 mb-1">
             Skills<span className="text-red-500 ml-1">*</span>
           </p>
@@ -272,10 +309,10 @@ function Skills() {
                 <button
                   key={skillId}
                   onClick={() => handleSkillClick(skillId, skill.name)}
-                  className="px-3 py-1 bg-blue-100 text-blue-600 rounded-full flex items-center gap-1"
+                  className="px-3 py-1 bg-blue-100 text-blue-600 rounded-full flex items-center gap-1 text-sm"
                 >
                   {skill.name}
-                  <span className="text-sm">✕</span>
+                  <span>✕</span>
                 </button>
               ) : null;
             })}
@@ -290,7 +327,7 @@ function Skills() {
                 <button
                   key={skill.id}
                   onClick={() => handleSkillClick(skill.id, skill.name)}
-                  className="px-3 py-1 border border-dashed rounded-full transition text-gray-600 hover:bg-gray-100"
+                  className="px-3 py-1 border border-dashed rounded-full text-gray-600 hover:bg-gray-100 transition text-sm"
                 >
                   {skill.name}
                 </button>
@@ -300,11 +337,11 @@ function Skills() {
           <div className="relative">
             <textarea
               ref={textareaRef}
-              className="w-full border rounded-lg p-2 resize-none"
+              className="w-full border rounded-lg p-2 resize-none text-sm"
               rows="1"
-              placeholder="List your skills here, showcasing what you excel at."
+              placeholder="Search for skills to add..."
               value={skillsText}
-              onChange={(e) => setSkillsText(e.target.value)}
+              onChange={handleTextChange}
               onFocus={() => skillsText.trim() && filteredSkills.length > 0 && setShowDropdown(true)}
             />
             {showDropdown && filteredSkills.length > 0 && (
@@ -315,7 +352,7 @@ function Skills() {
                 {filteredSkills.map((skill) => (
                   <button
                     key={skill.id}
-                    className="w-full text-left px-3 py-2 text-gray-700 hover:bg-gray-100 transition"
+                    className="w-full text-left px-3 py-2 text-gray-700 hover:bg-gray-100 transition text-sm"
                     onClick={() => handleSkillClick(skill.id, skill.name)}
                   >
                     {skill.name}

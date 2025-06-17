@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
 import { FaChevronLeft, FaFileMedical, FaBars, FaTimes } from 'react-icons/fa';
 import SidebarItem from '../Components/profile/SidebarItem';
@@ -11,24 +11,26 @@ import WorkExperience from '../Components/profile/WorkExperience';
 import Accomplishments from '../Components/profile/Accomplishments';
 import PersonalDetails from '../Components/profile/PersonalDetails';
 import SocialLinks from '../Components/profile/SocialLinks';
-import ComponyDetails from '../Components/profile/ComponyDetails';
+import CompanyDetails from '../Components/profile/ComponyDetails';
 import OrganizationDetails from '../Components/profile/OrganizationDetails';
+import { fetchSectionData } from '../Utils/api';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const ProfileEditPage = () => {
-  const [activeSection, setActiveSection] = useState('Compony Details');
+  const [activeSection, setActiveSection] = useState('Company Details');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [completionStatus, setCompletionStatus] = useState({});
   const location = useLocation();
-
-  // Get user and pendingUser from localStorage
   const user = JSON.parse(localStorage.getItem('user')) || {};
   const pendingUser = JSON.parse(localStorage.getItem('pendingUser')) || {};
   const allowedRoles = ['company', 'academy'];
 
-  // Combine user and pendingUser data
   const userData = {
     ...pendingUser,
     ...user,
-    legalname: user.legalname || pendingUser.legalname || '',
+    userid: user.userid || pendingUser.userid || '',
+    legalname: user.name || pendingUser.legalname || '',
     email: user.email || pendingUser.email || '',
     role: user.role || pendingUser.role || '',
     roleId: user.roleId || pendingUser.roleId || '',
@@ -36,7 +38,10 @@ const ProfileEditPage = () => {
     academyname: pendingUser.academyname || '',
   };
 
-  // Map URL paths to section labels
+  useEffect(() => {
+    console.log('userData in ProfileEditPage:', userData);
+  }, [userData]);
+
   const pathToSection = {
     'basic-details': 'Basic Details',
     resume: 'Resume',
@@ -47,48 +52,158 @@ const ProfileEditPage = () => {
     'accomplishments-and-initiatives': 'Accomplishments & Initiatives',
     'personal-details': 'Personal Details',
     'social-links': 'Social Links',
-    'compony-details': 'Compony Details',
+    'company-details': 'Company Details',
     'organization-details': 'Organization Details',
   };
 
-  // Sync activeSection with URL on page load or URL change
   useEffect(() => {
     const path = location.pathname.split('/').pop();
-    const section = pathToSection[path] || (allowedRoles.includes(userData.role) ? 'Compony Details' : 'Basic Details');
+    const section = pathToSection[path] || (allowedRoles.includes(userData.role) ? 'Company Details' : 'Basic Details');
     setActiveSection(section);
   }, [location, userData.role]);
 
-  // Toggle sidebar visibility
+  const updateCompletionStatus = useCallback((section, status) => {
+    setCompletionStatus((prev) => {
+      const newStatus = { ...prev, [section]: status };
+      console.log(`Updated completionStatus in ProfileEditPage:`, newStatus);
+      return newStatus;
+    });
+  }, []);
+
+  useEffect(() => {
+    const fetchCompletionStatuses = async () => {
+      try {
+        const userId = userData.userid;
+        if (!userId) {
+          console.error('User ID not found in userData:', userData);
+          return;
+        }
+
+        const fetchWithRetry = async (fn, retries = 3, delay = 1000) => {
+          for (let i = 0; i < retries; i++) {
+            try {
+              return await fn();
+            } catch (err) {
+              if (i === retries - 1) throw err;
+              console.warn(`Retry ${i + 1} for fetchSectionData:`, err.message);
+              await new Promise((resolve) => setTimeout(resolve, delay));
+            }
+          }
+        };
+
+        const response = await fetchWithRetry(() =>
+          fetchSectionData({
+            appName: 'app8657281202648',
+            collectionName: 'appuser',
+            query: { _id: userId },
+            projection: {
+              'sectionData.appuser.resume': 1,
+              'sectionData.appuser.about': 1,
+              'sectionData.appuser.skills': 1,
+              'sectionData.appuser.pronouns': 1,
+              'sectionData.appuser.dOB': 1,
+              'sectionData.appuser.addressline1': 1,
+              'sectionData.appuser.zipcode1': 1,
+              'sectionData.appuser.location1': 1,
+              'sectionData.appuser.addressline3': 1,
+              'sectionData.appuser.zipcode2': 1,
+              'sectionData.appuser.location2': 1,
+              'sectionData.appuser.hobbies': 1,
+              'sectionData.appuser.linkedIn': 1,
+              'sectionData.appuser.facebook': 1,
+              'sectionData.appuser.instagram': 1,
+              'sectionData.appuser.x': 1,
+              'sectionData.appuser.git': 1,
+              'sectionData.appuser.medium': 1,
+              'sectionData.appuser.reddit': 1,
+              'sectionData.appuser.slack': 1,
+              'sectionData.appuser.dribbble': 1,
+              'sectionData.appuser.behance': 1,
+              'sectionData.appuser.workexperience2': 1,
+              'sectionData.appuser.education': 1,
+              'sectionData.appuser.intermediateeducation': 1,
+              'sectionData.appuser.highschooleducation': 1,
+            },
+          })
+        );
+
+        console.log('fetchSectionData response in ProfileEditPage:', JSON.stringify(response, null, 2));
+        const apiData = response[0]?.sectionData?.appuser || {};
+        const newCompletionStatus = {
+          Resume: !!apiData.resume,
+          About: !!apiData.about?.trim(),
+          Skills: !!apiData.skills?.length,
+          'Personal Details':
+            !!apiData.pronouns ||
+            !!apiData.dOB ||
+            !!apiData.addressline1 ||
+            !!apiData.zipcode1 ||
+            !!apiData.location1 ||
+            !!apiData.addressline3 ||
+            !!apiData.zipcode2 ||
+            !!apiData.location2 ||
+            !!apiData.hobbies?.length,
+          'Social Links':
+            !!apiData.linkedIn ||
+            !!apiData.facebook ||
+            !!apiData.instagram ||
+            !!apiData.x ||
+            !!apiData.git ||
+            !!apiData.medium ||
+            !!apiData.reddit ||
+            !!apiData.slack ||
+            !!apiData.dribbble ||
+            !!apiData.behance,
+          'Work Experience': !!apiData.workexperience2?.length,
+          Education:
+            !!apiData.education?.length ||
+            !!apiData.intermediateeducation?.length ||
+            !!apiData.highschooleducation?.length,
+        };
+        setCompletionStatus(newCompletionStatus);
+        console.log('Set completionStatus:', newCompletionStatus);
+      } catch (err) {
+        console.error('Error fetching completion statuses:', err.message, err.stack);
+        toast.error('Failed to load completion statuses. Please try again.', {
+          position: 'top-right',
+          autoClose: 5000,
+        });
+      }
+    };
+
+    if (userData.userid) {
+      fetchCompletionStatuses();
+    }
+  }, [userData.userid]);
+
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
 
-  // Close sidebar
   const closeSidebar = () => {
     setIsSidebarOpen(false);
   };
 
-  // Define sections based on user role
   const sections = allowedRoles.includes(userData.role)
     ? [
-        { label: 'Compony Details', path: 'compony-details', completed: false, required: false },
-        { label: 'Organization Details', path: 'organization-details', completed: false, required: false },
+        { label: 'Company Details', path: 'company-details', completed: completionStatus['Company Details'] || false, required: false },
+        { label: 'Organization Details', path: 'organization-details', completed: completionStatus['Organization Details'] || false, required: false },
       ]
     : [
-        { label: 'Basic Details', path: 'basic-details', completed: true, required: true },
-        { label: 'Resume', path: 'resume', completed: false, required: true },
-        { label: 'About', path: 'about', completed: false, required: true },
-        { label: 'Skills', path: 'skills', completed: false, required: true },
-        { label: 'Education', path: 'education', completed: false, required: false },
-        { label: 'Work Experience', path: 'work-experience', completed: false, required: false },
-        { label: 'Accomplishments & Initiatives', path: 'accomplishments-and-initiatives', completed: false, required: false },
-        { label: 'Personal Details', path: 'personal-details', completed: false, required: false },
-        { label: 'Social Links', path: 'social-links', completed: false, required: false },
+        { label: 'Basic Details', path: 'basic-details', completed: completionStatus['Basic Details'] || true, required: true },
+        { label: 'Resume', path: 'resume', completed: completionStatus['Resume'] || false, required: true },
+        { label: 'About', path: 'about', completed: completionStatus['About'] || false, required: true },
+        { label: 'Skills', path: 'skills', completed: completionStatus['Skills'] || false, required: true },
+        { label: 'Education', path: 'education', completed: completionStatus['Education'] || false, required: false },
+        { label: 'Work Experience', path: 'work-experience', completed: completionStatus['Work Experience'] || false, required: false },
+        { label: 'Accomplishments & Initiatives', path: 'accomplishments-and-initiatives', completed: completionStatus['Accomplishments & Initiatives'] || false, required: false },
+        { label: 'Personal Details', path: 'personal-details', completed: completionStatus['Personal Details'] || false, required: false },
+        { label: 'Social Links', path: 'social-links', completed: completionStatus['Social Links'] || false, required: false },
       ];
 
   return (
     <div className="flex flex-col min-h-screen">
-      {/* Fixed Upper Bar */}
+      <ToastContainer />
       <div className="fixed top-0 left-0 right-0 bg-white border-b shadow-sm z-20 h-16">
         <div className="flex items-center justify-between p-4">
           <div className="flex items-center gap-3">
@@ -114,9 +229,7 @@ const ProfileEditPage = () => {
         </div>
       </div>
 
-      {/* Main Layout */}
       <div className="flex flex-col md:flex-row flex-1">
-        {/* Sidebar */}
         <div
           className={`w-full md:w-[320px] pt-16 border-r bg-white fixed top-0 left-0 h-screen flex flex-col z-10 transition-transform duration-300 ${
             isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
@@ -172,7 +285,6 @@ const ProfileEditPage = () => {
           </div>
         </div>
 
-        {/* Main Content */}
         <div
           className={`w-full md:w-[calc(100%-320px)] md:ml-[320px] pt-16 bg-white p-6 overflow-y-auto min-h-[calc(100vh-4rem)] transition-all duration-300 ${
             isSidebarOpen ? 'opacity-50 pointer-events-none md:opacity-100 md:pointer-events-auto' : ''
@@ -181,21 +293,21 @@ const ProfileEditPage = () => {
           <Routes>
             {allowedRoles.includes(userData.role) ? (
               <>
-                <Route path="compony-details" element={<ComponyDetails userData={userData} />} />
+                <Route path="company-details" element={<CompanyDetails userData={userData} />} />
                 <Route path="organization-details" element={<OrganizationDetails userData={userData} />} />
-                <Route path="*" element={<Navigate to="/editprofile/compony-details" replace />} />
+                <Route path="*" element={<Navigate to="/editprofile/company-details" replace />} />
               </>
             ) : (
               <>
                 <Route path="basic-details" element={<BasicDetails userData={userData} />} />
-                <Route path="resume" element={<Resume userData={userData} />} />
-                <Route path="about" element={<About userData={userData} />} />
-                <Route path="skills" element={<Skills userData={userData} />} />
-                <Route path="education" element={<Education userData={userData} />} />
-                <Route path="work-experience" element={<WorkExperience userData={userData} />} />
+                <Route path="resume" element={<Resume userData={userData} updateCompletionStatus={updateCompletionStatus} />} />
+                <Route path="about" element={<About userData={userData} updateCompletionStatus={updateCompletionStatus} />} />
+                <Route path="skills" element={<Skills userData={userData} updateCompletionStatus={updateCompletionStatus} />} />
+                <Route path="education" element={<Education userData={userData} updateCompletionStatus={updateCompletionStatus} />} />
+                <Route path="work-experience" element={<WorkExperience userData={userData} updateCompletionStatus={updateCompletionStatus} />} />
                 <Route path="accomplishments-and-initiatives" element={<Accomplishments userData={userData} />} />
-                <Route path="personal-details" element={<PersonalDetails userData={userData} />} />
-                <Route path="social-links" element={<SocialLinks userData={userData} />} />
+                <Route path="personal-details" element={<PersonalDetails userData={userData} updateCompletionStatus={updateCompletionStatus} />} />
+                <Route path="social-links" element={<SocialLinks userData={userData} updateCompletionStatus={updateCompletionStatus} />} />
                 <Route path="*" element={<BasicDetails userData={userData} />} />
               </>
             )}
