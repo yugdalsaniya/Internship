@@ -16,7 +16,7 @@ import {
   FaBullhorn,
   FaUsers,
 } from "react-icons/fa";
-import { BiTime } from "react-icons/bi"; // Added import
+import { BiTime } from "react-icons/bi";
 import Select from "react-select";
 import { fetchSectionData, mUpdate, uploadAndStoreFile } from "../../Utils/api";
 import { toast } from "react-toastify";
@@ -44,7 +44,7 @@ const purposes = [
   { label: "To be a Mentor", icon: <FaUsers /> },
 ];
 
-const workExperienceOptions = ["1 year", "2 years"]; // Fixed typo: "2 year" → "2 years"
+const workExperienceOptions = ["1 year", "2 year"];
 
 async function uploadProfilePicture(file, userId) {
   try {
@@ -86,8 +86,7 @@ async function uploadProfilePicture(file, userId) {
 
 function BasicDetails({ userData }) {
   const navigate = useNavigate();
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [mobile, setMobile] = useState("");
   const [countryCode, setCountryCode] = useState("+63");
@@ -119,15 +118,13 @@ function BasicDetails({ userData }) {
   const [profilePicture, setProfilePicture] = useState("");
   const [profilePictureFile, setProfilePictureFile] = useState(null);
   const [profilePicturePreview, setProfilePicturePreview] = useState("");
-  const [isFirstSaveSuccessful, setIsFirstSaveSuccessful] = useState(false); // Added state
+  const [isFirstSaveSuccessful, setIsFirstSaveSuccessful] = useState(false);
   const locationInputRef = useRef(null);
   const autocompleteRef = useRef(null);
 
   useEffect(() => {
     if (userData && userData.legalname) {
-      const [fname = "", lname = ""] = userData.legalname.split(" ");
-      setFirstName(fname);
-      setLastName(lname);
+      setName(userData.legalname);
       setEmail(userData.email || "");
       if (userData.mobile) {
         if (userData.mobile.startsWith("+63")) {
@@ -202,12 +199,7 @@ function BasicDetails({ userData }) {
               ?.appuser || {}
           : userDataResponse.sectionData?.appuser || {};
 
-        const [fname = "", lname = ""] = userData.legalname
-          ? userData.legalname.split(" ")
-          : [userData.fname || "", userData.lname || ""];
-
-        setFirstName(fname || userData.legalname || "");
-        setLastName(lname);
+        setName(userData.legalname || "");
         setEmail(userData.email || "");
         if (userData.mobile) {
           if (userData.mobile.startsWith("+63")) {
@@ -244,8 +236,7 @@ function BasicDetails({ userData }) {
 
         // Set isFirstSaveSuccessful if any relevant fields are populated
         if (
-          fname ||
-          lname ||
+          userData.legalname ||
           userData.email ||
           userData.mobile ||
           userData.Gender ||
@@ -433,26 +424,6 @@ function BasicDetails({ userData }) {
     }
   }, [userType, careerGoal]);
 
-  // New useEffect to calculate startYear for professionals
-  useEffect(() => {
-    if (
-      userType === "Professional" &&
-      isCurrentlyWorking &&
-      workExperienceType
-    ) {
-      const currentYear = new Date().getFullYear(); // e.g., 2025
-      const years = parseInt(workExperienceType.split(" ")[0]); // Extract number from "1 year" or "2 years"
-      if (!isNaN(years)) {
-        setStartYear((currentYear - years).toString()); // e.g., 2025 - 1 = 2024
-      } else {
-        setStartYear(""); // Reset if invalid
-      }
-    } else if (userType !== "Professional" || !isCurrentlyWorking) {
-      // Reset startYear if not a professional or not currently working
-      setStartYear("");
-    }
-  }, [userType, workExperienceType, isCurrentlyWorking]);
-
   const handleProfilePictureChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -472,8 +443,7 @@ function BasicDetails({ userData }) {
 
   const validateForm = () => {
     if (
-      !firstName ||
-      !lastName ||
+      !name ||
       !email ||
       !mobile ||
       !gender ||
@@ -630,7 +600,7 @@ function BasicDetails({ userData }) {
         return;
       }
 
-      let creatorName = `${firstName} ${lastName}`.trim();
+      let creatorName = name.trim();
       const storedUser = JSON.parse(userString) || {};
       if (!storedUser.fname) {
         try {
@@ -638,9 +608,7 @@ function BasicDetails({ userData }) {
             ? existingUser.find((item) => item._id === userId)?.sectionData
                 ?.appuser || {}
             : existingUser.sectionData?.appuser || {};
-          creatorName = `${userData.fname || firstName} ${
-            userData.lname || lastName
-          }`.trim();
+          creatorName = userData.legalname || name;
         } catch (fetchError) {
           console.warn(
             "Failed to fetch user data for creatorName:",
@@ -890,27 +858,15 @@ function BasicDetails({ userData }) {
               />
             </label>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
+          <div className="grid grid-cols-1 gap-4 w-full">
             <div>
               <label className="text-sm font-medium text-gray-700">
-                First Name <span className="text-red-500">*</span>
+                Name <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg p-2 mt-1 h-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                disabled={isProcessing}
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-700">
-                Last Name <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
                 className="w-full border border-gray-300 rounded-lg p-2 mt-1 h-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 disabled={isProcessing}
               />
@@ -1088,12 +1044,8 @@ function BasicDetails({ userData }) {
                   placeholder="Start Year"
                   className="w-full border border-gray-300 rounded-lg p-2 h-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   value={startYear}
-                  onChange={(e) => {
-                    if (!isCurrentlyWorking) {
-                      setStartYear(e.target.value);
-                    }
-                  }}
-                  disabled={isProcessing || isCurrentlyWorking}
+                  onChange={(e) => setStartYear(e.target.value)}
+                  disabled={isProcessing}
                 />
               </div>
               <div>
@@ -1177,13 +1129,20 @@ function BasicDetails({ userData }) {
                 className="w-full border border-gray-300 rounded-lg p-2 h-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={specialization}
                 onChange={(e) => setSpecialization(e.target.value)}
-                disabled={isProcessing}
+                disabled={isProcessing || isLoadingOptions}
               >
                 <option value="">Select Specialization</option>
-                <option value="Computer Science">Computer Science</option>
-                <option value="Mechanical">Mechanical</option>
-                <option value="Marketing">Marketing</option>
+                {specializationOptions.map((option) => (
+                  <option key={option._id} value={option._id}>
+                    {option.name}
+                  </option>
+                ))}
               </select>
+              {isLoadingOptions && (
+                <p className="text-sm text-gray-500 mt-1">
+                  Loading specializations...
+                </p>
+              )}
             </div>
 
             <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-4">

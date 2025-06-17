@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { BiTime } from 'react-icons/bi';
-import { FaEye, FaRegLightbulb } from 'react-icons/fa';
-import { CalendarDays } from 'lucide-react';
+import { FaCheckCircle } from 'react-icons/fa';
 import { fetchSectionData, mUpdate } from './../../Utils/api';
 import { jwtDecode } from 'jwt-decode';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { useNavigate } from 'react-router-dom';
 
-const PersonalDetails = ({ userData, updateCompletionStatus }) => {
+const PersonalDetails = ({ userData, updateCompletionStatus, isCompleted }) => {
   const [formData, setFormData] = useState({
     pronouns: "",
     dob: "",
@@ -30,7 +30,9 @@ const PersonalDetails = ({ userData, updateCompletionStatus }) => {
   });
   const [userId, setUserId] = useState(null);
   const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false); // New loading state
+  const [isLoading, setIsLoading] = useState(false);
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -39,6 +41,7 @@ const PersonalDetails = ({ userData, updateCompletionStatus }) => {
         let userIdLocal;
         if (!userString) {
           setError('Please log in to view your details.');
+          navigate('/login'); // Redirect to login page
           return;
         }
         try {
@@ -47,6 +50,7 @@ const PersonalDetails = ({ userData, updateCompletionStatus }) => {
           setUserId(userIdLocal);
         } catch (parseError) {
           setError('Invalid user data. Please log in again.');
+          navigate('/login');
           return;
         }
 
@@ -136,7 +140,7 @@ const PersonalDetails = ({ userData, updateCompletionStatus }) => {
 
   const handleSave = async () => {
     try {
-      setIsLoading(true); // Set loading to true
+      setIsLoading(true);
       if (!userId) {
         setError('Please log in to save details.');
         return;
@@ -168,12 +172,12 @@ const PersonalDetails = ({ userData, updateCompletionStatus }) => {
         appName: 'app8657281202648',
         collectionName: 'appuser',
         query: { _id: userId },
-        update: { $set: userDataUpdate },
+        update: { $set: userData },
         options: { upsert: false, writeConcern: { w: 'majority' } },
       });
 
       console.log('updated successfully:', userData);
-      toast.success('updated successfully!', {
+      toast.success('Updated successfully!', {
         position: "top-right",
         autoClose: 3000,
         hideProgressBar: false,
@@ -195,6 +199,12 @@ const PersonalDetails = ({ userData, updateCompletionStatus }) => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Define getCurrentDate function
+  const getCurrentDate = () => {
+    const today = new Date();
+    return today.toISOString().split('T')[0]; // Returns YYYY-MM-DD
   };
 
   const renderInput = (
@@ -260,6 +270,7 @@ const PersonalDetails = ({ userData, updateCompletionStatus }) => {
                     : 'border-gray-300 text-gray-700 hover:bg-gray-50'
                 }`}
                 onClick={() => handleChange('pronouns', option)}
+                disabled={isLoading}
               >
                 {option}
               </button>
@@ -274,7 +285,7 @@ const PersonalDetails = ({ userData, updateCompletionStatus }) => {
               type="date"
               value={formData.dob}
               onChange={(e) => handleChange("dob", e.target.value)}
-              max={getCurrentDate()} // Restrict future dates
+              max={getCurrentDate()} // Use defined function
               className="w-full border rounded-lg p-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 pr-5"
               disabled={isLoading}
             />
@@ -329,11 +340,11 @@ const PersonalDetails = ({ userData, updateCompletionStatus }) => {
               Copy Current Address
             </label>
           </div>
-          {renderInput('Address Line 1', 'line1', 'permanentAddress', '', 'text', true)}
+          {renderInput('Address Line 1', 'line1', 'permanentAddress', '', 'text', !formData.copyAddress)}
           {renderInput('Address Line 2', 'line2', 'permanentAddress')}
           {renderInput('Landmark', 'landmark', 'permanentAddress')}
-          {renderInput('ZIP Code', 'ZIPcode', 'permanentAddress', '', 'text', true)}
-          {renderInput('Location', 'location', 'permanentAddress', '', 'text', true)}
+          {renderInput('ZIP Code', 'ZIPcode', 'permanentAddress', '', 'text', !formData.copyAddress)}
+          {renderInput('Location', 'location', 'permanentAddress', '', 'text', !formData.copyAddress)}
         </div>
 
         <div className="mb-4">
