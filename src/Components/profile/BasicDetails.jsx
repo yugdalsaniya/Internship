@@ -44,7 +44,7 @@ const purposes = [
   { label: "To be a Mentor", icon: <FaUsers /> },
 ];
 
-const workExperienceOptions = ["1 year", "2 year"];
+const workExperienceOptions = ["1 year", "2 years"]; // Fixed typo: "2 year" → "2 years"
 
 async function uploadProfilePicture(file, userId) {
   try {
@@ -432,6 +432,26 @@ function BasicDetails({ userData }) {
       setNewCareerRole([]);
     }
   }, [userType, careerGoal]);
+
+  // New useEffect to calculate startYear for professionals
+  useEffect(() => {
+    if (
+      userType === "Professional" &&
+      isCurrentlyWorking &&
+      workExperienceType
+    ) {
+      const currentYear = new Date().getFullYear(); // e.g., 2025
+      const years = parseInt(workExperienceType.split(" ")[0]); // Extract number from "1 year" or "2 years"
+      if (!isNaN(years)) {
+        setStartYear((currentYear - years).toString()); // e.g., 2025 - 1 = 2024
+      } else {
+        setStartYear(""); // Reset if invalid
+      }
+    } else if (userType !== "Professional" || !isCurrentlyWorking) {
+      // Reset startYear if not a professional or not currently working
+      setStartYear("");
+    }
+  }, [userType, workExperienceType, isCurrentlyWorking]);
 
   const handleProfilePictureChange = (e) => {
     const file = e.target.files[0];
@@ -1068,8 +1088,12 @@ function BasicDetails({ userData }) {
                   placeholder="Start Year"
                   className="w-full border border-gray-300 rounded-lg p-2 h-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   value={startYear}
-                  onChange={(e) => setStartYear(e.target.value)}
-                  disabled={isProcessing}
+                  onChange={(e) => {
+                    if (!isCurrentlyWorking) {
+                      setStartYear(e.target.value);
+                    }
+                  }}
+                  disabled={isProcessing || isCurrentlyWorking}
                 />
               </div>
               <div>
@@ -1153,20 +1177,13 @@ function BasicDetails({ userData }) {
                 className="w-full border border-gray-300 rounded-lg p-2 h-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={specialization}
                 onChange={(e) => setSpecialization(e.target.value)}
-                disabled={isProcessing || isLoadingOptions}
+                disabled={isProcessing}
               >
                 <option value="">Select Specialization</option>
-                {specializationOptions.map((option) => (
-                  <option key={option._id} value={option._id}>
-                    {option.name}
-                  </option>
-                ))}
+                <option value="Computer Science">Computer Science</option>
+                <option value="Mechanical">Mechanical</option>
+                <option value="Marketing">Marketing</option>
               </select>
-              {isLoadingOptions && (
-                <p className="text-sm text-gray-500 mt-1">
-                  Loading specializations...
-                </p>
-              )}
             </div>
 
             <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
