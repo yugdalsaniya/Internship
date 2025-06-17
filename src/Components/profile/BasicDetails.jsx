@@ -44,18 +44,22 @@ const purposes = [
   { label: "To be a Mentor", icon: <FaUsers /> },
 ];
 
-const workExperienceOptions = ["1 year", "2 year"];
+const workExperienceOptions = ["1 year", "2 years"]; // Fixed typo: "2 year" → "2 years"
 
 async function uploadProfilePicture(file, userId) {
   try {
-    if (!file) throw new Error("No file selected for upload.");
+    if (!file) {
+      throw new Error("No file selected for upload.");
+    }
     const validTypes = ["image/jpeg", "image/png", "image/gif"];
-    if (!validTypes.includes(file.type))
+    if (!validTypes.includes(file.type)) {
       throw new Error(
         "Invalid file type. Please upload a JPEG, PNG, or GIF image."
       );
-    if (file.size > 5 * 1024 * 1024)
+    }
+    if (file.size > 5 * 1024 * 1024) {
       throw new Error("File size exceeds 5MB limit.");
+    }
 
     const response = await uploadAndStoreFile({
       appName: "app8657281202648",
@@ -63,16 +67,19 @@ async function uploadProfilePicture(file, userId) {
       file,
       userId,
     });
-    console.log("Upload Response:", response);
 
-    if (!response || !response.filePath)
+    if (!response || !response.filePath) {
       throw new Error(
         "Failed to upload profile picture: No file path returned."
       );
+    }
 
     return response.filePath;
   } catch (err) {
-    console.error("Upload profile picture error:", err);
+    console.error("Upload profile picture error:", {
+      message: err.message,
+      response: err.response,
+    });
     throw new Error(err.message || "Failed to upload profile picture.");
   }
 }
@@ -99,13 +106,14 @@ function BasicDetails({ userData }) {
   const [isCurrentlyWorking, setIsCurrentlyWorking] = useState(false);
   const [schoolName, setSchoolName] = useState("");
   const [stream, setStream] = useState("");
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [newCareerRole, setNewCareerRole] = useState([]);
   const [designationOptions, setDesignationOptions] = useState([]);
   const [courseOptions, setCourseOptions] = useState([]);
   const [instituteOptions, setInstituteOptions] = useState([]);
   const [roleOptions, setRoleOptions] = useState([]);
-  const [specializationOptions, setSpecializationOptions] = useState([]);
   const [isLoadingOptions, setIsLoadingOptions] = useState(false);
   const [profilePicture, setProfilePicture] = useState("");
   const [profilePictureFile, setProfilePictureFile] = useState(null);
@@ -113,8 +121,6 @@ function BasicDetails({ userData }) {
   const locationInputRef = useRef(null);
   const autocompleteRef = useRef(null);
 
-  // Get current year for validation and calculation
-  const currentYear = new Date().getFullYear();
   useEffect(() => {
     if (userData && userData.legalname) {
       const [fname = "", lname = ""] = userData.legalname.split(" ");
@@ -142,9 +148,6 @@ function BasicDetails({ userData }) {
       try {
         const userString = localStorage.getItem("user");
         if (!userString) {
-          toast.error("Please log in to view your details.", {
-            autoClose: 5000,
-          });
           setError("Please log in to view your details. Using local data.");
           setTimeout(() => setError(""), 5000);
           return;
@@ -155,10 +158,6 @@ function BasicDetails({ userData }) {
           const user = JSON.parse(userString);
           userId = user.userid;
         } catch (parseError) {
-          console.error("Error parsing user data:", parseError);
-          toast.error("Invalid user data. Please log in again.", {
-            autoClose: 5000,
-          });
           setError("Invalid user data. Using local data.");
           setTimeout(() => setError(""), 5000);
           return;
@@ -179,9 +178,6 @@ function BasicDetails({ userData }) {
           !userDataResponse ||
           (Array.isArray(userDataResponse) && userDataResponse.length === 0)
         ) {
-          toast.error("User data not found. Please contact support.", {
-            autoClose: 5000,
-          });
           setError("User data not found. Using local data.");
           setTimeout(() => setError(""), 5000);
           return;
@@ -237,13 +233,10 @@ function BasicDetails({ userData }) {
           collectionName: "designation",
           query: {},
         });
-        console.log("Designation Data:", designationData);
-        const designations = designationData
-          .map((item) => ({
-            _id: item._id,
-            name: item.sectionData.designation.name,
-          }))
-          .sort((a, b) => a.name.localeCompare(b.name));
+        const designations = designationData.map((item) => ({
+          _id: item._id,
+          name: item.sectionData.designation.name,
+        }));
         setDesignationOptions(designations);
 
         const courseData = await fetchSectionData({
@@ -251,34 +244,20 @@ function BasicDetails({ userData }) {
           collectionName: "course",
           query: {},
         });
-        console.log("Course Data:", courseData);
         const courses = courseData.map((item) => ({
           _id: item._id,
           name: item.sectionData.course.name,
         }));
         setCourseOptions(courses);
 
-        const specializationData = await fetchSectionData({
-          dbName: "internph",
-          collectionName: "coursespecialization",
-          query: {},
-        });
-        console.log("Specialization Data:", specializationData);
-        const specializations = specializationData.map((item) => ({
-          _id: item._id,
-          name: item.sectionData.coursespecialization.name,
-        }));
-        setSpecializationOptions(specializations);
-
         const instituteData = await fetchSectionData({
           dbName: "internph",
           collectionName: "institute",
           query: {},
         });
-        console.log("Institute Data:", instituteData);
-        if (!Array.isArray(instituteData))
         if (!Array.isArray(instituteData)) {
           throw new Error("Institute data is not an array");
+        }
         const institutes = instituteData
           .map((item) => {
             if (!item.sectionData?.institute?.institutionname) {
@@ -298,7 +277,6 @@ function BasicDetails({ userData }) {
           collectionName: "role",
           query: {},
         });
-        console.log("Role Data:", roleData);
         const roles = roleData.map((item) => ({
           _id: item._id,
           name: item.sectionData.role.name.trim(),
@@ -306,10 +284,6 @@ function BasicDetails({ userData }) {
         setRoleOptions(roles);
       } catch (err) {
         console.error("Error fetching data:", err);
-        toast.error(
-          "Failed to load user data or dropdown options: " + err.message,
-          { autoClose: 5000 }
-        );
         setError("Failed to load server data. Using local data.");
         setTimeout(() => setError(""), 5000);
       } finally {
@@ -328,7 +302,7 @@ function BasicDetails({ userData }) {
           return;
         }
         const existingScript = document.querySelector(
-          `script[src*="maps.googleapis.com/maps/api/js"]`
+          'script[src*="maps.googleapis.com/maps/api/js"]'
         );
         if (existingScript) {
           existingScript.addEventListener("load", resolve);
@@ -366,10 +340,10 @@ function BasicDetails({ userData }) {
       })
       .catch((err) => {
         console.error("Error loading Google Maps:", err);
-        toast.error(
-          "Google Maps API failed to load. Location suggestions unavailable.",
-          { autoClose: 5000 }
+        setError(
+          "Google Maps API failed to load. Location suggestions unavailable."
         );
+        setTimeout(() => setError(""), 5000);
       });
 
     return () => {
@@ -381,34 +355,11 @@ function BasicDetails({ userData }) {
     };
   }, []);
 
-  // Handle automatic startYear calculation when workExperienceType or isCurrentlyWorking changes
-  useEffect(() => {
-    if (
-      userType === "Professional" &&
-      workExperienceType &&
-      isCurrentlyWorking
-    ) {
-      const years = parseInt(workExperienceType.split(" ")[0], 10);
-      if (!isNaN(years)) {
-        const calculatedStartYear = currentYear - years;
-        setStartYear(calculatedStartYear.toString());
-        console.log(
-          `Calculated startYear: ${calculatedStartYear} for ${workExperienceType}`
-        );
-      }
-    }
-    // Clear endYear when currently working
-    if (isCurrentlyWorking) setEndYear("");
-  }, [workExperienceType, isCurrentlyWorking, userType, currentYear]);
-
-  // Reset fields based on userType and careerGoal
   useEffect(() => {
     if (userType !== "Professional") {
       setDesignation("");
       setWorkExperienceType("");
       setIsCurrentlyWorking(false);
-      setStartYear("");
-      setEndYear("");
     }
     if (userType !== "School Student") {
       setSchoolName("");
@@ -426,6 +377,26 @@ function BasicDetails({ userData }) {
     }
   }, [userType, careerGoal]);
 
+  // New useEffect to calculate startYear for professionals
+  useEffect(() => {
+    if (
+      userType === "Professional" &&
+      isCurrentlyWorking &&
+      workExperienceType
+    ) {
+      const currentYear = new Date().getFullYear(); // e.g., 2025
+      const years = parseInt(workExperienceType.split(" ")[0]); // Extract number from "1 year" or "2 years"
+      if (!isNaN(years)) {
+        setStartYear((currentYear - years).toString()); // e.g., 2025 - 1 = 2024
+      } else {
+        setStartYear(""); // Reset if invalid
+      }
+    } else if (userType !== "Professional" || !isCurrentlyWorking) {
+      // Reset startYear if not a professional or not currently working
+      setStartYear("");
+    }
+  }, [userType, workExperienceType, isCurrentlyWorking]);
+
   const handleProfilePictureChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -436,13 +407,14 @@ function BasicDetails({ userData }) {
       });
       setProfilePictureFile(file);
       const reader = new FileReader();
-      reader.onloadend = () => setProfilePicturePreview(reader.result);
+      reader.onloadend = () => {
+        setProfilePicturePreview(reader.result);
+      };
       reader.readAsDataURL(file);
     }
   };
 
   const validateForm = () => {
-    const errors = [];
     if (
       !firstName ||
       !lastName ||
@@ -453,23 +425,8 @@ function BasicDetails({ userData }) {
       !location ||
       !selectedPurpose.length
     ) {
-      errors.push("Please fill all required fields.");
+      return "Please fill all required fields.";
     }
-    if (userType === "Professional") {
-      if (!designation || !workExperienceType || !startYear)
-        errors.push("Please fill all required professional fields.");
-      if (!isCurrentlyWorking && !endYear)
-        errors.push("End year is required when not currently working.");
-      if (startYear && parseInt(startYear, 10) > currentYear)
-        errors.push("Start year cannot be in the future.");
-      if (
-        !isCurrentlyWorking &&
-        endYear &&
-        parseInt(endYear, 10) <= parseInt(startYear, 10)
-      )
-        errors.push("End year must be after start year.");
-      if (!isCurrentlyWorking && endYear && parseInt(endYear, 10) > currentYear)
-        errors.push("End year cannot be in the future.");
     if (mobile.length > 10 || !/^\d+$/.test(mobile)) {
       return "Mobile number must be up to 10 digits.";
     }
@@ -488,73 +445,50 @@ function BasicDetails({ userData }) {
     if (userType === "School Student" && !stream) {
       return "Please select a stream.";
     }
-    if (userType === "School Student" && !schoolName)
-      errors.push("School name is required.");
-    if (userType === "School Student" && !stream)
-      errors.push("Please select a stream.");
     if (
       (userType === "College Students" || userType === "Fresher") &&
       (!course || !specialization || !college || !startYear || !endYear)
     ) {
-      errors.push("Please fill all required college/fresher fields.");
+      return "Please fill all required college/fresher fields.";
     }
-    if (userType === "College Students" || userType === "Fresher") {
-      if (startYear && parseInt(startYear, 10) > currentYear)
-        errors.push("Start year cannot be in the future.");
-      if (endYear && parseInt(endYear, 10) <= parseInt(startYear, 10))
-        errors.push("End year must be after start year.");
-      if (endYear && parseInt(endYear, 10) > currentYear)
-        errors.push("End year cannot be in the future.");
-    }
-    if (careerGoal === "new" && newCareerRole.length === 0)
-      errors.push("Please select at least one role for your new career.");
-
-    if (errors.length > 0) {
-      console.log("Validation errors:", errors);
-      return errors.join(" ");
+    if (careerGoal === "new" && newCareerRole.length === 0) {
+      return "Please select at least one role for your new career.";
     }
     return "";
   };
 
   const handlePurposeToggle = (purpose) => {
-    setSelectedPurpose((prev) =>
-      prev.includes(purpose)
-        ? prev.filter((p) => p !== purpose)
-        : [...prev, purpose]
-    );
+    if (selectedPurpose.includes(purpose)) {
+      setSelectedPurpose(selectedPurpose.filter((p) => p !== purpose));
+    } else {
+      setSelectedPurpose([...selectedPurpose, purpose]);
+    }
   };
 
   const handleSave = async () => {
     if (isProcessing) return;
-    console.log("handleSave called with:", {
-      firstName,
-      lastName,
-      email,
-      mobile,
-      gender,
-      userType,
-      location,
-      selectedPurpose,
-      startYear,
-      endYear,
-      workExperienceType,
-      isCurrentlyWorking,
-    });
 
     const validationError = validateForm();
     if (validationError) {
-      toast.error(validationError, { autoClose: 5000 });
+      setError(validationError);
+      toast.error(validationError);
+      setTimeout(() => setError(""), 5000);
       return;
     }
 
     setIsProcessing(true);
+    setError("");
+    setSuccess("");
 
     try {
       const userString = localStorage.getItem("user");
       const token = localStorage.getItem("accessToken");
 
       if (!userString) {
-        throw new Error("Please log in to save your details.");
+        setError("Please log in to save your details.");
+        toast.error("Please log in to save your details.");
+        setTimeout(() => setError(""), 2000);
+        return;
       }
 
       let userId;
@@ -562,14 +496,21 @@ function BasicDetails({ userData }) {
         const user = JSON.parse(userString);
         userId = user.userid;
       } catch (parseError) {
-        console.error("Error parsing user data:", parseError);
-        throw new Error("Invalid user data. Please log in again.");
+        setError("Invalid user data. Please log in again.");
+        toast.error("Invalid user data. Please log in again.");
+        setTimeout(() => setError(""), 2000);
+        return;
       }
 
       if (!userId || !token) {
-        throw new Error(
+        setError(
           "Authentication token or user ID missing. Please log in again."
         );
+        toast.error(
+          "Authentication token or user ID missing. Please log in again."
+        );
+        setTimeout(() => setError(""), 2000);
+        return;
       }
 
       const existingUser = await fetchSectionData({
@@ -582,9 +523,17 @@ function BasicDetails({ userData }) {
         !existingUser ||
         (Array.isArray(existingUser) && existingUser.length === 0)
       ) {
-        throw new Error(
+        setError(
           "User not found in database. Please sign up or contact support."
         );
+        toast.error(
+          "User not found in database. Please sign up or contact support."
+        );
+        setTimeout(() => {
+          setError("");
+          navigate("/signup");
+        }, 2000);
+        return;
       }
 
       const duplicateUsers = await fetchSectionData({
@@ -594,9 +543,14 @@ function BasicDetails({ userData }) {
       });
 
       if (Array.isArray(duplicateUsers) && duplicateUsers.length > 1) {
-        throw new Error(
+        setError(
           "Multiple accounts detected for this email. Please contact support."
         );
+        toast.error(
+          "Multiple accounts detected for this email. Please contact support."
+        );
+        setTimeout(() => setError(""), 5000);
+        return;
       }
 
       let creatorName = `${firstName} ${lastName}`.trim();
@@ -620,13 +574,21 @@ function BasicDetails({ userData }) {
 
       let profilePictureUrl = profilePicture;
       if (profilePictureFile) {
-        profilePictureUrl = await uploadProfilePicture(
-          profilePictureFile,
-          userId
-        );
-        setProfilePicture(profilePictureUrl);
-        setProfilePictureFile(null);
-        setProfilePicturePreview("");
+        try {
+          profilePictureUrl = await uploadProfilePicture(
+            profilePictureFile,
+            userId
+          );
+          setProfilePicture(profilePictureUrl);
+          setProfilePictureFile(null);
+          setProfilePicturePreview("");
+        } catch (uploadErr) {
+          setError(uploadErr.message);
+          toast.error(uploadErr.message);
+          setTimeout(() => setError(""), 5000);
+          setIsProcessing(false);
+          return;
+        }
       }
 
       const updateData = {
@@ -681,30 +643,43 @@ function BasicDetails({ userData }) {
       });
 
       if (updateResponse && updateResponse.success) {
-        if (updateResponse.matchedCount === 0)
-          throw new Error("Failed to update user data: User not found.");
-        if (updateResponse.upsertedId)
-          throw new Error(
-            "Unexpected error: New user created instead of updating."
+        if (updateResponse.matchedCount === 0) {
+          setError("Failed to update user data: User not found.");
+          toast.error("Failed to update user data: User not found.");
+          setTimeout(() => setError(""), 5000);
+          return;
+        }
+        if (updateResponse.upsertedId) {
+          setError(
+            "Unexpected error: New user created instead of updating. Please contact support."
           );
-        console.log("User data updated successfully");
-        toast.success("Details updated successfully!", { autoClose: 3000 });
+          toast.error(
+            "Unexpected error: New user created instead of updating. Please contact support."
+          );
+          setTimeout(() => setError(""), 5000);
+          return;
+        }
+        setSuccess("Details updated successfully!");
+        toast.success("Details updated successfully!");
+        setTimeout(() => {
+          setSuccess("");
+        }, 2000);
       } else {
         throw new Error("Failed to update details in database.");
       }
     } catch (err) {
-      console.error("Error saving details:", err);
       let errorMessage = err.message;
-      if (err.response?.status === 404)
+      if (err.response?.status === 404) {
         errorMessage = "API endpoint not found. Please contact support.";
-      else if (err.response?.status === 401) {
+      } else if (err.response?.status === 401) {
         errorMessage = "Authentication failed. Please log in again.";
         setTimeout(() => navigate("/login"), 2000);
       }
+      setError(errorMessage || "Failed to update details. Please try again.");
       toast.error(
-        errorMessage || "Failed to update details. Please try again.",
-        { autoClose: 5000 }
+        errorMessage || "Failed to update details. Please try again."
       );
+      setTimeout(() => setError(""), 5000);
     } finally {
       setIsProcessing(false);
     }
@@ -718,7 +693,9 @@ function BasicDetails({ userData }) {
       padding: "0.25rem",
       minHeight: "2.5rem",
       boxShadow: "none",
-      "&:hover": { borderColor: "#3b82f6" },
+      "&:hover": {
+        borderColor: "#3b82f6",
+      },
       "&:focus-within": {
         borderColor: "#3b82f6",
         boxShadow: "0 0 0 2px rgba(59, 130, 246, 0.5)",
@@ -732,17 +709,34 @@ function BasicDetails({ userData }) {
         ? "#f3f4f6"
         : "white",
       color: state.isSelected ? "#1e40af" : "#374151",
-      "&:hover": { backgroundColor: "#f3f4f6" },
+      "&:hover": {
+        backgroundColor: "#f3f4f6",
+      },
     }),
-    multiValue: (provided) => ({ ...provided, backgroundColor: "#dbeafe" }),
-    multiValueLabel: (provided) => ({ ...provided, color: "#1e40af" }),
+    multiValue: (provided) => ({
+      ...provided,
+      backgroundColor: "#dbeafe",
+    }),
+    multiValueLabel: (provided) => ({
+      ...provided,
+      color: "#1e40af",
+    }),
     multiValueRemove: (provided) => ({
       ...provided,
       color: "#1e40af",
-      "&:hover": { backgroundColor: "#bfdbfe", color: "#1e3a8a" },
+      "&:hover": {
+        backgroundColor: "#bfdbfe",
+        color: "#1e3a8a",
+      },
     }),
-    menu: (provided) => ({ ...provided, zIndex: 9999 }),
-    menuPortal: (provided) => ({ ...provided, zIndex: 9999 }),
+    menu: (provided) => ({
+      ...provided,
+      zIndex: 9999,
+    }),
+    menuPortal: (provided) => ({
+      ...provided,
+      zIndex: 9999,
+    }),
   };
 
   return (
@@ -864,17 +858,6 @@ function BasicDetails({ userData }) {
               placeholder="Enter mobile number"
               disabled={isProcessing}
             />
-            <button
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm min-w-[70px] h-10 hover:bg-blue-700 transition disabled:opacity-50"
-              disabled={isProcessing}
-              onClick={() =>
-                toast.info("Mobile verification not implemented yet.", {
-                  autoClose: 3000,
-                })
-              }
-            >
-              Verify
-            </button>
           </div>
         </div>
 
@@ -988,36 +971,29 @@ function BasicDetails({ userData }) {
                   Start Year <span className="text-red-500">*</span>
                 </label>
                 <input
-                  type="number"
+                  type="text"
                   placeholder="Start Year"
                   className="w-full border border-gray-300 rounded-lg p-2 h-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   value={startYear}
-                  onChange={(e) => setStartYear(e.target.value)}
-                  disabled={
-                    isProcessing || (isCurrentlyWorking && workExperienceType)
-                  }
-                  min="1900"
-                  max={currentYear}
+                  onChange={(e) => {
+                    if (!isCurrentlyWorking) {
+                      setStartYear(e.target.value);
+                    }
+                  }}
+                  disabled={isProcessing || isCurrentlyWorking}
                 />
               </div>
               <div>
                 <label className="text-sm font-medium block mb-1 text-gray-700">
-                  End Year{" "}
-                  {isCurrentlyWorking ? (
-                    ""
-                  ) : (
-                    <span className="text-red-500">*</span>
-                  )}
+                  End Year
                 </label>
                 <input
-                  type="number"
+                  type="text"
                   placeholder="End Year"
                   className="w-full border border-gray-300 rounded-lg p-2 h-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   value={endYear}
                   onChange={(e) => setEndYear(e.target.value)}
                   disabled={isCurrentlyWorking || isProcessing}
-                  min={startYear || "1900"}
-                  max={currentYear}
                 />
               </div>
             </div>
@@ -1088,51 +1064,40 @@ function BasicDetails({ userData }) {
                 className="w-full border border-gray-300 rounded-lg p-2 h-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={specialization}
                 onChange={(e) => setSpecialization(e.target.value)}
-                disabled={isProcessing || isLoadingOptions}
+                disabled={isProcessing}
               >
                 <option value="">Select Specialization</option>
-                {specializationOptions.map((option) => (
-                  <option key={option._id} value={option._id}>
-                    {option.name}
-                  </option>
-                ))}
+                <option value="Computer Science">Computer Science</option>
+                <option value="Mechanical">Mechanical</option>
+                <option value="Marketing">Marketing</option>
               </select>
-              {isLoadingOptions && (
-                <p className="text-sm text-gray-500 mt-1">
-                  Loading specializations...
-                </p>
-              )}
             </div>
 
             <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium block mb-1 text-gray-700">
-                  Start Year <span className="text-red-500">*</span>
+                  Start Year
                 </label>
                 <input
-                  type="number"
+                  type="text"
                   placeholder="Start Year"
                   className="w-full border border-gray-300 rounded-lg p-2 h-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   value={startYear}
                   onChange={(e) => setStartYear(e.target.value)}
                   disabled={isProcessing}
-                  min="1900"
-                  max={currentYear}
                 />
               </div>
               <div>
                 <label className="text-sm font-medium block mb-1 text-gray-700">
-                  End Year <span className="text-red-500">*</span>
+                  End Year
                 </label>
                 <input
-                  type="number"
+                  type="text"
                   placeholder="End Year"
                   className="w-full border border-gray-300 rounded-lg p-2 h-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   value={endYear}
                   onChange={(e) => setEndYear(e.target.value)}
                   disabled={isProcessing}
-                  min={startYear || "1900"}
-                  max={currentYear}
                 />
               </div>
             </div>
@@ -1266,6 +1231,11 @@ function BasicDetails({ userData }) {
             <FaCrosshairs className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500" />
           </div>
         </div>
+
+        {success && (
+          <p className="text-green-500 text-sm text-center">{success}</p>
+        )}
+        {error && <p className="text-red-500 text-sm text-center">{error}</p>}
       </div>
 
       <div className="sticky bottom-0 bg-white border-t p-4">
@@ -1275,7 +1245,13 @@ function BasicDetails({ userData }) {
             className="bg-blue-600 text-white px-6 py-2 rounded-full flex items-center gap-2 text-sm font-medium hover:bg-blue-700 transition disabled:opacity-50"
             disabled={isProcessing}
           >
-            {isProcessing ? "Processing..." : <>✓ Save</>}
+            {isProcessing ? (
+              "Processing..."
+            ) : (
+              <>
+                <span className="text-lg">✓</span> Save
+              </>
+            )}
           </button>
         </div>
       </div>
