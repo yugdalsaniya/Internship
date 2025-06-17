@@ -1,6 +1,7 @@
-import { FaCheckCircle, FaClock } from 'react-icons/fa';
+import { FaCheckCircle } from 'react-icons/fa';
+import { BiTime } from 'react-icons/bi';
 
-function SidebarItem({ completed, label, isActive, isRequired, onClick }) {
+function SidebarItem({ label, isActive, isRequired, onClick, completed }) {
   return (
     <div
       className={`flex justify-between items-center px-3 py-3 border rounded ${
@@ -12,7 +13,7 @@ function SidebarItem({ completed, label, isActive, isRequired, onClick }) {
         {completed ? (
           <FaCheckCircle className="text-green-500" />
         ) : (
-          <FaClock className="text-gray-400" />
+          <BiTime className="text-gray-400 text-xl" />
         )}
         <span
           className={`text-sm font-medium ${
@@ -22,7 +23,6 @@ function SidebarItem({ completed, label, isActive, isRequired, onClick }) {
           {label}
         </span>
       </div>
-      
     </div>
   );
 }

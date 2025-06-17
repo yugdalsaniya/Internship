@@ -10,7 +10,7 @@ import { fetchSectionData, mUpdate, uploadAndStoreFile } from "../../Utils/api";
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
-const WorkExperience = () => {
+const WorkExperience = ({ userData, updateCompletionStatus }) => {
   const [formData, setFormData] = useState({
     designation4: { id: "", name: "" },
     organisation4: "",
@@ -41,7 +41,7 @@ const WorkExperience = () => {
   const [showForm, setShowForm] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [showDropdown, setShowDropdown] = useState(false);
-  const [isFirstSaveSuccessful, setIsFirstSaveSuccessful] = useState(false); // State for first successful save
+  const [isFirstSaveSuccessful, setIsFirstSaveSuccessful] = useState(false);
   const skillInputRef = useRef(null);
   const skillDropdownRef = useRef(null);
   const instituteInputRef = useRef(null);
@@ -50,15 +50,12 @@ const WorkExperience = () => {
   const autocompleteRef = useRef(null);
   const dropdownRef = useRef(null);
 
-  // Get today's date in YYYY-MM-DD format to restrict future dates
   const today = new Date().toISOString().split("T")[0];
 
-  // Sync instituteInput with formData.organisation4
   useEffect(() => {
     setInstituteInput(formData.organisation4);
   }, [formData.organisation4]);
 
-  // Fetch user data
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -89,12 +86,11 @@ const WorkExperience = () => {
             : [];
         setWorkExperienceList(fetchedWorkExperience);
         setShowForm(fetchedWorkExperience.length === 0);
-        // Set isFirstSaveSuccessful if any work experience data exists
-        if (fetchedWorkExperience.length > 0) {
-          setIsFirstSaveSuccessful(true);
-          console.log(
-            "Existing work experience data found, setting isFirstSaveSuccessful to true"
-          );
+        const isCompleted = fetchedWorkExperience.length > 0;
+        setIsFirstSaveSuccessful(isCompleted);
+        if (updateCompletionStatus) {
+          updateCompletionStatus("Work Experience", isCompleted);
+          console.log("Updated completion status for Work Experience:", isCompleted);
         }
       } catch (err) {
         console.error("Failed to load work experience data:", err);
@@ -108,9 +104,8 @@ const WorkExperience = () => {
     };
 
     fetchUserData();
-  }, []);
+  }, [updateCompletionStatus]);
 
-  // Fetch designations
   useEffect(() => {
     const fetchDesignations = async () => {
       try {
@@ -136,7 +131,6 @@ const WorkExperience = () => {
     fetchDesignations();
   }, []);
 
-  // Fetch institutes
   useEffect(() => {
     const fetchInstitutes = async () => {
       try {
@@ -161,7 +155,6 @@ const WorkExperience = () => {
     fetchInstitutes();
   }, []);
 
-  // Fetch skills
   useEffect(() => {
     const fetchSkills = async () => {
       try {
@@ -187,7 +180,6 @@ const WorkExperience = () => {
     fetchSkills();
   }, []);
 
-  // Handle click outside for dropdowns
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
@@ -216,7 +208,6 @@ const WorkExperience = () => {
     };
   }, []);
 
-  // Google Maps Autocomplete
   useEffect(() => {
     if (!GOOGLE_MAPS_API_KEY) {
       console.error("Google Maps API key is missing.");
@@ -396,7 +387,6 @@ const WorkExperience = () => {
     if (field === "remote4" && value) {
       setFormData({ ...formData, [field]: value, location4: "" });
     } else if (field === "startdate4" && value) {
-      // If start date changes, validate or reset end date if it's invalid
       setFormData((prev) => ({
         ...prev,
         [field]: value,
@@ -455,7 +445,7 @@ const WorkExperience = () => {
 
     if (errors.length > 0) {
       const errorMessage = errors.join(" ");
-      setError(errorMessage);
+      setError(errorErrorMessage);
       toast.error(errorMessage, { autoClose: 5000 });
       setTimeout(() => setError(""), 5000);
       return;
@@ -465,10 +455,6 @@ const WorkExperience = () => {
     setError("");
 
     try {
-      if (typeof window === "undefined") {
-        throw new Error("Browser environment required");
-      }
-
       const userString = localStorage.getItem("user");
       const accessToken = localStorage.getItem("accessToken");
 
@@ -494,15 +480,9 @@ const WorkExperience = () => {
         !existingUser ||
         (Array.isArray(existingUser) && existingUser.length === 0)
       ) {
-        setError(
+        throw new Error(
           "User not found in database. Please sign up or contact support."
         );
-        toast.error(
-          "User not found in database. Please sign up or contact support."
-        );
-        setTimeout(() => setError(""), 5000);
-        setIsProcessing(false);
-        return;
       }
 
       let fileUrl = formData.files4;
@@ -569,7 +549,6 @@ const WorkExperience = () => {
         options: { upsert: false },
       });
 
-      // Check for success using multiple possible response properties
       if (
         response &&
         (response.success ||
@@ -607,9 +586,10 @@ const WorkExperience = () => {
         setSelectedFile(null);
         setEditingIndex(null);
         setShowForm(false);
-        if (!isFirstSaveSuccessful) {
-          setIsFirstSaveSuccessful(true);
-          console.log("Setting isFirstSaveSuccessful to true");
+        setIsFirstSaveSuccessful(true);
+        if (updateCompletionStatus) {
+          updateCompletionStatus("Work Experience", true);
+          console.log("Updated completion status for Work Experience: true");
         }
       } else {
         throw new Error("Failed to update work experience in database.");
@@ -621,9 +601,6 @@ const WorkExperience = () => {
         errorMessage = "API endpoint not found. Please contact support.";
       } else if (error.response?.status === 401) {
         errorMessage = "Authentication failed. Please log in again.";
-      } else if (error.message.includes("User not found")) {
-        errorMessage =
-          "User not found in database. Please sign up or contact support.";
       }
       setError(errorMessage);
       toast.error(errorMessage, { position: "top-right", autoClose: 5000 });
@@ -722,10 +699,11 @@ const WorkExperience = () => {
         });
         setInstituteInput("");
         setSelectedFile(null);
-        // Check if all work experience entries are removed
-        if (updatedList.length === 0) {
-          setIsFirstSaveSuccessful(false);
-          console.log("All work experience entries removed, setting isFirstSaveSuccessful to false");
+        const isCompleted = updatedList.length > 0;
+        setIsFirstSaveSuccessful(isCompleted);
+        if (updateCompletionStatus) {
+          updateCompletionStatus("Work Experience", isCompleted);
+          console.log("Updated completion status for Work Experience:", isCompleted);
         }
       } else {
         throw new Error("Failed to remove work experience from database.");
@@ -1075,7 +1053,7 @@ const WorkExperience = () => {
             type="date"
             value={formData.startdate4}
             onChange={(e) => handleChange("startdate4", e.target.value)}
-            max={today} // Restrict to today or earlier
+            max={today}
             className="w-full border rounded-lg p-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
             disabled={isProcessing}
           />
@@ -1085,8 +1063,8 @@ const WorkExperience = () => {
             type="date"
             value={formData.enddate4}
             onChange={(e) => handleChange("enddate4", e.target.value)}
-            min={formData.startdate4 || undefined} // Restrict to start date or later
-            max={today} // Restrict to today or earlier
+            min={formData.startdate4 || undefined}
+            max={today}
             disabled={formData.currentlyworking4 || isProcessing}
             className="w-full border rounded-lg p-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />

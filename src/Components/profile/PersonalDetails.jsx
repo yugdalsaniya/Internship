@@ -1,38 +1,38 @@
 import React, { useState, useEffect } from 'react';
 import { BiTime } from 'react-icons/bi';
-import { FaCheckCircle } from 'react-icons/fa'; // Corrected import
-import { CalendarDays } from 'lucide-react';
+import { FaCheckCircle } from 'react-icons/fa';
 import { fetchSectionData, mUpdate } from './../../Utils/api';
 import { jwtDecode } from 'jwt-decode';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { useNavigate } from 'react-router-dom';
 
-
-const PersonalDetails = () => {
+const PersonalDetails = ({ userData, updateCompletionStatus, isCompleted }) => {
   const [formData, setFormData] = useState({
-    pronouns: '',
-    dob: '',
+    pronouns: "",
+    dob: "",
     currentAddress: {
-      line1: '',
-      line2: '',
-      landmark: '',
-      ZIPcode: '',
-      location: '',
+      line1: "",
+      line2: "",
+      landmark: "",
+      ZIPcode: "",
+      location: "",
     },
     permanentAddress: {
-      line1: '',
-      line2: '',
-      landmark: '',
-      ZIPcode: '',
-      location: '',
+      line1: "",
+      line2: "",
+      landmark: "",
+      ZIPcode: "",
+      location: "",
     },
     copyAddress: false,
-    hobbies: '',
+    hobbies: "",
   });
   const [userId, setUserId] = useState(null);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isFirstSaveSuccessful, setIsFirstSaveSuccessful] = useState(false); // State for first successful save
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -41,10 +41,7 @@ const PersonalDetails = () => {
         let userIdLocal;
         if (!userString) {
           setError('Please log in to view your details.');
-          toast.error('Please log in to view your details.', {
-            position: "top-right",
-            autoClose: 5000,
-          });
+          navigate('/login'); // Redirect to login page
           return;
         }
         try {
@@ -53,14 +50,10 @@ const PersonalDetails = () => {
           setUserId(userIdLocal);
         } catch (parseError) {
           setError('Invalid user data. Please log in again.');
-          toast.error('Invalid user data. Please log in again.', {
-            position: "top-right",
-            autoClose: 5000,
-          });
+          navigate('/login');
           return;
         }
 
-        setIsLoading(true);
         const data = await fetchSectionData({
           collectionName: 'appuser',
           query: { _id: userIdLocal },
@@ -69,7 +62,7 @@ const PersonalDetails = () => {
 
         if (data.length > 0 && data[0].sectionData?.appuser) {
           const user = data[0].sectionData.appuser;
-          const fetchedFormData = {
+          setFormData({
             pronouns: user.pronouns || '',
             dob: user.dOB || '',
             currentAddress: {
@@ -88,52 +81,24 @@ const PersonalDetails = () => {
             },
             copyAddress: user.copycurrentaddress || false,
             hobbies: user.hobbies ? user.hobbies.join(', ') : '',
-          };
-          setFormData(fetchedFormData);
-          // Set isFirstSaveSuccessful if any relevant fields are populated
-          if (
-            fetchedFormData.pronouns ||
-            fetchedFormData.dob ||
-            fetchedFormData.currentAddress.line1 ||
-            fetchedFormData.currentAddress.ZIPcode ||
-            fetchedFormData.currentAddress.location ||
-            fetchedFormData.permanentAddress.line1 ||
-            fetchedFormData.permanentAddress.ZIPcode ||
-            fetchedFormData.permanentAddress.location ||
-            fetchedFormData.hobbies
-          ) {
-            setIsFirstSaveSuccessful(true);
-            console.log(
-              "Existing personal details data found, setting isFirstSaveSuccessful to true"
-            );
-          }
+          });
         } else {
           setError('User data not found. Please ensure your account exists.');
-          toast.error('User data not found. Please ensure your account exists.', {
-            position: "top-right",
-            autoClose: 5000,
-          });
         }
       } catch (error) {
         console.error('Error fetching user data:', error);
         setError('Failed to load user data. Please try again.');
-        toast.error('Failed to load user data. Please try again.', {
-          position: "top-right",
-          autoClose: 5000,
-        });
-      } finally {
-        setIsLoading(false);
       }
     };
     fetchUserData();
-  }, []);
+  }, [userData?.userid, updateCompletionStatus, navigate, isCompleted]);
 
   const handleChange = (field, value, isPermanent = false) => {
-    setError('');
+    setError("");
     if (field in formData) {
       setFormData({ ...formData, [field]: value });
     } else {
-      const section = isPermanent ? 'permanentAddress' : 'currentAddress';
+      const section = isPermanent ? "permanentAddress" : "currentAddress";
       setFormData({
         ...formData,
         [section]: {
@@ -149,27 +114,25 @@ const PersonalDetails = () => {
     setFormData({
       ...formData,
       copyAddress: copied,
-      permanentAddress: copied ? { ...formData.currentAddress } : {
-        line1: '', line2: '', landmark: '', ZIPcode: '', location: '',
-      }
+      permanentAddress: copied
+        ? { ...formData.currentAddress }
+        : {
+            line1: "",
+            line2: "",
+            landmark: "",
+            ZIPcode: "",
+            location: "",
+          },
     });
   };
 
   const validateForm = () => {
     if (!formData.currentAddress.line1 || !formData.currentAddress.ZIPcode || !formData.currentAddress.location) {
       setError('Please fill all required current address fields.');
-      toast.error('Please fill all required current address fields.', {
-        position: "top-right",
-        autoClose: 5000,
-      });
       return false;
     }
     if (!formData.copyAddress && (!formData.permanentAddress.line1 || !formData.permanentAddress.ZIPcode || !formData.permanentAddress.location)) {
       setError('Please fill all required permanent address fields or check "Copy Current Address".');
-      toast.error('Please fill all required permanent address fields or check "Copy Current Address".', {
-        position: "top-right",
-        autoClose: 5000,
-      });
       return false;
     }
     return true;
@@ -180,10 +143,6 @@ const PersonalDetails = () => {
       setIsLoading(true);
       if (!userId) {
         setError('Please log in to save details.');
-        toast.error('Please log in to save details.', {
-          position: "top-right",
-          autoClose: 5000,
-        });
         return;
       }
 
@@ -209,62 +168,53 @@ const PersonalDetails = () => {
         'editedAt': new Date().toISOString(),
       };
 
-      const response = await mUpdate({
+      await mUpdate({
         appName: 'app8657281202648',
         collectionName: 'appuser',
         query: { _id: userId },
         update: { $set: userData },
-        options: { upsert: false },
+        options: { upsert: false, writeConcern: { w: 'majority' } },
       });
 
-      // Check for success using multiple possible response properties
-      if (
-        response &&
-        (response.success ||
-          response.modifiedCount > 0 ||
-          response.matchedCount > 0)
-      ) {
-        if (response.matchedCount === 0) {
-          throw new Error("Failed to update personal details: User not found.");
-        }
-        if (response.upsertedId) {
-          throw new Error("Unexpected error: New user created instead of updating.");
-        }
-        console.log('Personal details updated successfully:', userData);
-        toast.success('Personal details updated successfully!', {
-          position: "top-right",
-          autoClose: 3000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-        });
-        if (!isFirstSaveSuccessful) {
-          setIsFirstSaveSuccessful(true);
-          console.log("Setting isFirstSaveSuccessful to true");
-        }
-      } else {
-        throw new Error("Failed to update personal details in database.");
-      }
-    } catch (error) {
-      console.error('Error updating personal details:', error.response?.data || error.message);
-      let errorMessage = error.message || 'Failed to update personal details. Please try again.';
-      if (error.response?.status === 404) {
-        errorMessage = "API endpoint not found. Please contact support.";
-      } else if (error.response?.status === 401) {
-        errorMessage = "Authentication failed. Please log in again.";
-      }
-      setError(errorMessage);
-      toast.error(errorMessage, {
+      console.log('updated successfully:', userData);
+      toast.success('Updated successfully!', {
         position: "top-right",
-        autoClose: 5000,
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+    } catch (error) {
+      console.error('Error updating data:', error);
+      setError(error.message || 'Failed to update personal details. Please try again.');
+      toast.error('Failed to update personal details. Please try again.', {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
       });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const renderInput = (label, field, section = null, placeholder = '', type = 'text', required = false) => (
+  // Define getCurrentDate function
+  const getCurrentDate = () => {
+    const today = new Date();
+    return today.toISOString().split('T')[0]; // Returns YYYY-MM-DD
+  };
+
+  const renderInput = (
+    label,
+    field,
+    section = null,
+    placeholder = "",
+    type = "text",
+    required = false
+  ) => (
     <div className="mb-4">
       <p className="text-sm font-medium text-gray-700 mb-1">
         {label} {required && <span className="text-red-500">*</span>}
@@ -273,29 +223,32 @@ const PersonalDetails = () => {
         type={type}
         placeholder={placeholder || label}
         value={section ? formData[section][field] : formData[field]}
-        onChange={(e) => handleChange(field, e.target.value, section === 'permanentAddress')}
+        onChange={(e) =>
+          handleChange(field, e.target.value, section === "permanentAddress")
+        }
         className="w-full border rounded-lg p-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
         disabled={isLoading}
       />
     </div>
   );
 
-  console.log("Rendering with isFirstSaveSuccessful:", isFirstSaveSuccessful);
+  console.log('Rendering PersonalDetails:', { isCompleted, formData });
 
   return (
     <div className="bg-white rounded-xl shadow-md">
       <ToastContainer />
-      {/* Error Message */}
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative m-4" role="alert">
+        <div
+          className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative m-4"
+          role="alert"
+        >
           <span>{error}</span>
         </div>
       )}
 
-      {/* Fixed Header */}
       <div className="sticky top-0 bg-white z-10 px-4 py-4 shadow-sm flex justify-between items-center border-b border-gray-200">
         <div className="flex items-center gap-2 text-gray-700 text-lg font-medium">
-          {isFirstSaveSuccessful ? (
+          {isCompleted ? (
             <FaCheckCircle className="text-green-500" />
           ) : (
             <BiTime className="text-xl" />
@@ -304,13 +257,11 @@ const PersonalDetails = () => {
         </div>
       </div>
 
-      {/* Scrollable Content */}
       <div className="p-6 space-y-6">
-        {/* Pronouns */}
         <div className="mb-4">
           <p className="text-sm font-medium text-gray-700 mb-2">Pronouns</p>
           <div className="flex flex-wrap gap-2">
-            {['He/Him/his', 'She/Her', 'Them/They'].map((option) => (
+            {["He/Him/his", "She/Her", "Them/They"].map((option) => (
               <button
                 key={option}
                 className={`px-3 py-1 border rounded-full text-sm ${
@@ -327,34 +278,57 @@ const PersonalDetails = () => {
           </div>
         </div>
 
-        {/* DOB */}
         <div className="mb-4">
           <p className="text-sm font-medium text-gray-700 mb-1">DOB</p>
           <div className="relative">
             <input
               type="date"
               value={formData.dob}
-              onChange={(e) => handleChange('dob', e.target.value)}
+              onChange={(e) => handleChange("dob", e.target.value)}
+              max={getCurrentDate()} // Use defined function
               className="w-full border rounded-lg p-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 pr-5"
               disabled={isLoading}
             />
           </div>
         </div>
 
-        {/* Current Address */}
         <div className="border rounded-lg p-4 space-y-4 mb-4">
-          <h2 className="text-lg font-semibold text-gray-800">Current Address</h2>
-          {renderInput('Address Line 1', 'line1', 'currentAddress', '', 'text', true)}
-          {renderInput('Address Line 2', 'line2', 'currentAddress')}
-          {renderInput('Landmark', 'landmark', 'currentAddress')}
-          {renderInput('ZIP Code', 'ZIPcode', 'currentAddress', '', 'text', true)}
-          {renderInput('Location', 'location', 'currentAddress', '', 'text', true)}
+          <h2 className="text-lg font-semibold text-gray-800">
+            Current Address
+          </h2>
+          {renderInput(
+            "Address Line 1",
+            "line1",
+            "currentAddress",
+            "",
+            "text",
+            true
+          )}
+          {renderInput("Address Line 2", "line2", "currentAddress")}
+          {renderInput("Landmark", "landmark", "currentAddress")}
+          {renderInput(
+            "ZIP Code",
+            "ZIPcode",
+            "currentAddress",
+            "",
+            "text",
+            true
+          )}
+          {renderInput(
+            "Location",
+            "location",
+            "currentAddress",
+            "",
+            "text",
+            true
+          )}
         </div>
 
-        {/* Permanent Address */}
         <div className="border rounded-lg p-4 space-y-4 mb-4">
           <div className="flex justify-between items-center mb-2">
-            <h2 className="text-lg font-semibold text-gray-800">Permanent Address</h2>
+            <h2 className="text-lg font-semibold text-gray-800">
+              Permanent Address
+            </h2>
             <label className="flex items-center gap-2 text-sm text-blue-600 cursor-pointer">
               <input
                 type="checkbox"
@@ -366,37 +340,36 @@ const PersonalDetails = () => {
               Copy Current Address
             </label>
           </div>
-          {renderInput('Address Line 1', 'line1', 'permanentAddress', '', 'text', true)}
+          {renderInput('Address Line 1', 'line1', 'permanentAddress', '', 'text', !formData.copyAddress)}
           {renderInput('Address Line 2', 'line2', 'permanentAddress')}
           {renderInput('Landmark', 'landmark', 'permanentAddress')}
-          {renderInput('ZIP Code', 'ZIPcode', 'permanentAddress', '', 'text', true)}
-          {renderInput('Location', 'location', 'permanentAddress', '', 'text', true)}
+          {renderInput('ZIP Code', 'ZIPcode', 'permanentAddress', '', 'text', !formData.copyAddress)}
+          {renderInput('Location', 'location', 'permanentAddress', '', 'text', !formData.copyAddress)}
         </div>
 
-        {/* Hobbies */}
         <div className="mb-4">
           <p className="text-sm font-medium text-gray-700 mb-1">Hobbies</p>
           <input
             type="text"
             placeholder="List your hobbies (comma-separated)"
             value={formData.hobbies}
-            onChange={(e) => handleChange('hobbies', e.target.value)}
+            onChange={(e) => handleChange("hobbies", e.target.value)}
             className="w-full border rounded-lg p-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
             disabled={isLoading}
           />
         </div>
       </div>
 
-      {/* Fixed Save Button */}
       <div className="sticky bottom-0 bg-white border-t p-4">
         <div className="flex justify-end">
           <button
             onClick={handleSave}
             className={`bg-blue-600 text-white px-6 py-2 rounded-full flex items-center gap-2 text-sm font-medium transition ${
-              isLoading || error ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700'
+              isLoading || error
+                ? "opacity-50 cursor-not-allowed"
+                : "hover:bg-blue-700"
             }`}
             disabled={isLoading || !!error}
-            aria-label="Save Personal Details"
           >
             <span className="text-lg">✓</span> {isLoading ? 'Saving...' : 'Save'}
           </button>
