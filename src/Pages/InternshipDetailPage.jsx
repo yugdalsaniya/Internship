@@ -159,7 +159,7 @@ const InternshipDetailPage = () => {
       company: job.sectionData?.jobpost?.company || "Unknown Company",
       time: job.sectionData?.jobpost?.time || "Unknown",
       salary: job.sectionData?.jobpost?.salary
-        ? `₹${job.sectionData.jobpost.salary}`
+        ? `${job.sectionData.jobpost.salary}`
         : "Not specified",
       location: job.sectionData?.jobpost?.location || "Unknown",
       relativeTime: job.createdDate ? getRelativeTime(job.createdDate) : "Just now",
@@ -201,7 +201,7 @@ const InternshipDetailPage = () => {
               </div>
               <div className="flex items-center gap-1">
                 <FaRupeeSign />
-                {jobpost?.salary ? `₹${jobpost.salary}` : "Not specified"}
+                {jobpost?.salary ? `${jobpost.salary}` : "Not specified"}
               </div>
               <div className="flex items-center gap-1">
                 <FaMapMarkerAlt />
@@ -345,7 +345,7 @@ const InternshipDetailPage = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <FaRupeeSign className="text-blue-500" />
-                  <span>Offered Salary: {jobpost?.salary ? `₹${jobpost.salary}` : "Not specified"}</span>
+                  <span>Offered Salary: {jobpost?.salary ? `${jobpost.salary}` : "Not specified"}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <FaMapMarkerAlt className="text-blue-500" />

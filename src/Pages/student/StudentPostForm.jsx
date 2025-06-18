@@ -402,14 +402,7 @@ const PostInternshipForm = () => {
       <ToastContainer />
       <div className="min-h-screen bg-[#fafafa] flex items-center justify-center px-4 py-8">
         <div className="max-w-4xl w-full bg-white rounded-lg shadow-md p-6">
-          <div className="flex justify-center items-center mb-6">
-            <img src={logo} alt="Logo" className="w-8 h-8 mr-2" />
-            <div>
-              <h1 className="text-xl font-bold text-[#050748] tracking-wide">INTERNSHIP–OJT</h1>
-              <div className="w-full h-[2px] bg-[#050748] mt-1 mb-1" />
-              <p className="text-sm text-black font-bold text-center">WORK24 PHILIPPINES</p>
-            </div>
-          </div>
+          
           <h2 className="text-xl md:text-2xl font-bold text-[#050748] mb-4 text-center">
             Student Internship Form
           </h2>

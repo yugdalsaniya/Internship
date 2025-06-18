@@ -22,6 +22,7 @@ import ScrollToTop from "../ScrollToTop";
 import AboutUsPage from "../Pages/AboutUsPage";
 import ContactUsPage from "../Pages/ContactUsPage";
 import CategoryInternshipsPage from "../Pages/CategoryInternshipsPage";
+import PrivacyPolicyPage from "../Pages/PrivacyPolicyPage";
 
 export default function AppRoutes() {
   return (
@@ -34,6 +35,7 @@ export default function AppRoutes() {
         <Route path="/forgotpassword" element={<ForgotPasswordPage />} />
         <Route path="/login" element={<SignInPage />} />
         <Route path="/editprofile/*" element={<ProfileEditPage />} />
+                <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
         <Route element={<MainLayout />}>
           <Route path="/" element={<HomePage />} />
           <Route path="/internship" element={<InternshipPage />} />

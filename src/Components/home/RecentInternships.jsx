@@ -70,7 +70,7 @@ export default function RecentInternship() {
           time: relativeTime,
           type: job.sectionData?.jobpost?.time || "Unknown",
           salary: job.sectionData?.jobpost?.salary
-            ? `₹${job.sectionData.jobpost.salary}`
+            ? `${job.sectionData.jobpost.salary}`
             : "Not specified",
           location: (job.sectionData?.jobpost?.location || "Unknown").toUpperCase(),
           logo: job.sectionData?.jobpost?.logo &&

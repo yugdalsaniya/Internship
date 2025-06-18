@@ -27,6 +27,7 @@ const SignUpPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
+  const [consentChecked, setConsentChecked] = useState(false);
 
   const roleIds = {
     student: "1747825619417",
@@ -103,6 +104,12 @@ const SignUpPage = () => {
       confirmPassword: "",
     });
     setErrors({});
+    setConsentChecked(false);
+  };
+
+  const handleConsentChange = () => {
+    setConsentChecked(!consentChecked);
+    setErrors((prev) => ({ ...prev, consent: "" }));
   };
 
   const handleSubmit = async (e) => {
@@ -143,6 +150,9 @@ const SignUpPage = () => {
     } else if (role === "academy" && formData.academyName.trim().length > 100) {
       newErrors.academyName = "Academy Name must be 100 characters or less.";
     }
+    if (!consentChecked) {
+      newErrors.consent = "You must agree to the Privacy Policy to proceed.";
+    }
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -163,7 +173,7 @@ const SignUpPage = () => {
         payload = {
           appName: "app8657281202648",
           companyName: formData.companyName.trim(),
-          mobile: fullMobileNumber, // Use the combined mobile number
+          mobile: fullMobileNumber,
           legalname: formData.name.trim(),
           role: roleIds[role],
           email: formData.email.toLowerCase().trim(),
@@ -181,7 +191,7 @@ const SignUpPage = () => {
           role: roleIds[role],
           legalname: formData.name.trim(),
           email: formData.email.toLowerCase().trim(),
-          mobile: fullMobileNumber, // Use the combined mobile number
+          mobile: fullMobileNumber,
           ...(role === "academy" && {
             academyname: formData.academyName.trim(),
           }),
@@ -203,6 +213,7 @@ const SignUpPage = () => {
             confirmPassword: "",
           });
           setErrors({});
+          setConsentChecked(false);
           const companyId = response.user?.companyId || "";
           localStorage.setItem(
             "user",
@@ -212,7 +223,7 @@ const SignUpPage = () => {
               role: roleNames[roleIds[role]],
               roleId: roleIds[role],
               companyId: companyId,
-              mobile: fullMobileNumber, // Store the combined mobile number
+              mobile: fullMobileNumber,
             })
           );
           localStorage.setItem("accessToken", response.accessToken);
@@ -227,7 +238,7 @@ const SignUpPage = () => {
               email: formData.email.toLowerCase().trim(),
               role: roleNames[roleIds[role]],
               roleId: roleIds[role],
-              mobile: fullMobileNumber, // Store the combined mobile number
+              mobile: fullMobileNumber,
               ...(role === "academy" && {
                 academyname: formData.academyName.trim(),
               }),
@@ -308,22 +319,13 @@ const SignUpPage = () => {
       <div className="w-full lg:w-1/2 flex flex-col justify-center px-4 py-2 xs:px-6 sm:px-8">
         <div className="max-w-[20rem] xs:max-w-[24rem] sm:max-w-[28rem] mx-auto w-full">
           <div className="mb-3 flex flex-col items-center">
-            <div className="flex items-center space-x-2 mb-1">
-              <img
-                src={logo}
-                alt="Logo"
-                className="w-8 h-8 xs:w-10 xs:h-10 sm:w-12 sm:h-12"
-              />
-              <div>
-                <h1 className="text-base xs:text-lg sm:text-xl font-bold text-[#050748] tracking-wide">
-                  INTERNSHIP–OJT
-                </h1>
-                <div className="w-full h-[2px] bg-[#050748] mt-0.5 mb-0.5" />
-                <p className="text-xs xs:text-sm sm:text-base text-black font-bold text-center">
-                  WORK24 PHILIPPINES
-                </p>
-              </div>
-            </div>
+             <div className="flex items-center mb-3">
+                          <img
+                            src={logo}
+                            alt="Internship-OJT Logo"
+                            className="h-10 w-auto mr-2"
+                          />
+                        </div>
           </div>
           <div className="flex flex-wrap justify-center gap-2 xs:gap-3 sm:gap-4 mb-3">
             {["student", "company", "academy", "recruiter", "mentor"].map(
@@ -457,6 +459,38 @@ const SignUpPage = () => {
                     )}
                   </div>
                 ))}
+                <div className="flex flex-col space-y-2">
+                  <p className="text-xs xs:text-sm text-gray-700">
+                    By registering on INTURN PH, I certify that I have read and understood the{" "}
+                    <Link
+                      to="/privacy-policy"
+                      className="text-[#3D7EFF] font-semibold hover:underline"
+                    >
+                      Privacy Policy
+                    </Link>
+                    . I give my free, informed, and explicit consent to INTURN PH to collect, process, and use my personal data for the purposes of internship and employment matching, as well as academic coordination and certification. I understand that I may withdraw my consent at any time.
+                  </p>
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={consentChecked}
+                      onChange={handleConsentChange}
+                      className="h-4 w-4 text-[#3D7EFF] border-gray-300 rounded focus:ring-[#3D7EFF]"
+                      disabled={isLoading}
+                    />
+                    <span className="text-xs xs:text-sm text-gray-700">
+                      I agree to the INTURN PH Privacy Policy and give my consent for data processing under RA 10173.
+                    </span>
+                  </label>
+                  {errors.consent && (
+                    <p
+                      id="error-consent"
+                      className="text-red-500 text-xs xs:text-sm"
+                    >
+                      {errors.consent}
+                    </p>
+                  )}
+                </div>
                 <button
                   type="submit"
                   className={`w-full bg-[#3D7EFF] text-white py-2 xs:py-2.5 rounded-md font-semibold text-xs xs:text-sm sm:text-base hover:bg-[#2b66cc] transition-colors flex items-center justify-center ${

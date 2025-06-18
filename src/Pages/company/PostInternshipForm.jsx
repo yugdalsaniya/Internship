@@ -570,7 +570,7 @@ const PostInternshipForm = () => {
                 value={formData.company}
                 onChange={handleChange}
                 className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="e.g., WORK24 Philippines"
+                placeholder="e.g., Inturnshp Philippines"
                 required
               />
             </div>

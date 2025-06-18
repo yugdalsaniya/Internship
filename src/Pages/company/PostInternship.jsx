@@ -51,7 +51,7 @@ const PostInternship = () => {
               location: (job.sectionData?.jobpost?.location || 'Unknown').toUpperCase(),
               type: job.sectionData?.jobpost?.time || 'Unknown',
               salary: job.sectionData?.jobpost?.salary
-                ? `₹${job.sectionData.jobpost.salary}`
+                ? `${job.sectionData.jobpost.salary}`
                 : 'Not specified',
               posted: relativeTime,
               logo: job.sectionData?.jobpost?.logo || 'https://placehold.co/40x40',
@@ -87,7 +87,7 @@ const PostInternship = () => {
             Post an Internship
           </h1>
           <p className="text-sm md:text-base text-gray-700 max-w-md mx-auto mb-6">
-            Connect with top talent and build your team with WORK24 Philippines.
+            Connect with top talent and build your team with Inturnshp Philippines.
           </p>
           <button
             onClick={() => navigate('/post-internship/form')}
@@ -256,7 +256,7 @@ const PostInternship = () => {
           </h2>
           <p className="text-sm text-gray-600 mb-6">
             Explore our platform features or contact our support team to learn more
-            about how WORK24 Philippines can help your company grow.
+            about how Inturnshp Philippines can help your company grow.
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-4">
             <button

@@ -87,22 +87,16 @@ const Navbar = () => {
   const links = navLinks[role] || defaultLinks;
 
   return (
-    <nav className="bg-white shadow-md py-4 px-5 sm:px-12">
-      <div className="flex items-center justify-between mx-auto">
+    <nav className="bg-white shadow-md py-2 px-5 sm:px-12">
+      <div className="flex items-center justify-between mx-auto h-12">
         <div className="flex items-center ml-0 sm:ml-4">
-          <img
-            src={logo}
-            alt="Internship-OJT Logo"
-            className="h-7 sm:h-8 w-7 sm:w-8 mr-2"
-          />
-          <div className="flex flex-col items-center">
-            <h1 className="text-base sm:text-lg font-semibold text-[#050748] underline">
-              INTERNSHIP-OJT
-            </h1>
-            <p className="text-[10px] sm:text-xs text-black font-bold uppercase mx-0 sm:mx-1">
-              WORK24 PHILIPPINES
-            </p>
-          </div>
+          <Link to="/">
+            <img
+              src={logo}
+              alt="Internship-OJT Logo"
+              className="h-10 w-auto"
+            />
+          </Link>
         </div>
 
         <div className="hidden md:flex space-x-8">
