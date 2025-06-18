@@ -26,8 +26,8 @@ const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 const userTypes = [
   { label: "College Students", icon: <FaGraduationCap /> },
   { label: "Professional", icon: <FaBriefcase /> },
-  { label: "School Student", icon: <FaCalendarAlt /> },
-  { label: "Fresher", icon: <FaUserGraduate /> },
+  { label: "Senior High School", icon: <FaCalendarAlt /> },
+  { label: "JVL", icon: <FaUserGraduate /> },
 ];
 
 const streamOptions = [
@@ -44,7 +44,10 @@ const purposes = [
   { label: "To be a Mentor", icon: <FaUsers /> },
 ];
 
-const workExperienceOptions = ["1 year", "2 year"];
+const workExperienceOptions = [
+  { label: "1 year", value: 1 },
+  { label: "2 years", value: 2 },
+];
 
 async function uploadProfilePicture(file, userId) {
   try {
@@ -122,7 +125,9 @@ function BasicDetails({ userData }) {
   const locationInputRef = useRef(null);
   const autocompleteRef = useRef(null);
 
+  // Initialize from userData prop
   useEffect(() => {
+    console.log("Received userData prop:", userData);
     if (userData && userData.legalname) {
       setName(userData.legalname);
       setEmail(userData.email || "");
@@ -135,17 +140,24 @@ function BasicDetails({ userData }) {
           setCountryCode("+63");
         }
       }
-      if (userData.role === "academy" && userData.academyname) {
-        setSchoolName(userData.academyname);
-      }
+      setSchoolName(userData.organisationcollege || "");
+      console.log("After setting from userData:", {
+        name,
+        email,
+        mobile,
+        countryCode,
+        schoolName,
+      });
     }
   }, [userData]);
 
+  // Fetch user data and dropdown options
   useEffect(() => {
     const fetchUserDataAndDropdownOptions = async () => {
       setIsLoadingOptions(true);
       try {
         const userString = localStorage.getItem("user");
+        console.log("localStorage user:", userString);
         if (!userString) {
           setError("Please log in to view your details. Using local data.");
           toast.error("Please log in to view your details.", {
@@ -157,10 +169,15 @@ function BasicDetails({ userData }) {
         }
 
         let userId;
+        let localUserData;
         try {
           const user = JSON.parse(userString);
           userId = user.userid;
+          localUserData = user;
+          console.log("Parsed userId:", userId);
+          console.log("Parsed localUserData:", localUserData);
         } catch (parseError) {
+          console.error("Parse error:", parseError);
           setError("Invalid user data. Using local data.");
           toast.error("Invalid user data. Using local data.", {
             position: "top-right",
@@ -170,87 +187,132 @@ function BasicDetails({ userData }) {
           return;
         }
 
+        // Fallback to localStorage data if userId is empty
         if (!userId) {
           console.log("No userId found, using localStorage data.");
-          return;
-        }
-
-        const userDataResponse = await fetchSectionData({
-          dbName: "internph",
-          collectionName: "appuser",
-          query: { _id: userId },
-        });
-
-        if (
-          !userDataResponse ||
-          (Array.isArray(userDataResponse) && userDataResponse.length === 0)
-        ) {
-          setError("User data not found. Using local data.");
-          toast.error("User data not found. Using local data.", {
-            position: "top-right",
-            autoClose: 5000,
-          });
-          setTimeout(() => setError(""), 5000);
-          return;
-        }
-
-        const userData = Array.isArray(userDataResponse)
-          ? userDataResponse.find((item) => item._id === userId)?.sectionData
-              ?.appuser || {}
-          : userDataResponse.sectionData?.appuser || {};
-
-        setName(userData.legalname || "");
-        setEmail(userData.email || "");
-        if (userData.mobile) {
-          if (userData.mobile.startsWith("+63")) {
-            setCountryCode("+63");
-            setMobile(userData.mobile.slice(3));
-          } else {
-            setMobile(userData.mobile);
-            setCountryCode("+63");
+          setName(localUserData.legalname || "");
+          setEmail(localUserData.email || "");
+          if (localUserData.mobile) {
+            if (localUserData.mobile.startsWith("+63")) {
+              setCountryCode("+63");
+              setMobile(localUserData.mobile.slice(3));
+            } else {
+              setMobile(localUserData.mobile);
+              setCountryCode("+63");
+            }
           }
-        }
-        setGender(userData.Gender || "");
-        setUserType(userData.usertype || "");
-        setLocation(userData.location || "");
-        setCourse(userData.course || "");
-        setSpecialization(userData.coursespecialization || "");
-        setCollege(userData.organisationcollege || "");
-        setStartYear(userData.startyear || "");
-        setEndYear(userData.endyear || "");
-        setSelectedPurpose(userData.purpose || []);
-        setCareerGoal(
-          userData.growinmycurrentcareer
-            ? "current"
-            : userData.transitioninnewcareer
-            ? "new"
-            : ""
-        );
-        setDesignation(userData.designation || "");
-        setWorkExperienceType(userData.workexperience || "");
-        setIsCurrentlyWorking(userData.currentlyworkinginthisrole || false);
-        setSchoolName(userData.organisationcollege || "");
-        setStream(userData.stream || "");
-        setNewCareerRole(userData.role1 || []);
-        setProfilePicture(userData.profile || "");
+          setSchoolName(localUserData.organisationcollege || "");
+          if (localUserData.role === "student") {
+            setUserType("Senior High School");
+          }
+        } else {
+          // Fetch from server if userId exists
+          const userDataResponse = await fetchSectionData({
+            dbName: "internph",
+            collectionName: "appuser",
+            query: { _id: userId },
+          });
+          console.log("userDataResponse:", userDataResponse);
 
-        // Set isFirstSaveSuccessful if any relevant fields are populated
-        if (
-          userData.legalname ||
-          userData.email ||
-          userData.mobile ||
-          userData.Gender ||
-          userData.usertype ||
-          userData.location ||
-          userData.purpose?.length ||
-          userData.profile
-        ) {
-          setIsFirstSaveSuccessful(true);
-          console.log(
-            "Existing basic details data found, setting isFirstSaveSuccessful to true"
+          if (
+            !userDataResponse ||
+            (Array.isArray(userDataResponse) && userDataResponse.length === 0)
+          ) {
+            setError("User data not found. Using local data.");
+            toast.error("User data not found. Using local data.", {
+              position: "top-right",
+              autoClose: 5000,
+            });
+            setTimeout(() => setError(""), 5000);
+            setName(localUserData.legalname || "");
+            setEmail(localUserData.email || "");
+            if (localUserData.mobile) {
+              if (localUserData.mobile.startsWith("+63")) {
+                setCountryCode("+63");
+                setMobile(localUserData.mobile.slice(3));
+              } else {
+                setMobile(localUserData.mobile);
+                setCountryCode("+63");
+              }
+            }
+            setSchoolName(localUserData.organisationcollege || "");
+            if (localUserData.role === "student") {
+              setUserType("Senior High School");
+            }
+            return;
+          }
+
+          const userData = Array.isArray(userDataResponse)
+            ? userDataResponse.find((item) => item._id === userId)?.sectionData
+                ?.appuser || {}
+            : userDataResponse.sectionData?.appuser || {};
+          console.log("Parsed server userData:", userData);
+
+          setName(userData.legalname || localUserData.legalname || "");
+          setEmail(userData.email || localUserData.email || "");
+          if (userData.mobile || localUserData.mobile) {
+            const mobileToUse = userData.mobile || localUserData.mobile;
+            if (mobileToUse.startsWith("+63")) {
+              setCountryCode("+63");
+              setMobile(mobileToUse.slice(3));
+            } else {
+              setMobile(mobileToUse);
+              setCountryCode("+63");
+            }
+          }
+          setGender(userData.Gender || "");
+          setUserType(
+            userData.usertype ||
+              (localUserData.role === "student" ? "Senior High School" : "")
           );
+          setLocation(userData.location || "");
+          setCourse(userData.course || "");
+          setSpecialization(userData.coursespecialization || "");
+          setCollege(userData.organisationcollege || "");
+          setStartYear(userData.startyear || "");
+          setEndYear(userData.endyear || "");
+          setSelectedPurpose(userData.purpose || []);
+          setCareerGoal(
+            userData.growinmycurrentcareer
+              ? "current"
+              : userData.transitioninnewcareer
+              ? "new"
+              : ""
+          );
+          setDesignation(userData.designation || "");
+          setWorkExperienceType(userData.workexperience || "");
+          setIsCurrentlyWorking(userData.currentlyworkinginthisrole || false);
+          setSchoolName(userData.organisationcollege || "");
+          setStream(userData.stream || "");
+          setNewCareerRole(userData.role1 || []);
+          setProfilePicture(userData.profile || "");
+
+          if (
+            userData.legalname ||
+            userData.email ||
+            userData.mobile ||
+            userData.Gender ||
+            userData.usertype ||
+            userData.location ||
+            userData.purpose?.length ||
+            userData.profile
+          ) {
+            setIsFirstSaveSuccessful(true);
+            console.log(
+              "Existing basic details data found, setting isFirstSaveSuccessful to true"
+            );
+          }
+          console.log("After setting from server:", {
+            name,
+            email,
+            mobile,
+            countryCode,
+            userType,
+            schoolName,
+          });
         }
 
+        // Fetch dropdown options
         const designationData = await fetchSectionData({
           dbName: "internph",
           collectionName: "designation",
@@ -319,13 +381,44 @@ function BasicDetails({ userData }) {
         }));
         setRoleOptions(roles);
       } catch (err) {
-        console.error("Error fetching data:", err);
+        console.error("Error fetching data:", err.message, err.stack);
         setError("Failed to load server data. Using local data.");
         toast.error("Failed to load server data. Using local data.", {
           position: "top-right",
           autoClose: 5000,
         });
         setTimeout(() => setError(""), 5000);
+        const userString = localStorage.getItem("user");
+        if (userString) {
+          try {
+            const user = JSON.parse(userString);
+            setName(user.legalname || "");
+            setEmail(user.email || "");
+            if (user.mobile) {
+              if (user.mobile.startsWith("+63")) {
+                setCountryCode("+63");
+                setMobile(user.mobile.slice(3));
+              } else {
+                setMobile(user.mobile);
+                setCountryCode("+63");
+              }
+            }
+            setSchoolName(user.organisationcollege || "");
+            if (user.role === "student") {
+              setUserType("Senior High School");
+            }
+            console.log("After setting from localStorage (error):", {
+              name,
+              email,
+              mobile,
+              countryCode,
+              userType,
+              schoolName,
+            });
+          } catch (parseError) {
+            console.error("Parse error on fallback:", parseError);
+          }
+        }
       } finally {
         setIsLoadingOptions(false);
       }
@@ -334,6 +427,7 @@ function BasicDetails({ userData }) {
     fetchUserDataAndDropdownOptions();
   }, []);
 
+  // Google Maps Autocomplete
   useEffect(() => {
     const loadGoogleMapsScript = () => {
       return new Promise((resolve, reject) => {
@@ -402,13 +496,14 @@ function BasicDetails({ userData }) {
     };
   }, []);
 
+  // Reset fields based on userType or careerGoal changes
   useEffect(() => {
     if (userType !== "Professional") {
       setDesignation("");
       setWorkExperienceType("");
       setIsCurrentlyWorking(false);
     }
-    if (userType !== "School Student") {
+    if (userType !== "Senior High School") {
       setSchoolName("");
       setStream("");
     }
@@ -423,6 +518,23 @@ function BasicDetails({ userData }) {
       setNewCareerRole([]);
     }
   }, [userType, careerGoal]);
+
+  // Calculate startYear for Professionals when isCurrentlyWorking is checked
+  useEffect(() => {
+    if (
+      userType === "Professional" &&
+      isCurrentlyWorking &&
+      workExperienceType
+    ) {
+      const currentYear = new Date().getFullYear();
+      const experienceYears = parseInt(workExperienceType, 10);
+      if (!isNaN(experienceYears)) {
+        setStartYear((currentYear - experienceYears).toString());
+      } else {
+        setStartYear("");
+      }
+    }
+  }, [userType, isCurrentlyWorking, workExperienceType]);
 
   const handleProfilePictureChange = (e) => {
     const file = e.target.files[0];
@@ -460,19 +572,22 @@ function BasicDetails({ userData }) {
       userType === "Professional" &&
       (!designation ||
         !workExperienceType ||
-        !startYear ||
+        (!isCurrentlyWorking && !startYear) ||
         (!isCurrentlyWorking && !endYear))
     ) {
       return "Please fill all required professional fields.";
     }
-    if (userType === "School Student" && !schoolName) {
-      return "Please fill all required school student fields.";
+    if (
+      userType === "Senior High School" &&
+      (!schoolName || !instituteOptions.find((opt) => opt._id === schoolName))
+    ) {
+      return "Please select a valid school name.";
     }
-    if (userType === "School Student" && !stream) {
+    if (userType === "Senior High School" && !stream) {
       return "Please select a stream.";
     }
     if (
-      (userType === "College Students" || userType === "Fresher") &&
+      (userType === "College Students" || userType === "JVL") &&
       (!course || !specialization || !college || !startYear || !endYear)
     ) {
       return "Please fill all required college/fresher fields.";
@@ -657,7 +772,7 @@ function BasicDetails({ userData }) {
           "sectionData.appuser.role1": newCareerRole,
           "sectionData.appuser.teammember": "",
           "sectionData.appuser.stream":
-            userType === "School Student" ? stream : "",
+            userType === "Senior High School" ? stream : "",
           ...(userType === "Professional" && {
             "sectionData.appuser.designation": designation,
             "sectionData.appuser.workexperience": workExperienceType,
@@ -666,10 +781,10 @@ function BasicDetails({ userData }) {
             "sectionData.appuser.startyear": startYear,
             "sectionData.appuser.endyear": isCurrentlyWorking ? "" : endYear,
           }),
-          ...(userType === "School Student" && {
+          ...(userType === "Senior High School" && {
             "sectionData.appuser.organisationcollege": schoolName,
           }),
-          ...(userType === "College Students" || userType === "Fresher"
+          ...(userType === "College Students" || userType === "JVL"
             ? {
                 "sectionData.appuser.course": course,
                 "sectionData.appuser.coursespecialization": specialization,
@@ -1015,8 +1130,8 @@ function BasicDetails({ userData }) {
               >
                 <option value="">Select Work Experience Type</option>
                 {workExperienceOptions.map((experience) => (
-                  <option key={experience} value={experience}>
-                    {experience}
+                  <option key={experience.value} value={experience.value}>
+                    {experience.label}
                   </option>
                 ))}
               </select>
@@ -1045,7 +1160,11 @@ function BasicDetails({ userData }) {
                   className="w-full border border-gray-300 rounded-lg p-2 h-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   value={startYear}
                   onChange={(e) => setStartYear(e.target.value)}
-                  disabled={isProcessing}
+                  disabled={
+                    isProcessing ||
+                    (userType === "Professional" && isCurrentlyWorking)
+                  }
+                  readOnly={userType === "Professional" && isCurrentlyWorking}
                 />
               </div>
               <div>
@@ -1063,7 +1182,7 @@ function BasicDetails({ userData }) {
               </div>
             </div>
           </>
-        ) : userType === "School Student" ? (
+        ) : userType === "Senior High School" ? (
           <>
             <div className="mb-4">
               <label className="text-sm font-medium block mb-1 text-gray-700">
@@ -1085,16 +1204,29 @@ function BasicDetails({ userData }) {
 
             <div className="mb-4">
               <label className="text-sm font-medium block mb-1 text-gray-700">
-                School Name <span className="text-red-500">*</span>
+                Organisation/School <span className="text-red-500">*</span>
               </label>
-              <input
-                type="text"
-                value={schoolName}
-                onChange={(e) => setSchoolName(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg p-2 h-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Enter your school name"
-                disabled={isProcessing}
+              <Select
+                options={instituteOptions.map((option) => ({
+                  value: option._id,
+                  label: option.name,
+                }))}
+                value={instituteOptions
+                  .filter((option) => option._id === schoolName)
+                  .map((option) => ({ value: option._id, label: option.name }))}
+                onChange={(selected) =>
+                  setSchoolName(selected ? selected.value : "")
+                }
+                styles={customSelectStyles}
+                isDisabled={isProcessing || isLoadingOptions}
+                placeholder="Search for your school..."
+                isClearable
+                isSearchable
+                menuPortalTarget={document.body}
               />
+              {isLoadingOptions && (
+                <p className="text-sm text-gray-500 mt-1">Loading schools...</p>
+              )}
             </div>
           </>
         ) : (
