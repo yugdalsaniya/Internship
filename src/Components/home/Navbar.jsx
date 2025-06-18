@@ -4,33 +4,44 @@ import logo from '../../assets/Navbar/logo.png';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const [internshipDropdownOpen, setInternshipDropdownOpen] = useState(false);
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user')) || {};
   const role = user.role || '';
-  const dropdownRef = useRef(null);
+  const userDropdownRef = useRef(null);
+  const internshipDropdownRef = useRef(null);
 
   const toggleMenu = () => {
     setIsOpen(!isOpen);
   };
 
-  const toggleDropdown = () => {
-    setDropdownOpen(!dropdownOpen);
+  const toggleUserDropdown = () => {
+    setUserDropdownOpen(!userDropdownOpen);
+  };
+
+  const toggleInternshipDropdown = () => {
+    setInternshipDropdownOpen(!internshipDropdownOpen);
   };
 
   const handleLogout = () => {
     localStorage.removeItem('user');
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
-    setDropdownOpen(false);
+    setUserDropdownOpen(false);
     setIsOpen(false);
     navigate('/');
   };
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (window.innerWidth >= 640 && dropdownOpen && dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setDropdownOpen(false);
+      if (window.innerWidth >= 640) {
+        if (userDropdownOpen && userDropdownRef.current && !userDropdownRef.current.contains(event.target)) {
+          setUserDropdownOpen(false);
+        }
+        if (internshipDropdownOpen && internshipDropdownRef.current && !internshipDropdownRef.current.contains(event.target)) {
+          setInternshipDropdownOpen(false);
+        }
       }
     };
 
@@ -38,7 +49,7 @@ const Navbar = () => {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [dropdownOpen]);
+  }, [userDropdownOpen, internshipDropdownOpen]);
 
   // Define navigation links based on role
   const navLinks = {
@@ -50,8 +61,14 @@ const Navbar = () => {
     ],
     company: [
       { to: '/', label: 'Home' },
-      { to: '/post-internship', label: 'Post Internship' },
-      { to: '/manage-internships', label: 'Manage Internships' },
+      {
+        label: 'Internships',
+        isDropdown: true,
+        dropdownItems: [
+          { to: '/post-internship', label: 'Post Internship' },
+          { to: '/manage-internships', label: 'Manage Internships' },
+        ],
+      },
       { to: '/about', label: 'About Us' },
       { to: '/contact', label: 'Contact Us' },
     ],
@@ -99,28 +116,57 @@ const Navbar = () => {
           </Link>
         </div>
 
-        <div className="hidden md:flex space-x-8">
+        <div className="hidden md:flex space-x-8 items-center">
           {links.map((link) => (
-            <Link
-              key={link.to}
-              to={link.to}
-              className="text-gray-800 hover:text-blue-600 text-sm font-medium"
-            >
-              {link.label}
-            </Link>
+            <div key={link.label} className="relative flex items-center">
+              {link.isDropdown ? (
+                <>
+                  <div
+                    onClick={toggleInternshipDropdown}
+                    className="text-gray-800 hover:text-blue-600 text-sm font-medium cursor-pointer leading-5"
+                  >
+                    {link.label}
+                  </div>
+                  {internshipDropdownOpen && (
+                    <div
+                      ref={internshipDropdownRef}
+                      className="absolute left-0 top-full w-44 bg-white border rounded-md shadow-lg py-2 z-10"
+                    >
+                      {link.dropdownItems.map((item) => (
+                        <Link
+                          key={item.to}
+                          to={item.to}
+                          className="block px-4 py-2 text-sm text-gray-800 hover:bg-gray-100"
+                          onClick={() => setInternshipDropdownOpen(false)}
+                        >
+                          {item.label}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <Link
+                  to={link.to}
+                  className="text-gray-800 hover:text-blue-600 text-sm font-medium leading-5"
+                >
+                  {link.label}
+                </Link>
+              )}
+            </div>
           ))}
         </div>
 
-        <div className="flex items-center space-x-3 sm:space-x-4 mr-0 sm:mr-4">
+        <div className="flex items-center space-x-3 sm:space-x-4 mr-0">
           {user.email ? (
-            <div className="relative" ref={dropdownRef}>
+            <div className="relative" ref={userDropdownRef}>
               <button
-                onClick={toggleDropdown}
+                onClick={toggleUserDropdown}
                 className="w-9 sm:w-10 h-9 sm:h-10 rounded-full bg-blue-500 text-white flex items-center justify-center text-sm font-medium"
               >
                 {user.legalname?.[0]?.toUpperCase() || 'U'}
               </button>
-              {dropdownOpen && (
+              {userDropdownOpen && (
                 <div className="absolute right-0 mt-2 w-44 sm:w-48 bg-white border rounded-md shadow-lg py-2 z-10">
                   <div className="px-4 py-2">
                     <p className="text-xs sm:text-sm font-medium text-gray-800">{user.legalname}</p>
@@ -128,7 +174,7 @@ const Navbar = () => {
                   </div>
                   <Link
                     to="/editprofile"
-                    onClick={() => setDropdownOpen(false)}
+                    onClick={() => setUserDropdownOpen(false)}
                     className="block px-4 py-2 text-xs sm:text-sm text-gray-800 hover:bg-gray-100"
                   >
                     Edit Profile
@@ -137,14 +183,14 @@ const Navbar = () => {
                     <>
                       <Link
                         to="/my-applications"
-                        onClick={() => setDropdownOpen(false)}
+                        onClick={() => setUserDropdownOpen(false)}
                         className="block px-4 py-2 text-xs sm:text-sm text-gray-800 hover:bg-gray-100"
                       >
                         My Applications
                       </Link>
                       <Link
                         to="/requested-internships"
-                        onClick={() => setDropdownOpen(false)}
+                        onClick={() => setUserDropdownOpen(false)}
                         className="block px-4 py-2 text-xs sm:text-sm text-gray-800 hover:bg-gray-100"
                       >
                         Requested Internships
@@ -164,19 +210,18 @@ const Navbar = () => {
             <div className="hidden md:flex items-center space-x-4">
               <Link
                 to="/login"
-                className="text-gray-800 text-sm font-medium hover:text-blue-600 flex items-center h-10"
+                className="text-gray-800 text-sm font-medium hover:text-blue-600 flex items-center h-10 leading-5"
               >
                 Login
               </Link>
               <Link
                 to="/signup"
-                className="bg-gradient-to-r from-blue-500 to-blue-700 text-white text-sm font-medium py-2 px-4 rounded-full hover:from-blue-600 hover:to-blue-800 flex items-center h-10"
+                className="bg-gradient-to-r from-blue-500 to-blue-700 text-white text-sm font-medium py-2 px-4 rounded-full hover:from-blue-600 hover:to-blue-800 flex items-center h-10 leading-5"
               >
                 Register
               </Link>
             </div>
           )}
-
           <button
             className="md:hidden text-gray-800 focus:outline-none"
             onClick={toggleMenu}
@@ -202,21 +247,50 @@ const Navbar = () => {
       {isOpen && (
         <div className="md:hidden flex flex-col items-center space-y-3 mt-3 pb-3 w-full">
           {links.map((link) => (
-            <Link
-              key={link.to}
-              to={link.to}
-              className="text-gray-800 hover:text-blue-600 text-sm font-medium w-full text-center py-2"
-              onClick={() => setIsOpen(false)}
-            >
-              {link.label}
-            </Link>
+            <div key={link.label}>
+              {link.isDropdown ? (
+                <>
+                  <div
+                    onClick={toggleInternshipDropdown}
+                    className="text-gray-800 hover:text-blue-600 text-sm font-medium w-full text-center py-2 cursor-pointer leading-5"
+                  >
+                    {link.label}
+                  </div>
+                  {internshipDropdownOpen && (
+                    <div className="w-full flex flex-col">
+                      {link.dropdownItems.map((item) => (
+                        <Link
+                          key={item.to}
+                          to={item.to}
+                          className="text-gray-800 hover:text-blue-600 text-sm font-medium py-2 text-center leading-5"
+                          onClick={() => {
+                            setIsOpen(false);
+                            setInternshipDropdownOpen(false);
+                          }}
+                        >
+                          {item.label}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <Link
+                  to={link.to}
+                  className="text-gray-800 hover:text-blue-600 text-sm font-medium w-full text-center py-2 leading-5"
+                  onClick={() => setIsOpen(false)}
+                >
+                  {link.label}
+                </Link>
+              )}
+            </div>
           ))}
           {user.email ? (
             <>
-              <div className="text-sm text-gray-800 font-medium w-full text-center">{user.legalname}</div>
+              <div className="text-sm text-gray-800 font-medium w-full text-center leading-5">{user.legalname}</div>
               <Link
                 to="/editprofile"
-                className="text-gray-800 hover:text-blue-600 text-sm font-medium w-full text-center py-2"
+                className="text-gray-800 hover:text-blue-600 text-sm font-medium w-full text-center py-2 leading-5"
                 onClick={() => setIsOpen(false)}
               >
                 Edit Profile
@@ -225,14 +299,14 @@ const Navbar = () => {
                 <>
                   <Link
                     to="/my-applications"
-                    className="text-gray-800 hover:text-blue-600 text-sm font-medium w-full text-center py-2"
+                    className="text-gray-800 hover:text-blue-600 text-sm font-medium w-full text-center py-2 leading-5"
                     onClick={() => setIsOpen(false)}
                   >
                     My Applications
                   </Link>
                   <Link
                     to="/requested-internships"
-                    className="text-gray-800 hover:text-blue-600 text-sm font-medium w-full text-center py-2"
+                    className="text-gray-800 hover:text-blue-600 text-sm font-medium w-full text-center py-2 leading-5"
                     onClick={() => setIsOpen(false)}
                   >
                     Requested Internships
@@ -241,7 +315,7 @@ const Navbar = () => {
               )}
               <button
                 onClick={handleLogout}
-                className="text-gray-800 text-sm font-medium hover:text-blue-600 w-full text-center py-2"
+                className="text-gray-800 text-sm font-medium hover:text-blue-600 w-full text-center py-2 leading-5"
               >
                 Logout
               </button>
@@ -250,14 +324,14 @@ const Navbar = () => {
             <>
               <Link
                 to="/login"
-                className="text-gray-800 text-sm font-medium hover:text-blue-600 w-full text-center py-2"
+                className="text-gray-800 text-sm font-medium hover:text-blue-600 w-full text-center py-2 leading-5"
                 onClick={() => setIsOpen(false)}
               >
                 Login
               </Link>
               <Link
                 to="/signup"
-                className="bg-gradient-to-r from-blue-500 to-blue-700 text-white text-sm font-medium py-2 px-4 rounded-full hover:from-blue-600 hover:to-blue-800 w-full text-center"
+                className="bg-gradient-to-r from-blue-500 to-blue-700 text-white text-sm font-medium py-2 px-4 rounded-full hover:from-blue-600 hover:to-blue-800 w-full text-center leading-5"
                 onClick={() => setIsOpen(false)}
               >
                 Register
