@@ -464,6 +464,7 @@ const SignUpPage = () => {
                     By registering on INTURN PH, I certify that I have read and understood the{" "}
                     <Link
                       to="/privacy-policy"
+                      target="_blank"
                       className="text-[#3D7EFF] font-semibold hover:underline"
                     >
                       Privacy Policy

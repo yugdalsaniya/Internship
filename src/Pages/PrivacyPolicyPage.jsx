@@ -7,7 +7,7 @@ const PrivacyPolicyPage = () => {
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 item">
-          <div className="flex items-center mb-3">
+          <div className="flex justify-center items-center ">
                       <img
                         src={logo}
                         alt="Internship-OJT Logo"
