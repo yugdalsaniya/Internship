@@ -129,6 +129,10 @@ const ProfileEditPage = () => {
               'sectionData.appuser.email': 1,
               'sectionData.appuser.mobile': 1,
               'sectionData.appuser.location': 1,
+              'sectionData.appuser.certificatesdetails': 1,
+              'sectionData.appuser.projectdetails': 1,
+              'sectionData.appuser.achievementsdetails': 1,
+              'sectionData.appuser.responsibilitydetails': 1,
             },
           })
         );
@@ -194,6 +198,11 @@ const ProfileEditPage = () => {
             !!organizationData.organizationcity &&
             !!organizationData.industry?.length &&
             !!organizationData.noofemployees,
+          'Accomplishments & Initiatives':
+            !!apiData.certificatesdetails?.length ||
+            !!apiData.projectdetails?.length ||
+            !!apiData.achievementsdetails?.length ||
+            !!apiData.responsibilitydetails?.length,
         };
         setCompletionStatus(newCompletionStatus);
         console.log('Set completionStatus:', newCompletionStatus);
@@ -340,7 +349,7 @@ const ProfileEditPage = () => {
                 <Route path="skills" element={<Skills userData={userData} updateCompletionStatus={updateCompletionStatus} />} />
                 <Route path="education" element={<Education userData={userData} updateCompletionStatus={updateCompletionStatus} />} />
                 <Route path="work-experience" element={<WorkExperience userData={userData} updateCompletionStatus={updateCompletionStatus} />} />
-                <Route path="accomplishments-and-initiatives" element={<Accomplishments userData={userData} />} />
+                <Route path="accomplishments-and-initiatives" element={<Accomplishments userData={userData} updateCompletionStatus={updateCompletionStatus} />} />
                 <Route path="personal-details" element={<PersonalDetails userData={userData} updateCompletionStatus={updateCompletionStatus} />} />
                 <Route path="social-links" element={<SocialLinks userData={userData} updateCompletionStatus={updateCompletionStatus} />} />
                 <Route path="*" element={<BasicDetails userData={userData} />} />
