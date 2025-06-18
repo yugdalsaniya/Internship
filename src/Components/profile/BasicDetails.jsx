@@ -44,7 +44,10 @@ const purposes = [
   { label: "To be a Mentor", icon: <FaUsers /> },
 ];
 
-const workExperienceOptions = ["1 year", "2 year"];
+const workExperienceOptions = [
+  { label: "1 year", value: 1 },
+  { label: "2 years", value: 2 },
+];
 
 async function uploadProfilePicture(file, userId) {
   try {
@@ -140,7 +143,12 @@ function BasicDetails({ userData }) {
       if (userData.role === "academy" && userData.academyname) {
         setSchoolName(userData.academyname);
       }
-      console.log("After setting from userData:", { name, email, mobile, countryCode });
+      console.log("After setting from userData:", {
+        name,
+        email,
+        mobile,
+        countryCode,
+      });
     }
   }, [userData]);
 
@@ -194,7 +202,12 @@ function BasicDetails({ userData }) {
               setCountryCode("+63");
             }
           }
-          console.log("After setting from localStorage:", { name, email, mobile, countryCode });
+          console.log("After setting from localStorage:", {
+            name,
+            email,
+            mobile,
+            countryCode,
+          });
           // Set userType based on role
           if (localUserData.role === "student") {
             setUserType("School Student"); // Adjust based on your mapping
@@ -243,7 +256,8 @@ function BasicDetails({ userData }) {
           }
 
           const userData = Array.isArray(userDataResponse)
-            ? userDataResponse.find((item) => item._id === userId)?.sectionData?.appuser || {}
+            ? userDataResponse.find((item) => item._id === userId)?.sectionData
+                ?.appuser || {}
             : userDataResponse.sectionData?.appuser || {};
           console.log("Parsed server userData:", userData);
 
@@ -260,7 +274,10 @@ function BasicDetails({ userData }) {
             }
           }
           setGender(userData.Gender || "");
-          setUserType(userData.usertype || (localUserData.role === "student" ? "School Student" : ""));
+          setUserType(
+            userData.usertype ||
+              (localUserData.role === "student" ? "School Student" : "")
+          );
           setLocation(userData.location || "");
           setCourse(userData.course || "");
           setSpecialization(userData.coursespecialization || "");
@@ -414,7 +431,7 @@ function BasicDetails({ userData }) {
             console.error("Parse error on fallback:", parseError);
           }
         }
-      } finally  {
+      } finally {
         setIsLoadingOptions(false);
       }
     };
@@ -514,6 +531,23 @@ function BasicDetails({ userData }) {
     }
   }, [userType, careerGoal]);
 
+  // Calculate startYear for Professionals when isCurrentlyWorking is checked
+  useEffect(() => {
+    if (
+      userType === "Professional" &&
+      isCurrentlyWorking &&
+      workExperienceType
+    ) {
+      const currentYear = new Date().getFullYear(); // 2025
+      const experienceYears = parseInt(workExperienceType, 10);
+      if (!isNaN(experienceYears)) {
+        setStartYear((currentYear - experienceYears).toString());
+      } else {
+        setStartYear("");
+      }
+    }
+  }, [userType, isCurrentlyWorking, workExperienceType]);
+
   const handleProfilePictureChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -550,7 +584,7 @@ function BasicDetails({ userData }) {
       userType === "Professional" &&
       (!designation ||
         !workExperienceType ||
-        !startYear ||
+        (!isCurrentlyWorking && !startYear) ||
         (!isCurrentlyWorking && !endYear))
     ) {
       return "Please fill all required professional fields.";
@@ -1105,8 +1139,8 @@ function BasicDetails({ userData }) {
               >
                 <option value="">Select Work Experience Type</option>
                 {workExperienceOptions.map((experience) => (
-                  <option key={experience} value={experience}>
-                    {experience}
+                  <option key={experience.value} value={experience.value}>
+                    {experience.label}
                   </option>
                 ))}
               </select>
@@ -1135,7 +1169,11 @@ function BasicDetails({ userData }) {
                   className="w-full border border-gray-300 rounded-lg p-2 h-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   value={startYear}
                   onChange={(e) => setStartYear(e.target.value)}
-                  disabled={isProcessing}
+                  disabled={
+                    isProcessing ||
+                    (userType === "Professional" && isCurrentlyWorking)
+                  }
+                  readOnly={userType === "Professional" && isCurrentlyWorking}
                 />
               </div>
               <div>
