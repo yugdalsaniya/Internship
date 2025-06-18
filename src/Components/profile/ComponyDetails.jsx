@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { BiTime } from "react-icons/bi";
 import { RxCross2 } from "react-icons/rx";
 import { IoCheckmark } from "react-icons/io5";
-import { FaCrosshairs, FaCheckCircle } from "react-icons/fa"; // Added FaCheckCircle
+import { FaCrosshairs, FaCheckCircle } from "react-icons/fa";
 import { fetchSectionData, mUpdate } from "../../Utils/api";
 import { toast } from "react-toastify";
 
@@ -10,8 +10,7 @@ const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
 const CompanyDetails = ({ userData, updateCompletionStatus, onBack }) => {
   const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
+    name: "",
     email: "",
     cdesignation: "",
     mobile: "",
@@ -19,7 +18,7 @@ const CompanyDetails = ({ userData, updateCompletionStatus, onBack }) => {
   });
   const [error, setError] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isCompleted, setIsCompleted] = useState(false); // Added to track completion
+  const [isCompleted, setIsCompleted] = useState(false);
   const locationInputRef = useRef(null);
   const autocompleteRef = useRef(null);
 
@@ -144,13 +143,8 @@ const CompanyDetails = ({ userData, updateCompletionStatus, onBack }) => {
           ? response[0]?.sectionData?.appuser || {}
           : response.sectionData?.appuser || {};
 
-        const [fname = "", lname = ""] = appuser.legalname
-          ? appuser.legalname.split(" ")
-          : ["", ""];
-
         const newData = {
-          firstName: fname,
-          lastName: lname,
+          name: appuser.legalname || "",
           email: appuser.email || "",
           cdesignation: appuser.cdesignation || "",
           mobile: appuser.mobile ? appuser.mobile.replace("+63", "") : "",
@@ -158,10 +152,8 @@ const CompanyDetails = ({ userData, updateCompletionStatus, onBack }) => {
         };
 
         setFormData(newData);
-        // Check if required fields are filled to set completion status
         const isFormComplete =
-          !!newData.firstName &&
-          !!newData.lastName &&
+          !!newData.name &&
           !!newData.email &&
           !!newData.mobile &&
           !!newData.location;
@@ -189,8 +181,7 @@ const CompanyDetails = ({ userData, updateCompletionStatus, onBack }) => {
   // Validate form before saving
   const validateForm = () => {
     if (
-      !formData.firstName ||
-      !formData.lastName ||
+      !formData.name ||
       !formData.email ||
       !formData.mobile ||
       !formData.location
@@ -256,7 +247,7 @@ const CompanyDetails = ({ userData, updateCompletionStatus, onBack }) => {
       }
 
       const updateData = {
-        "sectionData.appuser.legalname": `${formData.firstName} ${formData.lastName}`.trim(),
+        "sectionData.appuser.legalname": formData.name.trim(),
         "sectionData.appuser.cdesignation": formData.cdesignation,
         "sectionData.appuser.mobile": formData.mobile,
         "sectionData.appuser.location": formData.location,
@@ -277,7 +268,7 @@ const CompanyDetails = ({ userData, updateCompletionStatus, onBack }) => {
           throw new Error("Failed to update profile: User not found.");
         }
         toast.success("Profile updated successfully!");
-        setIsCompleted(true); // Set completion status to true on successful save
+        setIsCompleted(true);
         if (updateCompletionStatus) {
           updateCompletionStatus("Company Details", true);
         }
@@ -323,29 +314,14 @@ const CompanyDetails = ({ userData, updateCompletionStatus, onBack }) => {
       <div className="p-4 sm:p-6 space-y-6">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            First Name<span className="text-red-500">*</span>
+            Name<span className="text-red-500">*</span>
           </label>
           <input
             type="text"
-            name="firstName"
-            value={formData.firstName}
+            name="name"
+            value={formData.name}
             onChange={handleInputChange}
-            placeholder="First Name"
-            className="w-full border border-gray-300 rounded-md px-3 py-2 bg-gray-100 focus:outline-none focus:ring focus:ring-blue-200"
-            disabled={isProcessing}
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Last Name<span className="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
-            name="lastName"
-            value={formData.lastName}
-            onChange={handleInputChange}
-            placeholder="Last Name"
+            placeholder="Legal Name"
             className="w-full border border-gray-300 rounded-md px-3 py-2 bg-gray-100 focus:outline-none focus:ring focus:ring-blue-200"
             disabled={isProcessing}
           />
