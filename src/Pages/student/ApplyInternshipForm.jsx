@@ -23,8 +23,7 @@ const ApplyInternshipForm = () => {
   const [formData, setFormData] = useState({
     email: '',
     mobile: '',
-    firstName: '',
-    lastName: '',
+    name: '',
     gender: '',
     organization: '',
     type: '',
@@ -71,7 +70,6 @@ const ApplyInternshipForm = () => {
       if (userResponse.length > 0) {
         const userData = userResponse[0].sectionData.appuser;
         setExistingUserData(userData);
-        const [firstName, ...lastNameParts] = userData.legalname?.split(' ') || [''];
         const duration =
           userData.startyear && userData.endyear
             ? `${parseInt(userData.endyear) - parseInt(userData.startyear)} years`
@@ -80,8 +78,7 @@ const ApplyInternshipForm = () => {
         setFormData({
           email: userData.email || '',
           mobile: userData.mobile || '',
-          firstName: firstName || '',
-          lastName: lastNameParts.join(' ') || '',
+          name: userData.legalname || '',
           gender: userData.Gender || '',
           organization: userData.organisationcollege || '',
           type: userData.usertype || '',
@@ -195,7 +192,7 @@ const ApplyInternshipForm = () => {
   const validateFirstForm = () => {
     if (!formData.email.trim()) return 'Email is required.';
     if (!formData.mobile.trim()) return 'Mobile number is required.';
-    if (!formData.firstName.trim()) return 'First name is required.';
+    if (!formData.name.trim()) return 'Name is required.';
     if (!formData.gender) return 'Gender is required.';
     if (!formData.organization) return 'Institution name is required.';
     if (!formData.type) return 'Type is required.';
@@ -268,7 +265,7 @@ const ApplyInternshipForm = () => {
             lname: '',
             email: formData.email,
             mobile: formData.mobile,
-            legalname: `${formData.firstName} ${formData.lastName}`.trim(),
+            legalname: formData.name.trim(),
             Gender: formData.gender,
             organisationcollege: formData.organization,
             usertype: formData.type,
@@ -438,28 +435,15 @@ const ApplyInternshipForm = () => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  First Name <span className="text-red-500">*</span>
+                  Name <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
-                  name="firstName"
-                  value={formData.firstName}
+                  name="name"
+                  value={formData.name}
                   onChange={handleChange}
-                  placeholder="e.g., John"
+                  placeholder="e.g., John Doe"
                   required
-                  className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">
-                  Last Name (Optional)
-                </label>
-                <input
-                  type="text"
-                  name="lastName"
-                  value={formData.lastName}
-                  onChange={handleChange}
-                  placeholder="e.g., Doe"
                   className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
