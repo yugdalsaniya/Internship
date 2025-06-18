@@ -74,6 +74,7 @@ const ProfileEditPage = () => {
     const fetchCompletionStatuses = async () => {
       try {
         const userId = userData.userid;
+        const companyId = userData.companyId;
         if (!userId) {
           console.error('User ID not found in userData:', userData);
           return;
@@ -91,7 +92,8 @@ const ProfileEditPage = () => {
           }
         };
 
-        const response = await fetchWithRetry(() =>
+        // Fetch user data for non-organization sections
+        const userResponse = await fetchWithRetry(() =>
           fetchSectionData({
             appName: 'app8657281202648',
             collectionName: 'appuser',
@@ -123,12 +125,35 @@ const ProfileEditPage = () => {
               'sectionData.appuser.education': 1,
               'sectionData.appuser.intermediateeducation': 1,
               'sectionData.appuser.highschooleducation': 1,
+              'sectionData.appuser.legalname': 1,
+              'sectionData.appuser.email': 1,
+              'sectionData.appuser.mobile': 1,
+              'sectionData.appuser.location': 1,
             },
           })
         );
 
-        console.log('fetchSectionData response in ProfileEditPage:', JSON.stringify(response, null, 2));
-        const apiData = response[0]?.sectionData?.appuser || {};
+        // Fetch organization data if user has a company role
+        let organizationData = {};
+        if (allowedRoles.includes(userData.role) && companyId) {
+          const companyResponse = await fetchWithRetry(() =>
+            fetchSectionData({
+              appName: 'app8657281202648',
+              collectionName: 'company',
+              query: { _id: companyId },
+              projection: {
+                'sectionData.Company.organizationName': 1,
+                'sectionData.Company.organizationcity': 1,
+                'sectionData.Company.industry': 1,
+                'sectionData.Company.noofemployees': 1,
+              },
+            })
+          );
+          organizationData = companyResponse[0]?.sectionData?.Company || {};
+        }
+
+        console.log('fetchSectionData response in ProfileEditPage:', JSON.stringify({ userResponse, organizationData }, null, 2));
+        const apiData = userResponse[0]?.sectionData?.appuser || {};
         const newCompletionStatus = {
           Resume: !!apiData.resume,
           About: !!apiData.about?.trim(),
@@ -159,6 +184,16 @@ const ProfileEditPage = () => {
             !!apiData.education?.length ||
             !!apiData.intermediateeducation?.length ||
             !!apiData.highschooleducation?.length,
+          'Company Details':
+            !!apiData.legalname &&
+            !!apiData.email &&
+            !!apiData.mobile &&
+            !!apiData.location,
+          'Organization Details':
+            !!organizationData.organizationName &&
+            !!organizationData.organizationcity &&
+            !!organizationData.industry?.length &&
+            !!organizationData.noofemployees,
         };
         setCompletionStatus(newCompletionStatus);
         console.log('Set completionStatus:', newCompletionStatus);
@@ -174,7 +209,7 @@ const ProfileEditPage = () => {
     if (userData.userid) {
       fetchCompletionStatuses();
     }
-  }, [userData.userid]);
+  }, [userData.userid, userData.companyId, userData.role]);
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
@@ -293,8 +328,8 @@ const ProfileEditPage = () => {
           <Routes>
             {allowedRoles.includes(userData.role) ? (
               <>
-                <Route path="company-details" element={<CompanyDetails userData={userData} />} />
-                <Route path="organization-details" element={<OrganizationDetails userData={userData} />} />
+                <Route path="company-details" element={<CompanyDetails userData={userData} updateCompletionStatus={updateCompletionStatus} />} />
+                <Route path="organization-details" element={<OrganizationDetails userData={userData} updateCompletionStatus={updateCompletionStatus} />} />
                 <Route path="*" element={<Navigate to="/editprofile/company-details" replace />} />
               </>
             ) : (
