@@ -122,7 +122,9 @@ function BasicDetails({ userData }) {
   const locationInputRef = useRef(null);
   const autocompleteRef = useRef(null);
 
+  // Initialize from userData prop
   useEffect(() => {
+    console.log("Received userData prop:", userData);
     if (userData && userData.legalname) {
       setName(userData.legalname);
       setEmail(userData.email || "");
@@ -138,14 +140,17 @@ function BasicDetails({ userData }) {
       if (userData.role === "academy" && userData.academyname) {
         setSchoolName(userData.academyname);
       }
+      console.log("After setting from userData:", { name, email, mobile, countryCode });
     }
   }, [userData]);
 
+  // Fetch user data and dropdown options
   useEffect(() => {
     const fetchUserDataAndDropdownOptions = async () => {
       setIsLoadingOptions(true);
       try {
         const userString = localStorage.getItem("user");
+        console.log("localStorage user:", userString);
         if (!userString) {
           setError("Please log in to view your details. Using local data.");
           toast.error("Please log in to view your details.", {
@@ -157,10 +162,15 @@ function BasicDetails({ userData }) {
         }
 
         let userId;
+        let localUserData;
         try {
           const user = JSON.parse(userString);
           userId = user.userid;
+          localUserData = user;
+          console.log("Parsed userId:", userId);
+          console.log("Parsed localUserData:", localUserData);
         } catch (parseError) {
+          console.error("Parse error:", parseError);
           setError("Invalid user data. Using local data.");
           toast.error("Invalid user data. Using local data.", {
             position: "top-right",
@@ -170,87 +180,135 @@ function BasicDetails({ userData }) {
           return;
         }
 
+        // Fallback to localStorage data if userId is empty
         if (!userId) {
           console.log("No userId found, using localStorage data.");
-          return;
-        }
-
-        const userDataResponse = await fetchSectionData({
-          dbName: "internph",
-          collectionName: "appuser",
-          query: { _id: userId },
-        });
-
-        if (
-          !userDataResponse ||
-          (Array.isArray(userDataResponse) && userDataResponse.length === 0)
-        ) {
-          setError("User data not found. Using local data.");
-          toast.error("User data not found. Using local data.", {
-            position: "top-right",
-            autoClose: 5000,
-          });
-          setTimeout(() => setError(""), 5000);
-          return;
-        }
-
-        const userData = Array.isArray(userDataResponse)
-          ? userDataResponse.find((item) => item._id === userId)?.sectionData
-              ?.appuser || {}
-          : userDataResponse.sectionData?.appuser || {};
-
-        setName(userData.legalname || "");
-        setEmail(userData.email || "");
-        if (userData.mobile) {
-          if (userData.mobile.startsWith("+63")) {
-            setCountryCode("+63");
-            setMobile(userData.mobile.slice(3));
-          } else {
-            setMobile(userData.mobile);
-            setCountryCode("+63");
+          setName(localUserData.legalname || "");
+          setEmail(localUserData.email || "");
+          if (localUserData.mobile) {
+            if (localUserData.mobile.startsWith("+63")) {
+              setCountryCode("+63");
+              setMobile(localUserData.mobile.slice(3));
+            } else {
+              setMobile(localUserData.mobile);
+              setCountryCode("+63");
+            }
           }
-        }
-        setGender(userData.Gender || "");
-        setUserType(userData.usertype || "");
-        setLocation(userData.location || "");
-        setCourse(userData.course || "");
-        setSpecialization(userData.coursespecialization || "");
-        setCollege(userData.organisationcollege || "");
-        setStartYear(userData.startyear || "");
-        setEndYear(userData.endyear || "");
-        setSelectedPurpose(userData.purpose || []);
-        setCareerGoal(
-          userData.growinmycurrentcareer
-            ? "current"
-            : userData.transitioninnewcareer
-            ? "new"
-            : ""
-        );
-        setDesignation(userData.designation || "");
-        setWorkExperienceType(userData.workexperience || "");
-        setIsCurrentlyWorking(userData.currentlyworkinginthisrole || false);
-        setSchoolName(userData.organisationcollege || "");
-        setStream(userData.stream || "");
-        setNewCareerRole(userData.role1 || []);
-        setProfilePicture(userData.profile || "");
+          console.log("After setting from localStorage:", { name, email, mobile, countryCode });
+          // Set userType based on role
+          if (localUserData.role === "student") {
+            setUserType("School Student"); // Adjust based on your mapping
+          }
+        } else {
+          // Fetch from server if userId exists
+          const userDataResponse = await fetchSectionData({
+            dbName: "internph",
+            collectionName: "appuser",
+            query: { _id: userId },
+          });
+          console.log("userDataResponse:", userDataResponse);
 
-        // Set isFirstSaveSuccessful if any relevant fields are populated
-        if (
-          userData.legalname ||
-          userData.email ||
-          userData.mobile ||
-          userData.Gender ||
-          userData.usertype ||
-          userData.location ||
-          userData.purpose?.length ||
-          userData.profile
-        ) {
-          setIsFirstSaveSuccessful(true);
-          console.log(
-            "Existing basic details data found, setting isFirstSaveSuccessful to true"
+          if (
+            !userDataResponse ||
+            (Array.isArray(userDataResponse) && userDataResponse.length === 0)
+          ) {
+            setError("User data not found. Using local data.");
+            toast.error("User data not found. Using local data.", {
+              position: "top-right",
+              autoClose: 5000,
+            });
+            setTimeout(() => setError(""), 5000);
+            // Fallback to localStorage data
+            setName(localUserData.legalname || "");
+            setEmail(localUserData.email || "");
+            if (localUserData.mobile) {
+              if (localUserData.mobile.startsWith("+63")) {
+                setCountryCode("+63");
+                setMobile(localUserData.mobile.slice(3));
+              } else {
+                setMobile(localUserData.mobile);
+                setCountryCode("+63");
+              }
+            }
+            if (localUserData.role === "student") {
+              setUserType("School Student");
+            }
+            console.log("After setting from localStorage (server fail):", {
+              name,
+              email,
+              mobile,
+              countryCode,
+            });
+            return;
+          }
+
+          const userData = Array.isArray(userDataResponse)
+            ? userDataResponse.find((item) => item._id === userId)?.sectionData?.appuser || {}
+            : userDataResponse.sectionData?.appuser || {};
+          console.log("Parsed server userData:", userData);
+
+          setName(userData.legalname || localUserData.legalname || "");
+          setEmail(userData.email || localUserData.email || "");
+          if (userData.mobile || localUserData.mobile) {
+            const mobileToUse = userData.mobile || localUserData.mobile;
+            if (mobileToUse.startsWith("+63")) {
+              setCountryCode("+63");
+              setMobile(mobileToUse.slice(3));
+            } else {
+              setMobile(mobileToUse);
+              setCountryCode("+63");
+            }
+          }
+          setGender(userData.Gender || "");
+          setUserType(userData.usertype || (localUserData.role === "student" ? "School Student" : ""));
+          setLocation(userData.location || "");
+          setCourse(userData.course || "");
+          setSpecialization(userData.coursespecialization || "");
+          setCollege(userData.organisationcollege || "");
+          setStartYear(userData.startyear || "");
+          setEndYear(userData.endyear || "");
+          setSelectedPurpose(userData.purpose || []);
+          setCareerGoal(
+            userData.growinmycurrentcareer
+              ? "current"
+              : userData.transitioninnewcareer
+              ? "new"
+              : ""
           );
+          setDesignation(userData.designation || "");
+          setWorkExperienceType(userData.workexperience || "");
+          setIsCurrentlyWorking(userData.currentlyworkinginthisrole || false);
+          setSchoolName(userData.organisationcollege || "");
+          setStream(userData.stream || "");
+          setNewCareerRole(userData.role1 || []);
+          setProfilePicture(userData.profile || "");
+
+          // Set isFirstSaveSuccessful if any relevant fields are populated
+          if (
+            userData.legalname ||
+            userData.email ||
+            userData.mobile ||
+            userData.Gender ||
+            userData.usertype ||
+            userData.location ||
+            userData.purpose?.length ||
+            userData.profile
+          ) {
+            setIsFirstSaveSuccessful(true);
+            console.log(
+              "Existing basic details data found, setting isFirstSaveSuccessful to true"
+            );
+          }
+          console.log("After setting from server:", {
+            name,
+            email,
+            mobile,
+            countryCode,
+            userType,
+          });
         }
 
+        // Fetch dropdown options
         const designationData = await fetchSectionData({
           dbName: "internph",
           collectionName: "designation",
@@ -319,14 +377,44 @@ function BasicDetails({ userData }) {
         }));
         setRoleOptions(roles);
       } catch (err) {
-        console.error("Error fetching data:", err);
+        console.error("Error fetching data:", err.message, err.stack);
         setError("Failed to load server data. Using local data.");
         toast.error("Failed to load server data. Using local data.", {
           position: "top-right",
           autoClose: 5000,
         });
         setTimeout(() => setError(""), 5000);
-      } finally {
+        // Fallback to localStorage data on error
+        const userString = localStorage.getItem("user");
+        if (userString) {
+          try {
+            const user = JSON.parse(userString);
+            setName(user.legalname || "");
+            setEmail(user.email || "");
+            if (user.mobile) {
+              if (user.mobile.startsWith("+63")) {
+                setCountryCode("+63");
+                setMobile(user.mobile.slice(3));
+              } else {
+                setMobile(user.mobile);
+                setCountryCode("+63");
+              }
+            }
+            if (user.role === "student") {
+              setUserType("School Student");
+            }
+            console.log("After setting from localStorage (error):", {
+              name,
+              email,
+              mobile,
+              countryCode,
+              userType,
+            });
+          } catch (parseError) {
+            console.error("Parse error on fallback:", parseError);
+          }
+        }
+      } finally  {
         setIsLoadingOptions(false);
       }
     };
@@ -334,6 +422,7 @@ function BasicDetails({ userData }) {
     fetchUserDataAndDropdownOptions();
   }, []);
 
+  // Google Maps Autocomplete
   useEffect(() => {
     const loadGoogleMapsScript = () => {
       return new Promise((resolve, reject) => {
@@ -402,6 +491,7 @@ function BasicDetails({ userData }) {
     };
   }, []);
 
+  // Reset fields based on userType or careerGoal changes
   useEffect(() => {
     if (userType !== "Professional") {
       setDesignation("");
