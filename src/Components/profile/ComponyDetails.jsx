@@ -2,14 +2,14 @@ import { useState, useEffect, useRef } from "react";
 import { BiTime } from "react-icons/bi";
 import { RxCross2 } from "react-icons/rx";
 import { IoCheckmark } from "react-icons/io5";
-import { FaCrosshairs } from "react-icons/fa"; // Added for location icon
+import { FaCrosshairs, FaCheckCircle } from "react-icons/fa"; // Added FaCheckCircle
 import { fetchSectionData, mUpdate } from "../../Utils/api";
 import { toast } from "react-toastify";
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
-const ComponyDetails = ({ onBack }) => {
-  const [userData, setUserData] = useState({
+const CompanyDetails = ({ userData, updateCompletionStatus, onBack }) => {
+  const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
     email: "",
@@ -19,6 +19,7 @@ const ComponyDetails = ({ onBack }) => {
   });
   const [error, setError] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isCompleted, setIsCompleted] = useState(false); // Added to track completion
   const locationInputRef = useRef(null);
   const autocompleteRef = useRef(null);
 
@@ -33,13 +34,11 @@ const ComponyDetails = ({ onBack }) => {
 
     const loadGoogleMapsScript = () => {
       return new Promise((resolve, reject) => {
-        // Check if already loaded
         if (window.google && window.google.maps && window.google.maps.places) {
           resolve();
           return;
         }
 
-        // Check if script already exists in DOM
         const existingScript = document.querySelector(
           `script[src*="maps.googleapis.com/maps/api/js"]`
         );
@@ -48,7 +47,6 @@ const ComponyDetails = ({ onBack }) => {
           return;
         }
 
-        // Create script
         const script = document.createElement("script");
         script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places`;
         script.async = true;
@@ -72,13 +70,13 @@ const ComponyDetails = ({ onBack }) => {
           {
             types: ["(cities)"],
             fields: ["formatted_address", "name"],
-            componentRestrictions: { country: "ph" }, // Restrict to Philippines
+            componentRestrictions: { country: "ph" },
           }
         );
 
         autocompleteRef.current.addListener("place_changed", () => {
           const place = autocompleteRef.current.getPlace();
-          setUserData((prev) => ({
+          setFormData((prev) => ({
             ...prev,
             location: place.formatted_address || place.name || "",
           }));
@@ -105,7 +103,7 @@ const ComponyDetails = ({ onBack }) => {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        if (typeof window === "undefined") return; // Prevent localStorage access in non-browser environments
+        if (typeof window === "undefined") return;
 
         const userString = localStorage.getItem("user");
         const accessToken = localStorage.getItem("accessToken");
@@ -150,14 +148,27 @@ const ComponyDetails = ({ onBack }) => {
           ? appuser.legalname.split(" ")
           : ["", ""];
 
-        setUserData({
+        const newData = {
           firstName: fname,
           lastName: lname,
           email: appuser.email || "",
           cdesignation: appuser.cdesignation || "",
           mobile: appuser.mobile ? appuser.mobile.replace("+63", "") : "",
           location: appuser.location || "",
-        });
+        };
+
+        setFormData(newData);
+        // Check if required fields are filled to set completion status
+        const isFormComplete =
+          !!newData.firstName &&
+          !!newData.lastName &&
+          !!newData.email &&
+          !!newData.mobile &&
+          !!newData.location;
+        setIsCompleted(isFormComplete);
+        if (updateCompletionStatus) {
+          updateCompletionStatus("Company Details", isFormComplete);
+        }
       } catch (err) {
         setError(err.message || "Failed to load user data.");
         toast.error(err.message || "Failed to load user data.");
@@ -167,26 +178,26 @@ const ComponyDetails = ({ onBack }) => {
     };
 
     fetchUserData();
-  }, []);
+  }, [updateCompletionStatus]);
 
   // Handle input changes
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setUserData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   // Validate form before saving
   const validateForm = () => {
     if (
-      !userData.firstName ||
-      !userData.lastName ||
-      !userData.email ||
-      !userData.mobile ||
-      !userData.location
+      !formData.firstName ||
+      !formData.lastName ||
+      !formData.email ||
+      !formData.mobile ||
+      !formData.location
     ) {
       return "Please fill all required fields.";
     }
-    if (!/^\d{10}$/.test(userData.mobile)) {
+    if (!/^\d{10}$/.test(formData.mobile)) {
       return "Mobile number must be 10 digits.";
     }
     return "";
@@ -239,17 +250,17 @@ const ComponyDetails = ({ onBack }) => {
         toast.error("User not found in database. Please sign up or contact support.");
         setTimeout(() => {
           setError(null);
-          onBack();
+          onBack?.();
         }, 2000);
         return;
       }
 
       const updateData = {
-        "sectionData.appuser.legalname": `${userData.firstName} ${userData.lastName}`.trim(),
-        "sectionData.appuser.cdesignation": userData.cdesignation,
-        "sectionData.appuser.mobile": userData.mobile,
-        "sectionData.appuser.location": userData.location,
-        "sectionData.appuser.email": userData.email,
+        "sectionData.appuser.legalname": `${formData.firstName} ${formData.lastName}`.trim(),
+        "sectionData.appuser.cdesignation": formData.cdesignation,
+        "sectionData.appuser.mobile": formData.mobile,
+        "sectionData.appuser.location": formData.location,
+        "sectionData.appuser.email": formData.email,
         "sectionData.appuser.lastUpdated": new Date().toISOString(),
       };
 
@@ -266,6 +277,10 @@ const ComponyDetails = ({ onBack }) => {
           throw new Error("Failed to update profile: User not found.");
         }
         toast.success("Profile updated successfully!");
+        setIsCompleted(true); // Set completion status to true on successful save
+        if (updateCompletionStatus) {
+          updateCompletionStatus("Company Details", true);
+        }
       } else {
         throw new Error("Failed to update profile in database.");
       }
@@ -275,12 +290,12 @@ const ComponyDetails = ({ onBack }) => {
         errorMessage = "API endpoint not found. Please contact support.";
       } else if (err.response?.status === 401) {
         errorMessage = "Authentication failed. Please log in again.";
-        setTimeout(() => onBack(), 2000);
+        setTimeout(() => onBack?.(), 2000);
       } else if (err.message.includes("User not found")) {
         errorMessage = "User not found in database. Please sign up or contact support.";
         setTimeout(() => {
           setError(null);
-          onBack();
+          onBack?.();
         }, 2000);
       }
       setError(errorMessage);
@@ -296,42 +311,44 @@ const ComponyDetails = ({ onBack }) => {
     <div className="bg-white rounded-xl shadow-md">
       <div className="sticky top-0 z-10 bg-white border-b px-6 py-4 flex justify-between items-center">
         <div className="flex items-center gap-2 text-gray-800 font-semibold text-lg">
-          <BiTime className="text-gray-600 text-xl" />
+          {isCompleted ? (
+            <FaCheckCircle className="text-green-500" />
+          ) : (
+            <BiTime className="text-gray-600 text-xl" />
+          )}
           Personal Details
         </div>
       </div>
 
       <div className="p-4 sm:p-6 space-y-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              First Name<span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              name="firstName"
-              value={userData.firstName}
-              onChange={handleInputChange}
-              placeholder="First Name"
-              className="w-full border border-gray-300 rounded-md px-3 py-2 bg-gray-100 focus:outline-none focus:ring focus:ring-blue-200"
-              disabled={isProcessing}
-            />
-          </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            First Name<span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            name="firstName"
+            value={formData.firstName}
+            onChange={handleInputChange}
+            placeholder="First Name"
+            className="w-full border border-gray-300 rounded-md px-3 py-2 bg-gray-100 focus:outline-none focus:ring focus:ring-blue-200"
+            disabled={isProcessing}
+          />
+        </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Last Name<span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              name="lastName"
-              value={userData.lastName}
-              onChange={handleInputChange}
-              placeholder="Last Name"
-              className="w-full border border-gray-300 rounded-md px-3 py-2 bg-gray-100 focus:outline-none focus:ring focus:ring-blue-200"
-              disabled={isProcessing}
-            />
-          </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Last Name<span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            name="lastName"
+            value={formData.lastName}
+            onChange={handleInputChange}
+            placeholder="Last Name"
+            className="w-full border border-gray-300 rounded-md px-3 py-2 bg-gray-100 focus:outline-none focus:ring focus:ring-blue-200"
+            disabled={isProcessing}
+          />
         </div>
 
         <div>
@@ -341,7 +358,7 @@ const ComponyDetails = ({ onBack }) => {
           <input
             type="email"
             name="email"
-            value={userData.email}
+            value={formData.email}
             onChange={handleInputChange}
             placeholder="E-Mail"
             className="w-full border border-gray-300 rounded-md px-3 py-2 bg-gray-100 focus:outline-none focus:ring focus:ring-blue-200"
@@ -356,7 +373,7 @@ const ComponyDetails = ({ onBack }) => {
           <input
             type="text"
             name="cdesignation"
-            value={userData.cdesignation}
+            value={formData.cdesignation}
             onChange={handleInputChange}
             placeholder="Designation"
             className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring focus:ring-blue-200"
@@ -378,13 +395,12 @@ const ComponyDetails = ({ onBack }) => {
             <input
               type="tel"
               name="mobile"
-              value={userData.mobile}
+              value={formData.mobile}
               onChange={handleInputChange}
               placeholder="Mobile Number"
               className="flex-1 border border-gray-300 rounded-lg p-2 h-10 min-w-0 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               disabled={isProcessing}
             />
-           
           </div>
         </div>
 
@@ -396,7 +412,7 @@ const ComponyDetails = ({ onBack }) => {
             <input
               type="text"
               name="location"
-              value={userData.location}
+              value={formData.location}
               onChange={handleInputChange}
               placeholder="Enter your location"
               className="w-full border border-gray-300 rounded-lg px-4 py-2 h-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -435,4 +451,4 @@ const ComponyDetails = ({ onBack }) => {
   );
 };
 
-export default ComponyDetails;
+export default CompanyDetails;
