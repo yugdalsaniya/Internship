@@ -69,6 +69,7 @@ const Navbar = () => {
           { to: '/manage-internships', label: 'Manage Internships' },
         ],
       },
+    { to: '/interns', label: 'Interns' },
       { to: '/about', label: 'About Us' },
       { to: '/contact', label: 'Contact Us' },
     ],
