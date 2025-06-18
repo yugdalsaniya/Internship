@@ -14,12 +14,12 @@ const OtpVerification = () => {
   const [error, setError] = useState('');
   const [verifyLoading, setVerifyLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(120); // 2 minutes in seconds
-  const [timerKey, setTimerKey] = useState(0); // To force timer restart
+  const [timeLeft, setTimeLeft] = useState(120);
+  const [timerKey, setTimerKey] = useState(0);
   const navigate = useNavigate();
   const formRef = useRef(null);
 
-  // Countdown timer logic
+  // Countdown timer logic (unchanged)
   useEffect(() => {
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
@@ -30,24 +30,34 @@ const OtpVerification = () => {
         return prev - 1;
       });
     }, 1000);
+    return () => clearInterval(timer);
+  }, [timerKey]);
 
-    return () => clearInterval(timer); // Cleanup on unmount
-  }, [timerKey]); // Depend on timerKey to restart timer
-
-  // Format time as MM:SS
   const formatTime = (seconds) => {
     const minutes = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${minutes}:${secs < 10 ? '0' : ''}${secs}`;
   };
 
-  const handleChange = (index, value) => {
+  const handleChange = (index, value, e) => {
+    // Handle Backspace to clear all fields
+    if (e.key === 'Backspace' && !value && otp.every((digit) => digit === '')) {
+      setOtp(['', '', '', '']);
+      setError(''); // Optionally clear error message
+      document.getElementById('otp-0').focus(); // Focus on first input
+      return;
+    }
+
+    // Handle normal digit input
     if (/^\d?$/.test(value)) {
       const newOtp = [...otp];
       newOtp[index] = value;
       setOtp(newOtp);
       if (value && index < 3) {
         document.getElementById(`otp-${index + 1}`).focus();
+      } else if (!value && index > 0 && e.key === 'Backspace') {
+        // Move focus to previous input on Backspace if current input is empty
+        document.getElementById(`otp-${index - 1}`).focus();
       }
     }
   };
@@ -58,7 +68,6 @@ const OtpVerification = () => {
     setError('');
     setVerifyLoading(true);
 
-    // Block submission if OTP is expired
     if (timeLeft <= 0) {
       setError('OTP has expired. Please request a new one.');
       setVerifyLoading(false);
@@ -96,9 +105,8 @@ const OtpVerification = () => {
       const response = await verifyOtp(otpPayload);
       if (response.success) {
         localStorage.setItem('user', JSON.stringify({
-          ...pendingUser, // Copy all fields from pendingUser
-          userid: response.user?.userId || response.userId || '', // Add userid if available
-          // Remove redirectTo if not needed in user
+          ...pendingUser,
+          userid: response.user?.userId || response.userId || '',
           redirectTo: undefined,
         }));
         localStorage.removeItem('pendingUser');
@@ -109,7 +117,7 @@ const OtpVerification = () => {
           showConfirmButton: false,
           timer: 2000,
         }).then(() => {
-          navigate(pendingUser.redirectTo || '/editprofile'); // Use redirectTo
+          navigate(pendingUser.redirectTo || '/editprofile');
         });
       } else {
         setError(response.message || 'OTP verification failed');
@@ -161,9 +169,10 @@ const OtpVerification = () => {
     const email = pendingUser.email.toLowerCase().trim();
     try {
       await forgotPassword(email, 'app8657281202648');
-      setOtp(['', '', '', '']);
-      setTimeLeft(120); // Reset timer
-      setTimerKey((prev) => prev + 1); // Force timer restart
+      setOtp(['', '', '', '']); // Clear OTP on resend
+      setTimeLeft(120);
+      setTimerKey((prev) => prev + 1);
+      document.getElementById('otp-0').focus(); // Focus on first input after resend
       MySwal.fire({
         icon: 'success',
         title: 'OTP Resent',
@@ -195,7 +204,7 @@ const OtpVerification = () => {
     <div className="flex h-screen">
       <div className="w-full lg:w-1/2 flex flex-col justify-center px-4 py-2 xs:px-6 sm:px-8">
         <div className="max-w-[20rem] xs:max-w-[24rem] sm:max-w-[28rem] mx-auto w-full">
-          {/* Logo Section */}
+          {/* Logo Section (unchanged) */}
           <div className="mb-3 flex flex-col items-center">
             <div className="flex items-center space-x-2 mb-1">
               <img src={logo} alt="Logo" className="w-8 h-8 xs:w-10 xs:h-10 sm:w-12 sm:h-12" />
@@ -211,7 +220,7 @@ const OtpVerification = () => {
             </div>
           </div>
 
-          {/* OTP Image */}
+          {/* OTP Image (unchanged) */}
           <div className="mb-4 flex justify-center">
             <img src={otpImage} alt="OTP Verification" className="w-32 xs:w-36 sm:w-40" />
           </div>
@@ -238,7 +247,8 @@ const OtpVerification = () => {
                       type="text"
                       maxLength="1"
                       value={digit}
-                      onChange={(e) => handleChange(index, e.target.value)}
+                      onChange={(e) => handleChange(index, e.target.value, e)}
+                      onKeyDown={(e) => handleChange(index, e.target.value, e)} // Add onKeyDown to capture Backspace
                       className="w-10 h-10 xs:w-12 xs:h-12 border rounded-md text-center text-sm xs:text-base outline-none focus:ring-2 focus:ring-[#3D7EFF]"
                       aria-label={`OTP digit ${index + 1}`}
                     />
@@ -273,7 +283,7 @@ const OtpVerification = () => {
         </div>
       </div>
 
-      {/* Right Side - Image */}
+      {/* Right Side - Image (unchanged) */}
       <div className="hidden lg:flex w-1/2 p-2">
         <div
           className="w-full h-full bg-cover bg-center rounded-3xl"
