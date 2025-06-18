@@ -328,7 +328,9 @@ const SignUpPage = () => {
                         </div>
           </div>
           <div className="flex flex-wrap justify-center gap-2 xs:gap-3 sm:gap-4 mb-3">
-            {["student", "company", "academy", "recruiter", "mentor"].map(
+            {["student", "company", "academy"
+            // , "recruiter", "mentor"
+          ].map(
               (r) => (
                 <div
                   key={r}
@@ -464,7 +466,7 @@ const SignUpPage = () => {
                     By registering on INTURN PH, I certify that I have read and understood the{" "}
                     <Link
                       to="/privacy-policy"
-                      target="_blank"
+                       target="_blank"
                       className="text-[#3D7EFF] font-semibold hover:underline"
                     >
                       Privacy Policy
