@@ -108,6 +108,9 @@ const SignIn = () => {
           userData.companyId = response.user.companyId || '';
           userData.userid = response.user._id || '';
         }
+        else if (roleName === 'academy') {
+          userData.userid = response.user._id || '';
+        }
 
         localStorage.setItem('user', JSON.stringify(userData));
         localStorage.setItem('accessToken', response.accessToken);
