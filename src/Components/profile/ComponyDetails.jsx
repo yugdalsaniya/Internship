@@ -1,12 +1,10 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { BiTime } from "react-icons/bi";
 import { RxCross2 } from "react-icons/rx";
 import { IoCheckmark } from "react-icons/io5";
-import { FaCrosshairs, FaCheckCircle } from "react-icons/fa";
+import { FaCheckCircle } from "react-icons/fa";
 import { fetchSectionData, mUpdate } from "../../Utils/api";
 import { toast } from "react-toastify";
-
-const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
 const CompanyDetails = ({ userData, updateCompletionStatus, onBack }) => {
   const [formData, setFormData] = useState({
@@ -14,89 +12,10 @@ const CompanyDetails = ({ userData, updateCompletionStatus, onBack }) => {
     email: "",
     cdesignation: "",
     mobile: "",
-    location: "",
   });
   const [error, setError] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
-  const locationInputRef = useRef(null);
-  const autocompleteRef = useRef(null);
-
-  // Initialize Google Places Autocomplete
-  useEffect(() => {
-    if (!GOOGLE_MAPS_API_KEY) {
-      console.error("Google Maps API key is missing.");
-      setError("Location suggestions unavailable. API key is missing.");
-      setTimeout(() => setError(null), 5000);
-      return;
-    }
-
-    const loadGoogleMapsScript = () => {
-      return new Promise((resolve, reject) => {
-        if (window.google && window.google.maps && window.google.maps.places) {
-          resolve();
-          return;
-        }
-
-        const existingScript = document.querySelector(
-          `script[src*="maps.googleapis.com/maps/api/js"]`
-        );
-        if (existingScript) {
-          existingScript.addEventListener("load", resolve);
-          return;
-        }
-
-        const script = document.createElement("script");
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places`;
-        script.async = true;
-        script.defer = true;
-        script.onload = () => resolve();
-        script.onerror = () =>
-          reject(new Error("Failed to load Google Maps API"));
-        document.head.appendChild(script);
-      });
-    };
-
-    loadGoogleMapsScript()
-      .then(() => {
-        if (!window.google?.maps?.places) {
-          console.error("Google Maps places library not loaded");
-          return;
-        }
-
-        autocompleteRef.current = new window.google.maps.places.Autocomplete(
-          locationInputRef.current,
-          {
-            types: ["(cities)"],
-            fields: ["formatted_address", "name"],
-            componentRestrictions: { country: "ph" },
-          }
-        );
-
-        autocompleteRef.current.addListener("place_changed", () => {
-          const place = autocompleteRef.current.getPlace();
-          setFormData((prev) => ({
-            ...prev,
-            location: place.formatted_address || place.name || "",
-          }));
-        });
-      })
-      .catch((err) => {
-        console.error("Error loading Google Maps:", err);
-        setError(
-          "Google Maps API failed to load. Location suggestions unavailable."
-        );
-        setTimeout(() => setError(null), 5000);
-      });
-
-    return () => {
-      if (autocompleteRef.current && window.google?.maps?.event) {
-        window.google.maps.event.clearInstanceListeners(
-          autocompleteRef.current
-        );
-      }
-    };
-  }, []);
 
   // Fetch user data when component mounts
   useEffect(() => {
@@ -148,15 +67,13 @@ const CompanyDetails = ({ userData, updateCompletionStatus, onBack }) => {
           email: appuser.email || "",
           cdesignation: appuser.cdesignation || "",
           mobile: appuser.mobile ? appuser.mobile.replace("+63", "") : "",
-          location: appuser.location || "",
         };
 
         setFormData(newData);
         const isFormComplete =
           !!newData.name &&
           !!newData.email &&
-          !!newData.mobile &&
-          !!newData.location;
+          !!newData.mobile;
         setIsCompleted(isFormComplete);
         if (updateCompletionStatus) {
           updateCompletionStatus("Company Details", isFormComplete);
@@ -183,8 +100,7 @@ const CompanyDetails = ({ userData, updateCompletionStatus, onBack }) => {
     if (
       !formData.name ||
       !formData.email ||
-      !formData.mobile ||
-      !formData.location
+      !formData.mobile
     ) {
       return "Please fill all required fields.";
     }
@@ -250,7 +166,6 @@ const CompanyDetails = ({ userData, updateCompletionStatus, onBack }) => {
         "sectionData.appuser.legalname": formData.name.trim(),
         "sectionData.appuser.cdesignation": formData.cdesignation,
         "sectionData.appuser.mobile": formData.mobile,
-        "sectionData.appuser.location": formData.location,
         "sectionData.appuser.email": formData.email,
         "sectionData.appuser.lastUpdated": new Date().toISOString(),
       };
@@ -377,25 +292,6 @@ const CompanyDetails = ({ userData, updateCompletionStatus, onBack }) => {
               className="flex-1 border border-gray-300 rounded-lg p-2 h-10 min-w-0 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               disabled={isProcessing}
             />
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Location<span className="text-red-500">*</span>
-          </label>
-          <div className="relative">
-            <input
-              type="text"
-              name="location"
-              value={formData.location}
-              onChange={handleInputChange}
-              placeholder="Enter your location"
-              className="w-full border border-gray-300 rounded-lg px-4 py-2 h-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              ref={locationInputRef}
-              disabled={isProcessing}
-            />
-            <FaCrosshairs className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500" />
           </div>
         </div>
 

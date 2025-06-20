@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import { MdVisibility, MdVisibilityOff } from "react-icons/md";
+import { jwtDecode } from 'jwt-decode';
 import rightImage from "../assets/SignUp/wallpaper.jpg";
 import logo from "../assets/Navbar/logo.png";
 import student from "../assets/SignUp/student.png";
@@ -8,7 +9,7 @@ import company from "../assets/SignUp/company.png";
 import academy from "../assets/SignUp/academy.png";
 import recruiter from "../assets/SignUp/recruiter.png";
 import mentor from "../assets/SignUp/mentor.png";
-import { signup, signupCompany } from "../Utils/api";
+import { signup, signupCompany, login } from "../Utils/api";
 
 const SignUpPage = () => {
   const location = useLocation();
@@ -169,39 +170,22 @@ const SignUpPage = () => {
       // Construct the combined mobile number with country code
       const fullMobileNumber = `${formData.countryCode}${formData.mobile.trim()}`;
 
-      if (role === "company") {
+      if (role === "company" || role === "academy") {
         payload = {
           appName: "app8657281202648",
-          companyName: formData.companyName.trim(),
+          companyName: role === "company" ? formData.companyName.trim() : formData.academyName.trim(),
           mobile: fullMobileNumber,
           legalname: formData.name.trim(),
           role: roleIds[role],
           email: formData.email.toLowerCase().trim(),
           password: formData.password,
+          type: role === "company" ? "Company" : "University",
         };
-        console.log("Company Signup Payload:", payload);
+        console.log(`${role.charAt(0).toUpperCase() + role.slice(1)} Signup Payload:`, payload);
         response = await signupCompany(payload);
-      } else {
-        payload = {
-          appName: "app8657281202648",
-          type: "otp",
-          name: formData.email.toLowerCase().trim(),
-          username: formData.email.toLowerCase().trim(),
-          password: formData.password,
-          role: roleIds[role],
-          legalname: formData.name.trim(),
-          email: formData.email.toLowerCase().trim(),
-          mobile: fullMobileNumber,
-          ...(role === "academy" && {
-            academyname: formData.academyName.trim(),
-          }),
-        };
-        console.log("Signup Payload:", payload);
-        response = await signup(payload);
-      }
 
-      if (response.success) {
-        if (role === "company") {
+        if (response.success) {
+          // Clear form data
           setFormData({
             name: "",
             companyName: "",
@@ -214,23 +198,77 @@ const SignUpPage = () => {
           });
           setErrors({});
           setConsentChecked(false);
-          const companyId = response.user?.companyId || "";
-          localStorage.setItem(
-            "user",
-            JSON.stringify({
-              legalname: formData.name.trim(),
-              email: formData.email.toLowerCase().trim(),
-              role: roleNames[roleIds[role]],
-              roleId: roleIds[role],
-              companyId: companyId,
-              mobile: fullMobileNumber,
-            })
-          );
-          localStorage.setItem("accessToken", response.accessToken);
-          localStorage.setItem("refreshToken", response.refreshToken);
-          const from = location.state?.from || "/";
-          navigate(from, { replace: true });
+
+          // Automatically call login API for company or academy
+          const loginResponse = await login({
+            appName: "app8657281202648",
+            username: formData.email.toLowerCase().trim(),
+            password: formData.password,
+          });
+
+          if (loginResponse.success) {
+            console.log('API Login Response User:', loginResponse.user);
+
+            const roleId = loginResponse.user.role?.role || '';
+            const roleName = roleNames[roleId];
+
+            if (!roleName) {
+              setErrors({ general: 'Invalid or unrecognized role. Please contact support@conscor.com.' });
+              setIsLoading(false);
+              return;
+            }
+
+            const decodedToken = jwtDecode(loginResponse.accessToken);
+            if (decodedToken.roleId !== roleId) {
+              console.warn('Role ID mismatch between API response and JWT:', {
+                apiRoleId: roleId,
+                jwtRoleId: decodedToken.roleId,
+              });
+              setErrors({ general: 'Role verification failed. Please contact support@conscor.com.' });
+              setIsLoading(false);
+              return;
+            }
+
+            const userData = {
+              legalname: loginResponse.user.legalname || loginResponse.user.email,
+              email: loginResponse.user.email,
+              role: roleName,
+              roleId: roleId,
+            };
+
+            if (roleName === 'company' || roleName === 'academy') {
+              userData.companyId = loginResponse.user.companyId || '';
+              userData.userid = loginResponse.user._id || '';
+            }
+
+            localStorage.setItem('user', JSON.stringify(userData));
+            localStorage.setItem('accessToken', loginResponse.accessToken);
+            localStorage.setItem('refreshToken', loginResponse.refreshToken);
+
+            const from = location.state?.from || '/editprofile';
+            navigate(from, { replace: true });
+          } else {
+            setErrors({ general: loginResponse.message || 'Automatic login failed. Please sign in manually.' });
+          }
         } else {
+          setErrors({ general: response.message || 'Signup failed' });
+        }
+      } else {
+        payload = {
+          appName: "app8657281202648",
+          type: "otp",
+          name: formData.email.toLowerCase().trim(),
+          username: formData.email.toLowerCase().trim(),
+          password: formData.password,
+          role: roleIds[role],
+          legalname: formData.name.trim(),
+          email: formData.email.toLowerCase().trim(),
+          mobile: fullMobileNumber,
+        };
+        console.log("Signup Payload:", payload);
+        response = await signup(payload);
+
+        if (response.success) {
           localStorage.setItem(
             "pendingUser",
             JSON.stringify({
@@ -239,16 +277,13 @@ const SignUpPage = () => {
               role: roleNames[roleIds[role]],
               roleId: roleIds[role],
               mobile: fullMobileNumber,
-              ...(role === "academy" && {
-                academyname: formData.academyName.trim(),
-              }),
               redirectTo: location.state?.from || "/editprofile",
             })
           );
           navigate("/otp");
+        } else {
+          setErrors({ general: response.message || 'Signup failed' });
         }
-      } else {
-        setErrors({ general: response.message || "Signup failed" });
       }
     } catch (err) {
       const errorMessage =
@@ -293,7 +328,7 @@ const SignUpPage = () => {
     academy: [
       { name: "name", placeholder: "Name", type: "text", required: true, maxLength: 100 },
       { name: "academyName", placeholder: "Academy Name", type: "text", required: true, maxLength: 100 },
-      { name: "mobile", type: "text", maxLength: 10, placeholder: "Mobile Number", required: true },
+     { name: "mobile", type: "text", maxLength: 10, placeholder: "Mobile Number", required: true },
       { name: "email", placeholder: "Email", type: "email", required: true, maxLength: 100 },
       { name: "password", placeholder: "Password", type: showPassword ? "text" : "password", required: true, maxLength: 20 },
       { name: "confirmPassword", placeholder: "Confirm Password", type: showPassword ? "text" : "password", required: true, maxLength: 20 },
@@ -319,51 +354,47 @@ const SignUpPage = () => {
       <div className="w-full lg:w-1/2 flex flex-col justify-center px-4 py-2 xs:px-6 sm:px-8">
         <div className="max-w-[20rem] xs:max-w-[24rem] sm:max-w-[28rem] mx-auto w-full">
           <div className="mb-3 flex flex-col items-center">
-             <div className="flex items-center mb-3">
-                          <img
-                            src={logo}
-                            alt="Internship-OJT Logo"
-                            className="h-10 w-auto mr-2"
-                          />
-                        </div>
+            <div className="flex items-center mb-3">
+              <img
+                src={logo}
+                alt="Internship-OJT Logo"
+                className="h-10 w-auto mr-2"
+              />
+            </div>
           </div>
           <div className="flex flex-wrap justify-center gap-2 xs:gap-3 sm:gap-4 mb-3">
-            {["student", "company", "academy"
-            // , "recruiter", "mentor"
-          ].map(
-              (r) => (
-                <div
-                  key={r}
-                  className={`flex flex-col items-center cursor-pointer p-1.5 ${
-                    role === r ? "border-b-2 border-[#3D7EFF]" : ""
-                  }`}
-                  onClick={() => handleRoleChange(r)}
-                >
-                  <div className="p-1.5 rounded-lg border shadow-sm">
-                    <img
-                      src={
-                        r === "student"
-                          ? student
-                          : r === "company"
-                          ? company
-                          : r === "academy"
-                          ? academy
-                          : r === "recruiter"
-                          ? recruiter
-                          : r === "mentor"
-                          ? mentor
-                          : "https://img.icons8.com/ios-filled/50/000000/user-male.png"
-                      }
-                      alt={r}
-                      className="w-5 h-5 xs:w-6 xs:h-6 sm:w-7 sm:h-7"
-                    />
-                  </div>
-                  <span className="text-xs xs:text-sm font-medium capitalize">
-                    {r}
-                  </span>
+            {["student", "company", "academy"].map((r) => (
+              <div
+                key={r}
+                className={`flex flex-col items-center cursor-pointer p-1.5 ${
+                  role === r ? "border-b-2 border-[#3D7EFF]" : ""
+                }`}
+                onClick={() => handleRoleChange(r)}
+              >
+                <div className="p-1.5 rounded-lg border shadow-sm">
+                  <img
+                    src={
+                      r === "student"
+                        ? student
+                        : r === "company"
+                        ? company
+                        : r === "academy"
+                        ? academy
+                        : r === "recruiter"
+                        ? recruiter
+                        : r === "mentor"
+                        ? mentor
+                        : "https://img.icons8.com/ios-filled/50/000000/user-male.png"
+                    }
+                    alt={r}
+                    className="w-5 h-5 xs:w-6 xs:h-6 sm:w-7 sm:h-7"
+                  />
                 </div>
-              )
-            )}
+                <span className="text-xs xs:text-sm font-medium capitalize">
+                  {r}
+                </span>
+              </div>
+            ))}
           </div>
           {role && (
             <div className="w-full">
@@ -466,7 +497,7 @@ const SignUpPage = () => {
                     By registering on INTURN PH, I certify that I have read and understood the{" "}
                     <Link
                       to="/privacy-policy"
-                       target="_blank"
+                      target="_blank"
                       className="text-[#3D7EFF] font-semibold hover:underline"
                     >
                       Privacy Policy
