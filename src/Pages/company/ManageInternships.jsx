@@ -66,7 +66,7 @@ const ManageInternships = () => {
           time: relativeTime,
           type: job.sectionData?.jobpost?.time || 'Unknown',
           salary: job.sectionData?.jobpost?.salary
-            ? `₹${job.sectionData.jobpost.salary}`
+            ? `${job.sectionData.jobpost.salary}`
             : 'Not specified',
           location: (job.sectionData?.jobpost?.location || 'Unknown').toUpperCase(),
           logo: job.sectionData?.jobpost?.logo || 'https://placehold.co/40x40',
@@ -120,16 +120,13 @@ const ManageInternships = () => {
         }}
       >
         <div className="text-center px-4">
-          <div className="flex justify-center items-center mb-4">
-            <img src={logo} alt="Logo" className="w-10 h-10 mr-2" />
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-[#050748] tracking-wide">
-                INTERNSHIP–OJT
-              </h1>
-              <div className="w-full h-[2px] bg-[#050748] mt-1 mb-1" />
-              <p className="text-sm text-black font-bold">WORK24 PHILIPPINES</p>
-            </div>
-          </div>
+          <div className="flex items-center mb-3">
+                      <img
+                        src={logo}
+                        alt="Internship-OJT Logo"
+                        className="h-10 w-auto mr-2"
+                      />
+                    </div>
           <h1 className="text-3xl md:text-4xl font-bold text-[#050748] mb-2">
             Manage Your Internships
           </h1>

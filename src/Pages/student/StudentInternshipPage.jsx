@@ -154,7 +154,7 @@ const StudentInternshipPage = () => {
           company: job.sectionData?.jobpost?.company || "Unknown Company",
           time: relativeTime,
           type: job.sectionData?.jobpost?.time || "Unknown",
-          salary: job.sectionData?.jobpost?.salary ? `₹${job.sectionData.jobpost.salary}` : "Not specified",
+          salary: job.sectionData?.jobpost?.salary ? `${job.sectionData.jobpost.salary}` : "Not specified",
           location: (job.sectionData?.jobpost?.location || "Unknown").toUpperCase(),
           logo: job.sectionData?.jobpost?.logo?.startsWith("http") ? job.sectionData.jobpost.logo : "https://placehold.co/40x40",
           createdDate: job.createdDate,
