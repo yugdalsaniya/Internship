@@ -26,8 +26,8 @@ const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 const userTypes = [
   { label: "College Students", icon: <FaGraduationCap /> },
   { label: "Professional", icon: <FaBriefcase /> },
-  { label: "School Student", icon: <FaCalendarAlt /> },
-  { label: "Fresher", icon: <FaUserGraduate /> },
+  { label: "Senior High School", icon: <FaCalendarAlt /> },
+  { label: "JVL", icon: <FaUserGraduate /> },
 ];
 
 const streamOptions = [
@@ -140,14 +140,13 @@ function BasicDetails({ userData }) {
           setCountryCode("+63");
         }
       }
-      if (userData.role === "academy" && userData.academyname) {
-        setSchoolName(userData.academyname);
-      }
+      setSchoolName(userData.organisationcollege || "");
       console.log("After setting from userData:", {
         name,
         email,
         mobile,
         countryCode,
+        schoolName,
       });
     }
   }, [userData]);
@@ -202,15 +201,9 @@ function BasicDetails({ userData }) {
               setCountryCode("+63");
             }
           }
-          console.log("After setting from localStorage:", {
-            name,
-            email,
-            mobile,
-            countryCode,
-          });
-          // Set userType based on role
+          setSchoolName(localUserData.organisationcollege || "");
           if (localUserData.role === "student") {
-            setUserType("School Student"); // Adjust based on your mapping
+            setUserType("Senior High School");
           }
         } else {
           // Fetch from server if userId exists
@@ -231,7 +224,6 @@ function BasicDetails({ userData }) {
               autoClose: 5000,
             });
             setTimeout(() => setError(""), 5000);
-            // Fallback to localStorage data
             setName(localUserData.legalname || "");
             setEmail(localUserData.email || "");
             if (localUserData.mobile) {
@@ -243,15 +235,10 @@ function BasicDetails({ userData }) {
                 setCountryCode("+63");
               }
             }
+            setSchoolName(localUserData.organisationcollege || "");
             if (localUserData.role === "student") {
-              setUserType("School Student");
+              setUserType("Senior High School");
             }
-            console.log("After setting from localStorage (server fail):", {
-              name,
-              email,
-              mobile,
-              countryCode,
-            });
             return;
           }
 
@@ -276,7 +263,7 @@ function BasicDetails({ userData }) {
           setGender(userData.Gender || "");
           setUserType(
             userData.usertype ||
-              (localUserData.role === "student" ? "School Student" : "")
+              (localUserData.role === "student" ? "Senior High School" : "")
           );
           setLocation(userData.location || "");
           setCourse(userData.course || "");
@@ -300,7 +287,6 @@ function BasicDetails({ userData }) {
           setNewCareerRole(userData.role1 || []);
           setProfilePicture(userData.profile || "");
 
-          // Set isFirstSaveSuccessful if any relevant fields are populated
           if (
             userData.legalname ||
             userData.email ||
@@ -322,6 +308,7 @@ function BasicDetails({ userData }) {
             mobile,
             countryCode,
             userType,
+            schoolName,
           });
         }
 
@@ -401,7 +388,6 @@ function BasicDetails({ userData }) {
           autoClose: 5000,
         });
         setTimeout(() => setError(""), 5000);
-        // Fallback to localStorage data on error
         const userString = localStorage.getItem("user");
         if (userString) {
           try {
@@ -417,8 +403,9 @@ function BasicDetails({ userData }) {
                 setCountryCode("+63");
               }
             }
+            setSchoolName(user.organisationcollege || "");
             if (user.role === "student") {
-              setUserType("School Student");
+              setUserType("Senior High School");
             }
             console.log("After setting from localStorage (error):", {
               name,
@@ -426,6 +413,7 @@ function BasicDetails({ userData }) {
               mobile,
               countryCode,
               userType,
+              schoolName,
             });
           } catch (parseError) {
             console.error("Parse error on fallback:", parseError);
@@ -515,7 +503,7 @@ function BasicDetails({ userData }) {
       setWorkExperienceType("");
       setIsCurrentlyWorking(false);
     }
-    if (userType !== "School Student") {
+    if (userType !== "Senior High School") {
       setSchoolName("");
       setStream("");
     }
@@ -538,7 +526,7 @@ function BasicDetails({ userData }) {
       isCurrentlyWorking &&
       workExperienceType
     ) {
-      const currentYear = new Date().getFullYear(); // 2025
+      const currentYear = new Date().getFullYear();
       const experienceYears = parseInt(workExperienceType, 10);
       if (!isNaN(experienceYears)) {
         setStartYear((currentYear - experienceYears).toString());
@@ -589,14 +577,17 @@ function BasicDetails({ userData }) {
     ) {
       return "Please fill all required professional fields.";
     }
-    if (userType === "School Student" && !schoolName) {
-      return "Please fill all required school student fields.";
+    if (
+      userType === "Senior High School" &&
+      (!schoolName || !instituteOptions.find((opt) => opt._id === schoolName))
+    ) {
+      return "Please select a valid school name.";
     }
-    if (userType === "School Student" && !stream) {
+    if (userType === "Senior High School" && !stream) {
       return "Please select a stream.";
     }
     if (
-      (userType === "College Students" || userType === "Fresher") &&
+      (userType === "College Students" || userType === "JVL") &&
       (!course || !specialization || !college || !startYear || !endYear)
     ) {
       return "Please fill all required college/fresher fields.";
@@ -781,7 +772,7 @@ function BasicDetails({ userData }) {
           "sectionData.appuser.role1": newCareerRole,
           "sectionData.appuser.teammember": "",
           "sectionData.appuser.stream":
-            userType === "School Student" ? stream : "",
+            userType === "Senior High School" ? stream : "",
           ...(userType === "Professional" && {
             "sectionData.appuser.designation": designation,
             "sectionData.appuser.workexperience": workExperienceType,
@@ -790,10 +781,10 @@ function BasicDetails({ userData }) {
             "sectionData.appuser.startyear": startYear,
             "sectionData.appuser.endyear": isCurrentlyWorking ? "" : endYear,
           }),
-          ...(userType === "School Student" && {
+          ...(userType === "Senior High School" && {
             "sectionData.appuser.organisationcollege": schoolName,
           }),
-          ...(userType === "College Students" || userType === "Fresher"
+          ...(userType === "College Students" || userType === "JVL"
             ? {
                 "sectionData.appuser.course": course,
                 "sectionData.appuser.coursespecialization": specialization,
@@ -1191,7 +1182,7 @@ function BasicDetails({ userData }) {
               </div>
             </div>
           </>
-        ) : userType === "School Student" ? (
+        ) : userType === "Senior High School" ? (
           <>
             <div className="mb-4">
               <label className="text-sm font-medium block mb-1 text-gray-700">
@@ -1213,16 +1204,29 @@ function BasicDetails({ userData }) {
 
             <div className="mb-4">
               <label className="text-sm font-medium block mb-1 text-gray-700">
-                School Name <span className="text-red-500">*</span>
+                Organisation/School <span className="text-red-500">*</span>
               </label>
-              <input
-                type="text"
-                value={schoolName}
-                onChange={(e) => setSchoolName(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg p-2 h-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Enter your school name"
-                disabled={isProcessing}
+              <Select
+                options={instituteOptions.map((option) => ({
+                  value: option._id,
+                  label: option.name,
+                }))}
+                value={instituteOptions
+                  .filter((option) => option._id === schoolName)
+                  .map((option) => ({ value: option._id, label: option.name }))}
+                onChange={(selected) =>
+                  setSchoolName(selected ? selected.value : "")
+                }
+                styles={customSelectStyles}
+                isDisabled={isProcessing || isLoadingOptions}
+                placeholder="Search for your school..."
+                isClearable
+                isSearchable
+                menuPortalTarget={document.body}
               />
+              {isLoadingOptions && (
+                <p className="text-sm text-gray-500 mt-1">Loading schools...</p>
+              )}
             </div>
           </>
         ) : (

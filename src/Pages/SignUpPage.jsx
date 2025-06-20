@@ -169,17 +169,18 @@ const SignUpPage = () => {
       // Construct the combined mobile number with country code
       const fullMobileNumber = `${formData.countryCode}${formData.mobile.trim()}`;
 
-      if (role === "company") {
+      if (role === "company" || role === "academy") {
         payload = {
           appName: "app8657281202648",
-          companyName: formData.companyName.trim(),
+          companyName: role === "company" ? formData.companyName.trim() : formData.academyName.trim(),
           mobile: fullMobileNumber,
           legalname: formData.name.trim(),
           role: roleIds[role],
           email: formData.email.toLowerCase().trim(),
           password: formData.password,
+          type: role === "company" ? "Company" : "University",
         };
-        console.log("Company Signup Payload:", payload);
+        console.log(`${role.charAt(0).toUpperCase() + role.slice(1)} Signup Payload:`, payload);
         response = await signupCompany(payload);
       } else {
         payload = {
@@ -192,16 +193,13 @@ const SignUpPage = () => {
           legalname: formData.name.trim(),
           email: formData.email.toLowerCase().trim(),
           mobile: fullMobileNumber,
-          ...(role === "academy" && {
-            academyname: formData.academyName.trim(),
-          }),
         };
         console.log("Signup Payload:", payload);
         response = await signup(payload);
       }
 
       if (response.success) {
-        if (role === "company") {
+        if (role === "company" || role === "academy") {
           setFormData({
             name: "",
             companyName: "",
@@ -239,9 +237,6 @@ const SignUpPage = () => {
               role: roleNames[roleIds[role]],
               roleId: roleIds[role],
               mobile: fullMobileNumber,
-              ...(role === "academy" && {
-                academyname: formData.academyName.trim(),
-              }),
               redirectTo: location.state?.from || "/editprofile",
             })
           );
@@ -266,7 +261,7 @@ const SignUpPage = () => {
         });
       } else {
         setErrors({
-          general: `${errorMessage}. Please try again or contact support@conscor.com.`,
+          general: `${errorMessage}. Please try again or contact support@ shop.com.`,
         });
       }
     } finally {
@@ -319,51 +314,47 @@ const SignUpPage = () => {
       <div className="w-full lg:w-1/2 flex flex-col justify-center px-4 py-2 xs:px-6 sm:px-8">
         <div className="max-w-[20rem] xs:max-w-[24rem] sm:max-w-[28rem] mx-auto w-full">
           <div className="mb-3 flex flex-col items-center">
-             <div className="flex items-center mb-3">
-                          <img
-                            src={logo}
-                            alt="Internship-OJT Logo"
-                            className="h-10 w-auto mr-2"
-                          />
-                        </div>
+            <div className="flex items-center mb-3">
+              <img
+                src={logo}
+                alt="Internship-OJT Logo"
+                className="h-10 w-auto mr-2"
+              />
+            </div>
           </div>
           <div className="flex flex-wrap justify-center gap-2 xs:gap-3 sm:gap-4 mb-3">
-            {["student", "company", "academy"
-            // , "recruiter", "mentor"
-          ].map(
-              (r) => (
-                <div
-                  key={r}
-                  className={`flex flex-col items-center cursor-pointer p-1.5 ${
-                    role === r ? "border-b-2 border-[#3D7EFF]" : ""
-                  }`}
-                  onClick={() => handleRoleChange(r)}
-                >
-                  <div className="p-1.5 rounded-lg border shadow-sm">
-                    <img
-                      src={
-                        r === "student"
-                          ? student
-                          : r === "company"
-                          ? company
-                          : r === "academy"
-                          ? academy
-                          : r === "recruiter"
-                          ? recruiter
-                          : r === "mentor"
-                          ? mentor
-                          : "https://img.icons8.com/ios-filled/50/000000/user-male.png"
-                      }
-                      alt={r}
-                      className="w-5 h-5 xs:w-6 xs:h-6 sm:w-7 sm:h-7"
-                    />
-                  </div>
-                  <span className="text-xs xs:text-sm font-medium capitalize">
-                    {r}
-                  </span>
+            {["student", "company", "academy"].map((r) => (
+              <div
+                key={r}
+                className={`flex flex-col items-center cursor-pointer p-1.5 ${
+                  role === r ? "border-b-2 border-[#3D7EFF]" : ""
+                }`}
+                onClick={() => handleRoleChange(r)}
+              >
+                <div className="p-1.5 rounded-lg border shadow-sm">
+                  <img
+                    src={
+                      r === "student"
+                        ? student
+                        : r === "company"
+                        ? company
+                        : r === "academy"
+                        ? academy
+                        : r === "recruiter"
+                        ? recruiter
+                        : r === "mentor"
+                        ? mentor
+                        : "https://img.icons8.com/ios-filled/50/000000/user-male.png"
+                    }
+                    alt={r}
+                    className="w-5 h-5 xs:w-6 xs:h-6 sm:w-7 sm:h-7"
+                  />
                 </div>
-              )
-            )}
+                <span className="text-xs xs:text-sm font-medium capitalize">
+                  {r}
+                </span>
+              </div>
+            ))}
           </div>
           {role && (
             <div className="w-full">
@@ -466,7 +457,7 @@ const SignUpPage = () => {
                     By registering on INTURN PH, I certify that I have read and understood the{" "}
                     <Link
                       to="/privacy-policy"
-                       target="_blank"
+                      target="_blank"
                       className="text-[#3D7EFF] font-semibold hover:underline"
                     >
                       Privacy Policy
