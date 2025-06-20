@@ -7,34 +7,20 @@ const Footer = () => {
       <div className="flex flex-col">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 ml-2 sm:ml-4 mr-2 sm:mr-4">
           {/* Column 1: Logo and Description */}
-          <div>
-            <div className="flex items-center mb-3 sm:mb-4">
+          <div className="flex flex-col justify-start">
+            <div className="flex items-center mb-3">
               <img
-                src={logo} // Replace with your logo path
+                src={logo}
                 alt="Internship-OJT Logo"
-                className="h-6 sm:h-8 w-6 sm:w-8 mr-2"
+                className="h-10 w-auto mr-2"
               />
-              <div className="flex flex-col items-center">
-                <h2 className="text-base sm:text-xl font-semibold text-gray-800 underline">
-                  INTERNSHIP-OJT
-                </h2>
-                <p className="text-[10px] sm:text-xs text-blue-600 uppercase mx-0 sm:mx-1">
-                  WORK24 PHILIPPINES
-                </p>
-              </div>
             </div>
-            <p className="text-xs sm:text-sm mb-1 sm:mb-2">
-              Discover top internships in the Philippines.
-            </p>
-            <p className="text-xs sm:text-sm mb-1 sm:mb-2">
-              Designed to ignite your career spark.
-            </p>
-            <p className="text-xs sm:text-sm mb-1 sm:mb-2">
-              OJT programs pave the way to success,
-            </p>
-            <p className="text-xs sm:text-sm">
-              Launch your future with the best.
-            </p>
+            <div className="text-xs sm:text-sm space-y-1">
+              <p>Discover top internships in the Philippines.</p>
+              <p>Designed to ignite your career spark.</p>
+              <p>OJT programs pave the way to success,</p>
+              <p>Launch your future with the best.</p>
+            </div>
           </div>
 
           {/* Column 2: Company Links */}

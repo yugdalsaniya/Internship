@@ -231,22 +231,13 @@ const OtpVerification = () => {
         <div className="max-w-[20rem] xs:max-w-[24rem] sm:max-w-[28rem] mx-auto w-full">
           {/* Logo Section (unchanged) */}
           <div className="mb-3 flex flex-col items-center">
-            <div className="flex items-center space-x-2 mb-1">
-              <img
-                src={logo}
-                alt="Logo"
-                className="w-8 h-8 xs:w-10 xs:h-10 sm:w-12 sm:h-12"
-              />
-              <div>
-                <h1 className="text-base xs:text-lg sm:text-xl font-bold text-[#050748] tracking-wide">
-                  INTERNSHIP–OJT
-                </h1>
-                <div className="w-full h-[2px] bg-[#050748] mt-0.5 mb-0.5" />
-                <p className="text-xs xs:text-sm sm:text-base text-black font-bold text-center">
-                  WORK24 PHILIPPINES
-                </p>
-              </div>
-            </div>
+            <div className="flex items-center mb-3">
+                      <img
+                        src={logo}
+                        alt="Internship-OJT Logo"
+                        className="h-10 w-auto mr-2"
+                      />
+                    </div>
           </div>
 
           {/* OTP Image (unchanged) */}

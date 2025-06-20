@@ -28,17 +28,17 @@ export default function InternshipPage() {
   const navigate = useNavigate();
 
   const categoryMap = {
-    "1749121324626": "Technology",
-    "1749121385325": "Analytics",
-    "1749121505889": "Finance",
-    "1749121597482": "Marketing",
-    "1749121776119": "Cybersecurity",
-    "1749122138386": "E-commerce",
-    "1749122277361": "Education",
-    "1749122393285": "Tourism",
-    "TECHNOLOGY": "Technology",
-    "Education": "Education",
-    "Tourism": "Tourism",
+    1749121324626: "Technology",
+    1749121385325: "Analytics",
+    1749121505889: "Finance",
+    1749121597482: "Marketing",
+    1749121776119: "Cybersecurity",
+    1749122138386: "E-commerce",
+    1749122277361: "Education",
+    1749122393285: "Tourism",
+    TECHNOLOGY: "Technology",
+    Education: "Education",
+    Tourism: "Tourism",
   };
 
   const categories = [...new Set(Object.values(categoryMap))];
@@ -93,17 +93,23 @@ export default function InternshipPage() {
     switch (filterType) {
       case "category":
         setTempCategories((prev) =>
-          prev.includes(value) ? prev.filter((c) => c !== value) : [...prev, value]
+          prev.includes(value)
+            ? prev.filter((c) => c !== value)
+            : [...prev, value]
         );
         break;
       case "type":
         setTempTypes((prev) =>
-          prev.includes(value) ? prev.filter((t) => t !== value) : [...prev, value]
+          prev.includes(value)
+            ? prev.filter((t) => t !== value)
+            : [...prev, value]
         );
         break;
       case "experience":
         setTempExperienceLevels((prev) =>
-          prev.includes(value) ? prev.filter((e) => e !== value) : [...prev, value]
+          prev.includes(value)
+            ? prev.filter((e) => e !== value)
+            : [...prev, value]
         );
         break;
       case "datePosted":
@@ -151,46 +157,55 @@ export default function InternshipPage() {
         if (!isInternship) return false;
 
         const jobCategory = (
-          categoryMap[job.sectionData?.jobpost?.subtype] || job.sectionData?.jobpost?.subtype || "Unknown"
+          categoryMap[job.sectionData?.jobpost?.subtype] ||
+          job.sectionData?.jobpost?.subtype ||
+          "Unknown"
         ).toLowerCase();
         const matchesCategory =
           appliedCategories.length === 0 ||
           appliedCategories.some((cat) => cat.toLowerCase() === jobCategory);
 
         const jobType = job.sectionData?.jobpost?.time || "Unknown";
-        const matchesType = appliedTypes.length === 0 || appliedTypes.includes(jobType);
+        const matchesType =
+          appliedTypes.length === 0 || appliedTypes.includes(jobType);
 
-        const jobExperience = job.sectionData?.jobpost?.experiencelevel || "Unknown";
+        const jobExperience =
+          job.sectionData?.jobpost?.experiencelevel || "Unknown";
         const matchesExperience =
-          appliedExperienceLevels.length === 0 || appliedExperienceLevels.includes(jobExperience);
+          appliedExperienceLevels.length === 0 ||
+          appliedExperienceLevels.includes(jobExperience);
 
         let matchesDatePosted = true;
         try {
-          const jobDate = parse(job.createdDate, "dd/MM/yyyy, hh:mm:ss a", new Date());
+          const jobDate = parse(
+            job.createdDate,
+            "dd/MM/yyyy, hh:mm:ss a",
+            new Date()
+          );
           const now = new Date();
-            if (appliedDatePosted !== "All") {
-              let cutoffDate;
-              switch (appliedDatePosted) {
-                case "Last Hour":
-                  cutoffDate = sub(now, { hours: 1 });
-                  break;
-                case "Last 24 Hours":
-                  cutoffDate = sub(now, { hours: 24 });
-                  break;
-                case "Last 7 Days":
-                  cutoffDate = sub(now, { days: 7 });
-                  break;
-                case "Last 30 Days":
-                  cutoffDate = sub(now, { days: 30 });
-                  break;
-                default:
-                  break;
-              }
-              matchesDatePosted = jobDate >= cutoffDate;
+          if (appliedDatePosted !== "All") {
+            let cutoffDate;
+            switch (appliedDatePosted) {
+              case "Last Hour":
+                cutoffDate = sub(now, { hours: 1 });
+                break;
+              case "Last 24 Hours":
+                cutoffDate = sub(now, { hours: 24 });
+                break;
+              case "Last 7 Days":
+                cutoffDate = sub(now, { days: 7 });
+                break;
+              case "Last 30 Days":
+                cutoffDate = sub(now, { days: 30 });
+                break;
+              default:
+                break;
             }
-          } catch (err) {
-            console.error("Date parsing error:", err);
+            matchesDatePosted = jobDate >= cutoffDate;
           }
+        } catch (err) {
+          console.error("Date parsing error:", err);
+        }
 
         const searchLower = searchQuery.toLowerCase();
         const matchesSearch =
@@ -201,7 +216,9 @@ export default function InternshipPage() {
         const locationLower = locationQuery.toLowerCase();
         const matchesLocation =
           locationQuery === "" ||
-          (job.sectionData?.jobpost?.location || "").toLowerCase().includes(locationLower);
+          (job.sectionData?.jobpost?.location || "")
+            .toLowerCase()
+            .includes(locationLower);
 
         const jobSalary = parseFloat(job.sectionData?.jobpost?.salary) || 0;
         const matchesSalary = jobSalary <= maxSalary;
@@ -219,7 +236,11 @@ export default function InternshipPage() {
       .map((job) => {
         let relativeTime = "Just now";
         try {
-          const parsedDate = parse(job.createdDate, "dd/MM/yyyy, hh:mm:ss a", new Date());
+          const parsedDate = parse(
+            job.createdDate,
+            "dd/MM/yyyy, hh:mm:ss a",
+            new Date()
+          );
           relativeTime = formatDistanceToNow(parsedDate, { addSuffix: true })
             .replace("about ", "")
             .replace("hours", "hrs")
@@ -242,17 +263,22 @@ export default function InternshipPage() {
           time: relativeTime,
           type: job.sectionData?.jobpost?.time || "Unknown",
           salary: job.sectionData?.jobpost?.salary
-            ? `₹${job.sectionData.jobpost.salary}`
+            ? `${job.sectionData.jobpost.salary}`
             : "Not specified",
-          location: (job.sectionData?.jobpost?.location || "Unknown").toUpperCase(),
+          location: (
+            job.sectionData?.jobpost?.location || "Unknown"
+          ).toUpperCase(),
           logo:
-            job.sectionData?.jobpost?.logo && job.sectionData.jobpost.logo.startsWith("http")
+            job.sectionData?.jobpost?.logo &&
+            job.sectionData.jobpost.logo.startsWith("http")
               ? job.sectionData.jobpost.logo
               : "https://placehold.co/40x40",
           createdDate: job.createdDate,
           salaryValue: parseFloat(job.sectionData?.jobpost?.salary) || 0,
           category:
-            categoryMap[job.sectionData?.jobpost?.subtype] || job.sectionData?.jobpost?.subtype || "Unknown",
+            categoryMap[job.sectionData?.jobpost?.subtype] ||
+            job.sectionData?.jobpost?.subtype ||
+            "Unknown",
           slug: slug,
         };
       })
@@ -260,8 +286,16 @@ export default function InternshipPage() {
         switch (sortOption) {
           case "latest":
             try {
-              const dateA = parse(a.createdDate, "dd/MM/yyyy, hh:mm:ss a", new Date());
-              const dateB = parse(b.createdDate, "dd/MM/yyyy, hh:mm:ss a", new Date());
+              const dateA = parse(
+                a.createdDate,
+                "dd/MM/yyyy, hh:mm:ss a",
+                new Date()
+              );
+              const dateB = parse(
+                b.createdDate,
+                "dd/MM/yyyy, hh:mm:ss a",
+                new Date()
+              );
               return dateB - dateA;
             } catch (err) {
               console.error("Sorting error:", err);
@@ -316,20 +350,24 @@ export default function InternshipPage() {
   return (
     <>
       <Hero
-  title="Internships"
-  subtitle="Empower Your Future: Unleash Limitless Career Possibilities!"
-  searchFields={[]}
-  stats={[]}
-  backgroundImage={backgroundImg}
-  gradient="linear-gradient(to right, rgba(249, 220, 223, 0.8), rgba(181, 217, 211, 0.8))"
-  showPostButton={true} // Add this prop
-/>
+        title="Internships"
+        subtitle="Empower Your Future: Unleash Limitless Career Possibilities!"
+        searchFields={[]}
+        stats={[]}
+        backgroundImage={backgroundImg}
+        gradient="linear-gradient(to right, rgba(249, 220, 223, 0.8), rgba(181, 217, 211, 0.8))"
+        showPostButton={true} // Add this prop
+      />
       <div className="flex flex-col md:flex-row px-4 md:px-12 py-8 bg-[#fafafa]">
         <div className="w-full md:w-1/4 bg-gradient-to-b from-[#FFFCF2] to-[#FEEFF4] shadow-md rounded-xl p-6 mb-6 md:mb-0">
           {filteredInternships.length === 0 && (
-            <div className="text-sm text-gray-600 mb-4">No internships found.</div>
+            <div className="text-sm text-gray-600 mb-4">
+              No internships found.
+            </div>
           )}
-          <h2 className="text-lg font-semibold mb-4">Search by Internship Title</h2>
+          <h2 className="text-lg font-semibold mb-4">
+            Search by Internship Title
+          </h2>
           <div className="relative mb-4">
             <BsSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600" />
             <input
@@ -370,7 +408,13 @@ export default function InternshipPage() {
           </div>
           <div className="mb-4">
             <h3 className="font-medium text-sm mb-2">Internship Type</h3>
-            {["Full Time", "Part Time", "Freelance", "Seasonal", "Fixed-Price"].map((type) => (
+            {[
+              "Full Time",
+              "Part Time",
+              "Freelance",
+              "Seasonal",
+              "Fixed-Price",
+            ].map((type) => (
               <label key={type} className="block text-sm text-gray-700">
                 <input
                   type="checkbox"
@@ -384,21 +428,29 @@ export default function InternshipPage() {
           </div>
           <div className="mb-4">
             <h3 className="font-medium text-sm mb-2">Experience Level</h3>
-            {["No-experience", "Fresher", "Intermediate", "Expert"].map((level) => (
-              <label key={level} className="block text-sm text-gray-700">
-                <input
-                  type="checkbox"
-                  className="mr-2"
-                  checked={tempExperienceLevels.includes(level)}
-                  onChange={() => handleFilterChange("experience", level)}
-                />
-                {level}
-              </label>
-            ))}
+            {["No-experience", "Fresher", "Intermediate", "Expert"].map(
+              (level) => (
+                <label key={level} className="block text-sm text-gray-700">
+                  <input
+                    type="checkbox"
+                    className="mr-2"
+                    checked={tempExperienceLevels.includes(level)}
+                    onChange={() => handleFilterChange("experience", level)}
+                  />
+                  {level}
+                </label>
+              )
+            )}
           </div>
           <div className="mb-4">
             <h3 className="font-medium text-sm mb-2">Date Posted</h3>
-            {["All", "Last Hour", "Last 24 Hours", "Last 7 Days", "Last 30 Days"].map((option) => (
+            {[
+              "All",
+              "Last Hour",
+              "Last 24 Hours",
+              "Last 7 Days",
+              "Last 30 Days",
+            ].map((option) => (
               <label key={option} className="block text-sm text-gray-700">
                 <input
                   type="radio"
@@ -413,7 +465,9 @@ export default function InternshipPage() {
           </div>
           <div className="mb-4">
             <h3 className="font-medium text-sm mb-2">Salary (Up to)</h3>
-            <label className="text-xs text-gray-600">Max Salary: ₹{maxSalary}</label>
+            <label className="text-xs text-gray-600">
+              Max Salary: ₹{maxSalary}
+            </label>
             <input
               type="range"
               min="0"
@@ -449,8 +503,11 @@ export default function InternshipPage() {
               <div className="flex justify-between items-center mb-4">
                 <p className="text-sm text-gray-600">
                   Showing {(currentPage - 1) * internshipsPerPage + 1} -{" "}
-                  {Math.min(currentPage * internshipsPerPage, filteredInternships.length)} of{" "}
-                  {filteredInternships.length} results
+                  {Math.min(
+                    currentPage * internshipsPerPage,
+                    filteredInternships.length
+                  )}{" "}
+                  of {filteredInternships.length} results
                 </p>
                 <select
                   value={sortOption}
@@ -458,8 +515,12 @@ export default function InternshipPage() {
                   className="p-2 border text-sm rounded-lg"
                 >
                   <option value="latest">Sort by latest</option>
-                  <option value="salary-desc">Sort by salary (high to low)</option>
-                  <option value="salary-asc">Sort by salary (low to high)</option>
+                  <option value="salary-desc">
+                    Sort by salary (high to low)
+                  </option>
+                  <option value="salary-asc">
+                    Sort by salary (low to high)
+                  </option>
                   <option value="title-asc">Sort by title (A-Z)</option>
                 </select>
               </div>
@@ -473,7 +534,10 @@ export default function InternshipPage() {
                       <span className="inline-block bg-gray-200 text-gray-800 text-xs font-medium px-2 py-0.5 rounded-full">
                         {internship.time}
                       </span>
-                      <BsBookmarkPlus className="h-6 w-6" aria-label="Bookmark Plus Icon" />
+                      <BsBookmarkPlus
+                        className="h-6 w-6"
+                        aria-label="Bookmark Plus Icon"
+                      />
                     </div>
                     <div className="flex justify-between items-center">
                       <div className="flex-1">
@@ -484,8 +548,12 @@ export default function InternshipPage() {
                             className="w-10 h-10 rounded-full object-contain"
                           />
                           <div>
-                            <h3 className="text-lg font-bold text-black">{internship.role}</h3>
-                            <p className="text-sm text-gray-600">{internship.company}</p>
+                            <h3 className="text-lg font-bold text-black">
+                              {internship.role}
+                            </h3>
+                            <p className="text-sm text-gray-600">
+                              {internship.company}
+                            </p>
                           </div>
                         </div>
                         <div className="flex flex-wrap items-center space-x-2 mt-2 text-sm text-gray-600">
@@ -507,22 +575,22 @@ export default function InternshipPage() {
                             {internship.type}
                           </span>
                           <span className="flex items-center gap-1">
-                            <svg
-                              className="w-4 h-4"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                              xmlns="http://www.w3.org/2000/svg"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.657 0 3 .895 3 2s-1.343 2-3 2m0 0c-1.657 0-3 .895-3 2s1.343 2 3 2m-6 0V6m12 12V6"
-                              />
-                            </svg>
-                            {internship.salary}
-                          </span>
+  <svg
+    className="w-4 h-4"
+    fill="none"
+    stroke="currentColor"
+    viewBox="0 0 24 24"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="2"
+      d="M12 5v14M9 8h3a2 2 0 010 4H9a2 2 0 000 4h3"
+    />
+  </svg>
+  {internship.salary}
+</span>
                           <span className="flex items-center gap-1">
                             <svg
                               className="w-4 h-4"
