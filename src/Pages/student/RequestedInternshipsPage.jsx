@@ -8,6 +8,7 @@ import {
   FaClock,
   FaTag,
   FaUser,
+  FaCheckCircle,
 } from "react-icons/fa";
 
 const RequestedInternshipsPage = () => {
@@ -131,6 +132,8 @@ const RequestedInternshipsPage = () => {
                   .filter(Boolean)
                   .join(", ")
               : "None",
+            status: internship.status || "Pending",
+            bycompany: internship.bycompany || "Not shortlisted",
           };
         });
 
@@ -189,8 +192,6 @@ const RequestedInternshipsPage = () => {
                 <span className="flex items-center gap-2">
                   <FaTag className="text-blue-500" /> {internship.industry}
                 </span>
-
-               
               </div>
               <div className="flex flex-wrap gap-4 text-sm text-gray-600">
                 <span className="flex items-center gap-2">
@@ -206,16 +207,32 @@ const RequestedInternshipsPage = () => {
                   {internship.skills}
                 </span>
               </div>
-
-
-<div className="flex flex-wrap gap-4 text-sm text-gray-600">
- 
+              <div className="flex flex-wrap gap-4 text-sm text-gray-600">
                 <span className="flex items-center gap-2">
                   <FaUser className="text-blue-500" /> By: {internship.by}
                 </span>
- </div>
-
-
+              </div>
+              <div className="mt-2 flex flex-wrap gap-4 text-sm">
+                <span
+                  className={`flex items-center gap-2 ${
+                    internship.status === "Shortlisted"
+                      ? "text-green-600"
+                      : "text-gray-600"
+                  }`}
+                >
+                  <FaCheckCircle
+                    className={
+                      internship.status === "Shortlisted"
+                        ? "text-green-500"
+                        : "text-gray-500"
+                    }
+                  />
+                  Status:{" "}
+                  {internship.status === "Shortlisted"
+                    ? `You are Shortlisted by ${internship.bycompany}`
+                    : "Pending"}
+                </span>
+              </div>
               <div className="mt-2 text-xs text-gray-400">
                 {internship.createdAt}
               </div>
