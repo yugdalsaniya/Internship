@@ -109,6 +109,7 @@ const SignIn = () => {
           userData.userid = response.user._id || '';
         }
         else if (roleName === 'academy') {
+        userData.companyId = response.user.companyId || '';
           userData.userid = response.user._id || '';
         }
 
