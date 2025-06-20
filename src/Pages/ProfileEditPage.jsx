@@ -18,7 +18,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 const ProfileEditPage = () => {
-  const [activeSection, setActiveSection] = useState('Personal Details');
+  const [activeSection, setActiveSection] = useState('Company Details');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [completionStatus, setCompletionStatus] = useState({});
   const location = useLocation();
@@ -52,13 +52,13 @@ const ProfileEditPage = () => {
     'accomplishments-and-initiatives': 'Accomplishments & Initiatives',
     'personal-details': 'Personal Details',
     'social-links': 'Social Links',
-    'company-details': 'Personal Details',
+    'company-details': 'Company Details',
     'organization-details': 'Organization Details',
   };
 
   useEffect(() => {
     const path = location.pathname.split('/').pop();
-    const section = pathToSection[path] || (allowedRoles.includes(userData.role) ? 'Personal Details' : 'Basic Details');
+    const section = pathToSection[path] || (allowedRoles.includes(userData.role) ? 'Company Details' : 'Basic Details');
     setActiveSection(section);
   }, [location, userData.role]);
 
@@ -129,10 +129,6 @@ const ProfileEditPage = () => {
               'sectionData.appuser.email': 1,
               'sectionData.appuser.mobile': 1,
               'sectionData.appuser.location': 1,
-              'sectionData.appuser.Gender': 1,
-              'sectionData.appuser.usertype': 1,
-              'sectionData.appuser.purpose': 1,
-              'sectionData.appuser.profile': 1,
               'sectionData.appuser.certificatesdetails': 1,
               'sectionData.appuser.projectdetails': 1,
               'sectionData.appuser.achievementsdetails': 1,
@@ -163,14 +159,6 @@ const ProfileEditPage = () => {
         console.log('fetchSectionData response in ProfileEditPage:', JSON.stringify({ userResponse, organizationData }, null, 2));
         const apiData = userResponse[0]?.sectionData?.appuser || {};
         const newCompletionStatus = {
-          'Basic Details':
-            !!apiData.legalname &&
-            !!apiData.email &&
-            !!apiData.mobile &&
-            !!apiData.Gender &&
-            !!apiData.usertype &&
-            !!apiData.location &&
-            !!apiData.purpose?.length,
           Resume: !!apiData.resume,
           About: !!apiData.about?.trim(),
           Skills: !!apiData.skills?.length,
@@ -242,11 +230,11 @@ const ProfileEditPage = () => {
 
   const sections = allowedRoles.includes(userData.role)
     ? [
-        { label: 'Personal Details', path: 'company-details', completed: completionStatus['Company Details'] || false, required: false },
+        { label: 'Company Details', path: 'company-details', completed: completionStatus['Company Details'] || false, required: false },
         { label: 'Organization Details', path: 'organization-details', completed: completionStatus['Organization Details'] || false, required: false },
       ]
     : [
-        { label: 'Basic Details', path: 'basic-details', completed: completionStatus['Basic Details'] || false, required: true },
+        { label: 'Basic Details', path: 'basic-details', completed: completionStatus['Basic Details'] || true, required: true },
         { label: 'Resume', path: 'resume', completed: completionStatus['Resume'] || false, required: true },
         { label: 'About', path: 'about', completed: completionStatus['About'] || false, required: true },
         { label: 'Skills', path: 'skills', completed: completionStatus['Skills'] || false, required: true },
@@ -355,7 +343,7 @@ const ProfileEditPage = () => {
               </>
             ) : (
               <>
-                <Route path="basic-details" element={<BasicDetails userData={userData} updateCompletionStatus={updateCompletionStatus} />} />
+                <Route path="basic-details" element={<BasicDetails userData={userData} />} />
                 <Route path="resume" element={<Resume userData={userData} updateCompletionStatus={updateCompletionStatus} />} />
                 <Route path="about" element={<About userData={userData} updateCompletionStatus={updateCompletionStatus} />} />
                 <Route path="skills" element={<Skills userData={userData} updateCompletionStatus={updateCompletionStatus} />} />
@@ -364,7 +352,7 @@ const ProfileEditPage = () => {
                 <Route path="accomplishments-and-initiatives" element={<Accomplishments userData={userData} updateCompletionStatus={updateCompletionStatus} />} />
                 <Route path="personal-details" element={<PersonalDetails userData={userData} updateCompletionStatus={updateCompletionStatus} />} />
                 <Route path="social-links" element={<SocialLinks userData={userData} updateCompletionStatus={updateCompletionStatus} />} />
-                <Route path="*" element={<BasicDetails userData={userData} updateCompletionStatus={updateCompletionStatus} />} />
+                <Route path="*" element={<BasicDetails userData={userData} />} />
               </>
             )}
           </Routes>
