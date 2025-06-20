@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import { MdVisibility, MdVisibilityOff } from "react-icons/md";
+import { jwtDecode } from 'jwt-decode';
 import rightImage from "../assets/SignUp/wallpaper.jpg";
 import logo from "../assets/Navbar/logo.png";
 import student from "../assets/SignUp/student.png";
@@ -8,7 +9,7 @@ import company from "../assets/SignUp/company.png";
 import academy from "../assets/SignUp/academy.png";
 import recruiter from "../assets/SignUp/recruiter.png";
 import mentor from "../assets/SignUp/mentor.png";
-import { signup, signupCompany } from "../Utils/api";
+import { signup, signupCompany, login } from "../Utils/api";
 
 const SignUpPage = () => {
   const location = useLocation();
@@ -182,6 +183,76 @@ const SignUpPage = () => {
         };
         console.log(`${role.charAt(0).toUpperCase() + role.slice(1)} Signup Payload:`, payload);
         response = await signupCompany(payload);
+
+        if (response.success) {
+          // Clear form data
+          setFormData({
+            name: "",
+            companyName: "",
+            academyName: "",
+            mobile: "",
+            countryCode: "+63",
+            email: "",
+            password: "",
+            confirmPassword: "",
+          });
+          setErrors({});
+          setConsentChecked(false);
+
+          // Automatically call login API for company or academy
+          const loginResponse = await login({
+            appName: "app8657281202648",
+            username: formData.email.toLowerCase().trim(),
+            password: formData.password,
+          });
+
+          if (loginResponse.success) {
+            console.log('API Login Response User:', loginResponse.user);
+
+            const roleId = loginResponse.user.role?.role || '';
+            const roleName = roleNames[roleId];
+
+            if (!roleName) {
+              setErrors({ general: 'Invalid or unrecognized role. Please contact support@conscor.com.' });
+              setIsLoading(false);
+              return;
+            }
+
+            const decodedToken = jwtDecode(loginResponse.accessToken);
+            if (decodedToken.roleId !== roleId) {
+              console.warn('Role ID mismatch between API response and JWT:', {
+                apiRoleId: roleId,
+                jwtRoleId: decodedToken.roleId,
+              });
+              setErrors({ general: 'Role verification failed. Please contact support@conscor.com.' });
+              setIsLoading(false);
+              return;
+            }
+
+            const userData = {
+              legalname: loginResponse.user.legalname || loginResponse.user.email,
+              email: loginResponse.user.email,
+              role: roleName,
+              roleId: roleId,
+            };
+
+            if (roleName === 'company' || roleName === 'academy') {
+              userData.companyId = loginResponse.user.companyId || '';
+              userData.userid = loginResponse.user._id || '';
+            }
+
+            localStorage.setItem('user', JSON.stringify(userData));
+            localStorage.setItem('accessToken', loginResponse.accessToken);
+            localStorage.setItem('refreshToken', loginResponse.refreshToken);
+
+            const from = location.state?.from || '/editprofile';
+            navigate(from, { replace: true });
+          } else {
+            setErrors({ general: loginResponse.message || 'Automatic login failed. Please sign in manually.' });
+          }
+        } else {
+          setErrors({ general: response.message || 'Signup failed' });
+        }
       } else {
         payload = {
           appName: "app8657281202648",
@@ -196,39 +267,8 @@ const SignUpPage = () => {
         };
         console.log("Signup Payload:", payload);
         response = await signup(payload);
-      }
 
-      if (response.success) {
-        if (role === "company" || role === "academy") {
-          setFormData({
-            name: "",
-            companyName: "",
-            academyName: "",
-            mobile: "",
-            countryCode: "+63",
-            email: "",
-            password: "",
-            confirmPassword: "",
-          });
-          setErrors({});
-          setConsentChecked(false);
-          const companyId = response.user?.companyId || "";
-          localStorage.setItem(
-            "user",
-            JSON.stringify({
-              legalname: formData.name.trim(),
-              email: formData.email.toLowerCase().trim(),
-              role: roleNames[roleIds[role]],
-              roleId: roleIds[role],
-              companyId: companyId,
-              mobile: fullMobileNumber,
-            })
-          );
-          localStorage.setItem("accessToken", response.accessToken);
-          localStorage.setItem("refreshToken", response.refreshToken);
-          const from = location.state?.from || "/";
-          navigate(from, { replace: true });
-        } else {
+        if (response.success) {
           localStorage.setItem(
             "pendingUser",
             JSON.stringify({
@@ -241,9 +281,9 @@ const SignUpPage = () => {
             })
           );
           navigate("/otp");
+        } else {
+          setErrors({ general: response.message || 'Signup failed' });
         }
-      } else {
-        setErrors({ general: response.message || "Signup failed" });
       }
     } catch (err) {
       const errorMessage =
@@ -261,7 +301,7 @@ const SignUpPage = () => {
         });
       } else {
         setErrors({
-          general: `${errorMessage}. Please try again or contact support@ shop.com.`,
+          general: `${errorMessage}. Please try again or contact support@conscor.com.`,
         });
       }
     } finally {
@@ -288,7 +328,7 @@ const SignUpPage = () => {
     academy: [
       { name: "name", placeholder: "Name", type: "text", required: true, maxLength: 100 },
       { name: "academyName", placeholder: "Academy Name", type: "text", required: true, maxLength: 100 },
-      { name: "mobile", type: "text", maxLength: 10, placeholder: "Mobile Number", required: true },
+     { name: "mobile", type: "text", maxLength: 10, placeholder: "Mobile Number", required: true },
       { name: "email", placeholder: "Email", type: "email", required: true, maxLength: 100 },
       { name: "password", placeholder: "Password", type: showPassword ? "text" : "password", required: true, maxLength: 20 },
       { name: "confirmPassword", placeholder: "Confirm Password", type: showPassword ? "text" : "password", required: true, maxLength: 20 },
