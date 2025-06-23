@@ -27,7 +27,7 @@ const Hero = ({
       bgColor: 'bg-[#6A6A8E]',
     },
     {
-      count: '10,250',
+      count: '0', // Initialize to 0, will be updated by API
       label: 'Candidates',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -64,28 +64,42 @@ const Hero = ({
   useEffect(() => {
     const fetchCounts = async () => {
       try {
+        // Fetch Internships count
         const internshipResponse = await fetchSectionData({
           collectionName: 'jobpost',
           query: { 'sectionData.jobpost.type': 'Internship' },
         });
         const internshipCount = internshipResponse.length * 11;
 
+        // Fetch Candidates (Students) count
+        const studentResponse = await fetchSectionData({
+          collectionName: 'appuser',
+          query: { 'sectionData.appuser.role': '1747825619417' }, // Student role ID
+        });
+        const studentCount = studentResponse.length * 11;
+
+        // Fetch Companies count
         const companyResponse = await fetchSectionData({
           collectionName: 'appuser',
           query: { 'sectionData.appuser.role': '1747723485001' },
         });
         const companyCount = companyResponse.length * 11;
 
+        // Fetch Academies count
         const academyResponse = await fetchSectionData({
           collectionName: 'appuser',
           query: { 'sectionData.appuser.role': '1747903042943' },
         });
         const academyCount = academyResponse.length * 11;
 
+        // Update stats
         setStats((prevStats) =>
           prevStats.map((stat) => {
             if (stat.label === 'Internships') {
               return { ...stat, count: internshipCount.toLocaleString() };
+            }
+            if (stat.label === 'Candidates') {
+              return { ...stat, count: studentCount.toLocaleString() };
             }
             if (stat.label === 'Companies') {
               return { ...stat, count: companyCount.toLocaleString() };

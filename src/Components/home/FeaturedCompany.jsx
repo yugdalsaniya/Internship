@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchSectionData } from '../../Utils/api';
+import { slugify } from '../../Utils/slugify'; // Import slugify utility
 
 const FeaturedCompany = () => {
   const [companies, setCompanies] = useState([]);
@@ -36,6 +37,7 @@ const FeaturedCompany = () => {
       .map((company) => ({
         ...company,
         logoSrc: company.sectionData.Company.logoImage || 'https://placehold.co/150x150',
+        slug: slugify(company.sectionData.Company.name || 'company'), // Generate slug from company name
       }));
   }, [companies]);
 
@@ -67,7 +69,7 @@ const FeaturedCompany = () => {
           <div className="flex gap-3 overflow-x-auto pb-3 px-2 sm:gap-4 sm:pb-4 sm:px-8 md:px-12 sm:space-x-8 md:space-x-12 snap-x snap-mandatory scrollbar">
             {filteredCompanies.map((company) => (
               <Link
-                to={`/company/${company._id}`}
+                to={`/${company.slug}/${company._id}`} // Updated URL format: /<company-name-slug>/<id>
                 key={company._id}
                 className="flex-shrink-0 w-[100px] sm:w-[calc(20%-32px)] md:w-[calc(20%-48px)] border border-gray-200 rounded-lg flex items-center justify-center p-3 sm:p-4 bg-white snap-center hover:shadow-md transition-shadow"
               >

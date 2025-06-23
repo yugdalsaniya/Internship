@@ -56,7 +56,7 @@ export default function AppRoutes() {
           <Route path="/internship/:id/candidates" element={<InternshipCandidates />} />
           <Route path="/StudentPostForm" element={<StudentPostForm />} />
           <Route path="/interns" element={<StudentInternshipList />} />
-          <Route path="/company/:id" element={<CompanyProfilePage />} />
+          <Route path="/:companySlug/:id" element={<CompanyProfilePage />} />
                   <Route path="/all-employers" element={<AllEmployers />} />
                       <Route path="/all-academies" element={<AllAcademies />} />
 
