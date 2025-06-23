@@ -28,6 +28,8 @@ import CompanyProfilePage from "../Pages/company/CompanyProfilePage";
 import NewsAndBlogPage from "../Pages/student/NewsAndBlogPage"
 import AllEmployers from "../Components/home/AllEmployers";
 import AllAcademies from "../Components/home/AllAcademies";
+import AcademyProfilePage from "../Pages/Academy/AcademyProfilePage"; // Import the new AcademyProfilePage
+// import AcademiesListPage from "../Pages/AcademiesListPage"; // Uncomment if you create this page
 
 export default function AppRoutes() {
   return (
@@ -81,6 +83,8 @@ export default function AppRoutes() {
                   <Route path="/all-employers" element={<AllEmployers />} />
                       <Route path="/all-academies" element={<AllAcademies />} />
 
+          <Route path="/academy/:id" element={<AcademyProfilePage />} /> {/* New route for academy profile */}
+          {/* <Route path="/academies" element={<AcademiesListPage />} /> */} {/* Uncomment if AcademiesListPage exists */}
         </Route>
       </Routes>
     </Router>
