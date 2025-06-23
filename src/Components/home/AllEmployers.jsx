@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import axios from 'axios';
 
-const TopEmployers = () => {
+const AllEmployers = () => {
   const fallbackLogo = '/assets/employers/fallback.png';
   const [employers, setEmployers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -49,24 +48,13 @@ const TopEmployers = () => {
   };
 
   return (
-    <section className="py-4">
+    <section className="py-8">
       <div className="px-12">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h2 className="text-3xl font-bold text-[#050748] mb-4">Top Employer</h2>
-            <p className="text-[#6A6A8E] ">Join with the Best</p>
-          </div>
-          <Link 
-            to="/all-employers" 
-            className="text-[#6A6A8E] font-medium hover:underline"
-          >
-            View all
-          </Link>
-        </div>
+        <h2 className="text-3xl font-bold text-[#050748] mb-8">All Employers</h2>
 
         {loading && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[...Array(4)].map((_, index) => (
+            {[...Array(8)].map((_, index) => (
               <div
                 key={`skeleton-${index}`}
                 className="bg-white rounded-2xl p-6 flex flex-col items-center shadow-sm border border-gray-300 min-h-[200px]"
@@ -87,7 +75,7 @@ const TopEmployers = () => {
 
         {!loading && !error && employers.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {employers.slice(0, 4).map((employer, index) => (
+            {employers.map((employer, index) => (
               <div
                 key={index}
                 className="bg-white rounded-2xl p-6 flex flex-col items-center shadow-sm hover:shadow-md transition-shadow duration-300 border border-gray-300"
@@ -113,4 +101,4 @@ const TopEmployers = () => {
   );
 };
 
-export default TopEmployers;
+export default AllEmployers;
