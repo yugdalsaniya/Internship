@@ -28,15 +28,15 @@ const AcademyProfilePage = () => {
           setError("Academy not found");
         }
 
-        // Fetch associated courses (assuming a collection for courses exists)
+        // Fetch associated courses (assuming a course collection exists)
         const courseData = await fetchSectionData({
-          collectionName: "course", // Adjust based on your database structure
+          collectionName: "course",
           query: { createdBy: id },
           limit: 20,
           order: -1,
           sortedBy: "createdAt",
         });
-        setCourses(courseData);
+        setCourses(courseData || []); // Ensure courses is an array even if no data
       } catch (err) {
         setError("Error fetching academy or course data");
         console.error("AcademyProfilePage API Error:", err);
@@ -92,13 +92,13 @@ const AcademyProfilePage = () => {
       institute: {
         institutionname,
         institutiontagline,
-        description,
-        city,
-        establishedYear,
-        accreditation,
         image,
-        logoImage,
-        termsAndConditions,
+        region,
+        institutiontype,
+        province,
+        municipalitycity,
+        websiteaddress,
+        faxtelephoneno,
       },
     },
   } = academy;
@@ -119,7 +119,7 @@ const AcademyProfilePage = () => {
         {/* Logo and Academy Header */}
         <div className="relative px-6 sm:px-8 py-6 flex flex-col sm:flex-row sm:items-end gap-4">
           <img
-            src={logoImage || image || "https://placehold.co/150x150"}
+            src={image || "https://placehold.co/150x150"}
             alt={`${institutionname} Logo`}
             className="w-24 h-24 sm:w-28 sm:h-28 rounded-full border-4 border-white object-contain bg-white -mt-12 sm:-mt-14 shadow-lg"
           />
@@ -181,23 +181,38 @@ const AcademyProfilePage = () => {
             <div>
               <h3 className="text-sm font-semibold text-gray-700">Location</h3>
               <p className="text-gray-600 text-base">
-                {city || "Not specified"}
+                {municipalitycity || province || region || "Not specified"}
               </p>
             </div>
             <div>
               <h3 className="text-sm font-semibold text-gray-700">
-                Established Year
+                Institution Type
               </h3>
               <p className="text-gray-600 text-base">
-                {establishedYear || "Not specified"}
+                {institutiontype || "Not specified"}
               </p>
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-gray-700">
-                Accreditation
-              </h3>
+              <h3 className="text-sm font-semibold text-gray-700">Website</h3>
               <p className="text-gray-600 text-base">
-                {accreditation || "Not specified"}
+                {websiteaddress ? (
+                  <a
+                    href={websiteaddress}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline"
+                  >
+                    {websiteaddress}
+                  </a>
+                ) : (
+                  "Not specified"
+                )}
+              </p>
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-gray-700">Contact</h3>
+              <p className="text-gray-600 text-base">
+                {faxtelephoneno || "Not specified"}
               </p>
             </div>
           </div>
@@ -212,14 +227,9 @@ const AcademyProfilePage = () => {
             About Academy
           </h2>
           <p className="text-gray-600 text-base leading-relaxed">
-            {description || "No description available."}
+            No description available.
           </p>
-          <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mt-8 mb-4">
-            Terms and Conditions
-          </h2>
-          <p className="text-gray-600 text-base leading-relaxed">
-            {termsAndConditions || "No terms available."}
-          </p>
+          {/* Remove Terms and Conditions since it's not in the schema */}
         </div>
 
         {/* Courses Section */}
@@ -308,7 +318,7 @@ const AcademyProfilePage = () => {
         .line-clamp-2 {
           display: -webkit-box;
           -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical krishna;
+          -webkit-box-orient: vertical;
           overflow: hidden;
         }
         @media (min-width: 640px) {
