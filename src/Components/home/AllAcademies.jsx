@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { fetchSectionData } from './../../Utils/api';
 
-const TopAcademy = () => {
+const AllAcademies = () => {
   const fallbackLogo = '/assets/partners/fallback.png';
   const [partners, setPartners] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -47,24 +46,13 @@ const TopAcademy = () => {
   };
 
   return (
-    <section className="py-4">
+    <section className="py-8">
       <div className="px-12">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h2 className="text-3xl font-bold text-[#050748] mb-4">Top Academy</h2>
-            <p className="text-[#6A6A8E]">Elite Learning Partners</p>
-          </div>
-          <Link 
-            to="/all-academies" 
-            className="text-[#6A6A8E] font-medium hover:underline"
-          >
-            View all
-          </Link>
-        </div>
+        <h2 className="text-3xl font-bold text-[#050748] mb-8">All Academies</h2>
 
         {loading && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[...Array(4)].map((_, index) => (
+            {[...Array(8)].map((_, index) => (
               <div
                 key={`skeleton-${index}`}
                 className="bg-white rounded-tl-none rounded-br-none rounded-tr-xl rounded-bl-xl p-6 sm:p-8 flex flex-col items-center border border-gray-200 shadow-md min-h-[250px]"
@@ -85,7 +73,7 @@ const TopAcademy = () => {
         )}
         {!loading && !error && partners.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {partners.slice(0, 4).map((partner, index) => (
+            {partners.map((partner, index) => (
               <div
                 key={index}
                 className="bg-white rounded-tl-none rounded-br-none rounded-tr-xl rounded-bl-xl p-6 sm:p-8 flex flex-col items-center border border-gray-200 shadow-md hover:shadow-lg focus:shadow-lg transition-shadow duration-300 outline-none cursor-pointer min-h-[250px]"
@@ -112,4 +100,4 @@ const TopAcademy = () => {
   );
 };
 
-export default TopAcademy;
+export default AllAcademies;
