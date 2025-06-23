@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import { MdVisibility, MdVisibilityOff } from "react-icons/md";
-import { jwtDecode } from 'jwt-decode';
+import { jwtDecode } from "jwt-decode";
 import rightImage from "../assets/SignUp/wallpaper.jpg";
 import logo from "../assets/Navbar/logo.png";
 import student from "../assets/SignUp/student.png";
@@ -138,8 +138,8 @@ const SignUpPage = () => {
       newErrors.mobile = "Mobile number is required.";
     } else if (!validateMobile(formData.mobile)) {
       newErrors.mobile = "Mobile number must contain only digits.";
-    } else if (formData.mobile.trim().length > 10) {
-      newErrors.mobile = "Mobile number must be 10 digits or less.";
+    } else if (formData.mobile.trim().length !== 10) {
+      newErrors.mobile = "Mobile number must be exactly 10 digits.";
     }
     if (role === "company" && !formData.companyName.trim()) {
       newErrors.companyName = "Company Name is required.";
@@ -168,12 +168,17 @@ const SignUpPage = () => {
       let response;
 
       // Construct the combined mobile number with country code
-      const fullMobileNumber = `${formData.countryCode}${formData.mobile.trim()}`;
+      const fullMobileNumber = `${
+        formData.countryCode
+      }${formData.mobile.trim()}`;
 
       if (role === "company" || role === "academy") {
         payload = {
           appName: "app8657281202648",
-          companyName: role === "company" ? formData.companyName.trim() : formData.academyName.trim(),
+          companyName:
+            role === "company"
+              ? formData.companyName.trim()
+              : formData.academyName.trim(),
           mobile: fullMobileNumber,
           legalname: formData.name.trim(),
           role: roleIds[role],
@@ -181,7 +186,10 @@ const SignUpPage = () => {
           password: formData.password,
           type: role === "company" ? "Company" : "University",
         };
-        console.log(`${role.charAt(0).toUpperCase() + role.slice(1)} Signup Payload:`, payload);
+        console.log(
+          `${role.charAt(0).toUpperCase() + role.slice(1)} Signup Payload:`,
+          payload
+        );
         response = await signupCompany(payload);
 
         if (response.success) {
@@ -207,51 +215,62 @@ const SignUpPage = () => {
           });
 
           if (loginResponse.success) {
-            console.log('API Login Response User:', loginResponse.user);
+            console.log("API Login Response User:", loginResponse.user);
 
-            const roleId = loginResponse.user.role?.role || '';
+            const roleId = loginResponse.user.role?.role || "";
             const roleName = roleNames[roleId];
 
             if (!roleName) {
-              setErrors({ general: 'Invalid or unrecognized role. Please contact support@conscor.com.' });
+              setErrors({
+                general:
+                  "Invalid or unrecognized role. Please contact support@conscor.com.",
+              });
               setIsLoading(false);
               return;
             }
 
             const decodedToken = jwtDecode(loginResponse.accessToken);
             if (decodedToken.roleId !== roleId) {
-              console.warn('Role ID mismatch between API response and JWT:', {
+              console.warn("Role ID mismatch between API response and JWT:", {
                 apiRoleId: roleId,
                 jwtRoleId: decodedToken.roleId,
               });
-              setErrors({ general: 'Role verification failed. Please contact support@conscor.com.' });
+              setErrors({
+                general:
+                  "Role verification failed. Please contact support@conscor.com.",
+              });
               setIsLoading(false);
               return;
             }
 
             const userData = {
-              legalname: loginResponse.user.legalname || loginResponse.user.email,
+              legalname:
+                loginResponse.user.legalname || loginResponse.user.email,
               email: loginResponse.user.email,
               role: roleName,
               roleId: roleId,
             };
 
-            if (roleName === 'company' || roleName === 'academy') {
-              userData.companyId = loginResponse.user.companyId || '';
-              userData.userid = loginResponse.user._id || '';
+            if (roleName === "company" || roleName === "academy") {
+              userData.companyId = loginResponse.user.companyId || "";
+              userData.userid = loginResponse.user._id || "";
             }
 
-            localStorage.setItem('user', JSON.stringify(userData));
-            localStorage.setItem('accessToken', loginResponse.accessToken);
-            localStorage.setItem('refreshToken', loginResponse.refreshToken);
+            localStorage.setItem("user", JSON.stringify(userData));
+            localStorage.setItem("accessToken", loginResponse.accessToken);
+            localStorage.setItem("refreshToken", loginResponse.refreshToken);
 
-            const from = location.state?.from || '/editprofile';
+            const from = location.state?.from || "/editprofile";
             navigate(from, { replace: true });
           } else {
-            setErrors({ general: loginResponse.message || 'Automatic login failed. Please sign in manually.' });
+            setErrors({
+              general:
+                loginResponse.message ||
+                "Automatic login failed. Please sign in manually.",
+            });
           }
         } else {
-          setErrors({ general: response.message || 'Signup failed' });
+          setErrors({ general: response.message || "Signup failed" });
         }
       } else {
         payload = {
@@ -274,15 +293,29 @@ const SignUpPage = () => {
             JSON.stringify({
               legalname: formData.name.trim(),
               email: formData.email.toLowerCase().trim(),
+              password: formData.password, // Store password for student role
               role: roleNames[roleIds[role]],
               roleId: roleIds[role],
               mobile: fullMobileNumber,
               redirectTo: location.state?.from || "/editprofile",
             })
           );
+          // Clear form data
+          setFormData({
+            name: "",
+            companyName: "",
+            academyName: "",
+            mobile: "",
+            countryCode: "+63",
+            email: "",
+            password: "",
+            confirmPassword: "",
+          });
+          setErrors({});
+          setConsentChecked(false);
           navigate("/otp");
         } else {
-          setErrors({ general: response.message || 'Signup failed' });
+          setErrors({ general: response.message || "Signup failed" });
         }
       }
     } catch (err) {
@@ -311,41 +344,203 @@ const SignUpPage = () => {
 
   const formFields = {
     student: [
-      { name: "name", placeholder: "Name", type: "text", required: true, maxLength: 100 },
-      { name: "mobile", type: "text", maxLength: 10, placeholder: "Mobile Number", required: true },
-      { name: "email", placeholder: "Email", type: "email", required: true, maxLength: 100 },
-      { name: "password", placeholder: "Password", type: showPassword ? "text" : "password", required: true, maxLength: 20 },
-      { name: "confirmPassword", placeholder: "Confirm Password", type: showPassword ? "text" : "password", required: true, maxLength: 20 },
+      {
+        name: "name",
+        placeholder: "Name",
+        type: "text",
+        required: true,
+        maxLength: 100,
+      },
+      {
+        name: "mobile",
+        type: "text",
+        maxLength: 10,
+        placeholder: "Mobile Number",
+        required: true,
+      },
+      {
+        name: "email",
+        placeholder: "Email",
+        type: "email",
+        required: true,
+        maxLength: 100,
+      },
+      {
+        name: "password",
+        placeholder: "Password",
+        type: showPassword ? "text" : "password",
+        required: true,
+        maxLength: 20,
+      },
+      {
+        name: "confirmPassword",
+        placeholder: "Confirm Password",
+        type: showPassword ? "text" : "password",
+        required: true,
+        maxLength: 20,
+      },
     ],
     company: [
-      { name: "name", placeholder: "Name", type: "text", required: true, maxLength: 100 },
-      { name: "companyName", placeholder: "Company Name", type: "text", required: true, maxLength: 100 },
-      { name: "mobile", type: "text", maxLength: 10, placeholder: "Mobile Number", required: true },
-      { name: "email", placeholder: "Email", type: "email", required: true, maxLength: 100 },
-      { name: "password", placeholder: "Password", type: showPassword ? "text" : "password", required: true, maxLength: 20 },
-      { name: "confirmPassword", placeholder: "Confirm Password", type: showPassword ? "text" : "password", required: true, maxLength: 20 },
+      {
+        name: "name",
+        placeholder: "Name",
+        type: "text",
+        required: true,
+        maxLength: 100,
+      },
+      {
+        name: "companyName",
+        placeholder: "Company Name",
+        type: "text",
+        required: true,
+        maxLength: 100,
+      },
+      {
+        name: "mobile",
+        type: "text",
+        maxLength: 10,
+        placeholder: "Mobile Number",
+        required: true,
+      },
+      {
+        name: "email",
+        placeholder: "Email",
+        type: "email",
+        required: true,
+        maxLength: 100,
+      },
+      {
+        name: "password",
+        placeholder: "Password",
+        type: showPassword ? "text" : "password",
+        required: true,
+        maxLength: 20,
+      },
+      {
+        name: "confirmPassword",
+        placeholder: "Confirm Password",
+        type: showPassword ? "text" : "password",
+        required: true,
+        maxLength: 20,
+      },
     ],
     academy: [
-      { name: "name", placeholder: "Name", type: "text", required: true, maxLength: 100 },
-      { name: "academyName", placeholder: "Academy Name", type: "text", required: true, maxLength: 100 },
-     { name: "mobile", type: "text", maxLength: 10, placeholder: "Mobile Number", required: true },
-      { name: "email", placeholder: "Email", type: "email", required: true, maxLength: 100 },
-      { name: "password", placeholder: "Password", type: showPassword ? "text" : "password", required: true, maxLength: 20 },
-      { name: "confirmPassword", placeholder: "Confirm Password", type: showPassword ? "text" : "password", required: true, maxLength: 20 },
+      {
+        name: "name",
+        placeholder: "Name",
+        type: "text",
+        required: true,
+        maxLength: 100,
+      },
+      {
+        name: "academyName",
+        placeholder: "Academy Name",
+        type: "text",
+        required: true,
+        maxLength: 100,
+      },
+      {
+        name: "mobile",
+        type: "text",
+        maxLength: 10,
+        placeholder: "Mobile Number",
+        required: true,
+      },
+      {
+        name: "email",
+        placeholder: "Email",
+        type: "email",
+        required: true,
+        maxLength: 100,
+      },
+      {
+        name: "password",
+        placeholder: "Password",
+        type: showPassword ? "text" : "password",
+        required: true,
+        maxLength: 20,
+      },
+      {
+        name: "confirmPassword",
+        placeholder: "Confirm Password",
+        type: showPassword ? "text" : "password",
+        required: true,
+        maxLength: 20,
+      },
     ],
     recruiter: [
-      { name: "name", placeholder: "Name", type: "text", required: true, maxLength: 100 },
-      { name: "mobile", type: "text", maxLength: 10, placeholder: "Mobile Number", required: true },
-      { name: "email", placeholder: "Email", type: "email", required: true, maxLength: 100 },
-      { name: "password", placeholder: "Password", type: showPassword ? "text" : "password", required: true, maxLength: 20 },
-      { name: "confirmPassword", placeholder: "Confirm Password", type: showPassword ? "text" : "password", required: true, maxLength: 20 },
+      {
+        name: "name",
+        placeholder: "Name",
+        type: "text",
+        required: true,
+        maxLength: 100,
+      },
+      {
+        name: "mobile",
+        type: "text",
+        maxLength: 10,
+        placeholder: "Mobile Number",
+        required: true,
+      },
+      {
+        name: "email",
+        placeholder: "Email",
+        type: "email",
+        required: true,
+        maxLength: 100,
+      },
+      {
+        name: "password",
+        placeholder: "Password",
+        type: showPassword ? "text" : "password",
+        required: true,
+        maxLength: 20,
+      },
+      {
+        name: "confirmPassword",
+        placeholder: "Confirm Password",
+        type: showPassword ? "text" : "password",
+        required: true,
+        maxLength: 20,
+      },
     ],
     mentor: [
-      { name: "name", placeholder: "Name", type: "text", required: true, maxLength: 100 },
-      { name: "mobile", type: "text", maxLength: 10, placeholder: "Mobile Number", required: true },
-      { name: "email", placeholder: "Email", type: "email", required: true, maxLength: 100 },
-      { name: "password", placeholder: "Password", type: showPassword ? "text" : "password", required: true, maxLength: 20 },
-      { name: "confirmPassword", placeholder: "Confirm Password", type: showPassword ? "text" : "password", required: true, maxLength: 20 },
+      {
+        name: "name",
+        placeholder: "Name",
+        type: "text",
+        required: true,
+        maxLength: 100,
+      },
+      {
+        name: "mobile",
+        type: "text",
+        maxLength: 10,
+        placeholder: "Mobile Number",
+        required: true,
+      },
+      {
+        name: "email",
+        placeholder: "Email",
+        type: "email",
+        required: true,
+        maxLength: 100,
+      },
+      {
+        name: "password",
+        placeholder: "Password",
+        type: showPassword ? "text" : "password",
+        required: true,
+        maxLength: 20,
+      },
+      {
+        name: "confirmPassword",
+        placeholder: "Confirm Password",
+        type: showPassword ? "text" : "password",
+        required: true,
+        maxLength: 20,
+      },
     ],
   };
 
@@ -494,7 +689,8 @@ const SignUpPage = () => {
                 ))}
                 <div className="flex flex-col space-y-2">
                   <p className="text-xs xs:text-sm text-gray-700">
-                    By registering on INTURN PH, I certify that I have read and understood the{" "}
+                    By registering on INTURN PH, I certify that I have read and
+                    understood the{" "}
                     <Link
                       to="/privacy-policy"
                       target="_blank"
@@ -502,7 +698,11 @@ const SignUpPage = () => {
                     >
                       Privacy Policy
                     </Link>
-                    . I give my free, informed, and explicit consent to INTURN PH to collect, process, and use my personal data for the purposes of internship and employment matching, as well as academic coordination and certification. I understand that I may withdraw my consent at any time.
+                    . I give my free, informed, and explicit consent to INTURN
+                    PH to collect, process, and use my personal data for the
+                    purposes of internship and employment matching, as well as
+                    academic coordination and certification. I understand that I
+                    may withdraw my consent at any time.
                   </p>
                   <label className="flex items-center space-x-2">
                     <input
@@ -513,7 +713,8 @@ const SignUpPage = () => {
                       disabled={isLoading}
                     />
                     <span className="text-xs xs:text-sm text-gray-700">
-                      I agree to the INTURN PH Privacy Policy and give my consent for data processing under RA 10173.
+                      I agree to the INTURN PH Privacy Policy and give my
+                      consent for data processing under RA 10173.
                     </span>
                   </label>
                   {errors.consent && (
@@ -532,13 +733,7 @@ const SignUpPage = () => {
                   }`}
                   disabled={isLoading}
                 >
-                  {isLoading ? (
-                    <>
-                      Signing up...
-                    </>
-                  ) : (
-                    "Sign up"
-                  )}
+                  {isLoading ? <>Signing up...</> : "Sign up"}
                 </button>
                 {role === "company" && (
                   <p className="text-sm xs:text-sm text-center mt-2.5">

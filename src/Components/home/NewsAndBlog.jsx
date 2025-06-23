@@ -1,10 +1,20 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { Link } from "react-router-dom";
 
 const NewsAndBlog = () => {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Function to create a slug from the title
+  const createSlug = (title) => {
+    if (!title) return "untitled";
+    return title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+  };
 
   useEffect(() => {
     const fetchPosts = async () => {
@@ -22,12 +32,13 @@ const NewsAndBlog = () => {
         if (response.data.success && Array.isArray(response.data.data)) {
           const postList = response.data.data.map((item) => {
             const data = item.sectionData.NewsAndBlog;
+            const title = data.NewsAndBlogTitle || "No Title";
             return {
               category: data.NewsAndBlogSelect || "Uncategorized",
               date: item.createdDate || "No date",
-              title: data.NewsAndBlogTitle || "No Title",
+              title,
               image: data.NewsAndBlogImage || "",
-              link: "#",
+              link: `/newsandblog/${createSlug(title)}/${item._id}`, // Link with _id and slug
             };
           });
 
@@ -58,9 +69,12 @@ const NewsAndBlog = () => {
               Latest News, Expert Tips, and More.
             </p>
           </div>
-          <a href="#" className="text-[#6A6A8E] font-medium hover:underline">
+          <Link
+            to="/news-and-blog"
+            className="text-[#6A6A8E] font-medium hover:underline"
+          >
             View all
-          </a>
+          </Link>
         </div>
 
         {loading && (
@@ -109,8 +123,8 @@ const NewsAndBlog = () => {
                 <h3 className="text-lg font-semibold text-blue-900 mb-4">
                   {post.title}
                 </h3>
-                <a
-                  href={post.link}
+                <Link
+                  to={post.link}
                   className="text-blue-600 font-medium flex items-center space-x-1 hover:underline self-start"
                 >
                   <span>Read more</span>
@@ -128,7 +142,7 @@ const NewsAndBlog = () => {
                       d="M9 5l7 7-7 7"
                     />
                   </svg>
-                </a>
+                </Link>
               </div>
             ))}
           </div>

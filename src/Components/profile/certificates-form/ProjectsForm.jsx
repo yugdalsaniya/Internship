@@ -3,7 +3,11 @@ import { BiTime } from "react-icons/bi";
 import { FaPlus } from "react-icons/fa";
 import { RxCross2 } from "react-icons/rx";
 import { IoCheckmark } from "react-icons/io5";
-import { fetchSectionData, mUpdate } from "../../../Utils/api";
+import {
+  fetchSectionData,
+  mUpdate,
+  uploadAndStoreFile,
+} from "../../../Utils/api";
 import { toast } from "react-toastify";
 
 const ProjectsForm = ({ onBack, existingProject, isEditing }) => {
@@ -20,6 +24,7 @@ const ProjectsForm = ({ onBack, existingProject, isEditing }) => {
 
   const [userId, setUserId] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   const projectTypes = ["Full time", "Part time", "Freelance"];
   // Get today's date for validation (YYYY-MM-DD format)
@@ -114,6 +119,79 @@ const ProjectsForm = ({ onBack, existingProject, isEditing }) => {
     }));
   };
 
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    const validTypes = [
+      "image/jpeg",
+      "image/png",
+      "image/gif",
+      "application/pdf",
+    ];
+    if (!validTypes.includes(file.type)) {
+      toast.error("Please upload an image (JPEG, PNG, GIF) or PDF file.", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+      return;
+    }
+
+    // Validate file size (e.g., 5MB limit)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("File size exceeds 5MB limit.", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const response = await uploadAndStoreFile({
+        appName: "app8657281202648",
+        moduleName: "appuser",
+        file,
+        userId,
+      });
+
+      if (!response || !response.filePath) {
+        throw new Error("Failed to upload file: No file path returned.");
+      }
+
+      setFormData((prev) => ({
+        ...prev,
+        projectattachment: [...prev.projectattachment, response.filePath],
+      }));
+      toast.success("File uploaded successfully!", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+    } catch (err) {
+      console.error("File upload error:", err);
+      toast.error(err.message || "Failed to upload file.", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+    } finally {
+      setUploading(false);
+      // Reset file input
+      e.target.value = null;
+    }
+  };
+
+  const handleRemoveAttachment = (index) => {
+    setFormData((prev) => ({
+      ...prev,
+      projectattachment: prev.projectattachment.filter((_, i) => i !== index),
+    }));
+    toast.info("Attachment removed.", {
+      position: "top-right",
+      autoClose: 3000,
+    });
+  };
+
   const validateForm = () => {
     const errors = [];
     if (!formData.titleofproject.trim())
@@ -170,7 +248,7 @@ const ProjectsForm = ({ onBack, existingProject, isEditing }) => {
               .map((skill) => skill.trim())
               .filter((skill) => skill)
           : [],
-        projectattachment: formData.projectattachment || [],
+        projectattachment: formData.projectattachment,
         createdAt:
           isEditing && existingProject
             ? existingProject.createdAt
@@ -288,6 +366,7 @@ const ProjectsForm = ({ onBack, existingProject, isEditing }) => {
               value={formData.titleofproject}
               onChange={(e) => handleChange("titleofproject", e.target.value)}
               className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring focus:ring-blue-200"
+              disabled={isLoading || uploading}
             />
           </div>
 
@@ -307,6 +386,7 @@ const ProjectsForm = ({ onBack, existingProject, isEditing }) => {
                       : "border-gray-300 border-dashed text-gray-700 hover:bg-gray-100"
                   }`}
                   onClick={() => handleTypeSelect(type)}
+                  disabled={isLoading || uploading}
                 >
                   {type}
                 </button>
@@ -325,6 +405,7 @@ const ProjectsForm = ({ onBack, existingProject, isEditing }) => {
                   type="checkbox"
                   checked={formData.ongoing}
                   onChange={(e) => handleOngoingChange(e.target.checked)}
+                  disabled={isLoading || uploading}
                 />
                 Ongoing
               </label>
@@ -338,6 +419,7 @@ const ProjectsForm = ({ onBack, existingProject, isEditing }) => {
                 }
                 max={today}
                 className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring focus:ring-blue-200 w-1/2"
+                disabled={isLoading || uploading}
               />
               <input
                 type="date"
@@ -345,7 +427,7 @@ const ProjectsForm = ({ onBack, existingProject, isEditing }) => {
                 onChange={(e) =>
                   handleDateChange("projectenddate", e.target.value)
                 }
-                disabled={formData.ongoing}
+                disabled={formData.ongoing || isLoading || uploading}
                 min={formData.projectstartdate || undefined}
                 max={today}
                 className={`border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring focus:ring-blue-200 w-1/2 ${
@@ -368,6 +450,7 @@ const ProjectsForm = ({ onBack, existingProject, isEditing }) => {
               }
               className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring focus:ring-blue-200"
               rows={5}
+              disabled={isLoading || uploading}
             />
           </div>
 
@@ -382,23 +465,61 @@ const ProjectsForm = ({ onBack, existingProject, isEditing }) => {
               value={formData.projectskill}
               onChange={(e) => handleChange("projectskill", e.target.value)}
               className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring focus:ring-blue-200"
+              disabled={isLoading || uploading}
             />
           </div>
 
           {/* Attachments */}
-          <div className="w-full border border-dashed border-gray-400 rounded-md">
-            <button
-              className="flex items-center justify-center gap-2 w-full px-4 py-2 text-gray-700"
-              onClick={() => {
-                toast.info("Attachment upload not implemented yet.", {
-                  position: "top-right",
-                  autoClose: 3000,
-                });
-              }}
-            >
-              <FaPlus />
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               Attachments
-            </button>
+            </label>
+            <div className="w-full border border-dashed border-gray-400 rounded-md p-4">
+              <label
+                htmlFor="file-upload"
+                className={`flex items-center justify-center gap-2 w-full px-4 py-2 text-gray-700 cursor-pointer hover:bg-gray-100 transition ${
+                  uploading || isLoading ? "opacity-50 cursor-not-allowed" : ""
+                }`}
+              >
+                <FaPlus />
+                <span>{uploading ? "Uploading..." : "Add Attachment"}</span>
+                <input
+                  id="file-upload"
+                  type="file"
+                  accept="image/jpeg,image/png,image/gif,application/pdf"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                  disabled={uploading || isLoading}
+                />
+              </label>
+            </div>
+            {/* Display uploaded attachments */}
+            {formData.projectattachment.length > 0 && (
+              <div className="mt-2 space-y-2">
+                {formData.projectattachment.map((fileUrl, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between border rounded-md p-2"
+                  >
+                    <a
+                      href={fileUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline truncate max-w-[80%]"
+                    >
+                      {fileUrl.split("/").pop()}
+                    </a>
+                    <button
+                      onClick={() => handleRemoveAttachment(index)}
+                      className="text-red-600 hover:text-red-800"
+                      disabled={isLoading || uploading}
+                    >
+                      <RxCross2 />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Form Actions */}
@@ -406,7 +527,11 @@ const ProjectsForm = ({ onBack, existingProject, isEditing }) => {
             {/* Discard/Cancel Button */}
             <div className="flex items-center gap-2 border border-gray-300 rounded-3xl px-4 py-2 cursor-pointer hover:bg-gray-100 transition">
               <RxCross2 className="text-gray-600" />
-              <button onClick={onBack} className="text-gray-700 font-medium">
+              <button
+                onClick={onBack}
+                className="text-gray-700 font-medium"
+                disabled={isLoading || uploading}
+              >
                 {isEditing ? "Cancel" : "Discard"}
               </button>
             </div>
@@ -414,13 +539,13 @@ const ProjectsForm = ({ onBack, existingProject, isEditing }) => {
             {/* Save Button */}
             <div
               className={`flex items-center gap-2 bg-sky-500 rounded-3xl px-4 py-2 cursor-pointer hover:bg-sky-600 transition ${
-                isLoading ? "opacity-50 cursor-not-allowed" : ""
+                isLoading || uploading ? "opacity-50 cursor-not-allowed" : ""
               }`}
             >
               <IoCheckmark className="text-white" />
               <button
                 onClick={handleSave}
-                disabled={isLoading}
+                disabled={isLoading || uploading}
                 className="text-white font-medium"
               >
                 {isLoading ? "Saving..." : isEditing ? "Update" : "Save"}
