@@ -1,11 +1,11 @@
-import React, { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import Swal from "sweetalert2";
-import withReactContent from "sweetalert2-react-content";
-import logo from "../assets/Navbar/logo.png";
-import otpImage from "../assets/SignUp/otp.jpg";
-import rightImage from "../assets/SignUp/wallpaper.jpg";
-import { verifyOtp, forgotPassword } from "../Utils/api";
+import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import Swal from 'sweetalert2';
+import withReactContent from 'sweetalert2-react-content';
+import logo from '../assets/Navbar/logo.png';
+import otpImage from '../assets/SignUp/otp.jpg';
+import rightImage from '../assets/SignUp/wallpaper.jpg';
+import { verifyOtp, forgotPassword } from '../Utils/api';
 
 const MySwal = withReactContent(Swal);
 
@@ -19,6 +19,15 @@ const OtpVerification = () => {
   const navigate = useNavigate();
   const formRef = useRef(null);
 
+  // Role names mapping (consistent with SignUpPage.jsx)
+  const roleNames = {
+    1747825619417: "student",
+    1747723485001: "company",
+    1747903042943: "academy",
+    1747902920002: "recruiter",
+    1747902955524: "mentor",
+  };
+
   // Countdown timer logic (unchanged)
   useEffect(() => {
     const timer = setInterval(() => {
@@ -30,8 +39,9 @@ const OtpVerification = () => {
         return prev - 1;
       });
     }, 1000);
-    return () => clearInterval(timer);
-  }, [timerKey]);
+
+    return () => clearInterval(timer); // Cleanup on unmount
+  }, [timerKey]); // Depend on timerKey to restart timer
 
   const formatTime = (seconds) => {
     const minutes = Math.floor(seconds / 60);
@@ -91,6 +101,14 @@ const OtpVerification = () => {
     if (!pendingUser) {
       setError("No pending user data found. Please sign up again.");
       setVerifyLoading(false);
+      MySwal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'No pending user data found. Please sign up again.',
+        confirmButtonText: 'OK',
+      }).then(() => {
+        navigate('/signup');
+      });
       return;
     }
 
@@ -104,42 +122,29 @@ const OtpVerification = () => {
       };
       const response = await verifyOtp(otpPayload);
       if (response.success) {
-        
-        const userId =
-          response.user?.userId ||
-          response.user?._id ||
-          response.user?.id ||
-          response.userId ||
-          "";
-
-        localStorage.setItem(
-          "user",
-          JSON.stringify({
-            ...pendingUser,
-            userid: userId, 
-            redirectTo: undefined,
-          })
-        );
-        localStorage.removeItem("pendingUser");
-
+        localStorage.setItem('user', JSON.stringify({
+          ...pendingUser, // Copy all fields from pendingUser
+          userid: response.user?.userId || response.userId || '', // Add userid if available
+          // Remove redirectTo if not needed in user
+          redirectTo: undefined,
+        }));
+        localStorage.removeItem('pendingUser');
         MySwal.fire({
-          icon: "success",
-          title: "Signup Successful",
-          text: "Your account has been verified.",
+          icon: 'success',
+          title: 'Signup Successful',
+          text: 'Your account has been verified.',
           showConfirmButton: false,
           timer: 2000,
         }).then(() => {
-          navigate(pendingUser.redirectTo || "/editprofile");
+          navigate(pendingUser.redirectTo || '/editprofile'); // Use redirectTo
         });
       } else {
-        setError(response.message || "OTP verification failed");
+        setError(response.message || 'OTP verification failed');
         MySwal.fire({
-          icon: "error",
-          title: "Invalid OTP",
-          text:
-            response.message ||
-            "The OTP entered is incorrect. Please try again.",
-          confirmButtonText: "OK",
+          icon: 'error',
+          title: 'Invalid OTP',
+          text: response.message || 'The OTP entered is incorrect. Please try again.',
+          confirmButtonText: 'OK',
         });
       }
     } catch (err) {
@@ -187,11 +192,10 @@ const OtpVerification = () => {
 
     const email = pendingUser.email.toLowerCase().trim();
     try {
-      await forgotPassword(email, "app8657281202648");
-      setOtp(["", "", "", ""]); // Clear OTP on resend
-      setTimeLeft(120);
-      setTimerKey((prev) => prev + 1);
-      document.getElementById("otp-0").focus(); // Focus on first input after resend
+      await forgotPassword(email, 'app8657281202648');
+      setOtp(['', '', '', '']);
+      setTimeLeft(120); // Reset timer
+      setTimerKey((prev) => prev + 1); // Force timer restart
       MySwal.fire({
         icon: "success",
         title: "OTP Resent",
@@ -232,12 +236,12 @@ const OtpVerification = () => {
           {/* Logo Section (unchanged) */}
           <div className="mb-3 flex flex-col items-center">
             <div className="flex items-center mb-3">
-                      <img
-                        src={logo}
-                        alt="Internship-OJT Logo"
-                        className="h-10 w-auto mr-2"
-                      />
-                    </div>
+              <img
+                src={logo}
+                alt="Internship-OJT Logo"
+                className="h-10 w-auto mr-2"
+              />
+            </div>
           </div>
 
           {/* OTP Image (unchanged) */}
@@ -325,7 +329,7 @@ const OtpVerification = () => {
         </div>
       </div>
 
-      {/* Right Side - Image (unchanged) */}
+      {/* Right Side - Image */}
       <div className="hidden lg:flex w-1/2 p-2">
         <div
           className="w-full h-full bg-cover bg-center rounded-3xl"
