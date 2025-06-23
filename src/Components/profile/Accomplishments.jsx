@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
 import { BiTime } from "react-icons/bi";
-import { FaPlus, FaChevronDown, FaChevronUp } from "react-icons/fa";
+import { FaCheckCircle, FaPlus, FaChevronDown, FaChevronUp } from "react-icons/fa";
 import CertificatesForm from "./certificates-form/CertificatesForm";
 import ProjectsForm from "./certificates-form/ProjectsForm";
 import AchievementsForm from "./certificates-form/AchievementsForm";
 import ResponsibilitiesForm from "./certificates-form/ResponsibilitiesForm";
 import { fetchSectionData, mUpdate } from "../../Utils/api";
 
-function Accomplishments() {
+function Accomplishments({ userData, updateCompletionStatus }) {
   // Certificate states
   const [certificates, setCertificates] = useState([]);
   const [showCertificateForm, setShowCertificateForm] = useState(false);
@@ -41,6 +41,7 @@ function Accomplishments() {
     useState(true);
 
   const [userId, setUserId] = useState(null);
+  const [isCompleted, setIsCompleted] = useState(false);
 
   useEffect(() => {
     const fetchUserDataAndAccomplishments = async () => {
@@ -82,9 +83,29 @@ function Accomplishments() {
 
           // Set responsibilities
           setResponsibilities(userData.responsibilitydetails || []);
+
+          // Update completion status
+          const hasAccomplishments =
+            (userData.certificatesdetails?.length > 0 ||
+             userData.projectdetails?.length > 0 ||
+             userData.achievementsdetails?.length > 0 ||
+             userData.responsibilitydetails?.length > 0);
+          setIsCompleted(hasAccomplishments);
+          if (updateCompletionStatus) {
+            updateCompletionStatus("Accomplishments & Initiatives", hasAccomplishments);
+          }
+        } else {
+          setIsCompleted(false);
+          if (updateCompletionStatus) {
+            updateCompletionStatus("Accomplishments & Initiatives", false);
+          }
         }
       } catch (error) {
         console.error("Error fetching accomplishments data:", error);
+        setIsCompleted(false);
+        if (updateCompletionStatus) {
+          updateCompletionStatus("Accomplishments & Initiatives", false);
+        }
       }
     };
 
@@ -94,7 +115,8 @@ function Accomplishments() {
     showProjectForm,
     showAchievementForm,
     showResponsibilityForm,
-  ]); // Re-fetch when any form is submitted/closed
+    updateCompletionStatus,
+  ]);
 
   // Certificate handlers
   const handleCertificateFormClose = () => {
@@ -102,6 +124,16 @@ function Accomplishments() {
     setIsEditingCertificate(false);
     setEditingCertificateData(null);
     setIsCertificateSectionOpen(true);
+    // Update completion status after form close
+    const hasAccomplishments =
+      certificates.length > 0 ||
+      projects.length > 0 ||
+      achievements.length > 0 ||
+      responsibilities.length > 0;
+    setIsCompleted(hasAccomplishments);
+    if (updateCompletionStatus) {
+      updateCompletionStatus("Accomplishments & Initiatives", hasAccomplishments);
+    }
   };
 
   const handleAddCertificateClick = () => {
@@ -146,6 +178,15 @@ function Accomplishments() {
       });
 
       setCertificates(updatedCertificates);
+      const hasAccomplishments =
+        updatedCertificates.length > 0 ||
+        projects.length > 0 ||
+        achievements.length > 0 ||
+        responsibilities.length > 0;
+      setIsCompleted(hasAccomplishments);
+      if (updateCompletionStatus) {
+        updateCompletionStatus("Accomplishments & Initiatives", hasAccomplishments);
+      }
       alert("Certificate deleted successfully!");
     } catch (error) {
       console.error("Error deleting certificate:", error);
@@ -159,6 +200,16 @@ function Accomplishments() {
     setIsEditingProject(false);
     setEditingProjectData(null);
     setIsProjectSectionOpen(true);
+    // Update completion status after form close
+    const hasAccomplishments =
+      certificates.length > 0 ||
+      projects.length > 0 ||
+      achievements.length > 0 ||
+      responsibilities.length > 0;
+    setIsCompleted(hasAccomplishments);
+    if (updateCompletionStatus) {
+      updateCompletionStatus("Accomplishments & Initiatives", hasAccomplishments);
+    }
   };
 
   const handleAddProjectClick = () => {
@@ -203,6 +254,15 @@ function Accomplishments() {
       });
 
       setProjects(updatedProjects);
+      const hasAccomplishments =
+        certificates.length > 0 ||
+        updatedProjects.length > 0 ||
+        achievements.length > 0 ||
+        responsibilities.length > 0;
+      setIsCompleted(hasAccomplishments);
+      if (updateCompletionStatus) {
+        updateCompletionStatus("Accomplishments & Initiatives", hasAccomplishments);
+      }
       alert("Project deleted successfully!");
     } catch (error) {
       console.error("Error deleting project:", error);
@@ -216,6 +276,16 @@ function Accomplishments() {
     setIsEditingAchievement(false);
     setEditingAchievementData(null);
     setIsAchievementSectionOpen(true);
+    // Update completion status after form close
+    const hasAccomplishments =
+      certificates.length > 0 ||
+      projects.length > 0 ||
+      achievements.length > 0 ||
+      responsibilities.length > 0;
+    setIsCompleted(hasAccomplishments);
+    if (updateCompletionStatus) {
+      updateCompletionStatus("Accomplishments & Initiatives", hasAccomplishments);
+    }
   };
 
   const handleAddAchievementClick = () => {
@@ -260,6 +330,15 @@ function Accomplishments() {
       });
 
       setAchievements(updatedAchievements);
+      const hasAccomplishments =
+        certificates.length > 0 ||
+        projects.length > 0 ||
+        updatedAchievements.length > 0 ||
+        responsibilities.length > 0;
+      setIsCompleted(hasAccomplishments);
+      if (updateCompletionStatus) {
+        updateCompletionStatus("Accomplishments & Initiatives", hasAccomplishments);
+      }
       alert("Achievement deleted successfully!");
     } catch (error) {
       console.error("Error deleting achievement:", error);
@@ -273,6 +352,16 @@ function Accomplishments() {
     setIsEditingResponsibility(false);
     setEditingResponsibilityData(null);
     setIsResponsibilitySectionOpen(true);
+    // Update completion status after form close
+    const hasAccomplishments =
+      certificates.length > 0 ||
+      projects.length > 0 ||
+      achievements.length > 0 ||
+      responsibilities.length > 0;
+    setIsCompleted(hasAccomplishments);
+    if (updateCompletionStatus) {
+      updateCompletionStatus("Accomplishments & Initiatives", hasAccomplishments);
+    }
   };
 
   const handleAddResponsibilityClick = () => {
@@ -319,6 +408,15 @@ function Accomplishments() {
       });
 
       setResponsibilities(updatedResponsibilities);
+      const hasAccomplishments =
+        certificates.length > 0 ||
+        projects.length > 0 ||
+        achievements.length > 0 ||
+        updatedResponsibilities.length > 0;
+      setIsCompleted(hasAccomplishments);
+      if (updateCompletionStatus) {
+        updateCompletionStatus("Accomplishments & Initiatives", hasAccomplishments);
+      }
       alert("Responsibility deleted successfully!");
     } catch (error) {
       console.error("Error deleting responsibility:", error);
@@ -341,7 +439,11 @@ function Accomplishments() {
       {/* Fixed Header */}
       <div className="sticky top-0 bg-white z-10 px-4 py-4 shadow-sm flex justify-between items-center border-b border-gray-200">
         <div className="flex items-center gap-2 text-gray-700 text-lg font-medium">
-          <BiTime className="text-xl" />
+          {isCompleted ? (
+            <FaCheckCircle className="text-green-500" />
+          ) : (
+            <BiTime className="text-gray-400 text-xl" />
+          )}
           <span>Accomplishments & Initiatives</span>
         </div>
       </div>

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { fetchSectionData, addGeneralData } from '../../Utils/api';
+import { fetchSectionData, addGeneralData, mUpdate } from '../../Utils/api';
 import { formatDistanceToNow, format } from 'date-fns';
 import { FaBriefcase } from 'react-icons/fa';
 import { ToastContainer, toast } from 'react-toastify';
@@ -14,6 +14,7 @@ const StudentInternshipList = () => {
 
   const user = JSON.parse(localStorage.getItem('user')) || {};
   const isCompany = user.role === 'company' && user.userid;
+  const companyName = user.companyName || 'Unknown Company'; // Fallback company name
 
   useEffect(() => {
     const fetchInternships = async () => {
@@ -85,8 +86,9 @@ const StudentInternshipList = () => {
               ? format(new Date(internship.createdAt), 'MMM dd, yyyy, hh:mm a')
               : 'Unknown',
             studentId: internship.createdBy,
-            status: storedStatuses[internship._id]?.status || 'Pending',
+            status: app.status || storedStatuses[internship._id]?.status || 'Pending',
             feedback: storedStatuses[internship._id]?.feedback || '',
+            bycompany: app.bycompany || 'Not shortlisted', // Include bycompany field
           };
         });
 
@@ -112,21 +114,37 @@ const StudentInternshipList = () => {
     }
 
     try {
+      // Fetch company data to get organizationName
+      const companyData = await fetchSectionData({
+        dbName: 'internph',
+        collectionName: 'company',
+        query: { _id: user.userid },
+        projection: { 'sectionData.Company.organizationName': 1 },
+      });
+
+      const organizationName = companyData[0]?.sectionData?.Company?.organizationName || companyName;
+
       // Update localStorage
       const storedStatuses = JSON.parse(localStorage.getItem('shortlistStatuses') || '{}');
       storedStatuses[internshipId] = { status: 'Shortlisted', feedback: '' };
       localStorage.setItem('shortlistStatuses', JSON.stringify(storedStatuses));
 
-      // Update state
-      setInternships((prev) =>
-        prev.map((internship) =>
-          internship.id === internshipId
-            ? { ...internship, status: 'Shortlisted', feedback: '' }
-            : internship
-        )
-      );
+      // Update application collection with status and organizationName
+      await mUpdate({
+        appName: 'app8657281202648',
+        collectionName: 'application',
+        query: { _id: internshipId },
+        update: {
+          $set: {
+            'sectionData.application.status': 'Shortlisted',
+            'sectionData.application.bycompany': organizationName,
+            'sectionData.application.companyId': user.userid,
+          },
+        },
+        options: { upsert: false },
+      });
 
-      // Optionally, save shortlist status to backend
+      // Update shortlist collection
       await addGeneralData({
         dbName: 'internph',
         collectionName: 'shortlist',
@@ -144,6 +162,15 @@ const StudentInternshipList = () => {
           createdAt: new Date().toISOString(),
         },
       });
+
+      // Update state
+      setInternships((prev) =>
+        prev.map((internship) =>
+          internship.id === internshipId
+            ? { ...internship, status: 'Shortlisted', feedback: '', bycompany: organizationName }
+            : internship
+        )
+      );
 
       toast.success('Candidate shortlisted successfully!', {
         position: 'top-right',
@@ -227,6 +254,11 @@ const StudentInternshipList = () => {
                     <span className={`text-sm font-medium px-2 py-1 rounded ${getStatusColor(internship.status)}`}>
                       Status: {internship.status}
                     </span>
+                    {internship.bycompany && internship.status === 'Shortlisted' && (
+                      <div className="text-sm text-gray-500 mt-1">
+                        Shortlisted by: {internship.bycompany}
+                      </div>
+                    )}
                     {internship.feedback && (
                       <div className="text-sm text-gray-500 mt-1">
                         Feedback: {internship.feedback}
@@ -242,7 +274,6 @@ const StudentInternshipList = () => {
                   >
                     {internship.status === 'Shortlisted' ? 'Shortlisted' : 'Shortlist'}
                   </button>
-                  
                 </div>
               </div>
             ))}

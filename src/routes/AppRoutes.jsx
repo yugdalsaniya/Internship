@@ -24,6 +24,7 @@ import ContactUsPage from "../Pages/ContactUsPage";
 import CategoryInternshipsPage from "../Pages/CategoryInternshipsPage";
 import PrivacyPolicyPage from "../Pages/PrivacyPolicyPage";
 import StudentInternshipList from "../Pages/company/StudentInternshipList";
+import CompanyProfilePage from "../Pages/company/CompanyProfilePage";
 
 export default function AppRoutes() {
   return (
@@ -53,6 +54,7 @@ export default function AppRoutes() {
           <Route path="/internship/:id/candidates" element={<InternshipCandidates />} />
           <Route path="/StudentPostForm" element={<StudentPostForm />} />
           <Route path="/interns" element={<StudentInternshipList />} />
+          <Route path="/company/:id" element={<CompanyProfilePage />} />
         </Route>
       </Routes>
     </Router>
