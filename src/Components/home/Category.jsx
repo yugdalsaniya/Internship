@@ -30,8 +30,8 @@ const Category = () => {
               'sectionData.jobpost.type': 'Internship',
               'sectionData.jobpost.subtype': category._id,
             },
-            limit: 0, // No limit to count all matching internships
-            projection: { _id: 1 }, // Minimal projection for performance
+            limit: 0,
+            projection: { _id: 1 },
           });
           counts[category._id] = countData.length;
         }
@@ -76,8 +76,9 @@ const Category = () => {
       }));
   }, [categories, internshipCounts]);
 
-  const handleCategoryClick = (categoryId) => {
-    navigate(`/${categoryId}/internships`);
+  const handleCategoryClick = (category) => {
+    const encodedCategoryName = encodeURIComponent(category.originalName);
+    navigate(`/${encodedCategoryName}/internships/${category.id}`);
   };
 
   if (loading) return (
@@ -123,10 +124,10 @@ const Category = () => {
               key={category.id}
               className="bg-white rounded-tl-none rounded-br-none rounded-tr-xl rounded-bl-xl p-6 sm:p-8 flex flex-col items-center border border-gray-200 shadow-md hover:shadow-lg focus:shadow-lg transition-shadow duration-300 outline-none cursor-pointer min-h-[250px]"
               tabIndex={0}
-              onClick={() => handleCategoryClick(category.id)}
+              onClick={() => handleCategoryClick(category)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
-                  handleCategoryClick(category.id);
+                  handleCategoryClick(category);
                 }
               }}
             >

@@ -3,45 +3,58 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { BsBookmarkPlus } from 'react-icons/bs';
 import { fetchSectionData } from '../Utils/api';
 import { formatDistanceToNow } from 'date-fns';
-import { slugify, generateInternshipSlug } from '../Utils/slugify';
+import { generateInternshipSlug } from '../Utils/slugify';
 
 export default function CategoryInternshipsPage() {
   const [internships, setInternships] = useState([]);
+  const [categoryName, setCategoryName] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [sortOption, setSortOption] = useState('latest');
   const internshipsPerPage = 5;
-  const { categoryname } = useParams();
+  const { categoryname, id } = useParams();
   const navigate = useNavigate();
   const decodedCategory = decodeURIComponent(categoryname);
 
   useEffect(() => {
     const fetchInternships = async () => {
       try {
-        // Fetch category _id
+        // Fetch category to verify _id and get title
         const categoryData = await fetchSectionData({
           collectionName: 'category',
-          query: { '_id': decodedCategory }, // Assuming categoryname is _id
+          query: { '_id': id },
           limit: 1,
         });
+        console.log('Category Data:', categoryData);
+
         if (categoryData.length === 0) {
           setError('Category not found');
           setLoading(false);
           return;
         }
-        const categoryId = categoryData[0]._id;
 
+        const category = categoryData[0];
+        const categoryTitle = category.sectionData?.category?.titleofinternship;
+        if (!categoryTitle || categoryTitle.toLowerCase() !== decodedCategory.toLowerCase()) {
+          setError('Category name does not match ID');
+          setLoading(false);
+          return;
+        }
+        setCategoryName(categoryTitle.toUpperCase());
+
+        // Fetch internships
         const data = await fetchSectionData({
           collectionName: 'jobpost',
-          limit: 20, // Reduced limit for performance
+          limit: 20,
           query: {
             'sectionData.jobpost.type': 'Internship',
-            'sectionData.jobpost.subtype': categoryId,
+            'sectionData.jobpost.subtype': id,
           },
           order: -1,
           sortedBy: 'createdAt',
         });
+        console.log('Internships Data:', data);
         setInternships(data);
       } catch (err) {
         setError(err.message || 'Failed to fetch internships. Please try again.');
@@ -52,15 +65,30 @@ export default function CategoryInternshipsPage() {
     };
 
     fetchInternships();
-  }, [decodedCategory]);
+  }, [decodedCategory, id]);
 
   const filteredInternships = useMemo(() => {
+    if (!Array.isArray(internships)) {
+      console.warn('Internships is not an array:', internships);
+      return [];
+    }
+
     return internships
-      .filter((job) => job.sectionData?.jobpost?.type === 'Internship')
+      .filter((job) => {
+        const isInternship = job.sectionData?.jobpost?.type === 'Internship';
+        const matchesCategory = job.sectionData?.jobpost?.subtype === id;
+        if (!isInternship || !matchesCategory) {
+          console.log('Filtered out job:', job._id, { isInternship, matchesCategory });
+        }
+        return isInternship && matchesCategory;
+      })
       .map((job) => {
         let relativeTime = 'Just now';
         try {
           const parsedDate = new Date(job.createdAt);
+          if (isNaN(parsedDate.getTime())) {
+            throw new Error('Invalid date');
+          }
           relativeTime = formatDistanceToNow(parsedDate, { addSuffix: true })
             .replace('about ', '')
             .replace('hours', 'hrs')
@@ -75,15 +103,15 @@ export default function CategoryInternshipsPage() {
 
         return {
           id: job._id,
-          role: job.sectionData?.jobpost.title || 'Unknown Role',
-          company: job.sectionData?.jobpost.company || 'Unknown Company',
+          role: job.sectionData?.jobpost?.title || 'Unknown Role',
+          company: job.sectionData?.jobpost?.company || 'Unknown Company',
           time: relativeTime,
-          type: job.sectionData?.jobpost.time || 'Unknown',
-          salary: job.sectionData?.jobpost.salary || 'Not specified',
-          location: (job.sectionData?.jobpost.location || 'Unknown').toUpperCase(),
-          logo: job.sectionData?.jobpost.logo && job.sectionData.jobpost.logo.startsWith('http')
+          type: job.sectionData?.jobpost?.time || 'Unknown',
+          salary: job.sectionData?.jobpost?.salary || 'Not specified',
+          location: (job.sectionData?.jobpost?.location || 'Unknown').toUpperCase(),
+          logo: job.sectionData?.jobpost?.logo && job.sectionData.jobpost.logo.startsWith('http')
             ? job.sectionData.jobpost.logo
-            : '/assets/placeholder-logo.png', // Custom placeholder
+            : '/assets/placeholder-logo.png',
           createdAt: job.createdAt,
           salaryValue,
         };
@@ -102,7 +130,7 @@ export default function CategoryInternshipsPage() {
             return 0;
         }
       });
-  }, [internships, sortOption]);
+  }, [internships, sortOption, id]);
 
   const totalPages = Math.ceil(filteredInternships.length / internshipsPerPage);
   const paginatedInternships = filteredInternships.slice(
@@ -158,12 +186,12 @@ export default function CategoryInternshipsPage() {
   );
   if (error) return <div className="px-4 md:px-12 py-8 bg-[#fafafa]">{error}</div>;
   if (filteredInternships.length === 0)
-    return <div className="px-4 md:px-12 py-8 bg-[#fafafa]">No internships found for this category.</div>;
+    return <div className="px-4 md:px-12 py-8 bg-[#fafafa]">No internships found for {categoryName || 'this category'}.</div>;
 
   return (
     <div className="px-4 md:px-12 py-8 bg-[#fafafa]">
       <h2 className="text-2xl md:text-3xl font-bold text-[#050748] mb-4">
-        {filteredInternships[0]?.role.split(' ')[0] || 'Category'} Internships
+        {categoryName} Internships
       </h2>
       <div className="flex justify-between items-center mb-4">
         <p className="text-sm text-gray-600">
@@ -320,4 +348,3 @@ export default function CategoryInternshipsPage() {
     </div>
   );
 };
-
