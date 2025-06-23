@@ -1,11 +1,12 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import Swal from 'sweetalert2';
-import withReactContent from 'sweetalert2-react-content';
-import logo from '../assets/Navbar/logo.png';
-import otpImage from '../assets/SignUp/otp.jpg';
-import rightImage from '../assets/SignUp/wallpaper.jpg';
-import { verifyOtp, forgotPassword } from '../Utils/api';
+import React, { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import Swal from "sweetalert2";
+import withReactContent from "sweetalert2-react-content";
+import { jwtDecode } from "jwt-decode";
+import logo from "../assets/Navbar/logo.png";
+import otpImage from "../assets/SignUp/otp.jpg";
+import rightImage from "../assets/SignUp/wallpaper.jpg";
+import { verifyOtp, forgotPassword, login } from "../Utils/api";
 
 const MySwal = withReactContent(Swal);
 
@@ -14,8 +15,8 @@ const OtpVerification = () => {
   const [error, setError] = useState("");
   const [verifyLoading, setVerifyLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(120);
-  const [timerKey, setTimerKey] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(120); // 2 minutes in seconds
+  const [timerKey, setTimerKey] = useState(0); // To force timer restart
   const navigate = useNavigate();
   const formRef = useRef(null);
 
@@ -28,7 +29,7 @@ const OtpVerification = () => {
     1747902955524: "mentor",
   };
 
-  // Countdown timer logic (unchanged)
+  // Countdown timer logic
   useEffect(() => {
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
@@ -41,33 +42,22 @@ const OtpVerification = () => {
     }, 1000);
 
     return () => clearInterval(timer); // Cleanup on unmount
-  }, [timerKey]); // Depend on timerKey to restart timer
+  }, [timerKey]);
 
+  // Format time as MM:SS
   const formatTime = (seconds) => {
     const minutes = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${minutes}:${secs < 10 ? "0" : ""}${secs}`;
   };
 
-  const handleChange = (index, value, e) => {
-    // Handle Backspace to clear all fields
-    if (e.key === "Backspace" && !value && otp.every((digit) => digit === "")) {
-      setOtp(["", "", "", ""]);
-      setError(""); // Optionally clear error message
-      document.getElementById("otp-0").focus(); // Focus on first input
-      return;
-    }
-
-    // Handle normal digit input
+  const handleChange = (index, value) => {
     if (/^\d?$/.test(value)) {
       const newOtp = [...otp];
       newOtp[index] = value;
       setOtp(newOtp);
       if (value && index < 3) {
         document.getElementById(`otp-${index + 1}`).focus();
-      } else if (!value && index > 0 && e.key === "Backspace") {
-        // Move focus to previous input on Backspace if current input is empty
-        document.getElementById(`otp-${index - 1}`).focus();
       }
     }
   };
@@ -102,12 +92,12 @@ const OtpVerification = () => {
       setError("No pending user data found. Please sign up again.");
       setVerifyLoading(false);
       MySwal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'No pending user data found. Please sign up again.',
-        confirmButtonText: 'OK',
+        icon: "error",
+        title: "Error",
+        text: "No pending user data found. Please sign up again.",
+        confirmButtonText: "OK",
       }).then(() => {
-        navigate('/signup');
+        navigate("/signup");
       });
       return;
     }
@@ -120,31 +110,159 @@ const OtpVerification = () => {
         type: "email",
         otp: otpCode,
       };
-      const response = await verifyOtp(otpPayload);
-      if (response.success) {
-        localStorage.setItem('user', JSON.stringify({
-          ...pendingUser, // Copy all fields from pendingUser
-          userid: response.user?.userId || response.userId || '', // Add userid if available
-          // Remove redirectTo if not needed in user
-          redirectTo: undefined,
-        }));
-        localStorage.removeItem('pendingUser');
-        MySwal.fire({
-          icon: 'success',
-          title: 'Signup Successful',
-          text: 'Your account has been verified.',
-          showConfirmButton: false,
-          timer: 2000,
-        }).then(() => {
-          navigate(pendingUser.redirectTo || '/editprofile'); // Use redirectTo
-        });
+      const otpResponse = await verifyOtp(otpPayload);
+      if (otpResponse.success) {
+        if (pendingUser.roleId === "1747825619417") {
+          // Student role: Call login API
+          if (!pendingUser.password) {
+            setError("Password not found. Please sign up again.");
+            setVerifyLoading(false);
+            MySwal.fire({
+              icon: "error",
+              title: "Error",
+              text: "Password not found. Please sign up again.",
+              confirmButtonText: "OK",
+            }).then(() => {
+              navigate("/signup");
+            });
+            return;
+          }
+
+          try {
+            const loginResponse = await login({
+              appName: "app8657281202648",
+              username: email,
+              password: pendingUser.password,
+            });
+
+            if (loginResponse.success) {
+              console.log("API Login Response User:", loginResponse.user);
+
+              const roleId = loginResponse.user.role?.role || "";
+              const roleName = roleNames[roleId];
+
+              if (!roleName) {
+                setError(
+                  "Invalid or unrecognized role. Please contact support@conscor.com."
+                );
+                setVerifyLoading(false);
+                MySwal.fire({
+                  icon: "error",
+                  title: "Error",
+                  text: "Invalid or unrecognized role. Please contact support@conscor.com.",
+                  confirmButtonText: "OK",
+                });
+                return;
+              }
+
+              const decodedToken = jwtDecode(loginResponse.accessToken);
+              if (decodedToken.roleId !== roleId) {
+                console.warn("Role ID mismatch between API response and JWT:", {
+                  apiRoleId: roleId,
+                  jwtRoleId: decodedToken.roleId,
+                });
+                setError(
+                  "Role verification failed. Please contact support@conscor.com."
+                );
+                setVerifyLoading(false);
+                MySwal.fire({
+                  icon: "error",
+                  title: "Error",
+                  text: "Role verification failed. Please contact support@conscor.com.",
+                  confirmButtonText: "OK",
+                });
+                return;
+              }
+
+              const userData = {
+                legalname:
+                  loginResponse.user.legalname || loginResponse.user.email,
+                email: loginResponse.user.email,
+                role: roleName,
+                roleId: roleId,
+                userid:
+                  loginResponse.user._id || loginResponse.user.userId || "",
+              };
+
+              localStorage.setItem("user", JSON.stringify(userData));
+              localStorage.setItem("accessToken", loginResponse.accessToken);
+              localStorage.setItem("refreshToken", loginResponse.refreshToken);
+              localStorage.removeItem("pendingUser");
+
+              MySwal.fire({
+                icon: "success",
+                title: "Signup Successful",
+                text: "Your account has been verified and you are now logged in.",
+                showConfirmButton: false,
+                timer: 2000,
+              }).then(() => {
+                navigate(pendingUser.redirectTo || "/editprofile");
+              });
+            } else {
+              setError(
+                loginResponse.message ||
+                  "Automatic login failed. Please sign in manually."
+              );
+              setVerifyLoading(false);
+              MySwal.fire({
+                icon: "error",
+                title: "Login Failed",
+                text:
+                  loginResponse.message ||
+                  "Automatic login failed. Please sign in manually.",
+                confirmButtonText: "OK",
+              }).then(() => {
+                navigate("/login");
+              });
+            }
+          } catch (loginErr) {
+            console.error("Login Error:", loginErr.response?.data || loginErr);
+            const loginErrorMessage =
+              loginErr.response?.data?.message ||
+              loginErr.message ||
+              "An error occurred during login";
+            setError(loginErrorMessage);
+            setVerifyLoading(false);
+            MySwal.fire({
+              icon: "error",
+              title: "Login Error",
+              text: `${loginErrorMessage}. Please sign in manually or contact support@conscor.com.`,
+              confirmButtonText: "OK",
+            }).then(() => {
+              navigate("/login");
+            });
+            return;
+          }
+        } else {
+          // Non-student roles (recruiter, mentor)
+          localStorage.setItem(
+            "user",
+            JSON.stringify({
+              ...pendingUser,
+              userid: otpResponse.user?.userId || otpResponse.userId || "",
+              redirectTo: undefined,
+            })
+          );
+          localStorage.removeItem("pendingUser");
+          MySwal.fire({
+            icon: "success",
+            title: "Signup Successful",
+            text: "Your account has been verified.",
+            showConfirmButton: false,
+            timer: 2000,
+          }).then(() => {
+            navigate(pendingUser.redirectTo || "/editprofile");
+          });
+        }
       } else {
-        setError(response.message || 'OTP verification failed');
+        setError(otpResponse.message || "OTP verification failed");
         MySwal.fire({
-          icon: 'error',
-          title: 'Invalid OTP',
-          text: response.message || 'The OTP entered is incorrect. Please try again.',
-          confirmButtonText: 'OK',
+          icon: "error",
+          title: "Invalid OTP",
+          text:
+            otpResponse.message ||
+            "The OTP entered is incorrect. Please try again.",
+          confirmButtonText: "OK",
         });
       }
     } catch (err) {
@@ -192,10 +310,10 @@ const OtpVerification = () => {
 
     const email = pendingUser.email.toLowerCase().trim();
     try {
-      await forgotPassword(email, 'app8657281202648');
-      setOtp(['', '', '', '']);
-      setTimeLeft(120); // Reset timer
-      setTimerKey((prev) => prev + 1); // Force timer restart
+      await forgotPassword(email, "app8657281202648");
+      setOtp(["", "", "", ""]);
+      setTimeLeft(120);
+      setTimerKey((prev) => prev + 1);
       MySwal.fire({
         icon: "success",
         title: "OTP Resent",
@@ -233,7 +351,7 @@ const OtpVerification = () => {
     <div className="flex h-screen">
       <div className="w-full lg:w-1/2 flex flex-col justify-center px-4 py-2 xs:px-6 sm:px-8">
         <div className="max-w-[20rem] xs:max-w-[24rem] sm:max-w-[28rem] mx-auto w-full">
-          {/* Logo Section (unchanged) */}
+          {/* Logo Section */}
           <div className="mb-3 flex flex-col items-center">
             <div className="flex items-center mb-3">
               <img
@@ -244,7 +362,7 @@ const OtpVerification = () => {
             </div>
           </div>
 
-          {/* OTP Image (unchanged) */}
+          {/* OTP Image */}
           <div className="mb-4 flex justify-center">
             <img
               src={otpImage}
@@ -287,8 +405,7 @@ const OtpVerification = () => {
                       type="text"
                       maxLength="1"
                       value={digit}
-                      onChange={(e) => handleChange(index, e.target.value, e)}
-                      onKeyDown={(e) => handleChange(index, e.target.value, e)} // Add onKeyDown to capture Backspace
+                      onChange={(e) => handleChange(index, e.target.value)}
                       className="w-10 h-10 xs:w-12 xs:h-12 border rounded-md text-center text-sm xs:text-base outline-none focus:ring-2 focus:ring-[#3D7EFF]"
                       aria-label={`OTP digit ${index + 1}`}
                     />
@@ -327,14 +444,13 @@ const OtpVerification = () => {
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Right Side - Image */}
-      <div className="hidden lg:flex w-1/2 p-2">
-        <div
-          className="w-full h-full bg-cover bg-center rounded-3xl"
-          style={{ backgroundImage: `url(${rightImage})` }}
-        ></div>
+        <div className="hidden lg:flex w-1/2 p-2">
+          <div
+            className="w-full h-full bg-cover bg-center rounded-3xl"
+            style={{ backgroundImage: `url(${rightImage})` }}
+          ></div>
+        </div>
       </div>
     </div>
   );
