@@ -68,7 +68,7 @@ const TopAcademy = () => {
             <p className="text-[#6A6A8E]">Elite Learning Partners</p>
           </div>
           <Link
-            to="/academies"
+            to="/all-academies"
             className="text-[#6A6A8E] font-medium hover:underline"
           >
             View all
