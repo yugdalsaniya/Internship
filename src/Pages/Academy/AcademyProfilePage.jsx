@@ -3,7 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { fetchSectionData } from "../../Utils/api";
 
 const AcademyProfilePage = () => {
-  const { id } = useParams();
+  const { id } = useParams(); // Extract id (ignore slug)
   const [academy, setAcademy] = useState(null);
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -28,7 +28,7 @@ const AcademyProfilePage = () => {
           setError("Academy not found");
         }
 
-        // Fetch associated courses (assuming a course collection exists)
+        // Fetch associated courses
         const courseData = await fetchSectionData({
           collectionName: "course",
           query: { createdBy: id },
@@ -36,7 +36,7 @@ const AcademyProfilePage = () => {
           order: -1,
           sortedBy: "createdAt",
         });
-        setCourses(courseData || []); // Ensure courses is an array even if no data
+        setCourses(courseData || []);
       } catch (err) {
         setError("Error fetching academy or course data");
         console.error("AcademyProfilePage API Error:", err);
@@ -229,7 +229,6 @@ const AcademyProfilePage = () => {
           <p className="text-gray-600 text-base leading-relaxed">
             No description available.
           </p>
-          {/* Remove Terms and Conditions since it's not in the schema */}
         </div>
 
         {/* Courses Section */}

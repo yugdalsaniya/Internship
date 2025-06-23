@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom"; // Import Link for navigation
+import { Link } from "react-router-dom";
 import { fetchSectionData } from "./../../Utils/api";
 
 const TopAcademy = () => {
@@ -7,6 +7,15 @@ const TopAcademy = () => {
   const [partners, setPartners] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Define generateSlug function within TopAcademy
+  const generateSlug = (name) => {
+    if (!name || typeof name !== "string") return "academy"; // Fallback slug
+    return name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-") // Replace non-alphanumeric with hyphens
+      .replace(/^-+|-+$/g, ""); // Trim leading/trailing hyphens
+  };
 
   useEffect(() => {
     const fetchPartners = async () => {
@@ -20,21 +29,22 @@ const TopAcademy = () => {
             "sectionData.institute.institutionname": 1,
             "sectionData.institute.institutiontagline": 1,
             "sectionData.institute.image": 1,
-            _id: 1, // Include _id for navigation
+            _id: 1,
           },
         });
 
         const mappedData = data.map((item) => ({
-          id: item._id, // Store _id for navigation
-          name: item.sectionData.institute.institutionname,
-          tagline: item.sectionData.institute.institutiontagline,
+          id: item._id,
+          name: item.sectionData.institute.institutionname || "Unnamed Academy",
+          tagline: item.sectionData.institute.institutiontagline || "",
           logo: item.sectionData.institute.image,
+          slug: generateSlug(item.sectionData.institute.institutionname), // Generate slug
         }));
 
         setPartners(mappedData);
       } catch (err) {
         setError("Failed to load partners. Please try again later.");
-        console.error(err);
+        console.error("TopAcademy API Error:", err);
       } finally {
         setLoading(false);
       }
@@ -88,9 +98,9 @@ const TopAcademy = () => {
         )}
         {!loading && !error && partners.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {partners.slice(0, 4).map((partner, index) => (
+            {partners.slice(0, 4).map((partner) => (
               <div
-                key={partner.id} // Use id instead of index for better key stability
+                key={partner.id}
                 className="bg-white rounded-tl-none rounded-br-none rounded-tr-xl rounded-bl-xl p-6 sm:p-8 flex flex-col items-center border border-gray-200 shadow-md hover:shadow-lg focus:shadow-lg transition-shadow duration-300 outline-none cursor-pointer min-h-[250px]"
               >
                 <img
@@ -106,7 +116,7 @@ const TopAcademy = () => {
                   {partner.tagline}
                 </p>
                 <Link
-                  to={`/academy/${partner.id}`}
+                  to={`/academy/${partner.slug}/${partner.id}`} // Use slug in URL
                   className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-medium py-2 px-4 rounded-full hover:from-blue-600 hover:to-purple-700 whitespace-nowrap"
                 >
                   View Academy

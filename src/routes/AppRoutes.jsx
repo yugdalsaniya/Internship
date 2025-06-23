@@ -83,7 +83,7 @@ export default function AppRoutes() {
                   <Route path="/all-employers" element={<AllEmployers />} />
                       <Route path="/all-academies" element={<AllAcademies />} />
 
-          <Route path="/academy/:id" element={<AcademyProfilePage />} /> {/* New route for academy profile */}
+          <Route path="/academy/:slug/:id" element={<AcademyProfilePage />} /> {/* New route for academy profile */}
           {/* <Route path="/academies" element={<AcademiesListPage />} /> */} {/* Uncomment if AcademiesListPage exists */}
         </Route>
       </Routes>
