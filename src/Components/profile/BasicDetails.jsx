@@ -38,10 +38,10 @@ const streamOptions = [
 ];
 
 const purposes = [
-  { label: "To Find a job", icon: <FaSearch /> },
+  { label: "To Find A Job", icon: <FaSearch /> },
   { label: "Compete & Upskill", icon: <FaTrophy /> },
-  { label: "To Host an Event", icon: <FaBullhorn /> },
-  { label: "To be a Mentor", icon: <FaUsers /> },
+  { label: "To Host An Event", icon: <FaBullhorn /> },
+  { label: "To be A Mentor", icon: <FaUsers /> },
 ];
 
 const workExperienceOptions = [
