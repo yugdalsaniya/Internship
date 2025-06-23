@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { fetchSectionData } from '../../Utils/api';
 
 const FeaturedCompany = () => {
@@ -65,16 +66,17 @@ const FeaturedCompany = () => {
         <div className="relative">
           <div className="flex gap-3 overflow-x-auto pb-3 px-2 sm:gap-4 sm:pb-4 sm:px-8 md:px-12 sm:space-x-8 md:space-x-12 snap-x snap-mandatory scrollbar">
             {filteredCompanies.map((company) => (
-              <div 
+              <Link
+                to={`/company/${company._id}`}
                 key={company._id}
-                className="flex-shrink-0 w-[100px] sm:w-[calc(20%-32px)] md:w-[calc(20%-48px)] border border-gray-200 rounded-lg flex items-center justify-center p-3 sm:p-4 bg-white snap-center"
+                className="flex-shrink-0 w-[100px] sm:w-[calc(20%-32px)] md:w-[calc(20%-48px)] border border-gray-200 rounded-lg flex items-center justify-center p-3 sm:p-4 bg-white snap-center hover:shadow-md transition-shadow"
               >
                 <img
                   src={company.logoSrc}
                   alt={`${company.sectionData.Company.companyName} Logo`}
                   className="h-5 sm:h-8 md:h-10 max-w-[80px] sm:max-w-[120px] object-contain"
                 />
-              </div>
+              </Link>
             ))}
           </div>
         </div>
