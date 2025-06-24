@@ -80,11 +80,15 @@ export default function AppRoutes() {
           <Route path="/company/:id" element={<CompanyProfilePage />} />
           <Route path="/newsandblog/:slug/:id" element={<NewsAndBlogPage />} />
           <Route path="/:companySlug/:id" element={<CompanyProfilePage />} />
-                  <Route path="/all-employers" element={<AllEmployers />} />
-                      <Route path="/all-academies" element={<AllAcademies />} />
-
-          <Route path="/academy/:slug/:id" element={<AcademyProfilePage />} /> {/* New route for academy profile */}
-          {/* <Route path="/academies" element={<AcademiesListPage />} /> */} {/* Uncomment if AcademiesListPage exists */}
+          <Route path="/all-employers" element={<AllEmployers />} />
+          <Route path="/all-academies" element={<AllAcademies />} />
+          <Route
+            path="/academy/:slug/:id"
+            element={<AcademyProfilePage />}
+          />{" "}
+          {/* New route for academy profile */}
+          {/* <Route path="/academies" element={<AcademiesListPage />} /> /} {/ Uncomment if AcademiesListPage exists */}
+          {/* <Route path="/location" element={<LocationComponent />} /> */}
         </Route>
       </Routes>
     </Router>
