@@ -3,7 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { fetchSectionData } from "../../Utils/api";
 
 const AcademyProfilePage = () => {
-  const { id } = useParams(); // Extract id (ignore slug)
+  const { id } = useParams();
   const [academy, setAcademy] = useState(null);
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -16,7 +16,6 @@ const AcademyProfilePage = () => {
   useEffect(() => {
     const fetchAcademyData = async () => {
       try {
-        // Fetch academy details
         const academyData = await fetchSectionData({
           collectionName: "institute",
           query: { _id: id },
@@ -28,7 +27,6 @@ const AcademyProfilePage = () => {
           setError("Academy not found");
         }
 
-        // Fetch associated courses
         const courseData = await fetchSectionData({
           collectionName: "course",
           query: { createdBy: id },
@@ -39,7 +37,7 @@ const AcademyProfilePage = () => {
         setCourses(courseData || []);
       } catch (err) {
         setError("Error fetching academy or course data");
-        console.error("AcademyProfilePage API Error:", err);
+        console.error("AcademyProfile API Error:", err);
       } finally {
         setLoading(false);
       }
@@ -102,6 +100,16 @@ const AcademyProfilePage = () => {
       },
     },
   } = academy;
+
+  // Enhanced handling for multiple contact numbers in (XXX) XXX-XXXX format
+  const contactNumbers = Array.isArray(faxtelephoneno)
+    ? faxtelephoneno
+    : typeof faxtelephoneno === "string" && faxtelephoneno
+    ? faxtelephoneno
+        .split(/[,;\n]+/) // Split by commas, semicolons, or newlines
+        .map((num) => num.trim())
+        .filter((num) => num && /^\(\d{3}\)\s?\d{3}-\d{4}$/.test(num)) // Validate format (XXX) XXX-XXXX
+    : [];
 
   return (
     <div className="min-h-screen bg-gray-50 py-6 sm:py-10 px-4 sm:px-6">
@@ -179,9 +187,9 @@ const AcademyProfilePage = () => {
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div>
-              <h3 className="text-sm font-semibold text-gray-700">Location</h3>
+              <h3 className="text-sm font-semibold text-gray-700">Region</h3>
               <p className="text-gray-600 text-base">
-                {municipalitycity || province || region || "Not specified"}
+                {region || "Not specified"}
               </p>
             </div>
             <div>
@@ -190,6 +198,20 @@ const AcademyProfilePage = () => {
               </h3>
               <p className="text-gray-600 text-base">
                 {institutiontype || "Not specified"}
+              </p>
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-gray-700">Province</h3>
+              <p className="text-gray-600 text-base">
+                {province || "Not specified"}
+              </p>
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-gray-700">
+                Municipality/City
+              </h3>
+              <p className="text-gray-600 text-base">
+                {municipalitycity || "Not specified"}
               </p>
             </div>
             <div>
@@ -211,9 +233,17 @@ const AcademyProfilePage = () => {
             </div>
             <div>
               <h3 className="text-sm font-semibold text-gray-700">Contact</h3>
-              <p className="text-gray-600 text-base">
-                {faxtelephoneno || "Not specified"}
-              </p>
+              {contactNumbers.length > 0 ? (
+                <div className="text-gray-600 text-base space-y-2">
+                  {contactNumbers.map((number, index) => (
+                    <p key={index} className="leading-tight">
+                      {number}
+                    </p>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-600 text-base">Not specified</p>
+              )}
             </div>
           </div>
         </div>
