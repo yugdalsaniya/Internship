@@ -7,7 +7,7 @@ import Hero from "../Components/home/Hero";
 import backgroundImg from "../assets/Hero/banner.jpg";
 import { generateInternshipSlug } from "../Utils/slugify";
 
-export default function InternshipPage() {
+const InternshipPage = () => {
   const [internships, setInternships] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -339,8 +339,98 @@ export default function InternshipPage() {
     navigate(`/internshipdetail/${internship.slug}`);
   };
 
+  // Skeleton Card Component
+  const SkeletonCard = () => (
+    <div
+      className="flex flex-col bg-white rounded-lg shadow-md p-4 animate-pulse"
+      aria-hidden="true"
+    >
+      <div className="flex justify-between items-center mb-2">
+        <div className="h-4 bg-gray-200 rounded w-20"></div>
+        <div className="h-6 w-6 bg-gray-200 rounded"></div>
+      </div>
+      <div className="flex justify-between items-center">
+        <div className="flex-1 flex items-center space-x-4">
+          <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
+          <div className="flex-1">
+            <div className="h-5 bg-gray-200 rounded w-3/4 mb-2"></div>
+            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+          </div>
+        </div>
+        <div className="h-8 bg-gray-200 rounded-full w-32"></div>
+      </div>
+      <div className="flex flex-wrap items-center space-x-2 mt-2">
+        <div className="h-4 bg-gray-200 rounded w-24"></div>
+        <div className="h-4 bg-gray-200 rounded w-20"></div>
+        <div className="h-4 bg-gray-200 rounded w-28"></div>
+      </div>
+    </div>
+  );
+
+  // Skeleton Filter Component
+  const SkeletonFilter = () => (
+    <div
+      className="w-full md:w-1/4 bg-gradient-to-b from-[#FFFCF2] to-[#FEEFF4] shadow-md rounded-xl p-6 animate-pulse"
+      aria-hidden="true"
+    >
+      <div className="h-6 bg-gray-200 rounded w-1/2 mb-4"></div>
+      <div className="relative mb-4">
+        <div className="h-10 bg-gray-200 rounded w-full"></div>
+      </div>
+      <div className="h-5 bg-gray-200 rounded w-1/3 mb-2"></div>
+      <div className="relative mb-4">
+        <div className="h-10 bg-gray-200 rounded w-full"></div>
+      </div>
+      {['Category', 'Internship Type', 'Experience Level', 'Date Posted'].map(
+        (section, index) => (
+          <div key={index} className="mb-4">
+            <div className="h-5 bg-gray-200 rounded w-1/4 mb-2"></div>
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="h-4 bg-gray-200 rounded w-full mb-1"></div>
+            ))}
+          </div>
+        )
+      )}
+      <div className="mb-4">
+        <div className="h-5 bg-gray-200 rounded w-1/4 mb-2"></div>
+        <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
+        <div className="h-2 bg-gray-200 rounded w-full"></div>
+      </div>
+      <div className="flex space-x-2">
+        <div className="h-10 bg-gray-200 rounded-lg w-1/2"></div>
+        <div className="h-10 bg-gray-200 rounded-lg w-1/2"></div>
+      </div>
+    </div>
+  );
+
   if (loading) {
-    return <div className="mx-12 py-4">Loading...</div>;
+    return (
+      <>
+        <Hero
+          title="Internships"
+          subtitle="Empower Your Future: Unleash Limitless Career Possibilities!"
+          searchFields={[]}
+          stats={[]}
+          backgroundImage={backgroundImg}
+          gradient="linear-gradient(to right, rgba(249, 220, 223, 0.8), rgba(181, 217, 211, 0.8))"
+          showPostButton={true}
+        />
+        <div className="flex flex-col md:flex-row px-4 md:px-12 py-8 bg-[#fafafa]">
+          <SkeletonFilter />
+          <div className="w-full md:w-3/4 md:pl-6">
+            <div className="flex justify-between items-center mb-4">
+              <div className="h-4 bg-gray-200 rounded w-1/4 animate-pulse"></div>
+              <div className="h-8 bg-gray-200 rounded w-32 animate-pulse"></div>
+            </div>
+            <div className="space-y-4">
+              {[...Array(internshipsPerPage)].map((_, i) => (
+                <SkeletonCard key={i} />
+              ))}
+            </div>
+          </div>
+        </div>
+      </>
+    );
   }
 
   if (error) {
@@ -356,10 +446,26 @@ export default function InternshipPage() {
         stats={[]}
         backgroundImage={backgroundImg}
         gradient="linear-gradient(to right, rgba(249, 220, 223, 0.8), rgba(181, 217, 211, 0.8))"
-        showPostButton={true} // Add this prop
+        showPostButton={true}
       />
       <div className="flex flex-col md:flex-row px-4 md:px-12 py-8 bg-[#fafafa]">
         <div className="w-full md:w-1/4 bg-gradient-to-b from-[#FFFCF2] to-[#FEEFF4] shadow-md rounded-xl p-6 mb-6 md:mb-0">
+          <style>{`
+            @keyframes shimmer {
+              0% { background-position: -468px 0; }
+              100% { background-position: 468px 0; }
+            }
+            .animate-pulse {
+              animation: shimmer 1.5s infinite;
+              background: linear-gradient(
+                to right,
+                #f6f7f8 8%,
+                #edeef1 18%,
+                #f6f7f8 33%
+              );
+              background-size: 800px 104px;
+            }
+          `}</style>
           {filteredInternships.length === 0 && (
             <div className="text-sm text-gray-600 mb-4">
               No internships found.
@@ -575,22 +681,22 @@ export default function InternshipPage() {
                             {internship.type}
                           </span>
                           <span className="flex items-center gap-1">
-  <svg
-    className="w-4 h-4"
-    fill="none"
-    stroke="currentColor"
-    viewBox="0 0 24 24"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth="2"
-      d="M12 5v14M9 8h3a2 2 0 010 4H9a2 2 0 000 4h3"
-    />
-  </svg>
-  {internship.salary}
-</span>
+                            <svg
+                              className="w-4 h-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                              xmlns="http://www.w3.org/2000/svg"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2"
+                                d="M12 5v14M9 8h3a2 2 0 010 4H9a2 2 0 000 4h3"
+                              />
+                            </svg>
+                            {internship.salary}
+                          </span>
                           <span className="flex items-center gap-1">
                             <svg
                               className="w-4 h-4"
@@ -622,37 +728,51 @@ export default function InternshipPage() {
                   </div>
                 ))}
               </div>
-              <div className="flex justify-between items-center mt-6">
-                <div className="flex gap-4 justify-center w-full">
-                  {Array.from({ length: totalPages }, (_, index) => (
+              {totalPages > 1 && (
+                <div className="flex justify-between items-center mt-6">
+                  <div>
                     <button
-                      key={index + 1}
-                      onClick={() => handlePageChange(index + 1)}
-                      className={`w-8 h-8 flex items-center justify-center rounded-lg font-bold ${
-                        currentPage === index + 1
-                          ? "bg-gradient-to-r from-indigo-500 to-purple-500 text-white"
-                          : "border border-gray-400 text-gray-700 hover:bg-gray-100"
-                      }`}
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className="flex items-center gap-1 px-3 py-1.5 border border-gray-400 rounded-lg text-gray-700 hover:bg-gray-100 disabled:opacity-50"
                     >
-                      {index + 1}
+                      <span className="text-base">❮</span>
+                      <span className="font-semibold">Previous</span>
                     </button>
-                  ))}
+                  </div>
+                  <div className="flex gap-4 justify-center">
+                    {Array.from({ length: totalPages }, (_, index) => (
+                      <button
+                        key={index + 1}
+                        onClick={() => handlePageChange(index + 1)}
+                        className={`w-8 h-8 flex items-center justify-center rounded-lg font-bold ${
+                          currentPage === index + 1
+                            ? "bg-gradient-to-r from-indigo-500 to-purple-500 text-white"
+                            : "border border-gray-400 text-gray-700 hover:bg-gray-100"
+                        }`}
+                      >
+                        {index + 1}
+                      </button>
+                    ))}
+                  </div>
+                  <div>
+                    <button
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                      className="flex items-center gap-1 px-3 py-1.5 border border-gray-400 rounded-lg text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+                    >
+                      <span className="font-semibold">Next</span>
+                      <span className="text-base">❯</span>
+                    </button>
+                  </div>
                 </div>
-                <div className="ml-auto">
-                  <button
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={currentPage === totalPages}
-                    className="flex items-center gap-1 px-3 py-1.5 border border-gray-400 rounded-lg text-gray-700 hover:bg-gray-100 disabled:opacity-50"
-                  >
-                    <span className="font-semibold">Next</span>
-                    <span className="text-base">❯</span>
-                  </button>
-                </div>
-              </div>
+              )}
             </>
           )}
         </div>
       </div>
     </>
   );
-}
+};
+
+export default InternshipPage;
