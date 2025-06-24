@@ -25,7 +25,7 @@ import CategoryInternshipsPage from "../Pages/CategoryInternshipsPage";
 import PrivacyPolicyPage from "../Pages/PrivacyPolicyPage";
 import StudentInternshipList from "../Pages/company/StudentInternshipList";
 import CompanyProfilePage from "../Pages/company/CompanyProfilePage";
-import NewsAndBlogPage from "../Pages/student/NewsAndBlogPage"
+import NewsAndBlogPage from "../Pages/student/NewsAndBlogPage";
 import AllEmployers from "../Components/home/AllEmployers";
 import AllAcademies from "../Components/home/AllAcademies";
 import AcademyProfilePage from "../Pages/Academy/AcademyProfilePage"; // Import the new AcademyProfilePage
@@ -57,8 +57,14 @@ export default function AppRoutes() {
             element={<ApplyInternshipForm />}
           />
           <Route path="/my-applications" element={<MyApplicationsPage />} />
-          <Route path="/requested-internships" element={<RequestedInternshipsPage />} />
-          <Route path="/:categoryname/internships/:id" element={<CategoryInternshipsPage />} />
+          <Route
+            path="/requested-internships"
+            element={<RequestedInternshipsPage />}
+          />
+          <Route
+            path="/:categoryname/internships/:id"
+            element={<CategoryInternshipsPage />}
+          />
           <Route path="/post-internship" element={<PostInternship />} />
           <Route
             path="/post-internship/form"
@@ -74,11 +80,15 @@ export default function AppRoutes() {
           <Route path="/company/:id" element={<CompanyProfilePage />} />
           <Route path="/newsandblog/:slug/:id" element={<NewsAndBlogPage />} />
           <Route path="/:companySlug/:id" element={<CompanyProfilePage />} />
-                  <Route path="/all-employers" element={<AllEmployers />} />
-                      <Route path="/all-academies" element={<AllAcademies />} />
-
-          <Route path="/academy/:slug/:id" element={<AcademyProfilePage />} /> {/* New route for academy profile */}
-          {/* <Route path="/academies" element={<AcademiesListPage />} /> */} {/* Uncomment if AcademiesListPage exists */}
+          <Route path="/all-employers" element={<AllEmployers />} />
+          <Route path="/all-academies" element={<AllAcademies />} />
+          <Route
+            path="/academy/:slug/:id"
+            element={<AcademyProfilePage />}
+          />{" "}
+          {/* New route for academy profile */}
+          {/* <Route path="/academies" element={<AcademiesListPage />} /> */}{" "}
+          {/* Uncomment if AcademiesListPage exists */}
         </Route>
       </Routes>
     </Router>
