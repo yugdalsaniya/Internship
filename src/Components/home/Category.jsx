@@ -4,29 +4,48 @@ import { fetchSectionData } from '../../Utils/api';
 
 const Category = () => {
   const [categories, setCategories] = useState([]);
+  const [internshipCounts, setInternshipCounts] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchCategories = async () => {
+    const fetchCategoriesAndCounts = async () => {
       try {
-        const data = await fetchSectionData({
+        // Fetch categories
+        const categoryData = await fetchSectionData({
           collectionName: 'category',
-          limit: 100,
+          limit: 20,
           cacheBust: new Date().getTime(),
         });
-        console.log('Category API Response:', data);
-        setCategories(data);
+        console.log('Category API Response:', categoryData);
+        setCategories(categoryData);
+
+        // Fetch internship counts for each category
+        const counts = {};
+        for (const category of categoryData) {
+          const countData = await fetchSectionData({
+            collectionName: 'jobpost',
+            query: {
+              'sectionData.jobpost.type': 'Internship',
+              'sectionData.jobpost.subtype': category._id,
+            },
+            limit: 0,
+            projection: { _id: 1 },
+          });
+          counts[category._id] = countData.length;
+        }
+        console.log('Internship Counts:', counts);
+        setInternshipCounts(counts);
       } catch (err) {
-        setError('Error fetching categories');
+        setError('Failed to fetch categories or internship counts. Please try again.');
         console.error('Category API Error:', err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchCategories();
+    fetchCategoriesAndCounts();
   }, []);
 
   const filteredCategories = useMemo(() => {
@@ -50,16 +69,16 @@ const Category = () => {
         id: category._id,
         name: category.sectionData.category.titleofinternship.toUpperCase(),
         originalName: category.sectionData.category.titleofinternship,
-        count: parseInt(category.sectionData.category.numberofinternships, 10) || 0,
+        count: internshipCounts[category._id] || 0,
         logo: category.sectionData?.category?.logo && category.sectionData.category.logo.startsWith('http')
           ? category.sectionData.category.logo
-          : 'https://placehold.co/40x40',
+          : '/assets/placeholder-logo.png',
       }));
-  }, [categories]);
+  }, [categories, internshipCounts]);
 
-  const handleCategoryClick = (categoryName) => {
-    const encodedCategory = encodeURIComponent(categoryName);
-    navigate(`/${encodedCategory}/internships`);
+  const handleCategoryClick = (category) => {
+    const encodedCategoryName = encodeURIComponent(category.originalName);
+    navigate(`/${encodedCategoryName}/internships/${category.id}`);
   };
 
   if (loading) return (
@@ -105,10 +124,10 @@ const Category = () => {
               key={category.id}
               className="bg-white rounded-tl-none rounded-br-none rounded-tr-xl rounded-bl-xl p-6 sm:p-8 flex flex-col items-center border border-gray-200 shadow-md hover:shadow-lg focus:shadow-lg transition-shadow duration-300 outline-none cursor-pointer min-h-[250px]"
               tabIndex={0}
-              onClick={() => handleCategoryClick(category.originalName)}
+              onClick={() => handleCategoryClick(category)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
-                  handleCategoryClick(category.originalName);
+                  handleCategoryClick(category);
                 }
               }}
             >
@@ -121,7 +140,7 @@ const Category = () => {
                 {category.name}
               </h3>
               <span className="bg-gray-100 text-gray-700 text-sm sm:text-base font-medium px-5 py-2 rounded-full">
-                {category.count} Internships
+                {category.count} Internship{category.count !== 1 ? 's' : ''}
               </span>
             </div>
           ))}

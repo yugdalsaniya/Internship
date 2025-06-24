@@ -13,7 +13,7 @@ const PostInternshipForm = () => {
     time: 'Full Time',
     salary: '',
     description: '',
-    subtype: '', // Stores category _id
+    subtype: '',
     experiencelevel: '',
     applicationdeadline: '',
     internshipduration: '',
@@ -33,23 +33,12 @@ const PostInternshipForm = () => {
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user')) || {};
 
-  const degreeOptions = [
-    'B.Tech',
-    'B.Sc',
-    'B.Com',
-    'BBA',
-    'MBA',
-    'M.Tech',
-    'M.Sc',
-    'Ph.D',
-  ];
+  const degreeOptions = ['B.Tech', 'B.Sc', 'B.Com', 'BBA', 'MBA', 'M.Tech', 'M.Sc', 'Ph.D'];
+  const experienceLevelOptions = ['No-experience', 'Fresher', 'Intermediate', 'Expert'];
 
-  const experienceLevelOptions = [
-    'No-experience',
-    'Fresher',
-    'Intermediate',
-    'Expert',
-  ];
+  // Validation regex
+  const locationRegex = /^[A-Za-z\s,]+$/; // Letters, spaces, and commas
+  const salaryRegex = /^(\d+|\d+(\.\d{1,2})?)$/; // Integer or decimal (up to 2 places)
 
   useEffect(() => {
     if (user.role !== 'company' || !user.companyId) {
@@ -116,7 +105,7 @@ const PostInternshipForm = () => {
 
   const handleChange = (e) => {
     const { name, value, files, type, checked } = e.target;
-    console.log(`Input Change: ${name} = ${value}`); // Debug log
+    console.log(`Input Change: ${name} = ${value}`);
     if (name === 'degree') {
       let updatedDegrees = [...formData.degree];
       if (checked) {
@@ -170,16 +159,25 @@ const PostInternshipForm = () => {
     });
   };
 
+  const validateSalary = (salary) => {
+    if (!salary || salary.trim() === '') return 'Not specified';
+    return salaryRegex.test(salary) ? salary : 'Not specified';
+  };
+
+  const validateLocation = (location) => {
+    if (!location || location.trim() === '') return null;
+    return locationRegex.test(location) ? location : null;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
-    console.log('Form Data on Submit:', formData); // Debug log
+    console.log('Form Data on Submit:', formData);
 
     // Validation
     if (!user.companyId) {
-      window.scrollTo({ top: 0, behavior: 'instant' });
       toast.error('Company ID is missing. Please log in again.', {
         position: 'top-right',
         autoClose: 3000,
@@ -194,7 +192,6 @@ const PostInternshipForm = () => {
       return;
     }
     if (!formData.title.trim()) {
-      window.scrollTo({ top: 0, behavior: 'instant' });
       toast.error('Internship title is required.', {
         position: 'top-right',
         autoClose: 3000,
@@ -208,7 +205,6 @@ const PostInternshipForm = () => {
       return;
     }
     if (!formData.company.trim()) {
-      window.scrollTo({ top: 0, behavior: 'instant' });
       toast.error('Company name is required.', {
         position: 'top-right',
         autoClose: 3000,
@@ -221,9 +217,8 @@ const PostInternshipForm = () => {
       setLoading(false);
       return;
     }
-    if (!formData.location.trim()) {
-      window.scrollTo({ top: 0, behavior: 'instant' });
-      toast.error('Location is required.', {
+    if (!validateLocation(formData.location)) {
+      toast.error('Valid location is required (letters, spaces, commas only).', {
         position: 'top-right',
         autoClose: 3000,
         hideProgressBar: false,
@@ -236,7 +231,6 @@ const PostInternshipForm = () => {
       return;
     }
     if (!formData.description.trim()) {
-      window.scrollTo({ top: 0, behavior: 'instant' });
       toast.error('Description is required.', {
         position: 'top-right',
         autoClose: 3000,
@@ -250,7 +244,6 @@ const PostInternshipForm = () => {
       return;
     }
     if (!formData.subtype) {
-      window.scrollTo({ top: 0, behavior: 'instant' });
       toast.error('Category is required.', {
         position: 'top-right',
         autoClose: 3000,
@@ -263,12 +256,8 @@ const PostInternshipForm = () => {
       setLoading(false);
       return;
     }
-    // Validate subtype (category _id)
-    const isValidSubtype = categoryData.some(
-      (category) => category._id === formData.subtype
-    );
+    const isValidSubtype = categoryData.some((category) => category._id === formData.subtype);
     if (!isValidSubtype) {
-      window.scrollTo({ top: 0, behavior: 'instant' });
       toast.error('Invalid category selected. Please choose a valid category.', {
         position: 'top-right',
         autoClose: 3000,
@@ -282,7 +271,6 @@ const PostInternshipForm = () => {
       return;
     }
     if (!formData.experiencelevel) {
-      window.scrollTo({ top: 0, behavior: 'instant' });
       toast.error('Experience level is required.', {
         position: 'top-right',
         autoClose: 3000,
@@ -295,9 +283,7 @@ const PostInternshipForm = () => {
       setLoading(false);
       return;
     }
-    // Validate experience level
     if (!experienceLevelOptions.includes(formData.experiencelevel)) {
-      window.scrollTo({ top: 0, behavior: 'instant' });
       toast.error('Invalid experience level selected.', {
         position: 'top-right',
         autoClose: 3000,
@@ -311,7 +297,6 @@ const PostInternshipForm = () => {
       return;
     }
     if (!formData.applicationdeadline) {
-      window.scrollTo({ top: 0, behavior: 'instant' });
       toast.error('Application deadline is required.', {
         position: 'top-right',
         autoClose: 3000,
@@ -325,7 +310,6 @@ const PostInternshipForm = () => {
       return;
     }
     if (!formData.internshipduration.trim()) {
-      window.scrollTo({ top: 0, behavior: 'instant' });
       toast.error('Internship duration is required.', {
         position: 'top-right',
         autoClose: 3000,
@@ -339,7 +323,6 @@ const PostInternshipForm = () => {
       return;
     }
     if (formData.keyResponsibilities.length === 0) {
-      window.scrollTo({ top: 0, behavior: 'instant' });
       toast.error('At least one key responsibility is required.', {
         position: 'top-right',
         autoClose: 3000,
@@ -353,7 +336,6 @@ const PostInternshipForm = () => {
       return;
     }
     if (formData.professionalSkills.length === 0) {
-      window.scrollTo({ top: 0, behavior: 'instant' });
       toast.error('At least one professional skill is required.', {
         position: 'top-right',
         autoClose: 3000,
@@ -367,7 +349,6 @@ const PostInternshipForm = () => {
       return;
     }
     if (formData.degree.length === 0) {
-      window.scrollTo({ top: 0, behavior: 'instant' });
       toast.error('At least one degree is required.', {
         position: 'top-right',
         autoClose: 3000,
@@ -398,10 +379,6 @@ const PostInternshipForm = () => {
         console.log('Logo URL:', logoUrl);
       }
 
-      console.log('Category Data:', categoryData);
-      console.log('Selected Subtype (Category ID):', formData.subtype);
-      console.log('Selected Experience Level:', formData.experiencelevel);
-
       const jobpostData = {
         sectionData: {
           jobpost: {
@@ -410,7 +387,7 @@ const PostInternshipForm = () => {
             type: 'Internship',
             time: formData.time,
             location: formData.location,
-            salary: formData.salary || 'Not specified',
+            salary: validateSalary(formData.salary),
             subtype: formData.subtype,
             experiencelevel: formData.experiencelevel,
             applicationdeadline: formData.applicationdeadline,
@@ -445,38 +422,27 @@ const PostInternshipForm = () => {
       console.log('Add General Data Response:', response);
 
       if (response.success) {
-        // Update the numberofinternships in the category collection
         try {
-          // Fetch the current category document
           const categoryResponse = await fetchSectionData({
             collectionName: 'category',
-            query: {
-              '_id': formData.subtype,
-            },
+            query: { '_id': formData.subtype },
             projection: { 'sectionData.category.numberofinternships': 1 },
             limit: 1,
           });
 
           if (categoryResponse.length === 0) {
-            throw new Error(`Category with ID '${formData.subtype}' not found in the database.`);
+            throw new Error(`Category with ID '${formData.subtype}' not found.`);
           }
 
           const currentCount = parseInt(categoryResponse[0].sectionData.category.numberofinternships, 10) || 0;
           const newCount = currentCount + 1;
 
-          // Update the category with the new count
           await mUpdate({
             appName: 'app8657281202648',
             collectionName: 'category',
-            query: {
-              '_id': formData.subtype,
-            },
-            update: {
-              $set: { 'sectionData.category.numberofinternships': newCount.toString() },
-            },
-            options: {
-              upsert: false,
-            },
+            query: { '_id': formData.subtype },
+            update: { $set: { 'sectionData.category.numberofinternships': newCount.toString() } },
+            options: { upsert: false },
           });
           console.log(`Updated numberofinternships for category ID '${formData.subtype}' to ${newCount}`);
         } catch (updateError) {
@@ -492,7 +458,6 @@ const PostInternshipForm = () => {
           });
         }
 
-        window.scrollTo({ top: 0, behavior: 'instant' });
         toast.success('Internship posted successfully!', {
           position: 'top-right',
           autoClose: 3000,
@@ -504,7 +469,6 @@ const PostInternshipForm = () => {
           onClose: () => navigate('/'),
         });
       } else {
-        window.scrollTo({ top: 0, behavior: 'instant' });
         toast.error(response.message || 'Failed to post internship.', {
           position: 'top-right',
           autoClose: 3000,
@@ -516,7 +480,6 @@ const PostInternshipForm = () => {
         });
       }
     } catch (err) {
-      window.scrollTo({ top: 0, behavior: 'instant' });
       toast.error(err.message || 'Failed to post internship. Please try again.', {
         position: 'top-right',
         autoClose: 3000,
@@ -616,7 +579,7 @@ const PostInternshipForm = () => {
                 value={formData.salary}
                 onChange={handleChange}
                 className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="e.g., ₱10,000/month"
+                placeholder="e.g., 10000"
               />
             </div>
             <div>
@@ -634,8 +597,8 @@ const PostInternshipForm = () => {
                 <option value="" disabled>
                   {categoryLoading ? 'Loading categories...' : categoryData.length === 0 ? 'No categories available' : 'Select Category'}
                 </option>
-                {categoryData.map((category, index) => (
-                  <option key={index} value={category._id}>
+                {categoryData.map((category) => (
+                  <option key={category._id} value={category._id}>
                     {category.titleofinternship.charAt(0).toUpperCase() + category.titleofinternship.slice(1).toLowerCase()}
                   </option>
                 ))}
@@ -655,8 +618,8 @@ const PostInternshipForm = () => {
                 <option value="" disabled>
                   Select Experience Level
                 </option>
-                {experienceLevelOptions.map((level, index) => (
-                  <option key={index} value={level}>
+                {experienceLevelOptions.map((level) => (
+                  <option key={level} value={level}>
                     {level.replace('-', ' ').charAt(0).toUpperCase() + level.replace('-', ' ').slice(1).toLowerCase()}
                   </option>
                 ))}
