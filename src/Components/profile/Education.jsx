@@ -1492,7 +1492,7 @@ const Education = ({ userData, updateCompletionStatus }) => {
           <span>Education</span>
         </div>
         <div className="flex items-center gap-4 text-gray-600 text-xl">
-          <FaEye
+          {/* <FaEye
             className="cursor-pointer hover:text-blue-600"
             title="Preview"
             aria-label="Preview Education"
@@ -1501,7 +1501,7 @@ const Education = ({ userData, updateCompletionStatus }) => {
             className="cursor-pointer hover:text-yellow-500"
             title="Suggestions"
             aria-label="Education Suggestions"
-          />
+          /> */}
           <button
             onClick={handleAddNew}
             className="text-green-600 hover:text-green-700 cursor-pointer"

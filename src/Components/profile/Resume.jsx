@@ -14,6 +14,7 @@ function Resume({ userData, updateCompletionStatus }) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [resumeUrl, setResumeUrl] = useState('');
   const [isCompleted, setIsCompleted] = useState(false);
+  const [isViewingResume, setIsViewingResume] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -242,6 +243,7 @@ function Resume({ userData, updateCompletionStatus }) {
         });
         setResumeUrl('');
         setIsCompleted(false);
+        setIsViewingResume(false);
         if (updateCompletionStatus) {
           updateCompletionStatus('Resume', false);
         }
@@ -268,7 +270,7 @@ function Resume({ userData, updateCompletionStatus }) {
 
   const handleViewResume = () => {
     if (resumeUrl) {
-      window.open(resumeUrl, '_blank');
+      setIsViewingResume(!isViewingResume);
     }
   };
 
@@ -338,6 +340,15 @@ function Resume({ userData, updateCompletionStatus }) {
                 disabled={isProcessing}
               />
             </label>
+          </div>
+        )}
+        {isViewingResume && resumeUrl && (
+          <div className="mt-6 border border-gray-300 rounded-lg overflow-hidden">
+            <iframe
+              src={resumeUrl}
+              className="w-full h-[600px] border-0"
+              title="Resume Preview"
+            />
           </div>
         )}
       </div>
