@@ -92,7 +92,6 @@ const ProfileEditPage = () => {
           }
         };
 
-        // Fetch user data for non-organization sections
         const userResponse = await fetchWithRetry(() =>
           fetchSectionData({
             appName: 'app8657281202648',
@@ -110,6 +109,7 @@ const ProfileEditPage = () => {
               'sectionData.appuser.addressline3': 1,
               'sectionData.appuser.zipcode2': 1,
               'sectionData.appuser.location2': 1,
+              'sectionData.appuser.copycurrentaddress': 1,
               'sectionData.appuser.hobbies': 1,
               'sectionData.appuser.linkedIn': 1,
               'sectionData.appuser.facebook': 1,
@@ -137,7 +137,6 @@ const ProfileEditPage = () => {
           })
         );
 
-        // Fetch organization data if user has a company role
         let organizationData = {};
         if (allowedRoles.includes(userData.role) && companyId) {
           const companyResponse = await fetchWithRetry(() =>
@@ -163,15 +162,13 @@ const ProfileEditPage = () => {
           About: !!apiData.about?.trim(),
           Skills: !!apiData.skills?.length,
           'Personal Details':
-            !!apiData.pronouns ||
-            !!apiData.dOB ||
-            !!apiData.addressline1 ||
-            !!apiData.zipcode1 ||
-            !!apiData.location1 ||
-            !!apiData.addressline3 ||
-            !!apiData.zipcode2 ||
-            !!apiData.location2 ||
-            !!apiData.hobbies?.length,
+            !!apiData.addressline1 &&
+            !!apiData.zipcode1 &&
+            !!apiData.location1 &&
+            (apiData.copycurrentaddress ||
+              (!!apiData.addressline3 &&
+                !!apiData.zipcode2 &&
+                !!apiData.location2)),
           'Social Links':
             !!apiData.linkedIn ||
             !!apiData.facebook ||
