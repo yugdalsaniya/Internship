@@ -79,6 +79,9 @@ export default function AppRoutes() {
 
           <Route path="/academy/:slug/:id" element={<AcademyProfilePage />} /> {/* New route for academy profile */}
           {/* <Route path="/academies" element={<AcademiesListPage />} /> */} {/* Uncomment if AcademiesListPage exists */}
+
+{/* <Route path="/location" element={<LocationComponent />} /> */}
+
         </Route>
       </Routes>
     </Router>
