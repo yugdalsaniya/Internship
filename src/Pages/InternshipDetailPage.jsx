@@ -1,6 +1,5 @@
-// InternshipDetailPage.jsx
 import React, { useEffect, useState } from "react";
-import { useParams, useNavigate, useLocation } from "react-router-dom"; // Add useLocation
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import Hero from "../assets/Hero/banner.jpg";
 import {
   FaMapMarkerAlt,
@@ -9,9 +8,6 @@ import {
   FaUser,
   FaGraduationCap,
   FaTags,
-  FaPhoneAlt,
-  FaEnvelope,
-  FaCommentDots,
   FaFacebookF,
   FaLinkedinIn,
 } from "react-icons/fa";
@@ -24,7 +20,7 @@ import { generateInternshipSlug } from "../Utils/slugify";
 const InternshipDetailPage = () => {
   const { id: urlId } = useParams();
   const navigate = useNavigate();
-  const location = useLocation(); // Get current location
+  const location = useLocation();
   const [internship, setInternship] = useState(null);
   const [relatedInternships, setRelatedInternships] = useState([]);
   const [categoryMap, setCategoryMap] = useState({});
@@ -129,16 +125,118 @@ const InternshipDetailPage = () => {
 
   const handleApplyClick = () => {
     if (!user.email) {
-      // Redirect to login with current InternshipDetailPage URL
       navigate("/login", { state: { from: location.pathname } });
     } else {
-      // Navigate to the application form if logged in
       navigate(`/applyinternshipform/${actualId}`);
     }
   };
 
-  if (loading) return <div className="mx-4 py-4 text-sm sm:mx-12 sm:text-base">Loading...</div>;
   if (error) return <div className="mx-4 py-4 text-sm sm:mx-12 sm:text-base">{error}</div>;
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white">
+        {/* Hero Section Skeleton */}
+        <div className="w-full h-[200px] sm:h-[300px] bg-gray-200 animate-pulse relative flex items-center justify-center">
+          <div className="relative max-w-[90%] sm:max-w-7xl mx-auto z-10 flex flex-col items-center text-center">
+            <div className="w-3/4 h-8 sm:h-10 bg-gray-300 rounded-md mb-3"></div>
+            <div className="w-1/2 h-4 sm:h-6 bg-gray-300 rounded-md"></div>
+          </div>
+        </div>
+        {/* Content Skeleton */}
+        <div className="max-w-[95%] mx-auto px-3 py-6 sm:max-w-7xl sm:px-4 sm:py-10">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-6 sm:mb-10 gap-4">
+            <div className="w-full sm:w-3/4">
+              <div className="w-1/4 h-3 bg-gray-200 rounded-md mb-2 animate-pulse"></div>
+              <div className="w-3/4 h-6 sm:h-8 bg-gray-200 rounded-md mb-2 animate-pulse"></div>
+              <div className="w-1/2 h-4 sm:h-5 bg-gray-200 rounded-md mb-3 animate-pulse"></div>
+              <div className="flex flex-wrap gap-3 sm:gap-5">
+                <div className="w-20 h-4 bg-gray-200 rounded-md animate-pulse"></div>
+                <div className="w-20 h-4 bg-gray-200 rounded-md animate-pulse"></div>
+                <div className="w-20 h-4 bg-gray-200 rounded-md animate-pulse"></div>
+                <div className="w-20 h-4 bg-gray-200 rounded-md animate-pulse"></div>
+              </div>
+            </div>
+            <div className="w-full sm:w-32 h-10 bg-gray-200 rounded-md animate-pulse"></div>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-10">
+            <div className="lg:col-span-2">
+              {/* Description Skeleton */}
+              <div className="mb-6 sm:mb-8">
+                <div className="w-1/3 h-5 sm:h-6 bg-gray-200 rounded-md mb-3 animate-pulse"></div>
+                <div className="w-full h-4 bg-gray-200 rounded-md mb-2 animate-pulse"></div>
+                <div className="w-full h-4 bg-gray-200 rounded-md mb-2 animate-pulse"></div>
+                <div className="w-3/4 h-4 bg-gray-200 rounded-md animate-pulse"></div>
+              </div>
+              {/* Responsibilities Skeleton */}
+              <div className="mb-6 sm:mb-8">
+                <div className="w-1/3 h-5 sm:h-6 bg-gray-200 rounded-md mb-3 animate-pulse"></div>
+                <div className="w-full h-4 bg-gray-200 rounded-md mb-2 animate-pulse"></div>
+                <div className="w-5/6 h-4 bg-gray-200 rounded-md mb-2 animate-pulse"></div>
+                <div className="w-4/5 h-4 bg-gray-200 rounded-md animate-pulse"></div>
+              </div>
+              {/* Tags Skeleton */}
+              <div className="mb-6 sm:mb-10">
+                <div className="w-1/4 h-5 sm:h-6 bg-gray-200 rounded-md mb-3 animate-pulse"></div>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  <div className="w-16 h-6 bg-gray-200 rounded-md animate-pulse"></div>
+                  <div className="w-16 h-6 bg-gray-200 rounded-md animate-pulse"></div>
+                  <div className="w-16 h-6 bg-gray-200 rounded-md animate-pulse"></div>
+                </div>
+              </div>
+              {/* Related Internships Skeleton */}
+              <div>
+                <div className="w-1/2 h-6 sm:h-7 bg-gray-200 rounded-md mb-4 animate-pulse"></div>
+                {[1, 2, 3].map((_, idx) => (
+                  <div
+                    key={idx}
+                    className="border p-3 sm:p-4 rounded-lg mb-3 sm:mb-4 bg-gray-100 flex flex-col sm:flex-row sm:justify-between sm:items-center animate-pulse"
+                  >
+                    <div className="w-full sm:pr-3">
+                      <div className="w-1/4 h-3 bg-gray-200 rounded-md mb-2"></div>
+                      <div className="w-3/4 h-5 bg-gray-200 rounded-md mb-2"></div>
+                      <div className="w-1/2 h-4 bg-gray-200 rounded-md mb-2"></div>
+                      <div className="flex flex-wrap gap-3">
+                        <div className="w-20 h-4 bg-gray-200 rounded-md"></div>
+                        <div className="w-20 h-4 bg-gray-200 rounded-md"></div>
+                        <div className="w-20 h-4 bg-gray-200 rounded-md"></div>
+                      </div>
+                    </div>
+                    <div className="w-full sm:w-32 h-8 bg-gray-200 rounded-md mt-3 sm:mt-0"></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="space-y-4 sm:space-y-6">
+              {/* Overview Skeleton */}
+              <div className="bg-gray-100 p-4 sm:p-5 rounded-2xl animate-pulse">
+                <div className="w-1/3 h-5 sm:h-6 bg-gray-200 rounded-md mb-3"></div>
+                <div className="space-y-2 sm:space-y-3">
+                  <div className="w-full h-4 bg-gray-200 rounded-md"></div>
+                  <div className="w-full h-4 bg-gray-200 rounded-md"></div>
+                  <div className="w-full h-4 bg-gray-200 rounded-md"></div>
+                  <div className="w-full h-4 bg-gray-200 rounded-md"></div>
+                  <div className="w-full h-4 bg-gray-200 rounded-md"></div>
+                </div>
+                <div className="w-full h-32 bg-gray-200 rounded-lg mt-4"></div>
+              </div>
+              {/* Contact Form Skeleton */}
+              <div className="bg-gray-100 p-4 sm:p-5 rounded-2xl animate-pulse">
+                <div className="w-1/3 h-5 sm:h-6 bg-gray-200 rounded-md mb-3"></div>
+                <div className="space-y-2 sm:space-y-3">
+                  <div className="w-full h-8 bg-gray-200 rounded-md"></div>
+                  <div className="w-full h-8 bg-gray-200 rounded-md"></div>
+                  <div className="w-full h-8 bg-gray-200 rounded-md"></div>
+                  <div className="w-full h-16 bg-gray-200 rounded-md"></div>
+                  <div className="w-full h-8 bg-gray-200 rounded-md"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const jobpost = internship?.sectionData?.jobpost;
   const relativeTime = internship?.createdDate ? getRelativeTime(internship.createdDate) : "Just now";
