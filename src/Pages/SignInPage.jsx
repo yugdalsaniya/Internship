@@ -54,11 +54,10 @@ const SignIn = () => {
     }
     if (!formData.password.trim()) {
       newErrors.password = 'Password is required.';
-    } else if (formData.password.length > 20) { // Changed from 8 to 20
+    } else if (formData.password.length > 20) {
       newErrors.password = 'Password must be 20 characters or less.';
     }
 
-    // If there are errors, set them and stop submission
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       setLoading(false);
@@ -104,12 +103,8 @@ const SignIn = () => {
 
         if (roleName === 'student') {
           userData.userid = response.user._id;
-        } else if (roleName === 'company') {
+        } else if (roleName === 'company' || roleName === 'academy') {
           userData.companyId = response.user.companyId || '';
-          userData.userid = response.user._id || '';
-        }
-        else if (roleName === 'academy') {
-        userData.companyId = response.user.companyId || '';
           userData.userid = response.user._id || '';
         }
 
@@ -117,7 +112,11 @@ const SignIn = () => {
         localStorage.setItem('accessToken', response.accessToken);
         localStorage.setItem('refreshToken', response.refreshToken);
 
-        const from = location.state?.from || '/editprofile';
+        // For subsequent logins, check if legalname exists and is not email
+        const isBasicDetailsFilled = response.user.legalname && response.user.legalname !== response.user.email;
+        const redirectTo = isBasicDetailsFilled ? '/' : '/editprofile';
+        const from = location.state?.from || redirectTo;
+
         navigate(from, { replace: true });
       } else {
         setErrors({ general: response.message || 'Login failed' });
@@ -150,13 +149,9 @@ const SignIn = () => {
       <div className="w-full lg:w-1/2 flex flex-col justify-center px-4 py-2 xs:px-6 sm:px-8">
         <div className="max-w-[20rem] xs:max-w-[24rem] sm:max-w-[28rem] mx-auto w-full">
           <div className="mb-3 flex flex-col items-center">
-             <div className="flex items-center mb-3">
-                          <img
-                            src={logo}
-                            alt="Internship-OJT Logo"
-                            className="h-10 w-auto mr-2"
-                          />
-                        </div>
+            <div className="flex items-center mb-3">
+              <img src={logo} alt="Internship-OJT Logo" className="h-10 w-auto mr-2" />
+            </div>
           </div>
           <div className="w-full">
             <h2 className="text-base xs:text-lg sm:text-xl font-bold mb-1 text-black">Sign in</h2>
@@ -195,7 +190,7 @@ const SignIn = () => {
                     value={formData.password}
                     onChange={handleChange}
                     required
-                    maxLength={20} // Changed from 8 to 20
+                    maxLength={20}
                     aria-describedby={errors.password ? 'error-password' : undefined}
                   />
                   {showPassword ? (
@@ -232,14 +227,7 @@ const SignIn = () => {
                 }`}
                 disabled={loading}
               >
-                {loading ? (
-                  <>
-                    Signing in...
-                  </>
-                  
-                ) : (
-                  'Sign in'
-                )}
+                {loading ? 'Signing in...' : 'Sign in'}
               </button>
             </form>
             {user.role !== 'company' && (
@@ -249,21 +237,6 @@ const SignIn = () => {
                   <span className="mx-2 text-xs xs:text-sm text-gray-500">or</span>
                   <hr className="flex-grow border-t" />
                 </div>
-                {/* <div className="flex justify-center gap-3 xs:gap-4 mb-2">
-                  <button className="border p-1.5 rounded-md hover:bg-gray-100">
-                    <img
-                      src="https://img.icons8.com/color/48/google-logo.png"
-                      alt="Google"
-                      className="w-4 h-4 xs:w-5 xs:h-5"
-                    />
-                  </button>
-                  <button className="border p-1.5 rounded-md hover:bg-gray-100">
-                    <img src={facebook} alt="Facebook" className="w-4 h-4 xs:w-5 xs:h-5" />
-                  </button>
-                  <button className="border p-1.5 rounded-md hover:bg-gray-100">
-                    <img src={linkedin} alt="LinkedIn" className="w-4 h-4 xs:w-5 xs:h-5" />
-                  </button>
-                </div> */}
               </>
             )}
             <p className="text-sm xs:text-sm text-center">
