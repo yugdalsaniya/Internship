@@ -69,7 +69,7 @@ const Navbar = () => {
           { to: '/manage-internships', label: 'Manage Internships' },
         ],
       },
-    { to: '/interns', label: 'Interns' },
+      { to: '/interns', label: 'Interns' },
       { to: '/about', label: 'About Us' },
       { to: '/contact', label: 'Contact Us' },
     ],
@@ -286,42 +286,7 @@ const Navbar = () => {
               )}
             </div>
           ))}
-          {user.email ? (
-            <>
-              <div className="text-sm text-gray-800 font-medium w-full text-center leading-5">{user.legalname}</div>
-              <Link
-                to="/editprofile"
-                className="text-gray-800 hover:text-blue-600 text-sm font-medium w-full text-center py-2 leading-5"
-                onClick={() => setIsOpen(false)}
-              >
-                Edit Profile
-              </Link>
-              {role === 'student' && (
-                <>
-                  <Link
-                    to="/my-applications"
-                    className="text-gray-800 hover:text-blue-600 text-sm font-medium w-full text-center py-2 leading-5"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    My Applications
-                  </Link>
-                  <Link
-                    to="/requested-internships"
-                    className="text-gray-800 hover:text-blue-600 text-sm font-medium w-full text-center py-2 leading-5"
-                    onClick={() => setIsOpen(false)}
-                  >
-                    Requested Internships
-                  </Link>
-                </>
-              )}
-              <button
-                onClick={handleLogout}
-                className="text-gray-800 text-sm font-medium hover:text-blue-600 w-full text-center py-2 leading-5"
-              >
-                Logout
-              </button>
-            </>
-          ) : (
+          {!user.email && (
             <>
               <Link
                 to="/login"
