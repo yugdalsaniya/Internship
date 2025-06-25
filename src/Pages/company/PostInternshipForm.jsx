@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { addGeneralData, uploadAndStoreFile, fetchSectionData, mUpdate } from '../../Utils/api';
 import logo from '../../assets/Navbar/logo.png';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { FaCrosshairs } from 'react-icons/fa';
 
 const PostInternshipForm = () => {
   const [formData, setFormData] = useState({
@@ -32,13 +33,95 @@ const PostInternshipForm = () => {
   const [categoryLoading, setCategoryLoading] = useState(true);
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user')) || {};
+  const locationInputRef = useRef(null);
+  const autocompleteRef = useRef(null);
 
   const degreeOptions = ['B.Tech', 'B.Sc', 'B.Com', 'BBA', 'MBA', 'M.Tech', 'M.Sc', 'Ph.D'];
   const experienceLevelOptions = ['No-experience', 'Fresher', 'Intermediate', 'Expert'];
 
   // Validation regex
-  const locationRegex = /^[A-Za-z\s,]+$/; // Letters, spaces, and commas
   const salaryRegex = /^(\d+|\d+(\.\d{1,2})?)$/; // Integer or decimal (up to 2 places)
+
+  // Google Maps API Key
+  const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+
+  // Google Maps Autocomplete
+  useEffect(() => {
+    const loadGoogleMapsScript = () => {
+      return new Promise((resolve, reject) => {
+        if (window.google && window.google.maps && window.google.maps.places) {
+          resolve();
+          return;
+        }
+        const existingScript = document.querySelector(
+          'script[src*="maps.googleapis.com/maps/api/js"]'
+        );
+        if (existingScript) {
+          existingScript.addEventListener("load", resolve);
+          return;
+        }
+        const script = document.createElement("script");
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places`;
+        script.async = true;
+        script.defer = true;
+        script.onload = () => resolve();
+        script.onerror = () =>
+          reject(new Error("Failed to load Google Maps API"));
+        document.head.appendChild(script);
+      });
+    };
+
+    loadGoogleMapsScript()
+      .then(() => {
+        if (!window.google?.maps?.places) {
+          console.error("Google Maps places library not loaded");
+          return;
+        }
+        autocompleteRef.current = new window.google.maps.places.Autocomplete(
+          locationInputRef.current,
+          {
+            types: ["(cities)"],
+            fields: ["formatted_address", "name"],
+            componentRestrictions: { country: "ph" },
+          }
+        );
+        autocompleteRef.current.addListener("place_changed", () => {
+          const place = autocompleteRef.current.getPlace();
+          const newLocation = place.formatted_address || place.name || "";
+          setFormData((prevFormData) => ({
+            ...prevFormData,
+            location: newLocation,
+          }));
+        });
+      })
+      .catch((err) => {
+        console.error("Error loading Google Maps:", err);
+        setError(
+          "Google Maps API failed to load. Location suggestions unavailable."
+        );
+        toast.error(
+          "Google Maps API failed to load. Location suggestions unavailable.",
+          {
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            theme: 'light',
+          }
+        );
+        setTimeout(() => setError(""), 3000);
+      });
+
+    return () => {
+      if (autocompleteRef.current && window.google?.maps?.event) {
+        window.google.maps.event.clearInstanceListeners(
+          autocompleteRef.current
+        );
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (user.role !== 'company' || !user.companyId) {
@@ -106,57 +189,59 @@ const PostInternshipForm = () => {
   const handleChange = (e) => {
     const { name, value, files, type, checked } = e.target;
     console.log(`Input Change: ${name} = ${value}`);
-    if (name === 'degree') {
-      let updatedDegrees = [...formData.degree];
-      if (checked) {
-        updatedDegrees.push(value);
+    setFormData((prevFormData) => {
+      if (name === 'degree') {
+        let updatedDegrees = [...prevFormData.degree];
+        if (checked) {
+          updatedDegrees.push(value);
+        } else {
+          updatedDegrees = updatedDegrees.filter((deg) => deg !== value);
+        }
+        return {
+          ...prevFormData,
+          degree: updatedDegrees,
+        };
       } else {
-        updatedDegrees = updatedDegrees.filter((deg) => deg !== value);
+        return {
+          ...prevFormData,
+          [name]: files ? files[0] : value,
+        };
       }
-      setFormData({
-        ...formData,
-        degree: updatedDegrees,
-      });
-    } else {
-      setFormData({
-        ...formData,
-        [name]: files ? files[0] : value,
-      });
-    }
+    });
   };
 
   const addResponsibility = () => {
     if (newResponsibility.trim()) {
-      setFormData({
-        ...formData,
-        keyResponsibilities: [...formData.keyResponsibilities, { text: newResponsibility.trim() }],
-      });
+      setFormData((prevFormData) => ({
+        ...prevFormData,
+        keyResponsibilities: [...prevFormData.keyResponsibilities, { text: newResponsibility.trim() }],
+      }));
       setNewResponsibility('');
     }
   };
 
   const addSkill = () => {
     if (newSkill.trim()) {
-      setFormData({
-        ...formData,
-        professionalSkills: [...formData.professionalSkills, { text: newSkill.trim() }],
-      });
+      setFormData((prevFormData) => ({
+        ...prevFormData,
+        professionalSkills: [...prevFormData.professionalSkills, { text: newSkill.trim() }],
+      }));
       setNewSkill('');
     }
   };
 
   const removeResponsibility = (index) => {
-    setFormData({
-      ...formData,
-      keyResponsibilities: formData.keyResponsibilities.filter((_, i) => i !== index),
-    });
+    setFormData((prevFormData) => ({
+      ...prevFormData,
+      keyResponsibilities: prevFormData.keyResponsibilities.filter((_, i) => i !== index),
+    }));
   };
 
   const removeSkill = (index) => {
-    setFormData({
-      ...formData,
-      professionalSkills: formData.professionalSkills.filter((_, i) => i !== index),
-    });
+    setFormData((prevFormData) => ({
+      ...prevFormData,
+      professionalSkills: prevFormData.professionalSkills.filter((_, i) => i !== index),
+    }));
   };
 
   const validateSalary = (salary) => {
@@ -166,7 +251,7 @@ const PostInternshipForm = () => {
 
   const validateLocation = (location) => {
     if (!location || location.trim() === '') return null;
-    return locationRegex.test(location) ? location : null;
+    return location;
   };
 
   const handleSubmit = async (e) => {
@@ -218,7 +303,7 @@ const PostInternshipForm = () => {
       return;
     }
     if (!validateLocation(formData.location)) {
-      toast.error('Valid location is required (letters, spaces, commas only).', {
+      toast.error('Valid location is required.', {
         position: 'top-right',
         autoClose: 3000,
         hideProgressBar: false,
@@ -541,15 +626,19 @@ const PostInternshipForm = () => {
               <label className="block text-sm font-medium text-gray-700">
                 Location <span className="text-red-500">*</span>
               </label>
-              <input
-                type="text"
-                name="location"
-                value={formData.location}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="e.g., Manila, Philippines"
-                required
-              />
+              <div className="relative">
+                <input
+                  type="text"
+                  name="location"
+                  value={formData.location}
+                  onChange={handleChange}
+                  ref={locationInputRef}
+                  className="w-full px-4 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g., Manila, Philippines"
+                  required
+                />
+                <FaCrosshairs className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500" />
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">
