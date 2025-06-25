@@ -27,7 +27,7 @@ const Hero = ({
       bgColor: 'bg-[#6A6A8E]',
     },
     {
-      count: '0', // Initialize to 0, will be updated by API
+      count: '0',
       label: 'Candidates',
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -60,39 +60,37 @@ const Hero = ({
 
   const navigate = useNavigate();
   const [error, setError] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [suggestions, setSuggestions] = useState([]);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
 
   useEffect(() => {
     const fetchCounts = async () => {
       try {
-        // Fetch Internships count
         const internshipResponse = await fetchSectionData({
           collectionName: 'jobpost',
           query: { 'sectionData.jobpost.type': 'Internship' },
         });
         const internshipCount = internshipResponse.length * 11;
 
-        // Fetch Candidates (Students) count
         const studentResponse = await fetchSectionData({
           collectionName: 'appuser',
-          query: { 'sectionData.appuser.role': '1747825619417' }, // Student role ID
+          query: { 'sectionData.appuser.role': '1747825619417' },
         });
         const studentCount = studentResponse.length * 11;
 
-        // Fetch Companies count
         const companyResponse = await fetchSectionData({
           collectionName: 'appuser',
           query: { 'sectionData.appuser.role': '1747723485001' },
         });
         const companyCount = companyResponse.length * 11;
 
-        // Fetch Academies count
         const academyResponse = await fetchSectionData({
           collectionName: 'appuser',
           query: { 'sectionData.appuser.role': '1747903042943' },
         });
         const academyCount = academyResponse.length * 11;
 
-        // Update stats
         setStats((prevStats) =>
           prevStats.map((stat) => {
             if (stat.label === 'Internships') {
@@ -104,7 +102,7 @@ const Hero = ({
             if (stat.label === 'Companies') {
               return { ...stat, count: companyCount.toLocaleString() };
             }
-            if (stat.label === 'Academy') {
+ if (stat.label === 'Academy') {
               return { ...stat, count: academyCount.toLocaleString() };
             }
             return stat;
@@ -118,12 +116,63 @@ const Hero = ({
     fetchCounts();
   }, []);
 
+  useEffect(() => {
+    const fetchSuggestions = async () => {
+      if (searchQuery.trim().length < 2) {
+        setSuggestions([]);
+        setIsLoadingSuggestions(false);
+        return;
+      }
+
+      setIsLoadingSuggestions(true);
+      try {
+        const response = await fetchSectionData({
+          collectionName: 'jobpost',
+          query: {
+            'sectionData.jobpost.type': 'Internship',
+            $or: [
+              { 'sectionData.jobpost.title': { $regex: searchQuery, $options: 'i' } },
+              { 'sectionData.jobpost.company': { $regex: searchQuery, $options: 'i' } },
+            ],
+          },
+          projection: {
+            'sectionData.jobpost.title': 1,
+            'sectionData.jobpost.company': 1,
+          },
+          limit: 5,
+        });
+
+        const uniqueSuggestions = [
+          ...new Set(
+            response.flatMap((job) => [
+              job.sectionData?.jobpost?.title,
+              job.sectionData?.jobpost?.company,
+            ]).filter((item) => item && item.toLowerCase().includes(searchQuery.toLowerCase()))
+          ),
+        ].slice(0, 5);
+
+        setSuggestions(uniqueSuggestions);
+      } catch (error) {
+        console.error('Error fetching suggestions:', error);
+        setSuggestions([]);
+      } finally {
+        setIsLoadingSuggestions(false);
+      }
+    };
+
+    const debounce = setTimeout(() => {
+      fetchSuggestions();
+    }, 300);
+
+    return () => clearTimeout(debounce);
+  }, [searchQuery]);
+
   const handlePostInternship = () => {
     const user = JSON.parse(localStorage.getItem('user'));
     const isAuthenticated = !!user && !!localStorage.getItem('accessToken');
 
     if (isAuthenticated) {
-      if (user.roleId === '1747825619417') { // Student role
+      if (user.roleId === '1747825619417') {
         navigate('/StudentPostForm');
       } else {
         setError('Only company users can post internships.');
@@ -131,6 +180,20 @@ const Hero = ({
     } else {
       navigate('/login', { state: { from: '/StudentPostForm' } });
     }
+  };
+
+  const handleSearch = () => {
+    if (searchQuery.trim()) {
+      navigate(`/internship?search=${encodeURIComponent(searchQuery.trim())}`);
+    } else {
+      navigate('/internship');
+    }
+  };
+
+  const handleSuggestionClick = (suggestion) => {
+    setSearchQuery(suggestion);
+    setSuggestions([]);
+    navigate(`/internship?search=${encodeURIComponent(suggestion)}`);
   };
 
   return (
@@ -153,15 +216,38 @@ const Hero = ({
 
         {/* Search Bar */}
         {searchFields.length > 0 && (
-          <div className="bg-white rounded-lg shadow-md flex flex-col md:flex-row items-center w-full max-w-3xl p-3 space-y-3 md:space-y-0 md:space-x-3">
+          <div className="bg-white rounded-lg shadow-md flex flex-col md:flex-row items-center w-full max-w-3xl p-3 space-y-3 md:space-y-0 md:space-x-3 relative">
             {searchFields.map((field, index) => (
               <React.Fragment key={index}>
                 {field.type === 'input' ? (
-                  <input
-                    type="text"
-                    placeholder={field.placeholder}
-                    className="w-full md:flex-1 border border-gray-300 rounded-md p-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+                  <div className="relative w-full md:flex-1">
+                    <input
+                      type="text"
+                      placeholder={field.placeholder}
+                      className="w-full border border-gray-300 rounded-md p-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                    />
+                    {isLoadingSuggestions && (
+                      <div className="absolute top-full left-0 w-full bg-white border border-gray-300 rounded-md shadow-md mt-1 z-10">
+                        <div className="p-2 text-sm text-gray-500">Loading...</div>
+                      </div>
+                    )}
+                    {suggestions.length > 0 && !isLoadingSuggestions && (
+                      <ul className="absolute top-full left-0 w-full bg-white border border-gray-300 rounded-md shadow-md mt-1 z-10 max-h-60 overflow-y-auto">
+                        {suggestions.map((suggestion, idx) => (
+                          <li
+                            key={idx}
+                            className="p-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+                            onClick={() => handleSuggestionClick(suggestion)}
+                          >
+                            {suggestion}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
                 ) : (
                   <select className="w-full md:flex-1 border border-gray-300 rounded-md p-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
                     {field.options.map((option, optIndex) => (
@@ -171,7 +257,10 @@ const Hero = ({
                 )}
               </React.Fragment>
             ))}
-            <button className="bg-blue-600 text-white rounded-md py-2 px-4 text-xs hover:bg-blue-700 transition-colors">
+            <button
+              onClick={handleSearch}
+              className="bg-blue-600 text-white rounded-md py-2 px-4 text-xs hover:bg-blue-700 transition-colors"
+            >
               Search
             </button>
           </div>

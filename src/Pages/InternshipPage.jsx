@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { BsBookmarkPlus, BsSearch, BsGeoAlt } from "react-icons/bs";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { fetchSectionData } from "../Utils/api";
 import { formatDistanceToNow, parse, sub } from "date-fns";
 import Hero from "../Components/home/Hero";
@@ -26,6 +26,7 @@ const InternshipPage = () => {
   const [appliedDatePosted, setAppliedDatePosted] = useState("All");
   const internshipsPerPage = 6;
   const navigate = useNavigate();
+  const location = useLocation();
 
   const categoryMap = {
     1749121324626: "Technology",
@@ -42,6 +43,20 @@ const InternshipPage = () => {
   };
 
   const categories = [...new Set(Object.values(categoryMap))];
+
+  // Extract search query from URL on component mount
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const query = params.get('search') || '';
+    setSearchQuery(query);
+    setAppliedCategories([]);
+    setAppliedTypes([]);
+    setAppliedExperienceLevels([]);
+    setAppliedDatePosted("All");
+    setLocationQuery("");
+    setMaxSalary(100000);
+    setCurrentPage(1);
+  }, [location.search]);
 
   const debounce = (func, delay) => {
     let timeoutId;
@@ -147,6 +162,7 @@ const InternshipPage = () => {
     setAppliedExperienceLevels([]);
     setAppliedDatePosted("All");
     setCurrentPage(1);
+    navigate('/internships'); // Reset URL
     window.scrollTo(0, 0);
   };
 
@@ -572,7 +588,7 @@ const InternshipPage = () => {
           <div className="mb-4">
             <h3 className="font-medium text-sm mb-2">Salary (Up to)</h3>
             <label className="text-xs text-gray-600">
-              Max Salary: ₹{maxSalary}
+              Max Salary: â‚¹{maxSalary}
             </label>
             <input
               type="range"
@@ -736,7 +752,7 @@ const InternshipPage = () => {
                       disabled={currentPage === 1}
                       className="flex items-center gap-1 px-3 py-1.5 border border-gray-400 rounded-lg text-gray-700 hover:bg-gray-100 disabled:opacity-50"
                     >
-                      <span className="text-base">❮</span>
+                      <span className="text-base">â�®</span>
                       <span className="font-semibold">Previous</span>
                     </button>
                   </div>
@@ -762,7 +778,7 @@ const InternshipPage = () => {
                       className="flex items-center gap-1 px-3 py-1.5 border border-gray-400 rounded-lg text-gray-700 hover:bg-gray-100 disabled:opacity-50"
                     >
                       <span className="font-semibold">Next</span>
-                      <span className="text-base">❯</span>
+                      <span className="text-base">â�¯</span>
                     </button>
                   </div>
                 </div>
