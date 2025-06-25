@@ -29,6 +29,7 @@ const SignUpPage = () => {
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [consentChecked, setConsentChecked] = useState(false);
+  const [showFullPolicy, setShowFullPolicy] = useState(false);
 
   const roleIds = {
     student: "1747825619417",
@@ -106,11 +107,16 @@ const SignUpPage = () => {
     });
     setErrors({});
     setConsentChecked(false);
+    setShowFullPolicy(false);
   };
 
   const handleConsentChange = () => {
     setConsentChecked(!consentChecked);
     setErrors((prev) => ({ ...prev, consent: "" }));
+  };
+
+  const togglePolicyVisibility = () => {
+    setShowFullPolicy(!showFullPolicy);
   };
 
   const handleSubmit = async (e) => {
@@ -167,7 +173,6 @@ const SignUpPage = () => {
       let payload;
       let response;
 
-      // Construct the combined mobile number with country code
       const fullMobileNumber = `${
         formData.countryCode
       }${formData.mobile.trim()}`;
@@ -193,7 +198,6 @@ const SignUpPage = () => {
         response = await signupCompany(payload);
 
         if (response.success) {
-          // Clear form data
           setFormData({
             name: "",
             companyName: "",
@@ -206,8 +210,8 @@ const SignUpPage = () => {
           });
           setErrors({});
           setConsentChecked(false);
+          setShowFullPolicy(false);
 
-          // Automatically call login API for company or academy
           const loginResponse = await login({
             appName: "app8657281202648",
             username: formData.email.toLowerCase().trim(),
@@ -293,14 +297,13 @@ const SignUpPage = () => {
             JSON.stringify({
               legalname: formData.name.trim(),
               email: formData.email.toLowerCase().trim(),
-              password: formData.password, // Store password for student role
+              password: formData.password,
               role: roleNames[roleIds[role]],
               roleId: roleIds[role],
               mobile: fullMobileNumber,
               redirectTo: location.state?.from || "/editprofile",
             })
           );
-          // Clear form data
           setFormData({
             name: "",
             companyName: "",
@@ -313,6 +316,7 @@ const SignUpPage = () => {
           });
           setErrors({});
           setConsentChecked(false);
+          setShowFullPolicy(false);
           navigate("/otp");
         } else {
           setErrors({ general: response.message || "Signup failed" });
@@ -557,7 +561,7 @@ const SignUpPage = () => {
               />
             </div>
           </div>
-          <div className="flex flex-wrap justify-center gap-2 xs:gap-3 sm:gap-4 mb-3">
+          <div className="flex flex-rap justify-center gap-2 xs:gap-3 sm:gap-4 mb-3">
             {["student", "company", "academy"].map((r) => (
               <div
                 key={r}
@@ -684,7 +688,10 @@ const SignUpPage = () => {
                       >
                         {errors[field.name]}
                       </p>
-                    )}
+                    )}{role === "student" &&
+                      field.name === "confirmPassword" && (
+                        <div className="h-12" /> // Empty space to match extra field height
+                      )}
                   </div>
                 ))}
                 <div className="flex flex-col space-y-2">
@@ -698,11 +705,30 @@ const SignUpPage = () => {
                     >
                       Privacy Policy
                     </Link>
-                    . I give my free, informed, and explicit consent to INTURN
-                    PH to collect, process, and use my personal data for the
-                    purposes of internship and employment matching, as well as
-                    academic coordination and certification. I understand that I
-                    may withdraw my consent at any time.
+                    {showFullPolicy ? (
+                      <>
+                        . I give my free, informed, and explicit consent to INTURN
+                        PH to collect, process, and use my personal data for the
+                        purposes of internship and employment matching, as well as
+                        academic coordination and certification. I understand that I
+                        may withdraw my consent at any time.
+                        <button
+                          type="button"
+                          onClick={togglePolicyVisibility}
+                          className="text-[#3D7EFF] font-semibold hover:underline ml-1 text-xs xs:text-sm"
+                        >
+                          Less
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={togglePolicyVisibility}
+                        className="text-[#3D7EFF] font-semibold hover:underline ml-1 text-xs xs:text-sm"
+                      >
+                        More
+                      </button>
+                    )}
                   </p>
                   <label className="flex items-center space-x-2">
                     <input
