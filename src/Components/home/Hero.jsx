@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import bannerImage from '../../assets/Hero/banner.jpg'; // Default background
+import bannerImage from '../../assets/Hero/banner.jpg';
 import { fetchSectionData } from '../../Utils/api';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
-const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY; // Replace with your valid Google Maps API key
+const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
 const Hero = ({
   title = 'Top Internships and OJT Programs in the Philippines for Career Launch',
@@ -65,11 +65,34 @@ const Hero = ({
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [location, setLocation] = useState('');
+  const [category, setCategory] = useState('');
   const [suggestions, setSuggestions] = useState([]);
+  const [categoryOptions, setCategoryOptions] = useState(['Select Category']);
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
   const [isGoogleMapsLoaded, setIsGoogleMapsLoaded] = useState(false);
   const locationInputRef = useRef(null);
   const autocompleteRef = useRef(null);
+
+  // Fetch categories from category collection
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await fetchSectionData({
+          collectionName: 'category',
+          query: {},
+        });
+        const categories = response.map((cat) => cat.sectionData?.category?.titleofinternship || 'Unknown');
+        setCategoryOptions(['Select Category', ...new Set(categories)]);
+      } catch (err) {
+        console.error('Error fetching categories:', err);
+        toast.error('Failed to load categories.', {
+          position: 'top-right',
+          autoClose: 5000,
+        });
+      }
+    };
+    fetchCategories();
+  }, []);
 
   // Google Maps Autocomplete for location
   useEffect(() => {
@@ -246,13 +269,16 @@ const Hero = ({
   };
 
   const handleSearch = () => {
-    console.log('handleSearch triggered with:', { searchQuery, location });
+    console.log('handleSearch triggered with:', { searchQuery, location, category });
     const queryParams = new URLSearchParams();
     if (searchQuery.trim()) {
       queryParams.set('search', searchQuery.trim());
     }
     if (location.trim()) {
       queryParams.set('location', location.trim());
+    }
+    if (category && category !== 'Select Category') {
+      queryParams.set('category', category.trim());
     }
     const queryString = queryParams.toString();
     const targetUrl = queryString ? `/internship?${queryString}` : '/internship';
@@ -341,13 +367,20 @@ const Hero = ({
                       <p className="text-red-500 text-xs mt-1">{error}</p>
                     )}
                   </div>
-                ) : (
-                  <select className="w-full md:flex-1 border border-gray-300 rounded-md p-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    {field.options.map((option, optIndex) => (
-                      <option key={optIndex}>{option}</option>
+                ) : field.type === 'select' ? (
+                  <select
+                    className="w-full md:flex-1 border border-gray-300 rounded-md p-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                  >
+                    {categoryOptions.map((option, optIndex) => (
+                      <option key={optIndex} value={option}>
+                        {option}
+                      </option>
                     ))}
                   </select>
-                )}
+                ) : null}
               </React.Fragment>
             ))}
             <button

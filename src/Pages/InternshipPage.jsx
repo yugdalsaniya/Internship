@@ -25,25 +25,38 @@ const InternshipPage = () => {
   const [appliedExperienceLevels, setAppliedExperienceLevels] = useState([]);
   const [appliedDatePosted, setAppliedDatePosted] = useState("All");
   const [bookmarked, setBookmarked] = useState({});
+  const [categoryMap, setCategoryMap] = useState({});
+  const [categories, setCategories] = useState([]);
   const internshipsPerPage = 6;
   const navigate = useNavigate();
   const location = useLocation();
 
-  const categoryMap = {
-    1749121324626: "Technology",
-    1749121385325: "Analytics",
-    1749121505889: "Finance",
-    1749121597482: "Marketing",
-    1749121776119: "Cybersecurity",
-    1749122138386: "E-commerce",
-    1749122277361: "Education",
-    1749122393285: "Tourism",
-    TECHNOLOGY: "Technology",
-    Education: "Education",
-    Tourism: "Tourism",
-  };
-
-  const categories = [...new Set(Object.values(categoryMap))];
+  // Fetch categories and create categoryMap
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await fetchSectionData({
+          collectionName: "category",
+          query: {},
+        });
+        const categoryMapping = response.reduce((map, category) => {
+          const categoryId = category._id;
+          const categoryName = category.sectionData?.category?.titleofinternship || "Unknown";
+          map[categoryId] = categoryName;
+          map[categoryName.toUpperCase()] = categoryName;
+          return map;
+        }, {
+          Education: "Education",
+          Tourism: "Tourism",
+        });
+        setCategoryMap(categoryMapping);
+        setCategories([...new Set(Object.values(categoryMapping))]);
+      } catch (err) {
+        console.error("Error fetching categories:", err);
+      }
+    };
+    fetchCategories();
+  }, []);
 
   const toggleBookmark = (id) => {
     setBookmarked((prev) => ({
@@ -56,10 +69,12 @@ const InternshipPage = () => {
     const params = new URLSearchParams(location.search);
     const search = params.get('search')?.trim() || '';
     const loc = params.get('location')?.trim() || '';
-    console.log('URL Query Parameters:', { search, loc });
+    const cat = params.get('category')?.trim() || '';
+    console.log('URL Query Parameters:', { search, loc, cat });
     setSearchQuery(search);
     setLocationQuery(loc);
-    setAppliedCategories([]);
+    setAppliedCategories(cat ? [cat] : []);
+    setTempCategories(cat ? [cat] : []);
     setAppliedTypes([]);
     setAppliedExperienceLevels([]);
     setAppliedDatePosted("All");
@@ -336,7 +351,7 @@ const InternshipPage = () => {
         }
       });
 
-    console.log('Filtered internships:', filtered.length, { searchQuery, locationQuery });
+    console.log('Filtered internships:', filtered.length, { searchQuery, locationQuery, appliedCategories });
     return filtered;
   }, [
     internships,
@@ -348,6 +363,7 @@ const InternshipPage = () => {
     searchQuery,
     locationQuery,
     maxSalary,
+    categoryMap,
   ]);
 
   const totalPages = Math.ceil(filteredInternships.length / internshipsPerPage);
@@ -440,15 +456,15 @@ const InternshipPage = () => {
 
   return (
     <>
-       <Hero
-          title="Internships"
-          subtitle="Empower Your Future: Unleash Limitless Career Possibilities!"
-          searchFields={[]}
-          stats={[]}
-          backgroundImage={backgroundImg}
-          gradient="linear-gradient(to right, rgba(249, 220, 223, 0.8), rgba(181, 217, 211, 0.8))"
-          showPostButton={true}
-        />
+      <Hero
+        title="Internships"
+        subtitle="Empower Your Future: Unleash Limitless Career Possibilities!"
+        searchFields={[]}
+        stats={[]}
+        backgroundImage={backgroundImg}
+        gradient="linear-gradient(to right, rgba(249, 220, 223, 0.8), rgba(181, 217, 211, 0.8))"
+        showPostButton={true}
+      />
       <div className="flex flex-col md:flex-row px-4 md:px-12 py-8 bg-[#fafafa]">
         <div className="w-full md:w-1/4 bg-gradient-to-b from-[#FFFCF2] to-[#FEEFF4] shadow-md rounded-xl p-6 mb-6 md:mb-0">
           <style>{`
