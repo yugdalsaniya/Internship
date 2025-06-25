@@ -1,19 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import bannerImage from '../../assets/Hero/banner.jpg'; // Default background
 import { fetchSectionData } from '../../Utils/api';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
+
+const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY; // Replace with your valid Google Maps API key
 
 const Hero = ({
   title = 'Top Internships and OJT Programs in the Philippines for Career Launch',
   subtitle = 'Connecting Talent with Opportunity: Your Gateway to Career Success',
   searchFields = [
     { type: 'input', placeholder: 'Internship Title or Company' },
-    { type: 'select', placeholder: 'Select Location', options: ['Select Location'] },
+    { type: 'input', placeholder: 'Search Location' },
     { type: 'select', placeholder: 'Select Category', options: ['Select Category'] },
   ],
   backgroundImage = bannerImage,
   gradient = 'linear-gradient(to right, rgba(249, 220, 223, 0.8), rgba(181, 217, 211, 0.8))',
-  showPostButton = false, // Prop to control button visibility
+  showPostButton = false,
 }) => {
   const [stats, setStats] = useState([
     {
@@ -61,9 +64,120 @@ const Hero = ({
   const navigate = useNavigate();
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [location, setLocation] = useState('');
   const [suggestions, setSuggestions] = useState([]);
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
+  const [isGoogleMapsLoaded, setIsGoogleMapsLoaded] = useState(false);
+  const locationInputRef = useRef(null);
+  const autocompleteRef = useRef(null);
 
+  // Google Maps Autocomplete for location
+  useEffect(() => {
+    const loadGoogleMapsScript = () => {
+      return new Promise((resolve, reject) => {
+        if (window.google && window.google.maps && window.google.maps.places) {
+          resolve();
+          return;
+        }
+        const existingScript = document.querySelector(
+          'script[src*="maps.googleapis.com/maps/api/js"]'
+        );
+        if (existingScript) {
+          existingScript.addEventListener("load", resolve);
+          existingScript.addEventListener("error", reject);
+          return;
+        }
+        const script = document.createElement("script");
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places`;
+        script.async = true;
+        script.defer = true;
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error("Failed to load Google Maps API"));
+        document.head.appendChild(script);
+      });
+    };
+
+    loadGoogleMapsScript()
+      .then(() => {
+        if (!window.google?.maps?.places) {
+          throw new Error("Google Maps places library not loaded");
+        }
+        setIsGoogleMapsLoaded(true);
+        autocompleteRef.current = new window.google.maps.places.Autocomplete(
+          locationInputRef.current,
+          {
+            types: ["(cities)"],
+            fields: ["formatted_address", "name"],
+            componentRestrictions: { country: "ph" },
+          }
+        );
+        autocompleteRef.current.addListener("place_changed", () => {
+          const place = autocompleteRef.current.getPlace();
+          if (place.formatted_address || place.name) {
+            setLocation(place.formatted_address || place.name);
+          }
+        });
+      })
+      .catch((err) => {
+        console.error("Error loading Google Maps:", err);
+        setError(
+          "Location suggestions unavailable. Please type a city manually."
+        );
+        toast.error(
+          "Location suggestions unavailable. Please type a city manually.",
+          {
+            position: "top-right",
+            autoClose: 5000,
+          }
+        );
+        setTimeout(() => setError(""), 5000);
+      });
+
+    return () => {
+      if (autocompleteRef.current && window.google?.maps?.event) {
+        window.google.maps.event.clearInstanceListeners(
+          autocompleteRef.current
+        );
+      }
+    };
+  }, []);
+
+  // Fetch internship title and company suggestions
+  useEffect(() => {
+    const fetchSuggestions = async () => {
+      if (searchQuery.trim().length < 2) {
+        setSuggestions([]);
+        return;
+      }
+      setIsLoadingSuggestions(true);
+      try {
+        const response = await fetchSectionData({
+          collectionName: 'jobpost',
+          query: {
+            'sectionData.jobpost.type': 'Internship',
+            $or: [
+              { 'sectionData.jobpost.title': { $regex: searchQuery, $options: 'i' } },
+              { 'sectionData.jobpost.company': { $regex: searchQuery, $options: 'i' } },
+            ],
+          },
+          limit: 5,
+        });
+        const suggestionItems = response.map((job) => ({
+          title: job.sectionData?.jobpost?.title || 'Unknown Title',
+          company: job.sectionData?.jobpost?.company || 'Unknown Company',
+        }));
+        setSuggestions(suggestionItems);
+      } catch (error) {
+        console.error('Error fetching suggestions:', error);
+      } finally {
+        setIsLoadingSuggestions(false);
+      }
+    };
+
+    fetchSuggestions();
+  }, [searchQuery]);
+
+  // Handle stats fetching
   useEffect(() => {
     const fetchCounts = async () => {
       try {
@@ -102,7 +216,7 @@ const Hero = ({
             if (stat.label === 'Companies') {
               return { ...stat, count: companyCount.toLocaleString() };
             }
- if (stat.label === 'Academy') {
+            if (stat.label === 'Academy') {
               return { ...stat, count: academyCount.toLocaleString() };
             }
             return stat;
@@ -116,63 +230,12 @@ const Hero = ({
     fetchCounts();
   }, []);
 
-  useEffect(() => {
-    const fetchSuggestions = async () => {
-      if (searchQuery.trim().length < 2) {
-        setSuggestions([]);
-        setIsLoadingSuggestions(false);
-        return;
-      }
-
-      setIsLoadingSuggestions(true);
-      try {
-        const response = await fetchSectionData({
-          collectionName: 'jobpost',
-          query: {
-            'sectionData.jobpost.type': 'Internship',
-            $or: [
-              { 'sectionData.jobpost.title': { $regex: searchQuery, $options: 'i' } },
-              { 'sectionData.jobpost.company': { $regex: searchQuery, $options: 'i' } },
-            ],
-          },
-          projection: {
-            'sectionData.jobpost.title': 1,
-            'sectionData.jobpost.company': 1,
-          },
-          limit: 5,
-        });
-
-        const uniqueSuggestions = [
-          ...new Set(
-            response.flatMap((job) => [
-              job.sectionData?.jobpost?.title,
-              job.sectionData?.jobpost?.company,
-            ]).filter((item) => item && item.toLowerCase().includes(searchQuery.toLowerCase()))
-          ),
-        ].slice(0, 5);
-
-        setSuggestions(uniqueSuggestions);
-      } catch (error) {
-        console.error('Error fetching suggestions:', error);
-        setSuggestions([]);
-      } finally {
-        setIsLoadingSuggestions(false);
-      }
-    };
-
-    const debounce = setTimeout(() => {
-      fetchSuggestions();
-    }, 300);
-
-    return () => clearTimeout(debounce);
-  }, [searchQuery]);
-
   const handlePostInternship = () => {
     const user = JSON.parse(localStorage.getItem('user'));
     const isAuthenticated = !!user && !!localStorage.getItem('accessToken');
 
     if (isAuthenticated) {
-      if (user.roleId === '1747825619417') {
+      if (user.roleId === '1747825619417') { // Student role
         navigate('/StudentPostForm');
       } else {
         setError('Only company users can post internships.');
@@ -183,17 +246,32 @@ const Hero = ({
   };
 
   const handleSearch = () => {
+    console.log('handleSearch triggered with:', { searchQuery, location });
+    const queryParams = new URLSearchParams();
     if (searchQuery.trim()) {
-      navigate(`/internship?search=${encodeURIComponent(searchQuery.trim())}`);
-    } else {
-      navigate('/internship');
+      queryParams.set('search', searchQuery.trim());
+    }
+    if (location.trim()) {
+      queryParams.set('location', location.trim());
+    }
+    const queryString = queryParams.toString();
+    const targetUrl = queryString ? `/internship?${queryString}` : '/internship';
+    console.log('Navigating to:', targetUrl);
+    try {
+      navigate(targetUrl);
+    } catch (err) {
+      console.error('Navigation error:', err);
+      setError('Failed to perform search. Please try again.');
+      toast.error('Failed to perform search. Please try again.', {
+        position: 'top-right',
+        autoClose: 5000,
+      });
     }
   };
 
-  const handleSuggestionClick = (suggestion) => {
-    setSearchQuery(suggestion);
+  const handleSuggestionSelect = (suggestion) => {
+    setSearchQuery(suggestion.title || suggestion.company);
     setSuggestions([]);
-    navigate(`/internship?search=${encodeURIComponent(suggestion)}`);
   };
 
   return (
@@ -219,7 +297,7 @@ const Hero = ({
           <div className="bg-white rounded-lg shadow-md flex flex-col md:flex-row items-center w-full max-w-3xl p-3 space-y-3 md:space-y-0 md:space-x-3 relative">
             {searchFields.map((field, index) => (
               <React.Fragment key={index}>
-                {field.type === 'input' ? (
+                {field.type === 'input' && field.placeholder === 'Internship Title or Company' ? (
                   <div className="relative w-full md:flex-1">
                     <input
                       type="text"
@@ -229,23 +307,38 @@ const Hero = ({
                       onChange={(e) => setSearchQuery(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
                     />
-                    {isLoadingSuggestions && (
-                      <div className="absolute top-full left-0 w-full bg-white border border-gray-300 rounded-md shadow-md mt-1 z-10">
-                        <div className="p-2 text-sm text-gray-500">Loading...</div>
-                      </div>
-                    )}
-                    {suggestions.length > 0 && !isLoadingSuggestions && (
-                      <ul className="absolute top-full left-0 w-full bg-white border border-gray-300 rounded-md shadow-md mt-1 z-10 max-h-60 overflow-y-auto">
-                        {suggestions.map((suggestion, idx) => (
-                          <li
-                            key={idx}
-                            className="p-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
-                            onClick={() => handleSuggestionClick(suggestion)}
-                          >
-                            {suggestion}
-                          </li>
-                        ))}
+                    {suggestions.length > 0 && (
+                      <ul className="absolute z-10 w-full bg-white border border-gray-300 rounded-md mt-1 max-h-60 overflow-auto shadow-lg">
+                        {isLoadingSuggestions ? (
+                          <li className="p-2 text-sm text-gray-600">Loading...</li>
+                        ) : (
+                          suggestions.map((suggestion, idx) => (
+                            <li
+                              key={idx}
+                              className="p-2 text-sm text-gray-800 hover:bg-gray-100 cursor-pointer"
+                              onClick={() => handleSuggestionSelect(suggestion)}
+                            >
+                              {suggestion.title} - {suggestion.company}
+                            </li>
+                          ))
+                        )}
                       </ul>
+                    )}
+                  </div>
+                ) : field.type === 'input' && field.placeholder === 'Search Location' ? (
+                  <div className="relative w-full md:flex-1">
+                    <input
+                      type="text"
+                      placeholder={isGoogleMapsLoaded ? field.placeholder : 'Type city manually'}
+                      className="w-full border border-gray-300 rounded-md p-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      ref={locationInputRef}
+                      value={location}
+                      onChange={(e) => setLocation(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                      disabled={!isGoogleMapsLoaded && error}
+                    />
+                    {!isGoogleMapsLoaded && error && (
+                      <p className="text-red-500 text-xs mt-1">{error}</p>
                     )}
                   </div>
                 ) : (
@@ -275,7 +368,9 @@ const Hero = ({
             >
               Post Internship
             </button>
-            {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+            {error && !isGoogleMapsLoaded && (
+              <p className="text-red-500 text-sm mt-2">{error}</p>
+            )}
           </div>
         )}
 
