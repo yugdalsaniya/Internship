@@ -20,16 +20,23 @@ const TopEmployers = () => {
 
         if (response.data.success && Array.isArray(response.data.data)) {
           const companyList = response.data.data
-            .filter(item => item.sectionData?.Company?.homepageCheckbox === true)
+            .filter(item => item.sectionData?.Company?.topemployer === true)
             .map(item => {
               const company = item.sectionData.Company;
               return {
+                id: item._id, // Unique identifier to prevent duplicates
                 name: company.name || 'Unnamed',
-                logo: company.logoImage || fallbackLogo
+                logo: company.logoImage || fallbackLogo,
+                location: company.organizationcity || 'Unknown Location'
               };
             });
 
-          setEmployers(companyList);
+          // Remove duplicates by ID to handle cases like multiple "Shopee Philippines"
+          const uniqueCompanies = Array.from(
+            new Map(companyList.map(company => [company.id, company])).values()
+          );
+
+          setEmployers(uniqueCompanies);
         } else {
           setError('No valid employer data found.');
         }
@@ -87,9 +94,9 @@ const TopEmployers = () => {
 
         {!loading && !error && employers.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {employers.slice(0, 4).map((employer, index) => (
+            {employers.slice(0, 4).map((employer) => (
               <div
-                key={index}
+                key={employer.id}
                 className="bg-white rounded-2xl p-6 flex flex-col items-center shadow-sm hover:shadow-md transition-shadow duration-300 border border-gray-300"
               >
                 <img
@@ -98,11 +105,37 @@ const TopEmployers = () => {
                   className="w-36 h-24 object-contain mb-4"
                   onError={handleImageError}
                 />
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">{employer.name}</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">{employer.name}</h3>
+                <div className="flex items-center text-sm text-gray-600 mb-4">
+                  <svg
+                    className="w-4 h-4 mr-1"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                    />
+                  </svg>
+                  <span>{employer.location}</span>
+                </div>
                 <div className="flex space-x-3">
-                  <button className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-medium py-2 px-4 rounded-full hover:from-blue-600 hover:to-purple-700 whitespace-nowrap">
+                  <Link
+                    to={`/${encodeURIComponent(employer.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''))}/${employer.id}`}
+                    className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-medium py-2 px-4 rounded-full hover:from-blue-600 hover:to-purple-700 whitespace-nowrap"
+                  >
                     Explore
-                  </button>
+                  </Link>
                 </div>
               </div>
             ))}
