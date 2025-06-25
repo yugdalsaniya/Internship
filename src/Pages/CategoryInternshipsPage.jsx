@@ -318,33 +318,45 @@ export default function CategoryInternshipsPage() {
           </div>
         ))}
       </div>
-      <div className="flex justify-between items-center mt-6">
-        <div className="flex gap-4 justify-center w-full">
-          {Array.from({ length: totalPages }, (_, index) => (
+      {totalPages > 1 && (
+        <div className="flex justify-between items-center mt-6">
+          <div>
             <button
-              key={index + 1}
-              onClick={() => handlePageChange(index + 1)}
-              className={`w-8 h-8 flex items-center justify-center rounded-lg font-medium ${
-                currentPage === index + 1
-                  ? 'bg-blue-600 text-white'
-                  : 'border border-gray-200 text-gray-700 hover:bg-gray-100'
-              }`}
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="flex items-center gap-2 px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-100 disabled:opacity-50"
             >
-              {index + 1}
+              <span className="text-base">←</span>
+              <span className="font-medium">Previous</span>
             </button>
-          ))}
+          </div>
+          <div className="flex gap-4 justify-center">
+            {Array.from({ length: totalPages }, (_, index) => (
+              <button
+                key={index + 1}
+                onClick={() => handlePageChange(index + 1)}
+                className={`w-8 h-8 flex items-center justify-center rounded-lg font-medium ${
+                  currentPage === index + 1
+                    ? 'bg-blue-600 text-white'
+                    : 'border border-gray-200 text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                {index + 1}
+              </button>
+            ))}
+          </div>
+          <div>
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="flex items-center gap-2 px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+            >
+              <span className="font-medium">Next</span>
+              <span className="text-base">→</span>
+            </button>
+          </div>
         </div>
-        <div className="ml-auto">
-          <button
-            onClick={() => handlePageChange(currentPage + 1)}
-            disabled={currentPage === totalPages}
-            className="flex items-center gap-2 px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-100 disabled:opacity-50"
-          >
-            <span className="font-medium">Next</span>
-            <span className="text-base">→</span>
-          </button>
-        </div>
-      </div>
+      )}
     </div>
   );
 };
