@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { BiTime } from "react-icons/bi"; // Import BiTime from react-icons/bi
-import { FaCheckCircle, FaPlus } from "react-icons/fa"; // Import FaCheckCircle and FaPlus from react-icons/fa
+import { BiTime } from "react-icons/bi";
+import { FaCheckCircle, FaPlus } from "react-icons/fa";
 import { RxCross2 } from "react-icons/rx";
 import { IoCheckmark } from "react-icons/io5";
 import { toast } from "react-toastify";
@@ -17,7 +17,8 @@ const OrganizationDetails = ({ userData, updateCompletionStatus, onBack }) => {
     organizationCity: "",
     industry: [],
     noOfEmployees: "",
-    organizationLogo: null,
+    logoImage: null,
+    website: "", // Added website field
   });
   const [error, setError] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -122,7 +123,9 @@ const OrganizationDetails = ({ userData, updateCompletionStatus, onBack }) => {
         });
 
         if (!response || (Array.isArray(response) && response.length === 0)) {
-          throw new Error("Organization data not found. Please contact support.");
+          throw new Error(
+            "Organization data not found. Please contact support."
+          );
         }
 
         const companyData = Array.isArray(response)
@@ -136,10 +139,14 @@ const OrganizationDetails = ({ userData, updateCompletionStatus, onBack }) => {
           industry: Array.isArray(companyData.industry)
             ? companyData.industry
             : typeof companyData.industry === "string"
-            ? companyData.industry.split(",").map((item) => item.trim()).filter(Boolean)
+            ? companyData.industry
+                .split(",")
+                .map((item) => item.trim())
+                .filter(Boolean)
             : [],
           noOfEmployees: companyData.noofemployees || "",
-          organizationLogo: companyData.organizationlogo || null,
+          logoImage: companyData.logoImage || null,
+          website: companyData.website || "", // Added website field
         };
 
         const isFormComplete =
@@ -154,8 +161,8 @@ const OrganizationDetails = ({ userData, updateCompletionStatus, onBack }) => {
           updateCompletionStatus("Organization Details", isFormComplete);
         }
 
-        if (companyData.organizationlogo) {
-          setLogoPreview(companyData.organizationlogo);
+        if (companyData.logoImage) {
+          setLogoPreview(companyData.logoImage);
         }
       } catch (err) {
         const errorMessage = err.message || "Failed to load organization data.";
@@ -254,17 +261,21 @@ const OrganizationDetails = ({ userData, updateCompletionStatus, onBack }) => {
         toast.error("File size exceeds 1MB limit.");
         return;
       }
-      if (!["image/jpeg", "image/png", "image/gif", "image/bmp"].includes(file.type)) {
+      if (
+        !["image/jpeg", "image/png", "image/gif", "image/bmp"].includes(
+          file.type
+        )
+      ) {
         toast.error("Only JPG, PNG, GIF, and BMP formats are supported.");
         return;
       }
-      setFormData((prev) => ({ ...prev, organizationLogo: file }));
+      setFormData((prev) => ({ ...prev, logoImage: file }));
       setLogoPreview(URL.createObjectURL(file));
     }
   };
 
   const handleRemoveLogo = () => {
-    setFormData((prev) => ({ ...prev, organizationLogo: null }));
+    setFormData((prev) => ({ ...prev, logoImage: null }));
     setLogoPreview(null);
   };
 
@@ -277,6 +288,14 @@ const OrganizationDetails = ({ userData, updateCompletionStatus, onBack }) => {
       !formData.noOfEmployees
     ) {
       return "Please fill all required fields.";
+    }
+    if (
+      formData.website &&
+      !/^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/.test(
+        formData.website
+      )
+    ) {
+      return "Please enter a valid website URL (e.g., https://example.com).";
     }
     return "";
   };
@@ -321,16 +340,21 @@ const OrganizationDetails = ({ userData, updateCompletionStatus, onBack }) => {
         query: { _id: userId },
       });
 
-      if (!existingUser || (Array.isArray(existingUser) && existingUser.length === 0)) {
-        throw new Error("User not found in database. Please sign up or contact support.");
+      if (
+        !existingUser ||
+        (Array.isArray(existingUser) && existingUser.length === 0)
+      ) {
+        throw new Error(
+          "User not found in database. Please sign up or contact support."
+        );
       }
 
-      let uploadedFilePath = formData.organizationLogo;
-      if (formData.organizationLogo instanceof File) {
+      let uploadedFilePath = formData.logoImage;
+      if (formData.logoImage instanceof File) {
         const uploadResponse = await uploadAndStoreFile({
           appName: "app8657281202648",
           moduleName: "company",
-          file: formData.organizationLogo,
+          file: formData.logoImage,
           userId,
         });
 
@@ -349,13 +373,14 @@ const OrganizationDetails = ({ userData, updateCompletionStatus, onBack }) => {
         "sectionData.Company.organizationcity": formData.organizationCity,
         "sectionData.Company.industry": formData.industry,
         "sectionData.Company.noofemployees": formData.noOfEmployees,
+        "sectionData.Company.website": formData.website, // Added website field
         "sectionData.Company.lastUpdated": new Date().toISOString(),
       };
 
-      if (uploadedFilePath && uploadedFilePath !== formData.organizationLogo) {
-        updateData["sectionData.Company.organizationlogo"] = uploadedFilePath;
-      } else if (formData.organizationLogo === null) {
-        updateData["sectionData.Company.organizationlogo"] = null;
+      if (uploadedFilePath && uploadedFilePath !== formData.logoImage) {
+        updateData["sectionData.Company.logoImage"] = uploadedFilePath;
+      } else if (formData.logoImage === null) {
+        updateData["sectionData.Company.logoImage"] = null;
       }
 
       const response = await mUpdate({
@@ -368,15 +393,17 @@ const OrganizationDetails = ({ userData, updateCompletionStatus, onBack }) => {
 
       if (response?.success) {
         if (response.matchedCount === 0) {
-          throw new Error("Failed to update organization details: User not found.");
+          throw new Error(
+            "Failed to update organization details: User not found."
+          );
         }
         toast.success("Organization details updated successfully!");
         setIsCompleted(true);
         if (updateCompletionStatus) {
           updateCompletionStatus("Organization Details", true);
         }
-        if (uploadedFilePath && uploadedFilePath !== formData.organizationLogo) {
-          setFormData((prev) => ({ ...prev, organizationLogo: uploadedFilePath }));
+        if (uploadedFilePath && uploadedFilePath !== formData.logoImage) {
+          setFormData((prev) => ({ ...prev, logoImage: uploadedFilePath }));
           setLogoPreview(uploadedFilePath);
         }
       } else {
@@ -390,7 +417,8 @@ const OrganizationDetails = ({ userData, updateCompletionStatus, onBack }) => {
         errorMessage = "Authentication failed. Please log in again.";
         setTimeout(() => onBack?.(), 2000);
       } else if (err.message.includes("User not found")) {
-        errorMessage = "User not found in database. Please sign up or contact support.";
+        errorMessage =
+          "User not found in database. Please sign up or contact support.";
         setTimeout(() => {
           setError(null);
           onBack?.();
@@ -435,7 +463,9 @@ const OrganizationDetails = ({ userData, updateCompletionStatus, onBack }) => {
         </div>
 
         <div className="mb-4">
-          <p className="text-sm font-medium text-gray-700 mb-1">Organization Description</p>
+          <p className="text-sm font-medium text-gray-700 mb-1">
+            Organization Description
+          </p>
           <textarea
             name="description"
             value={formData.description || ""}
@@ -464,6 +494,21 @@ const OrganizationDetails = ({ userData, updateCompletionStatus, onBack }) => {
               disabled={isProcessing}
             />
           </div>
+        </div>
+
+        <div className="mb-6">
+          <label className="block font-medium mb-2 text-sm text-gray-700">
+            Website
+          </label>
+          <input
+            type="text"
+            name="website"
+            value={formData.website || ""}
+            onChange={handleInputChange}
+            placeholder="https://example.com"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring focus:ring-blue-200"
+            disabled={isProcessing}
+          />
         </div>
 
         <div className="mb-6">
@@ -532,6 +577,13 @@ const OrganizationDetails = ({ userData, updateCompletionStatus, onBack }) => {
                 >
                   Change Logo
                 </button>
+                <button
+                  onClick={handleRemoveLogo}
+                  className="mt-2 ml-2 bg-red-500 text-white px-4 py-1 rounded hover:bg-red-600 transition"
+                  disabled={isProcessing}
+                >
+                  Remove Logo
+                </button>
                 <input
                   type="file"
                   accept="image/jpeg,image/png,image/gif,image/bmp"
@@ -565,7 +617,8 @@ const OrganizationDetails = ({ userData, updateCompletionStatus, onBack }) => {
               </>
             )}
             <p className="text-xs text-gray-500 mt-2">
-              Max file size: 1MB and max resolution: 500px x 500px. File type: jpg, png, gif, bmp
+              Max file size: 1MB and max resolution: 500px x 500px. File type:
+              jpg, png, gif, bmp
             </p>
           </div>
         </div>
