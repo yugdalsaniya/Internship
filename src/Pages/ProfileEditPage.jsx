@@ -18,7 +18,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 const ProfileEditPage = () => {
-  const [activeSection, setActiveSection] = useState('Company Details');
+  const [activeSection, setActiveSection] = useState('Personal Details');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [completionStatus, setCompletionStatus] = useState({});
   const location = useLocation();
@@ -52,13 +52,13 @@ const ProfileEditPage = () => {
     'accomplishments-and-initiatives': 'Accomplishments & Initiatives',
     'personal-details': 'Personal Details',
     'social-links': 'Social Links',
-    'company-details': 'Company Details',
+    'company-details': 'Personal Details',
     'organization-details': 'Organization Details',
   };
 
   useEffect(() => {
     const path = location.pathname.split('/').pop();
-    const section = pathToSection[path] || (allowedRoles.includes(userData.role) ? 'Company Details' : 'Basic Details');
+    const section = pathToSection[path] || (allowedRoles.includes(userData.role) ? 'Personal Details' : 'Basic Details');
     setActiveSection(section);
   }, [location, userData.role]);
 
@@ -128,7 +128,8 @@ const ProfileEditPage = () => {
               'sectionData.appuser.legalname': 1,
               'sectionData.appuser.email': 1,
               'sectionData.appuser.mobile': 1,
-              'sectionData.appuser.location': 1,
+              'sectionData.appuser.organisationcollege': 1,
+              'sectionData.appuser.post': 1,
               'sectionData.appuser.certificatesdetails': 1,
               'sectionData.appuser.projectdetails': 1,
               'sectionData.appuser.achievementsdetails': 1,
@@ -161,14 +162,19 @@ const ProfileEditPage = () => {
           Resume: !!apiData.resume,
           About: !!apiData.about?.trim(),
           Skills: !!apiData.skills?.length,
-          'Personal Details':
-            !!apiData.addressline1 &&
-            !!apiData.zipcode1 &&
-            !!apiData.location1 &&
-            (apiData.copycurrentaddress ||
-              (!!apiData.addressline3 &&
-                !!apiData.zipcode2 &&
-                !!apiData.location2)),
+          'Personal Details': allowedRoles.includes(userData.role)
+            ? !!apiData.legalname &&
+              !!apiData.email &&
+              !!apiData.mobile &&
+              (userData.roleId !== '1747903042943' ||
+                (!!apiData.organisationcollege && !!apiData.post))
+            : !!apiData.addressline1 &&
+              !!apiData.zipcode1 &&
+              !!apiData.location1 &&
+              (apiData.copycurrentaddress ||
+                (!!apiData.addressline3 &&
+                  !!apiData.zipcode2 &&
+                  !!apiData.location2)),
           'Social Links':
             !!apiData.linkedIn ||
             !!apiData.facebook ||
@@ -185,11 +191,6 @@ const ProfileEditPage = () => {
             !!apiData.education?.length ||
             !!apiData.intermediateeducation?.length ||
             !!apiData.highschooleducation?.length,
-          'Company Details':
-            !!apiData.legalname &&
-            !!apiData.email &&
-            !!apiData.mobile &&
-            !!apiData.location,
           'Organization Details':
             !!organizationData.organizationName &&
             !!organizationData.organizationcity &&
@@ -227,7 +228,7 @@ const ProfileEditPage = () => {
 
   const sections = allowedRoles.includes(userData.role)
     ? [
-        { label: 'Company Details', path: 'company-details', completed: completionStatus['Company Details'] || false, required: false },
+        { label: 'Personal Details', path: 'company-details', completed: completionStatus['Personal Details'] || false, required: false },
         ...(userData.roleId !== '1747903042943' ? [
           { label: 'Organization Details', path: 'organization-details', completed: completionStatus['Organization Details'] || false, required: false }
         ] : []),
@@ -280,7 +281,7 @@ const ProfileEditPage = () => {
         >
           <div className="p-4 md:hidden">
             <button
-              className="w-8 h-8 flex items-center justify-center rounded-full bg-blue-100 hover:bg-blue-200 transition-colors duration-200"
+              className="w-8 h-8 flex items-center justify-center rounded-full bg-blue-100 hover:bg-blue-200 uncompromising-colors duration-200"
               onClick={closeSidebar}
               aria-label="Close sidebar"
             >
@@ -298,7 +299,7 @@ const ProfileEditPage = () => {
             )}
             <div className="bg-gray-100 p-4 rounded-lg">
               <h3 className="font-semibold text-sm">Enhance your Profile</h3>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-500. mt-1">
                 Stay ahead of the competition by regularly updating your profile.
               </p>
               <div className="w-full bg-gray-300 h-2 rounded-full mt-3 relative">
