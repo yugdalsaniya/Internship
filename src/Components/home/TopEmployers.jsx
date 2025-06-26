@@ -20,23 +20,38 @@ const TopEmployers = () => {
 
         if (response.data.success && Array.isArray(response.data.data)) {
           const companyList = response.data.data
-            .filter(item => item.sectionData?.Company?.topemployer === true)
+            .filter(item => item.sectionData?.Company?.homepageCheckbox === true)
             .map(item => {
               const company = item.sectionData.Company;
+              // Ensure logo is a valid string, otherwise use fallback
+              const logoUrl = company.logoImage && typeof company.logoImage === 'string' && company.logoImage.trim() !== ''
+                ? company.logoImage
+                : fallbackLogo;
               return {
-                id: item._id, // Unique identifier to prevent duplicates
+                id: item._id,
                 name: company.name || 'Unnamed',
-                logo: company.logoImage || fallbackLogo,
-                location: company.organizationcity || 'Unknown Location'
+                logo: logoUrl,
+                location: company.organizationcity || 'Unknown Location',
+                order: company.order || '9999'
               };
             });
 
-          // Remove duplicates by ID to handle cases like multiple "Shopee Philippines"
+          // Remove duplicates by ID
           const uniqueCompanies = Array.from(
             new Map(companyList.map(company => [company.id, company])).values()
           );
 
-          setEmployers(uniqueCompanies);
+          // Sort by order field, with fallback to name if order is the same
+          const sortedCompanies = uniqueCompanies.sort((a, b) => {
+            const orderA = parseInt(a.order, 10);
+            const orderB = parseInt(b.order, 10);
+            if (orderA === orderB) {
+              return a.name.localeCompare(b.name); // Secondary sort by name
+            }
+            return orderA - orderB;
+          });
+
+          setEmployers(sortedCompanies);
         } else {
           setError('No valid employer data found.');
         }
@@ -52,7 +67,9 @@ const TopEmployers = () => {
   }, []);
 
   const handleImageError = (e) => {
-    e.target.src = fallbackLogo;
+    if (e.target.src !== fallbackLogo) {
+      e.target.src = fallbackLogo; // Set fallback only if not already set
+    }
   };
 
   return (
@@ -61,7 +78,7 @@ const TopEmployers = () => {
         <div className="flex justify-between items-center mb-8">
           <div>
             <h2 className="text-3xl font-bold text-[#050748] mb-4">Top Employer</h2>
-            <p className="text-[#6A6A8E] ">Join with the Best</p>
+            <p className="text-[#6A6A8E]">Join with the Best</p>
           </div>
           <Link 
             to="/all-employers" 
@@ -99,12 +116,14 @@ const TopEmployers = () => {
                 key={employer.id}
                 className="bg-white rounded-2xl p-6 flex flex-col items-center shadow-sm hover:shadow-md transition-shadow duration-300 border border-gray-300"
               >
-                <img
-                  src={employer.logo}
-                  alt={`${employer.name} logo`}
-                  className="w-36 h-24 object-contain mb-4"
-                  onError={handleImageError}
-                />
+                <div className="w-36 h-24 flex items-center justify-center mb-4">
+                  <img
+                    src={employer.logo}
+                    alt={`${employer.name} logo`}
+                    className="max-w-[150px] max-h-[150px] object-contain"
+                    onError={handleImageError}
+                  />
+                </div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">{employer.name}</h3>
                 <div className="flex items-center text-sm text-gray-600 mb-4">
                   <svg
