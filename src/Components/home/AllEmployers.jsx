@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom"; // Import Link for navigation
+import axios from "axios";
 
 const AllEmployers = () => {
-  const fallbackLogo = '/assets/employers/fallback.png';
+  const fallbackLogo = "/assets/employers/fallback.png";
   const [employers, setEmployers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -11,30 +12,43 @@ const AllEmployers = () => {
     const fetchEmployers = async () => {
       try {
         setLoading(true);
-        const response = await axios.post('https://crmapi.conscor.com/api/general/mfind', {
-          dbName: 'internph',
-          collectionName: 'company',
-          limit: 0
-        });
+        const response = await axios.post(
+          "https://crmapi.conscor.com/api/general/mfind",
+          {
+            dbName: "internph",
+            collectionName: "company",
+            limit: 0,
+          }
+        );
 
         if (response.data.success && Array.isArray(response.data.data)) {
           const companyList = response.data.data
-            .filter(item => item.sectionData?.Company?.homepageCheckbox === true)
-            .map(item => {
+            .filter(
+              (item) => item.sectionData?.Company?.homepageCheckbox === true
+            )
+            .map((item) => {
               const company = item.sectionData.Company;
               return {
-                name: company.name || 'Unnamed',
-                logo: company.logoImage || fallbackLogo
+                id: item._id, // Include unique identifier
+                name: company.name || "Unnamed",
+                logo: company.logoImage || fallbackLogo,
               };
             });
 
-          setEmployers(companyList);
+          // Remove duplicates by ID to handle cases like multiple identical company names
+          const uniqueCompanies = Array.from(
+            new Map(
+              companyList.map((company) => [company.id, company])
+            ).values()
+          );
+
+          setEmployers(uniqueCompanies);
         } else {
-          setError('No valid employer data found.');
+          setError("No valid employer data found.");
         }
       } catch (error) {
-        setError('Error fetching employers. Please try again later.');
-        console.error('Error fetching employers:', error);
+        setError("Error fetching employers. Please try again later.");
+        console.error("Error fetching employers:", error);
       } finally {
         setLoading(false);
       }
@@ -50,7 +64,9 @@ const AllEmployers = () => {
   return (
     <section className="py-8">
       <div className="px-12">
-        <h2 className="text-3xl font-bold text-[#050748] mb-8">All Employers</h2>
+        <h2 className="text-3xl font-bold text-[#050748] mb-8">
+          All Employers
+        </h2>
 
         {loading && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -75,9 +91,9 @@ const AllEmployers = () => {
 
         {!loading && !error && employers.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {employers.map((employer, index) => (
+            {employers.map((employer) => (
               <div
-                key={index}
+                key={employer.id} // Use unique id instead of index
                 className="bg-white rounded-2xl p-6 flex flex-col items-center shadow-sm hover:shadow-md transition-shadow duration-300 border border-gray-300"
               >
                 <img
@@ -86,11 +102,21 @@ const AllEmployers = () => {
                   className="w-36 h-24 object-contain mb-4"
                   onError={handleImageError}
                 />
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">{employer.name}</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  {employer.name}
+                </h3>
                 <div className="flex space-x-3">
-                  <button className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-medium py-2 px-4 rounded-full hover:from-blue-600 hover:to-purple-700 whitespace-nowrap">
+                  <Link
+                    to={`/${encodeURIComponent(
+                      employer.name
+                        .toLowerCase()
+                        .replace(/[^a-z0-9]+/g, "-")
+                        .replace(/^-+|-+$/g, "")
+                    )}/${employer.id}`}
+                    className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-medium py-2 px-4 rounded-full hover:from-blue-600 hover:to-purple-700 whitespace-nowrap"
+                  >
                     Explore
-                  </button>
+                  </Link>
                 </div>
               </div>
             ))}
