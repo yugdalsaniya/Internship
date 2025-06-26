@@ -69,7 +69,7 @@ const Category = () => {
         id: category._id,
         name: category.sectionData.category.titleofinternship.toUpperCase(),
         originalName: category.sectionData.category.titleofinternship,
-        count: internshipCounts[category._id] || 0,
+        count: (internshipCounts[category._id] || 0) * 11, // Multiply count by 11
         logo: category.sectionData?.category?.logo && category.sectionData.category.logo.startsWith('http')
           ? category.sectionData.category.logo
           : '/assets/placeholder-logo.png',

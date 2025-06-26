@@ -24,7 +24,7 @@ const AllAcademies = () => {
         const data = await fetchSectionData({
           dbName: "internph",
           collectionName: "institute",
-          query: { "sectionData.institute.showinhomepage": true },
+
           projection: {
             "sectionData.institute.institutionname": 1,
             "sectionData.institute.institutiontagline": 1,
@@ -37,7 +37,8 @@ const AllAcademies = () => {
           id: item._id,
           name: item.sectionData.institute.institutionname || "Unnamed Academy",
           tagline: item.sectionData.institute.institutiontagline || "",
-          logo: item.sectionData.institute.image,
+          logo:
+            item.sectionData.institute.image || "https://placehold.co/150x150",
           slug: generateSlug(item.sectionData.institute.institutionname),
         }));
 

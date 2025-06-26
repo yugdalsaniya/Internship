@@ -329,7 +329,7 @@ const OtpVerification = () => {
         <div className="max-w-[20rem] xs:max-w-[24rem] sm:max-w-[28rem] mx-auto w-full">
           <div className="mb-3 flex flex-col items-center">
             <div className="flex items-center mb-3">
-              <img src={logo} alt="Internship-OJT Logo" className="h-10 w-auto mr-2" />
+              <img src={logo} alt="Internship-OJT Logo" className="h-16 w-auto mr-2" />
             </div>
           </div>
           <div className="mb-4 flex justify-center">

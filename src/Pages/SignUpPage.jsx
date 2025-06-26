@@ -1,15 +1,18 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import { MdVisibility, MdVisibilityOff } from "react-icons/md";
 import { jwtDecode } from "jwt-decode";
-import rightImage from "../assets/SignUp/wallpepar1.png";
-import logo from "../assets/Navbar/logo.png";
 import student from "../assets/SignUp/student.png";
 import company from "../assets/SignUp/company.png";
 import academy from "../assets/SignUp/academy.png";
 import recruiter from "../assets/SignUp/recruiter.png";
 import mentor from "../assets/SignUp/mentor.png";
+import wallpaper1 from "../assets/SignUp/wallpaper1.png";
+import wallpaper2 from "../assets/SignUp/wallpaper2.png";
+import wallpaper3 from "../assets/SignUp/wallpaper3.jpg";
+import wallpaper4 from "../assets/SignUp/wallpaper4.jpg";
+import wallpaper5 from "../assets/SignUp/wallpaper5.jpg";
+import logo from "../assets/Navbar/logo.png";
 import { signup, signupCompany, login } from "../Utils/api";
 
 const SignUpPage = () => {
@@ -48,17 +51,24 @@ const SignUpPage = () => {
     1747902955524: "mentor",
   };
 
- useEffect(() => {
-  const path = location.pathname.split("/").pop();
-  const validRoles = ["student", "company", "academy", "recruiter", "mentor"];
-  if (validRoles.includes(path)) {
-    setRole(path);
-  } else {
-    // Set default role to "student" and navigate to /signup/student
-    setRole("student");
-    navigate("/signup/student", { replace: true });
-  }
-}, [location.pathname, navigate]);
+  const roleImages = {
+    student: wallpaper1,
+    company: wallpaper2,
+    academy: wallpaper3,
+    mentor: wallpaper4,
+    recruiter: wallpaper5,
+  };
+
+  useEffect(() => {
+    const path = location.pathname.split("/").pop();
+    const validRoles = ["student", "company", "academy", "recruiter", "mentor"];
+    if (validRoles.includes(path)) {
+      setRole(path);
+    } else {
+      setRole("student");
+      navigate("/signup/student", { replace: true });
+    }
+  }, [location.pathname, navigate]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -174,7 +184,9 @@ const SignUpPage = () => {
       let payload;
       let response;
 
-      const fullMobileNumber = `${formData.countryCode}${formData.mobile.trim()}`;
+      const fullMobileNumber = `${
+        formData.countryCode
+      }${formData.mobile.trim()}`;
 
       if (role === "company") {
         payload = {
@@ -215,9 +227,7 @@ const SignUpPage = () => {
             console.log("API Login Response User:", loginResponse.user);
 
             const roleId = loginResponse.user.role?.role || "";
-            const roleName = roleNames
-
-[roleId];
+            const roleName = roleNames[roleId];
 
             if (!roleName) {
               setErrors({
@@ -243,7 +253,8 @@ const SignUpPage = () => {
             }
 
             const userData = {
-              legalname: loginResponse.user.legalname || loginResponse.user.email,
+              legalname:
+                loginResponse.user.legalname || loginResponse.user.email,
               email: loginResponse.user.email,
               role: roleName,
               roleId: roleId,
@@ -263,7 +274,8 @@ const SignUpPage = () => {
           } else {
             setErrors({
               general:
-                loginResponse.message || "Automatic login failed. Please sign in manually.",
+                loginResponse.message ||
+                "Automatic login failed. Please sign in manually.",
             });
           }
         } else {
@@ -297,7 +309,9 @@ const SignUpPage = () => {
               role: roleNames[roleIds[role]],
               roleId: roleIds[role],
               mobile: fullMobileNumber,
-              ...(role === "academy" && { academyName: formData.academyName.trim() }),
+              ...(role === "academy" && {
+                academyName: formData.academyName.trim(),
+              }),
               redirectTo: location.state?.from || "/editprofile",
             })
           );
@@ -321,7 +335,9 @@ const SignUpPage = () => {
       }
     } catch (err) {
       const errorMessage =
-        err.response?.data?.message || err.message || "An error occurred during signup";
+        err.response?.data?.message ||
+        err.message ||
+        "An error occurred during signup";
       console.error("Signup Error Response:", err.response?.data);
       if (
         errorMessage.includes("User with this username already exists") ||
@@ -553,42 +569,44 @@ const SignUpPage = () => {
               <img
                 src={logo}
                 alt="Internship-OJT Logo"
-                className="h-10 w-auto mr-2"
+                className="h-16 w-auto mr-2"
               />
             </div>
             <div className="flex justify-center gap-2 xs:gap-3 sm:gap-4 mb-3">
-              {["student", "company", "academy"].map((r) => (
-                <div
-                  key={r}
-                  className={`flex flex-col items-center cursor-pointer p-1.5 ${
-                    role === r ? "border-b-2 border-[#3D7EFF]" : ""
-                  }`}
-                  onClick={() => handleRoleChange(r)}
-                >
-                  <div className="p-1.5 rounded-lg border shadow-sm">
-                    <img
-                      src={
-                        r === "student"
-                          ? student
-                          : r === "company"
-                          ? company
-                          : r === "academy"
-                          ? academy
-                          : r === "recruiter"
-                          ? recruiter
-                          : r === "mentor"
-                          ? mentor
-                          : "https://img.icons8.com/ios-filled/50/000000/user-male.png"
-                      }
-                      alt={r}
-                      className="w-5 h-5 xs:w-6 xs:h-6 sm:w-7 sm:h-7"
-                    />
+              {["student", "company", "academy", "mentor", "recruiter"].map(
+                (r) => (
+                  <div
+                    key={r}
+                    className={`flex flex-col items-center cursor-pointer p-1.5 ${
+                      role === r ? "border-b-2 border-[#3D7EFF]" : ""
+                    }`}
+                    onClick={() => handleRoleChange(r)}
+                  >
+                    <div className="p-1.5 rounded-lg border shadow-sm">
+                      <img
+                        src={
+                          r === "student"
+                            ? student
+                            : r === "company"
+                            ? company
+                            : r === "academy"
+                            ? academy
+                            : r === "recruiter"
+                            ? recruiter
+                            : r === "mentor"
+                            ? mentor
+                            : "https://img.icons8.com/ios-filled/50/000000/user-male.png"
+                        }
+                        alt={r}
+                        className="w-5 h-5 xs:w-6 xs:h-6 sm:w-7 sm:h-7"
+                      />
+                    </div>
+                    <span className="text-xs xs:text-sm font-medium capitalize">
+                      {r}
+                    </span>
                   </div>
-                  <span className="text-xs xs:text-sm font-medium capitalize">
-                    {r}
-                  </span>
-                </div>
-              ))}
+                )
+              )}
             </div>
           </div>
           {/* Form Content Section */}
@@ -701,11 +719,11 @@ const SignUpPage = () => {
                     </Link>
                     {showFullPolicy ? (
                       <>
-                        . I give my free, informed, and explicit consent to INTURN
-                        PH to collect, process, and use my personal data for the
-                        purposes of internship and employment matching, as well as
-                        academic coordination and certification. I understand that I
-                        may withdraw my consent at any time.
+                        . I give my free, informed, and explicit consent to
+                        INTURN PH to collect, process, and use my personal data
+                        for the purposes of internship and employment matching,
+                        as well as academic coordination and certification. I
+                        understand that I may withdraw my consent at any time.
                         <button
                           type="button"
                           onClick={togglePolicyVisibility}
@@ -791,16 +809,19 @@ const SignUpPage = () => {
           )}
         </div>
       </div>
-     <div className="hidden lg:flex w-1/2 p-2">
-  <div
-    className="w-full h-full bg-cover bg-center rounded-3xl opacity-50"
-    style={{ 
-      backgroundImage: `linear-gradient(to right, #F9DCDF, #B5D9D3), url(${rightImage})`,
-      backgroundBlendMode: 'multiply'
-    }}
-  ></div>
-</div>
-
+      <div className="hidden lg:flex w-1/2 p-2">
+        <div
+          className="w-full h-full bg-contain bg-center rounded-3xl opacity-50"
+          style={{
+            backgroundImage: `linear-gradient(to right, #F9DCDF, #B5D9D3), url(${
+              roleImages[role] || wallpaper1
+            })`,
+            backgroundBlendMode: "multiply",
+            backgroundSize: "cover",
+            backgroundRepeat: "no-repeat",
+          }}
+        ></div>
+      </div>
     </div>
   );
 };

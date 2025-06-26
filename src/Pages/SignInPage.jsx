@@ -1,9 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { MdVisibility, MdVisibilityOff } from 'react-icons/md';
 import { jwtDecode } from 'jwt-decode';
 import logo from '../assets/Navbar/logo.png';
-import rightImage from '../assets/SignUp/wallpaper.jpg';
+import wallpaper1 from '../assets/SignUp/wallpaper1.png';
+import wallpaper2 from '../assets/SignUp/wallpaper2.png';
+import wallpaper3 from '../assets/SignUp/wallpaper3.jpg';
+import wallpaper4 from '../assets/SignUp/wallpaper4.jpg';
+import wallpaper5 from '../assets/SignUp/wallpaper5.jpg';
 import facebook from '../assets/SignUp/facebook.png';
 import linkedin from '../assets/SignUp/linkedin.png';
 import { login } from '../Utils/api';
@@ -16,6 +20,16 @@ const SignIn = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const user = JSON.parse(localStorage.getItem('user')) || {};
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  const images = [wallpaper1, wallpaper2, wallpaper3, wallpaper4, wallpaper5];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentImageIndex((prevIndex) => (prevIndex + 1) % images.length);
+    }, 3000); // Change image every 3 seconds
+    return () => clearInterval(interval); // Cleanup on unmount
+  }, []);
 
   const roleNames = {
     '1747825619417': 'student',
@@ -44,7 +58,6 @@ const SignIn = () => {
     e.preventDefault();
     const newErrors = {};
 
-    // Validate fields
     if (!formData.email.trim()) {
       newErrors.email = 'Email is required.';
     } else if (!validateEmail(formData.email)) {
@@ -112,7 +125,6 @@ const SignIn = () => {
         localStorage.setItem('accessToken', response.accessToken);
         localStorage.setItem('refreshToken', response.refreshToken);
 
-        // For subsequent logins, check if legalname exists and is not email
         const isBasicDetailsFilled = response.user.legalname && response.user.legalname !== response.user.email;
         const redirectTo = isBasicDetailsFilled ? '/' : '/editprofile';
         const from = location.state?.from || redirectTo;
@@ -150,7 +162,7 @@ const SignIn = () => {
         <div className="max-w-[20rem] xs:max-w-[24rem] sm:max-w-[28rem] mx-auto w-full">
           <div className="mb-3 flex flex-col items-center">
             <div className="flex items-center mb-3">
-              <img src={logo} alt="Internship-OJT Logo" className="h-10 w-auto mr-2" />
+              <img src={logo} alt="Internship-OJT Logo" className="h-16 w-auto mr-2" />
             </div>
           </div>
           <div className="w-full">
@@ -249,10 +261,25 @@ const SignIn = () => {
         </div>
       </div>
       <div className="hidden lg:flex w-1/2 p-2">
-        <div
-          className="w-full h-full bg-cover bg-center rounded-3xl"
-          style={{ backgroundImage: `url(${rightImage})` }}
-        ></div>
+        <div className="w-full h-full overflow-hidden rounded-3xl">
+          <div
+            className="flex h-full transition-transform duration-1000 ease-in-out"
+            style={{ transform: `translateX(-${currentImageIndex * 100}%)` }}
+          >
+            {images.map((image, index) => (
+              <div
+                key={index}
+                className="min-w-full h-full bg-cover bg-center opacity-50"
+                style={{
+                  backgroundImage: `linear-gradient(to right, #F9DCDF, #B5D9D3), url(${image})`,
+                  backgroundBlendMode: 'multiply',
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center'
+                }}
+              ></div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );

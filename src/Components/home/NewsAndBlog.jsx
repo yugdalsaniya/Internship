@@ -38,7 +38,7 @@ const NewsAndBlog = () => {
               date: item.createdDate || "No date",
               title,
               image: data.NewsAndBlogImage || "",
-              link: `/newsandblog/${createSlug(title)}/${item._id}`, // Link with _id and slug
+              link: `/newsandblog/${createSlug(title)}/${item._id}`,
             };
           });
 
@@ -79,7 +79,7 @@ const NewsAndBlog = () => {
 
         {loading && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            {[...Array(4)].map((_, index) => (
+            {[...Array(2)].map((_, index) => (
               <div
                 key={`skeleton-${index}`}
                 className="bg-white rounded-2xl p-6 flex flex-col shadow-sm min-h-[300px]"
@@ -102,7 +102,7 @@ const NewsAndBlog = () => {
 
         {!loading && !error && posts.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            {posts.map((post, index) => (
+            {posts.slice(0, 2).map((post, index) => (
               <div
                 key={index}
                 className="bg-white rounded-2xl p-6 flex flex-col shadow-sm hover:shadow-md transition-shadow duration-300"

@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo, useCallback } from "react";
-import { BsBookmarkPlus, BsSearch, BsGeoAlt } from "react-icons/bs";
-import { useNavigate } from "react-router-dom";
+import { BsBookmarkPlus, BsBookmarkFill, BsSearch, BsGeoAlt } from "react-icons/bs";
+import { useNavigate, useLocation } from "react-router-dom";
 import { fetchSectionData } from "../Utils/api";
 import { formatDistanceToNow, parse, sub } from "date-fns";
 import Hero from "../Components/home/Hero";
@@ -24,24 +24,63 @@ const InternshipPage = () => {
   const [appliedTypes, setAppliedTypes] = useState([]);
   const [appliedExperienceLevels, setAppliedExperienceLevels] = useState([]);
   const [appliedDatePosted, setAppliedDatePosted] = useState("All");
+  const [bookmarked, setBookmarked] = useState({});
+  const [categoryMap, setCategoryMap] = useState({});
+  const [categories, setCategories] = useState([]);
   const internshipsPerPage = 6;
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const categoryMap = {
-    1749121324626: "Technology",
-    1749121385325: "Analytics",
-    1749121505889: "Finance",
-    1749121597482: "Marketing",
-    1749121776119: "Cybersecurity",
-    1749122138386: "E-commerce",
-    1749122277361: "Education",
-    1749122393285: "Tourism",
-    TECHNOLOGY: "Technology",
-    Education: "Education",
-    Tourism: "Tourism",
+  // Fetch categories and create categoryMap
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await fetchSectionData({
+          collectionName: "category",
+          query: {},
+        });
+        const categoryMapping = response.reduce((map, category) => {
+          const categoryId = category._id;
+          const categoryName = category.sectionData?.category?.titleofinternship || "Unknown";
+          map[categoryId] = categoryName;
+          map[categoryName.toUpperCase()] = categoryName;
+          return map;
+        }, {
+          Education: "Education",
+          Tourism: "Tourism",
+        });
+        setCategoryMap(categoryMapping);
+        setCategories([...new Set(Object.values(categoryMapping))]);
+      } catch (err) {
+        console.error("Error fetching categories:", err);
+      }
+    };
+    fetchCategories();
+  }, []);
+
+  const toggleBookmark = (id) => {
+    setBookmarked((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
   };
 
-  const categories = [...new Set(Object.values(categoryMap))];
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const search = params.get('search')?.trim() || '';
+    const loc = params.get('location')?.trim() || '';
+    const cat = params.get('category')?.trim() || '';
+    console.log('URL Query Parameters:', { search, loc, cat });
+    setSearchQuery(search);
+    setLocationQuery(loc);
+    setAppliedCategories(cat ? [cat] : []);
+    setTempCategories(cat ? [cat] : []);
+    setAppliedTypes([]);
+    setAppliedExperienceLevels([]);
+    setAppliedDatePosted("All");
+    setMaxSalary(100000);
+    setCurrentPage(1);
+  }, [location.search]);
 
   const debounce = (func, delay) => {
     let timeoutId;
@@ -53,7 +92,7 @@ const InternshipPage = () => {
 
   const debouncedSetSearchQuery = useCallback(
     debounce((value) => {
-      setSearchQuery(value);
+      setSearchQuery(value.trim());
       setCurrentPage(1);
     }, 300),
     []
@@ -61,7 +100,7 @@ const InternshipPage = () => {
 
   const debouncedSetLocationQuery = useCallback(
     debounce((value) => {
-      setLocationQuery(value);
+      setLocationQuery(value.trim());
       setCurrentPage(1);
     }, 300),
     []
@@ -77,6 +116,7 @@ const InternshipPage = () => {
           order: -1,
           sortedBy: "createdDate",
         });
+        console.log('Fetched internships:', data.length);
         setInternships(data);
       } catch (err) {
         setError("Error fetching internships");
@@ -147,11 +187,12 @@ const InternshipPage = () => {
     setAppliedExperienceLevels([]);
     setAppliedDatePosted("All");
     setCurrentPage(1);
+    navigate('/internship');
     window.scrollTo(0, 0);
   };
 
   const filteredInternships = useMemo(() => {
-    return internships
+    const filtered = internships
       .filter((job) => {
         const isInternship = job.sectionData?.jobpost?.type === "Internship";
         if (!isInternship) return false;
@@ -207,31 +248,29 @@ const InternshipPage = () => {
           console.error("Date parsing error:", err);
         }
 
-        const searchLower = searchQuery.toLowerCase();
+        const searchLower = searchQuery.toLowerCase().trim();
         const matchesSearch =
           searchQuery === "" ||
-          job.sectionData?.jobpost?.title.toLowerCase().includes(searchLower) ||
-          job.sectionData?.jobpost?.company.toLowerCase().includes(searchLower);
+          (job.sectionData?.jobpost?.title || "").toLowerCase().includes(searchLower) ||
+          (job.sectionData?.jobpost?.company || "").toLowerCase().includes(searchLower);
 
-        const locationLower = locationQuery.toLowerCase();
+        const locationLower = locationQuery.toLowerCase().trim();
         const matchesLocation =
           locationQuery === "" ||
-          (job.sectionData?.jobpost?.location || "")
-            .toLowerCase()
-            .includes(locationLower);
+          (job.sectionData?.jobpost?.location || "").toLowerCase().includes(locationLower);
 
         const jobSalary = parseFloat(job.sectionData?.jobpost?.salary) || 0;
         const matchesSalary = jobSalary <= maxSalary;
 
-        return (
+        const result =
           matchesCategory &&
           matchesType &&
           matchesExperience &&
           matchesDatePosted &&
           matchesSearch &&
           matchesLocation &&
-          matchesSalary
-        );
+          matchesSalary;
+        return result;
       })
       .map((job) => {
         let relativeTime = "Just now";
@@ -311,6 +350,9 @@ const InternshipPage = () => {
             return 0;
         }
       });
+
+    console.log('Filtered internships:', filtered.length, { searchQuery, locationQuery, appliedCategories });
+    return filtered;
   }, [
     internships,
     sortOption,
@@ -321,6 +363,7 @@ const InternshipPage = () => {
     searchQuery,
     locationQuery,
     maxSalary,
+    categoryMap,
   ]);
 
   const totalPages = Math.ceil(filteredInternships.length / internshipsPerPage);
@@ -370,36 +413,10 @@ const InternshipPage = () => {
   // Skeleton Filter Component
   const SkeletonFilter = () => (
     <div
-      className="w-full md:w-1/4 bg-gradient-to-b from-[#FFFCF2] to-[#FEEFF4] shadow-md rounded-xl p-6 animate-pulse"
+      className="w-full md:w-1/4 bg-gradient-to-b from-[#FFFCF2] to-[#FEEFF4] shadow-md rounded-xl p-10 animate-pulse"
       aria-hidden="true"
     >
-      <div className="h-6 bg-gray-200 rounded w-1/2 mb-4"></div>
-      <div className="relative mb-4">
-        <div className="h-10 bg-gray-200 rounded w-full"></div>
-      </div>
-      <div className="h-5 bg-gray-200 rounded w-1/3 mb-2"></div>
-      <div className="relative mb-4">
-        <div className="h-10 bg-gray-200 rounded w-full"></div>
-      </div>
-      {['Category', 'Internship Type', 'Experience Level', 'Date Posted'].map(
-        (section, index) => (
-          <div key={index} className="mb-4">
-            <div className="h-5 bg-gray-200 rounded w-1/4 mb-2"></div>
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-4 bg-gray-200 rounded w-full mb-1"></div>
-            ))}
-          </div>
-        )
-      )}
-      <div className="mb-4">
-        <div className="h-5 bg-gray-200 rounded w-1/4 mb-2"></div>
-        <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
-        <div className="h-2 bg-gray-200 rounded w-full"></div>
-      </div>
-      <div className="flex space-x-2">
-        <div className="h-10 bg-gray-200 rounded-lg w-1/2"></div>
-        <div className="h-10 bg-gray-200 rounded-lg w-1/2"></div>
-      </div>
+      <div className="h-10 bg-gray-200 rounded"></div>
     </div>
   );
 
@@ -408,17 +425,17 @@ const InternshipPage = () => {
       <>
         <Hero
           title="Internships"
-          subtitle="Empower Your Future: Unleash Limitless Career Possibilities!"
+          subtitle="Empower Your Future: Unleash Limitless Experience Possibilities!"
           searchFields={[]}
           stats={[]}
           backgroundImage={backgroundImg}
-          gradient="linear-gradient(to right, rgba(249, 220, 223, 0.8), rgba(181, 217, 211, 0.8))"
+          gradient="linear-gradient(to-right, rgba(249, 180, 223, 0.8), rgba(181, 233, 211, 0.8))"
           showPostButton={true}
         />
-        <div className="flex flex-col md:flex-row px-4 md:px-12 py-8 bg-[#fafafa]">
+        <div className="flex flex-col md:flex-row px-4 md:px-12 py-8">
           <SkeletonFilter />
           <div className="w-full md:w-3/4 md:pl-6">
-            <div className="flex justify-between items-center mb-4">
+            <div className="flex justify-between mb-4">
               <div className="h-4 bg-gray-200 rounded w-1/4 animate-pulse"></div>
               <div className="h-8 bg-gray-200 rounded w-32 animate-pulse"></div>
             </div>
@@ -457,12 +474,7 @@ const InternshipPage = () => {
             }
             .animate-pulse {
               animation: shimmer 1.5s infinite;
-              background: linear-gradient(
-                to right,
-                #f6f7f8 8%,
-                #edeef1 18%,
-                #f6f7f8 33%
-              );
+              background: linear-gradient(to right, #f6f7f8 8%, #edeef1 18%, #f6f7f8 33%);
               background-size: 800px 104px;
             }
           `}</style>
@@ -472,10 +484,10 @@ const InternshipPage = () => {
             </div>
           )}
           <h2 className="text-lg font-semibold mb-4">
-            Search by Internship Title
+            Search by Internship Title or Company
           </h2>
           <div className="relative mb-4">
-            <BsSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600" />
+            <BsSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
             <input
               type="text"
               placeholder="Internship title or company"
@@ -486,7 +498,7 @@ const InternshipPage = () => {
           </div>
           <h3 className="font-medium text-sm mb-2">Search by Location</h3>
           <div className="relative mb-4">
-            <BsGeoAlt className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600" />
+            <BsGeoAlt className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
             <input
               type="text"
               placeholder="Enter city or address"
@@ -508,7 +520,9 @@ const InternshipPage = () => {
                 {category}
               </label>
             ))}
-            <button className="w-full bg-gradient-to-r from-[#6146B6] to-[#1F93EA] text-white py-2 rounded-lg mt-2 text-sm font-bold">
+            <button
+              className="w-full bg-gradient-to-r from-[#6146B6] to-[#1F93EA] text-white py-2 rounded-lg mt-2 text-sm font-semibold"
+            >
               Show More
             </button>
           </div>
@@ -516,7 +530,7 @@ const InternshipPage = () => {
             <h3 className="font-medium text-sm mb-2">Internship Type</h3>
             {[
               "Full Time",
-              "Part Time",
+              "Part-Time",
               "Freelance",
               "Seasonal",
               "Fixed-Price",
@@ -621,12 +635,8 @@ const InternshipPage = () => {
                   className="p-2 border text-sm rounded-lg"
                 >
                   <option value="latest">Sort by latest</option>
-                  <option value="salary-desc">
-                    Sort by salary (high to low)
-                  </option>
-                  <option value="salary-asc">
-                    Sort by salary (low to high)
-                  </option>
+                  <option value="salary-desc">Sort by salary (high to low)</option>
+                  <option value="salary-asc">Sort by salary (low to high)</option>
                   <option value="title-asc">Sort by title (A-Z)</option>
                 </select>
               </div>
@@ -640,10 +650,17 @@ const InternshipPage = () => {
                       <span className="inline-block bg-gray-200 text-gray-800 text-xs font-medium px-2 py-0.5 rounded-full">
                         {internship.time}
                       </span>
-                      <BsBookmarkPlus
-                        className="h-6 w-6"
-                        aria-label="Bookmark Plus Icon"
-                      />
+                      <button
+                        onClick={() => toggleBookmark(internship.id)}
+                        className="text-gray-600 hover:text-blue-600"
+                        aria-label={bookmarked[internship.id] ? "Remove bookmark" : "Add bookmark"}
+                      >
+                        {bookmarked[internship.id] ? (
+                          <BsBookmarkFill className="h-6 w-6" />
+                        ) : (
+                          <BsBookmarkPlus className="h-6 w-6" />
+                        )}
+                      </button>
                     </div>
                     <div className="flex justify-between items-center">
                       <div className="flex-1">
@@ -736,18 +753,18 @@ const InternshipPage = () => {
                       disabled={currentPage === 1}
                       className="flex items-center gap-1 px-3 py-1.5 border border-gray-400 rounded-lg text-gray-700 hover:bg-gray-100 disabled:opacity-50"
                     >
-                      <span className="text-base">❮</span>
+                      <span className="text-base">←</span>
                       <span className="font-semibold">Previous</span>
                     </button>
                   </div>
-                  <div className="flex gap-4 justify-center">
+                  <div className="flex gap-4">
                     {Array.from({ length: totalPages }, (_, index) => (
                       <button
                         key={index + 1}
                         onClick={() => handlePageChange(index + 1)}
-                        className={`w-8 h-8 flex items-center justify-center rounded-lg font-bold ${
+                        className={`w-8 h-8 flex items-center justify-center rounded-full font-medium ${
                           currentPage === index + 1
-                            ? "bg-gradient-to-r from-indigo-500 to-purple-500 text-white"
+                            ? "bg-blue-500 text-white"
                             : "border border-gray-400 text-gray-700 hover:bg-gray-100"
                         }`}
                       >
@@ -762,7 +779,7 @@ const InternshipPage = () => {
                       className="flex items-center gap-1 px-3 py-1.5 border border-gray-400 rounded-lg text-gray-700 hover:bg-gray-100 disabled:opacity-50"
                     >
                       <span className="font-semibold">Next</span>
-                      <span className="text-base">❯</span>
+                      <span className="text-base">→</span>
                     </button>
                   </div>
                 </div>
