@@ -18,8 +18,8 @@ export default function AboutUsPage() {
     return (
         <>
             {/* Hero Section */}
-            <Hero
-                title="About Us "
+            <Hero 
+                title="About Us"
                 subtitle="Our Story: Building a Future Where Ideas Thrive!"
                 searchFields={[]}
                 stats={[]}
@@ -28,7 +28,7 @@ export default function AboutUsPage() {
             />
 
             {/* Image 1 Section */}
-            <div className="w-full font-sans bg-white text-black px-4 sm:px-8 md:px-16 lg:px-24 space-y-20">
+            <div className="w-full  bg-white text-black px-4 sm:px-8 md:px-16 lg:px-24 space-y-20">
                 
                 <section className="pt-12">
                     {/* Hero Banner */}

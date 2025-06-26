@@ -21,6 +21,7 @@ const Hero = ({
   backgroundImage = bannerImage,
   gradient = 'linear-gradient(to right, rgba(249, 220, 223, 0.8), rgba(181, 217, 211, 0.8))',
   showPostButton = false,
+  stats: statsProp, // Rename to avoid conflict with state
 }) => {
   const [stats, setStats] = useState([
     {
@@ -60,6 +61,12 @@ const Hero = ({
   const [isGoogleMapsLoaded, setIsGoogleMapsLoaded] = useState(false);
   const locationInputRef = useRef(null);
   const autocompleteRef = useRef(null);
+
+  // Preload background image to prevent rendering delay
+  useEffect(() => {
+    const preloadImage = new Image();
+    preloadImage.src = backgroundImage;
+  }, [backgroundImage]);
 
   // Fetch categories from category collection
   useEffect(() => {
@@ -238,8 +245,14 @@ const Hero = ({
       }
     };
 
-    fetchCounts();
-  }, []);
+    // Only fetch stats if statsProp is undefined
+    if (statsProp === undefined) {
+      fetchCounts();
+    }
+  }, [statsProp]);
+
+  // Use statsProp if provided, otherwise use internal stats state
+  const effectiveStats = statsProp !== undefined ? statsProp : stats;
 
   const handlePostInternship = () => {
     const user = JSON.parse(localStorage.getItem('user'));
@@ -396,9 +409,9 @@ const Hero = ({
         )}
 
         {/* Stats Section */}
-        {stats.length > 0 && (
+        {effectiveStats.length > 0 && (
           <div className="flex flex-wrap justify-center gap-6 md:gap-8 mt-8">
-            {stats.map((stat, index) => (
+            {effectiveStats.map((stat, index) => (
               <StatCard
                 key={index}
                 count={stat.count}
