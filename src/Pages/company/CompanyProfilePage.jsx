@@ -170,9 +170,11 @@ const CompanyProfilePage = () => {
               <p className="text-gray-600 text-base">{organizationcity || 'Not specified'}</p>
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-gray-700">Industry</h3>
-              <p className="text-gray-600 text-base">{industry?.join(', ') || 'Not specified'}</p>
-            </div>
+  <h3 className="text-sm font-semibold text-gray-700">Industry</h3>
+  <p className="text-gray-600 text-base">
+    {Array.isArray(industry) ? industry.join(', ') : industry || 'Not specified'}
+  </p>
+</div>
             <div>
               <h3 className="text-sm font-semibold text-gray-700">Company Size</h3>
               <p className="text-gray-600 text-base">{noofemployees || 'Not specified'}</p>

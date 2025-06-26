@@ -14,7 +14,7 @@ const FeaturedCompany = () => {
         const data = await fetchSectionData({
           collectionName: 'company',
           limit: 50,
-          query: { 'sectionData.Company.logoImage': { $ne: '' } },
+          query: {}, // Removed logoImage filter, will handle in useMemo
         });
         setCompanies(data);
       } catch (err) {
@@ -31,8 +31,12 @@ const FeaturedCompany = () => {
   const filteredCompanies = useMemo(() => {
     return companies
       .filter((company) => {
+        const homepageCheckbox = company.sectionData?.Company?.homepageCheckbox;
+        return homepageCheckbox === true; // Filter only companies with homepageCheckbox: true
+      })
+      .filter((company) => {
         const logo = company.sectionData?.Company?.logoImage;
-        return logo && logo !== '' && logo.startsWith('http');
+        return logo && logo !== '' && logo.startsWith('http'); // Keep logo validation
       })
       .map((company) => ({
         ...company,
