@@ -137,7 +137,10 @@ export default function RecentInternship() {
 
   return (
     <div className="px-12 md:px-12 py-4 bg-[#fafafa]">
-      <h2 className="text-2xl font-bold mb-4">Recent Internships</h2>
+      <div>
+            <h2 className="text-3xl font-bold text-[#050748] mb-2">Internships | OJTs | Jobs</h2>
+            <p className="text-[#6A6A8E]  mb-4">New Opportunities, Just Posted!</p>
+          </div>
       <div className="space-y-4">
         {processedInternships.map((internship) => (
           <div

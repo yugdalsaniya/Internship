@@ -87,12 +87,12 @@ const TopAcademy = () => {
   return (
     <section className="py-4">
       <div className="px-12">
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex justify-between items-center mb-4">
           <div>
-            <h2 className="text-3xl font-bold text-[#050748] mb-4">
-              Top Academy
+            <h2 className="text-3xl font-bold text-[#050748] mb-2">
+              Elite Learning Institutions
             </h2>
-            <p className="text-[#6A6A8E]">Elite Learning Partners</p>
+            <p className="text-[#6A6A8E]">Connecting Students to Internships and Jobs</p>
           </div>
           <Link
             to="/all-academies"

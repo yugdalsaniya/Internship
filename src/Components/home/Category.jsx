@@ -84,12 +84,11 @@ const Category = () => {
   if (loading) return (
     <section className="bg-gradient-to-b from-[#FFFCF2] to-[#FEEFF4] py-4">
       <div className="px-4 sm:px-12">
-        <h2 className="text-center text-3xl sm:text-4xl font-bold text-[#050748] mb-4">
+        <h2 className="text-center text-3xl sm:text-4xl font-bold text-[#050748] mb-2">
           Browse by Category
         </h2>
         <p className="text-center text-[#6A6A8E] text-lg sm:text-xl mb-4">
-          Explore options by category.
-        </p>
+Explore Opportunities by Category.        </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
           {[...Array(4)].map((_, index) => (
             <div

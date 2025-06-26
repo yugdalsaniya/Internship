@@ -4,8 +4,7 @@ import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 import { jwtDecode } from 'jwt-decode';
 import logo from '../assets/Navbar/logo.png';
-import otpImage from '../assets/SignUp/otp.jpg';
-import rightImage from '../assets/SignUp/wallpaper.jpg';
+import otpImage from '../assets/SignUp/otpimg.png';
 import { verifyOtp, forgotPassword, login } from '../Utils/api';
 
 const MySwal = withReactContent(Swal);
@@ -110,7 +109,6 @@ const OtpVerification = () => {
       const otpResponse = await verifyOtp(otpPayload);
       if (otpResponse.success) {
         if (pendingUser.roleId === '1747825619417') {
-          // Student role: Call login API
           if (!pendingUser.password) {
             setError('Password not found. Please sign up again.');
             setVerifyLoading(false);
@@ -180,7 +178,6 @@ const OtpVerification = () => {
               localStorage.setItem('refreshToken', loginResponse.refreshToken);
               localStorage.removeItem('pendingUser');
 
-              // Always redirect first-time users to /editprofile
               MySwal.fire({
                 icon: 'success',
                 title: 'Signup Successful',
@@ -219,7 +216,6 @@ const OtpVerification = () => {
             return;
           }
         } else {
-          // Non-student roles (recruiter, mentor, company, academy)
           const userData = {
             ...pendingUser,
             userid: otpResponse.user?.userId || otpResponse.userId || '',
@@ -228,7 +224,6 @@ const OtpVerification = () => {
           localStorage.setItem('user', JSON.stringify(userData));
           localStorage.removeItem('pendingUser');
 
-          // Always redirect first-time users to /editprofile
           MySwal.fire({
             icon: 'success',
             title: 'Signup Successful',
@@ -332,9 +327,7 @@ const OtpVerification = () => {
               <img src={logo} alt="Internship-OJT Logo" className="h-16 w-auto mr-2" />
             </div>
           </div>
-          <div className="mb-4 flex justify-center">
-            <img src={otpImage} alt="OTP Verification" className="w-32 xs:w-36 sm:w-40" />
-          </div>
+          
           <div className="w-full">
             <div className="text-center">
               <h2 className="text-base xs:text-lg sm:text-xl font-bold mb-1 text-black">
@@ -395,12 +388,17 @@ const OtpVerification = () => {
             </div>
           </div>
         </div>
-        <div className="hidden lg:flex w-1/2 p-2">
-          <div
-            className="w-full h-full bg-cover bg-center rounded-3xl"
-            style={{ backgroundImage: `url(${rightImage})` }}
-          ></div>
-        </div>
+      </div>
+      <div className="hidden lg:flex w-1/2 p-2">
+        <div
+          className="w-full h-full bg-cover bg-center rounded-3xl opacity-75"
+          style={{
+            backgroundImage: `linear-gradient(to right, #F9DCDF, #B5D9D3), url(${otpImage})`,
+            backgroundBlendMode: 'multiply',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center'
+          }}
+        ></div>
       </div>
     </div>
   );

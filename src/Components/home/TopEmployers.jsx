@@ -75,10 +75,10 @@ const TopEmployers = () => {
   return (
     <section className="py-4">
       <div className="px-12">
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex justify-between items-center mb-4">
           <div>
-            <h2 className="text-3xl font-bold text-[#050748] mb-4">Top Employer</h2>
-            <p className="text-[#6A6A8E]">Join with the Best</p>
+            <h2 className="text-3xl font-bold text-[#050748] mb-2">Discover Leading Employers</h2>
+            <p className="text-[#6A6A8E]">Kickstart Your Career with the Best in the Philippines</p>
           </div>
           <Link 
             to="/all-employers" 

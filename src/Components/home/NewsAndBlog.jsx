@@ -62,11 +62,11 @@ const NewsAndBlog = () => {
       <div className="px-12">
         <div className="flex justify-between items-center mb-4">
           <div>
-            <h2 className="text-3xl font-bold text-[#050748] mb-4">
+            <h2 className="text-3xl font-bold text-[#050748] mb-2">
               News and Blog
             </h2>
-            <p className="text-[#6A6A8E] mb-4">
-              Latest News, Expert Tips, and More.
+            <p className="text-[#6A6A8E] ">
+              Latest News, Expert Tips, and More...
             </p>
           </div>
           <Link

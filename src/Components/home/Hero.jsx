@@ -1,5 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import bannerImage from '../../assets/Hero/banner.jpg';
+import internshipImage from '../../assets/Hero/internship.png';
+import candidateImage from '../../assets/Hero/candidate.png';
+import companiesImage from '../../assets/Hero/company.png';
+import academyImage from '../../assets/Hero/company.png';
 import { fetchSectionData } from '../../Utils/api';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
@@ -22,41 +26,25 @@ const Hero = ({
     {
       count: '0',
       label: 'Internships',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      ),
+      image: internshipImage,
       bgColor: 'bg-[#6A6A8E]',
     },
     {
       count: '0',
       label: 'Candidates',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-        </svg>
-      ),
+      image: candidateImage,
       bgColor: 'bg-[#6A6A8E]',
     },
     {
       count: '0',
       label: 'Companies',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a2 2 0 012 2h2a2 2 0 012 2v5m-4 0h4" />
-        </svg>
-      ),
+      image: companiesImage,
       bgColor: 'bg-[#6A6A8E]',
     },
     {
       count: '0',
       label: 'Academy',
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m-2-4h14a2 2 0 012 2v2H3v-2a2 2 0 012-2z" />
-        </svg>
-      ),
+      image: academyImage,
       bgColor: 'bg-[#6A6A8E]',
     },
   ]);
@@ -415,7 +403,7 @@ const Hero = ({
                 key={index}
                 count={stat.count}
                 label={stat.label}
-                icon={stat.icon}
+                image={stat.image}
                 bgColor={stat.bgColor}
               />
             ))}
@@ -427,10 +415,10 @@ const Hero = ({
 };
 
 // Reusable StatCard component
-const StatCard = ({ count, label, icon, bgColor }) => (
+const StatCard = ({ count, label, image, bgColor }) => (
   <div className="flex items-center space-x-3">
     <div className={`w-10 h-10 ${bgColor} rounded-full flex items-center justify-center`}>
-      <div className="text-white">{icon}</div>
+      <img src={image} alt={`${label} icon`} className="w-6 h-6 object-contain" />
     </div>
     <div className="flex flex-col text-left">
       <p className="text-lg font-semibold text-gray-800">{count}</p>
