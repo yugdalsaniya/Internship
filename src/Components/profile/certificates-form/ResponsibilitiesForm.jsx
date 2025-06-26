@@ -483,7 +483,7 @@ const ResponsibilitiesForm = ({
                   handleDateChange("responsibilitystartdate", e.target.value)
                 }
                 max={today}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring focus:ring-blue-200 w-1/2"
+                className="w-1/2 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring focus:ring-blue-200"
                 disabled={isLoading || uploading}
               />
               <input
@@ -495,7 +495,7 @@ const ResponsibilitiesForm = ({
                 disabled={formData.currentlyworking || isLoading || uploading}
                 min={formData.responsibilitystartdate || undefined}
                 max={today}
-                className={`w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring focus:ring-blue-200 w-1/2 ${
+                className={`border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring focus:ring-blue-200 w-1/2 ${
                   formData.currentlyworking
                     ? "bg-gray-100 cursor-not-allowed"
                     : ""

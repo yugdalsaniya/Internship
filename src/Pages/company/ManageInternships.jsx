@@ -124,7 +124,7 @@ const ManageInternships = () => {
                       <img
                         src={logo}
                         alt="Internship-OJT Logo"
-                        className="h-10 w-auto mr-2"
+                        className="h-16 w-auto mr-2"
                       />
                     </div>
           <h1 className="text-3xl md:text-4xl font-bold text-[#050748] mb-2">

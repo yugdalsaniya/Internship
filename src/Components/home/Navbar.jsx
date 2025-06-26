@@ -112,7 +112,7 @@ const Navbar = () => {
             <img
               src={logo}
               alt="Internship-OJT Logo"
-              className="h-10 w-auto"
+              className="h-16 w-auto"
             />
           </Link>
         </div>
