@@ -557,7 +557,9 @@ const SignUpPage = () => {
               />
             </div>
             <div className="flex justify-center gap-2 xs:gap-3 sm:gap-4 mb-3">
-              {["student", "company", "academy"].map((r) => (
+              {["student", "company", "academy"
+              // ,"mentor" , "recruiter"
+            ].map((r) => (
                 <div
                   key={r}
                   className={`flex flex-col items-center cursor-pointer p-1.5 ${
