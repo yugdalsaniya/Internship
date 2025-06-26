@@ -403,3 +403,39 @@ export const mUpdate = async ({
   }
 };
 window.mUpdate = mUpdate;
+
+const generateOtp = () => {
+  return Math.floor(1000 + Math.random() * 9000); // Generate 4-digit OTP
+};
+
+export const sendOtp = async (email) => {
+  try {
+    const otpValue = generateOtp();
+    localStorage.setItem("generatedOtp", otpValue); // Save OTP in local storage
+
+    const response = await axios.post(
+      `${API_URL}/v1/dynamic/email/send-otp`,
+      {
+        otp: otpValue,
+        email,
+      },
+      {
+        headers: {
+          "x-api-key": API_KEY,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    console.log("Send OTP API response:", response.data);
+    return { success: true, message: "OTP sent to your email.", otp: otpValue };
+  } catch (error) {
+    console.error("Error sending OTP:", {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status,
+      headers: error.response?.headers,
+    });
+    throw error.response?.data || { message: "Failed to send OTP" };
+  }
+};
