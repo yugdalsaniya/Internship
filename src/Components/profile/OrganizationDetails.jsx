@@ -577,13 +577,7 @@ const OrganizationDetails = ({ userData, updateCompletionStatus, onBack }) => {
                 >
                   Change Logo
                 </button>
-                <button
-                  onClick={handleRemoveLogo}
-                  className="mt-2 ml-2 bg-red-500 text-white px-4 py-1 rounded hover:bg-red-600 transition"
-                  disabled={isProcessing}
-                >
-                  Remove Logo
-                </button>
+              
                 <input
                   type="file"
                   accept="image/jpeg,image/png,image/gif,image/bmp"

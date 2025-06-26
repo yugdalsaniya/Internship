@@ -108,7 +108,7 @@ const OtpVerification = () => {
       };
       const otpResponse = await verifyOtp(otpPayload);
       if (otpResponse.success) {
-        if (pendingUser.roleId === '1747825619417') {
+        if (pendingUser.roleId === '1747825619417' || pendingUser.roleId === '1747903042943') { // Added academy role
           if (!pendingUser.password) {
             setError('Password not found. Please sign up again.');
             setVerifyLoading(false);
@@ -172,6 +172,12 @@ const OtpVerification = () => {
                 roleId: roleId,
                 userid: loginResponse.user._id || loginResponse.user.userId || '',
               };
+
+              // Add companyId for academy role, similar to company role in SignUpPage.jsx
+              if (roleName === 'academy') {
+                userData.companyId = loginResponse.user.companyId || '';
+                userData.userid = loginResponse.user._id || '';
+              }
 
               localStorage.setItem('user', JSON.stringify(userData));
               localStorage.setItem('accessToken', loginResponse.accessToken);
@@ -329,7 +335,7 @@ const OtpVerification = () => {
           </div>
           
           <div className="w-full">
-            <div className="text-center">
+            <div className  ="text-center">
               <h2 className="text-base xs:text-lg sm:text-xl font-bold mb-1 text-black">
                 Verify Your Email Address
               </h2>
