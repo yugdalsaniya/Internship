@@ -8,13 +8,18 @@ const TopAcademy = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Define generateSlug function within TopAcademy
   const generateSlug = (name) => {
-    if (!name || typeof name !== "string") return "academy"; // Fallback slug
+    if (!name || typeof name !== "string") return "academy";
     return name
       .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-") // Replace non-alphanumeric with hyphens
-      .replace(/^-+|-+$/g, ""); // Trim leading/trailing hyphens
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+  };
+
+  // Function to handle missing institution name
+  const truncateName = (name) => {
+    if (!name || typeof name !== "string") return "Unnamed Academy";
+    return name;
   };
 
   useEffect(() => {
@@ -29,19 +34,39 @@ const TopAcademy = () => {
             "sectionData.institute.institutionname": 1,
             "sectionData.institute.institutiontagline": 1,
             "sectionData.institute.image": 1,
+            "sectionData.institute.order": 1,
             _id: 1,
           },
         });
 
-        const mappedData = data.map((item) => ({
-          id: item._id,
-          name: item.sectionData.institute.institutionname || "Unnamed Academy",
-          tagline: item.sectionData.institute.institutiontagline || "",
-          logo: item.sectionData.institute.image,
-          slug: generateSlug(item.sectionData.institute.institutionname), // Generate slug
-        }));
+        const mappedData = data.map((item) => {
+          const institute = item.sectionData.institute;
+          const logoUrl = institute.image && typeof institute.image === 'string' && institute.image.trim() !== ''
+            ? institute.image
+            : fallbackLogo;
+          return {
+            id: item._id,
+            name: institute.institutionname || "Unnamed Academy",
+            tagline: institute.institutiontagline || "",
+            logo: logoUrl,
+            order: institute.order || "4",
+            slug: generateSlug(institute.institutionname),
+          };
+        });
 
-        setPartners(mappedData);
+        // Remove duplicates by ID
+        const uniquePartners = Array.from(
+          new Map(mappedData.map(partner => [partner.id, partner])).values()
+        );
+
+        // Sort by order field
+        const sortedPartners = uniquePartners.sort((a, b) => {
+          const orderA = parseInt(a.order, 10);
+          const orderB = parseInt(b.order, 10);
+          return orderA - orderB;
+        });
+
+        setPartners(sortedPartners);
       } catch (err) {
         setError("Failed to load partners. Please try again later.");
         console.error("TopAcademy API Error:", err);
@@ -54,7 +79,9 @@ const TopAcademy = () => {
   }, []);
 
   const handleImageError = (e) => {
-    e.target.src = fallbackLogo;
+    if (e.target.src !== fallbackLogo) {
+      e.target.src = fallbackLogo;
+    }
   };
 
   return (
@@ -82,7 +109,7 @@ const TopAcademy = () => {
                 key={`skeleton-${index}`}
                 className="bg-white rounded-tl-none rounded-br-none rounded-tr-xl rounded-bl-xl p-6 sm:p-8 flex flex-col items-center border border-gray-200 shadow-md min-h-[250px]"
               >
-                <div className="w-24 h-24 bg-gray-200 animate-pulse rounded-full mb-4" />
+                <div className="w-[150px] h-[150px] bg-gray-200 animate-pulse rounded mb-4" />
                 <div className="h-5 w-3/4 bg-gray-200 animate-pulse rounded mb-2" />
                 <div className="h-4 w-2/3 bg-gray-200 animate-pulse rounded mb-4" />
                 <div className="h-8 w-32 bg-gray-200 animate-pulse rounded-full" />
@@ -103,20 +130,25 @@ const TopAcademy = () => {
                 key={partner.id}
                 className="bg-white rounded-tl-none rounded-br-none rounded-tr-xl rounded-bl-xl p-6 sm:p-8 flex flex-col items-center border border-gray-200 shadow-md hover:shadow-lg focus:shadow-lg transition-shadow duration-300 outline-none cursor-pointer min-h-[250px]"
               >
-                <img
-                  src={partner.logo}
-                  alt={`${partner.name} logo`}
-                  className="w-24 h-24 object-contain mb-4"
-                  onError={handleImageError}
-                />
-                <h3 className="text-lg font-semibold text-gray-900 text-center capitalize mb-2">
-                  {partner.name}
+                <div className="w-[150px] h-[150px] flex items-center justify-center mb-4">
+                  <img
+                    src={partner.logo}
+                    alt={`${partner.name} logo`}
+                    className="max-w-[150px] max-h-[150px] object-contain"
+                    onError={handleImageError}
+                  />
+                </div>
+                <h3
+                  className="text-lg font-semibold text-gray-900 text-center capitalize mb-2 line-clamp-2"
+                  title={partner.name} // Full name on hover
+                >
+                  {truncateName(partner.name)}
                 </h3>
                 <p className="text-gray-600 text-sm text-center mb-4">
                   {partner.tagline}
                 </p>
                 <Link
-                  to={`/academy/${partner.slug}/${partner.id}`} // Use slug in URL
+                  to={`/academy/${partner.slug}/${partner.id}`}
                   className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-medium py-2 px-4 rounded-full hover:from-blue-600 hover:to-purple-700 whitespace-nowrap"
                 >
                   View Academy
