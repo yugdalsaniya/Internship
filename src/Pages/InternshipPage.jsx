@@ -31,6 +31,12 @@ const InternshipPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Preload background image to prevent rendering delay
+  useEffect(() => {
+    const preloadImage = new Image();
+    preloadImage.src = backgroundImg;
+  }, []);
+
   // Fetch categories and create categoryMap
   useEffect(() => {
     const fetchCategories = async () => {
@@ -424,12 +430,12 @@ const InternshipPage = () => {
     return (
       <>
         <Hero
-          title="Internships"
-          subtitle="Empower Your Future: Unleash Limitless Experience Possibilities!"
+          title="Internships | OJTs | Jobs"
+          subtitle="Empower Your Future: Unleash Limitless Career Possibilities!"
           searchFields={[]}
           stats={[]}
           backgroundImage={backgroundImg}
-          gradient="linear-gradient(to-right, rgba(249, 180, 223, 0.8), rgba(181, 233, 211, 0.8))"
+          gradient="linear-gradient(to right, rgba(249, 220, 223, 0.8), rgba(181, 217, 211, 0.8))"
           showPostButton={true}
         />
         <div className="flex flex-col md:flex-row px-4 md:px-12 py-8">
@@ -457,7 +463,7 @@ const InternshipPage = () => {
   return (
     <>
       <Hero
-        title="Internships"
+        title="Internships | OJTs | Jobs"
         subtitle="Empower Your Future: Unleash Limitless Career Possibilities!"
         searchFields={[]}
         stats={[]}

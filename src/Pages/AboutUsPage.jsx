@@ -39,7 +39,7 @@ export default function AboutUsPage() {
             </div>
 
             {/* How It Works + FAQ + Best Section */}
-            <div className="w-full font-sans bg-white text-black px-4 sm:px-8 md:px-16 lg:px-24 space-y-20 pb-20">
+            <div className="w-full  bg-white text-black px-4 sm:px-8 md:px-16 lg:px-24 space-y-20 pb-20">
 
                 {/* How It Works */}
                 <section className="pt-12 text-center">
