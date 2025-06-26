@@ -23,15 +23,13 @@ const AllEmployers = () => {
 
         if (response.data.success && Array.isArray(response.data.data)) {
           const companyList = response.data.data
-            .filter(
-              (item) => item.sectionData?.Company?.homepageCheckbox === true
-            )
+           
             .map((item) => {
               const company = item.sectionData.Company;
               return {
                 id: item._id, // Include unique identifier
                 name: company.name || "Unnamed",
-                logo: company.logoImage || fallbackLogo,
+                logo: company.logoImage || "https://placehold.co/150x150",
               };
             });
 
