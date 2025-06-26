@@ -227,9 +227,6 @@ const SingleBlogPage = () => {
         {/* Social Sharing (only show if at least one link exists) */}
         {hasSocialLinks && (
           <div className="flex items-center justify-center gap-6 mb-12 animate-slide-up">
-            <span className="text-gray-700 font-semibold text-lg">
-              Share this post:
-            </span>
             {blogPost.facebook && (
               <button
                 onClick={() => sharePost("facebook")}

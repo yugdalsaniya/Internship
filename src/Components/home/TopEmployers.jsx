@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import axios from 'axios';
 
 const TopEmployers = () => {
-  const fallbackLogo = '/assets/employers/fallback.png';
+  const fallbackLogo = "https://placehold.co/150x100";
   const [employers, setEmployers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -20,7 +20,7 @@ const TopEmployers = () => {
 
         if (response.data.success && Array.isArray(response.data.data)) {
           const companyList = response.data.data
-            .filter(item => item.sectionData?.Company?.homepageCheckbox === true)
+            .filter(item => item.sectionData?.Company?.topemployer === true)
             .map(item => {
               const company = item.sectionData.Company;
               // Ensure logo is a valid string, otherwise use fallback

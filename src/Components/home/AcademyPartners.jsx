@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { fetchSectionData } from "./../../Utils/api";
 
 const TopAcademy = () => {
-  const fallbackLogo = "/assets/partners/fallback.png";
+  const fallbackLogo = "https://placehold.co/150x100";
   const [partners, setPartners] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
