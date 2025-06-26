@@ -1,8 +1,9 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import { MdVisibility, MdVisibilityOff } from "react-icons/md";
 import { jwtDecode } from "jwt-decode";
-import rightImage from "../assets/SignUp/wallpaper.jpg";
+import rightImage from "../assets/SignUp/wallpepar1.png";
 import logo from "../assets/Navbar/logo.png";
 import student from "../assets/SignUp/student.png";
 import company from "../assets/SignUp/company.png";
@@ -47,17 +48,17 @@ const SignUpPage = () => {
     1747902955524: "mentor",
   };
 
-  useEffect(() => {
-    const path = location.pathname.split("/").pop();
-    const validRoles = ["student", "company", "academy", "recruiter", "mentor"];
-    if (validRoles.includes(path)) {
-      setRole(path);
-    } else if (location.pathname === "/signup") {
-      setRole(null);
-    } else {
-      navigate("/signup", { replace: true });
-    }
-  }, [location.pathname, navigate]);
+ useEffect(() => {
+  const path = location.pathname.split("/").pop();
+  const validRoles = ["student", "company", "academy", "recruiter", "mentor"];
+  if (validRoles.includes(path)) {
+    setRole(path);
+  } else {
+    // Set default role to "student" and navigate to /signup/student
+    setRole("student");
+    navigate("/signup/student", { replace: true });
+  }
+}, [location.pathname, navigate]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -173,28 +174,20 @@ const SignUpPage = () => {
       let payload;
       let response;
 
-      const fullMobileNumber = `${
-        formData.countryCode
-      }${formData.mobile.trim()}`;
+      const fullMobileNumber = `${formData.countryCode}${formData.mobile.trim()}`;
 
-      if (role === "company" || role === "academy") {
+      if (role === "company") {
         payload = {
           appName: "app8657281202648",
-          companyName:
-            role === "company"
-              ? formData.companyName.trim()
-              : formData.academyName.trim(),
+          companyName: formData.companyName.trim(),
           mobile: fullMobileNumber,
           legalname: formData.name.trim(),
           role: roleIds[role],
           email: formData.email.toLowerCase().trim(),
           password: formData.password,
-          type: role === "company" ? "Company" : "University",
+          type: "Company",
         };
-        console.log(
-          `${role.charAt(0).toUpperCase() + role.slice(1)} Signup Payload:`,
-          payload
-        );
+        console.log("Company Signup Payload:", payload);
         response = await signupCompany(payload);
 
         if (response.success) {
@@ -222,7 +215,9 @@ const SignUpPage = () => {
             console.log("API Login Response User:", loginResponse.user);
 
             const roleId = loginResponse.user.role?.role || "";
-            const roleName = roleNames[roleId];
+            const roleName = roleNames
+
+[roleId];
 
             if (!roleName) {
               setErrors({
@@ -237,7 +232,7 @@ const SignUpPage = () => {
             if (decodedToken.roleId !== roleId) {
               console.warn("Role ID mismatch between API response and JWT:", {
                 apiRoleId: roleId,
-                jwtRoleId: decodedToken.roleId,
+                jwtRoleId: roleName,
               });
               setErrors({
                 general:
@@ -248,8 +243,7 @@ const SignUpPage = () => {
             }
 
             const userData = {
-              legalname:
-                loginResponse.user.legalname || loginResponse.user.email,
+              legalname: loginResponse.user.legalname || loginResponse.user.email,
               email: loginResponse.user.email,
               role: roleName,
               roleId: roleId,
@@ -269,8 +263,7 @@ const SignUpPage = () => {
           } else {
             setErrors({
               general:
-                loginResponse.message ||
-                "Automatic login failed. Please sign in manually.",
+                loginResponse.message || "Automatic login failed. Please sign in manually.",
             });
           }
         } else {
@@ -288,6 +281,9 @@ const SignUpPage = () => {
           email: formData.email.toLowerCase().trim(),
           mobile: fullMobileNumber,
         };
+        if (role === "academy") {
+          payload.academyName = formData.academyName.trim();
+        }
         console.log("Signup Payload:", payload);
         response = await signup(payload);
 
@@ -301,6 +297,7 @@ const SignUpPage = () => {
               role: roleNames[roleIds[role]],
               roleId: roleIds[role],
               mobile: fullMobileNumber,
+              ...(role === "academy" && { academyName: formData.academyName.trim() }),
               redirectTo: location.state?.from || "/editprofile",
             })
           );
@@ -324,9 +321,7 @@ const SignUpPage = () => {
       }
     } catch (err) {
       const errorMessage =
-        err.response?.data?.message ||
-        err.message ||
-        "An error occurred during signup";
+        err.response?.data?.message || err.message || "An error occurred during signup";
       console.error("Signup Error Response:", err.response?.data);
       if (
         errorMessage.includes("User with this username already exists") ||
@@ -417,7 +412,7 @@ const SignUpPage = () => {
         name: "password",
         placeholder: "Password",
         type: showPassword ? "text" : "password",
-        required: true,
+        required: "true",
         maxLength: 20,
       },
       {
@@ -550,8 +545,9 @@ const SignUpPage = () => {
 
   return (
     <div className="flex h-screen">
-      <div className="w-full lg:w-1/2 flex flex-col justify-center px-4 py-2 xs:px-6 sm:px-8">
-        <div className="max-w-[20rem] xs:max-w-[24rem] sm:max-w-[28rem] mx-auto w-full">
+      <div className="w-full lg:w-1/2 flex flex-col px-4 py-8 xs:px-6 sm:px-8">
+        <div className="max-w-[20rem] xs:max-w-[24rem] sm:max-w-[28rem] mx-auto w-full flex flex-col flex-grow">
+          {/* Fixed Header Section */}
           <div className="mb-3 flex flex-col items-center">
             <div className="flex items-center mb-3">
               <img
@@ -560,43 +556,44 @@ const SignUpPage = () => {
                 className="h-10 w-auto mr-2"
               />
             </div>
-          </div>
-          <div className="flex flex-rap justify-center gap-2 xs:gap-3 sm:gap-4 mb-3">
-            {["student", "company", "academy"].map((r) => (
-              <div
-                key={r}
-                className={`flex flex-col items-center cursor-pointer p-1.5 ${
-                  role === r ? "border-b-2 border-[#3D7EFF]" : ""
-                }`}
-                onClick={() => handleRoleChange(r)}
-              >
-                <div className="p-1.5 rounded-lg border shadow-sm">
-                  <img
-                    src={
-                      r === "student"
-                        ? student
-                        : r === "company"
-                        ? company
-                        : r === "academy"
-                        ? academy
-                        : r === "recruiter"
-                        ? recruiter
-                        : r === "mentor"
-                        ? mentor
-                        : "https://img.icons8.com/ios-filled/50/000000/user-male.png"
-                    }
-                    alt={r}
-                    className="w-5 h-5 xs:w-6 xs:h-6 sm:w-7 sm:h-7"
-                  />
+            <div className="flex justify-center gap-2 xs:gap-3 sm:gap-4 mb-3">
+              {["student", "company", "academy"].map((r) => (
+                <div
+                  key={r}
+                  className={`flex flex-col items-center cursor-pointer p-1.5 ${
+                    role === r ? "border-b-2 border-[#3D7EFF]" : ""
+                  }`}
+                  onClick={() => handleRoleChange(r)}
+                >
+                  <div className="p-1.5 rounded-lg border shadow-sm">
+                    <img
+                      src={
+                        r === "student"
+                          ? student
+                          : r === "company"
+                          ? company
+                          : r === "academy"
+                          ? academy
+                          : r === "recruiter"
+                          ? recruiter
+                          : r === "mentor"
+                          ? mentor
+                          : "https://img.icons8.com/ios-filled/50/000000/user-male.png"
+                      }
+                      alt={r}
+                      className="w-5 h-5 xs:w-6 xs:h-6 sm:w-7 sm:h-7"
+                    />
+                  </div>
+                  <span className="text-xs xs:text-sm font-medium capitalize">
+                    {r}
+                  </span>
                 </div>
-                <span className="text-xs xs:text-sm font-medium capitalize">
-                  {r}
-                </span>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-          {role && (
-            <div className="w-full">
+          {/* Form Content Section */}
+          {role ? (
+            <div className="w-full flex flex-col">
               <h2 className="text-base xs:text-lg sm:text-xl font-bold mb-1 text-black">
                 Sign up
               </h2>
@@ -688,10 +685,7 @@ const SignUpPage = () => {
                       >
                         {errors[field.name]}
                       </p>
-                    )}{role === "student" &&
-                      field.name === "confirmPassword" && (
-                        <div className="h-12" /> // Empty space to match extra field height
-                      )}
+                    )}
                   </div>
                 ))}
                 <div className="flex flex-col space-y-2">
@@ -774,28 +768,39 @@ const SignUpPage = () => {
                 )}
               </form>
               {role !== "company" && (
-                <>
-                  <p className="text-sm xs:text-sm text-center mt-2.5">
-                    Already have an account?{" "}
-                    <Link
-                      to="/login"
-                      className="text-[#3D7EFF] font-semibold hover:underline"
-                    >
-                      Sign in
-                    </Link>
-                  </p>
-                </>
+                <p className="text-sm xs:text-sm text-center mt-2.5">
+                  Already have an account?{" "}
+                  <Link
+                    to="/login"
+                    className="text-[#3D7EFF] font-semibold hover:underline"
+                  >
+                    Sign in
+                  </Link>
+                </p>
               )}
+            </div>
+          ) : (
+            <div className="w-full flex flex-col items-center">
+              <h2 className="text-base xs:text-lg sm:text-xl font-bold mb-1 text-black">
+                Select a Role
+              </h2>
+              <p className="text-xs xs:text-sm text-gray-500 mb-2">
+                Please choose a role to sign up for Revolutie.
+              </p>
             </div>
           )}
         </div>
       </div>
-      <div className="hidden lg:flex w-1/2 p-2">
-        <div
-          className="w-full h-full bg-cover bg-center rounded-3xl"
-          style={{ backgroundImage: `url(${rightImage})` }}
-        ></div>
-      </div>
+     <div className="hidden lg:flex w-1/2 p-2">
+  <div
+    className="w-full h-full bg-cover bg-center rounded-3xl opacity-50"
+    style={{ 
+      backgroundImage: `linear-gradient(to right, #F9DCDF, #B5D9D3), url(${rightImage})`,
+      backgroundBlendMode: 'multiply'
+    }}
+  ></div>
+</div>
+
     </div>
   );
 };

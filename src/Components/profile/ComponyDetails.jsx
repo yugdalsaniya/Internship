@@ -12,6 +12,8 @@ const CompanyDetails = ({ userData, updateCompletionStatus, onBack }) => {
     email: "",
     cdesignation: "",
     mobile: "",
+    instituteName: "",
+    post: "",
   });
   const [error, setError] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -67,13 +69,17 @@ const CompanyDetails = ({ userData, updateCompletionStatus, onBack }) => {
           email: appuser.email || "",
           cdesignation: appuser.cdesignation || "",
           mobile: appuser.mobile ? appuser.mobile.replace("+63", "") : "",
+          instituteName: appuser.instituteName || "",
+          post: appuser.post || "",
         };
 
         setFormData(newData);
         const isFormComplete =
           !!newData.name &&
           !!newData.email &&
-          !!newData.mobile;
+          !!newData.mobile &&
+          !!newData.instituteName &&
+          !!newData.post;
         setIsCompleted(isFormComplete);
         if (updateCompletionStatus) {
           updateCompletionStatus("Company Details", isFormComplete);
@@ -100,7 +106,9 @@ const CompanyDetails = ({ userData, updateCompletionStatus, onBack }) => {
     if (
       !formData.name ||
       !formData.email ||
-      !formData.mobile
+      !formData.mobile ||
+      !formData.instituteName ||
+      !formData.post
     ) {
       return "Please fill all required fields.";
     }
@@ -167,6 +175,8 @@ const CompanyDetails = ({ userData, updateCompletionStatus, onBack }) => {
         "sectionData.appuser.cdesignation": formData.cdesignation,
         "sectionData.appuser.mobile": formData.mobile,
         "sectionData.appuser.email": formData.email,
+        "sectionData.appuser.instituteName": formData.instituteName,
+        "sectionData.appuser.post": formData.post,
         "sectionData.appuser.lastUpdated": new Date().toISOString(),
       };
 
@@ -293,6 +303,44 @@ const CompanyDetails = ({ userData, updateCompletionStatus, onBack }) => {
               disabled={isProcessing}
             />
           </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Institute Name<span className="text-red-500">*</span>
+          </label>
+          <select
+            name="instituteName"
+            value={formData.instituteName}
+            onChange={handleInputChange}
+            className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring focus:ring-blue-200"
+            disabled={isProcessing}
+          >
+            <option value="">Select Institute</option>
+            <option value="Institute A">Institute A</option>
+            <option value="Institute B">Institute B</option>
+            <option value="Institute C">Institute C</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Post<span className="text-red-500">*</span>
+          </label>
+          <select
+            name="post"
+            value={formData.post}
+            onChange={handleInputChange}
+            className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring focus:ring-blue-200"
+            disabled={isProcessing}
+          >
+            <option value="">Select Post</option>
+            <option value="Manager">Manager</option>
+            <option value="Supervisor">Supervisor</option>
+            <option value="Analyst">Analyst</option>
+            <option value="Coordinator">Coordinator</option>
+          </select>
         </div>
 
         {error && <p className="text-red-500 text-sm text-center">{error}</p>}
