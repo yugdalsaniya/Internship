@@ -11,7 +11,7 @@ import WorkExperience from '../Components/profile/WorkExperience';
 import Accomplishments from '../Components/profile/Accomplishments';
 import PersonalDetails from '../Components/profile/PersonalDetails';
 import SocialLinks from '../Components/profile/SocialLinks';
-import CompanyDetails from '../Components/profile/ComponyDetails';
+import CompanyDetails from '../Components/profile/CompanyDetails';
 import OrganizationDetails from '../Components/profile/OrganizationDetails';
 import { fetchSectionData } from '../Utils/api';
 import { ToastContainer, toast } from 'react-toastify';
