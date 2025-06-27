@@ -25,9 +25,10 @@ const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
 const userTypes = [
   { label: "College Students", icon: <FaGraduationCap /> },
-  { label: "Professional", icon: <FaBriefcase /> },
   { label: "Senior High School", icon: <FaCalendarAlt /> },
-  { label: "JVL", icon: <FaUserGraduate /> },
+  { label: "TVL", icon: <FaUserGraduate /> },
+  { label: "Professional", icon: <FaBriefcase /> },
+  
 ];
 
 const streamOptions = [
@@ -587,7 +588,7 @@ function BasicDetails({ userData }) {
       return "Please select a stream.";
     }
     if (
-      (userType === "College Students" || userType === "JVL") &&
+      (userType === "College Students" || userType === "TVL") &&
       (!course || !specialization || !college || !startYear || !endYear)
     ) {
       return "Please fill all required college/fresher fields.";
@@ -784,7 +785,7 @@ function BasicDetails({ userData }) {
           ...(userType === "Senior High School" && {
             "sectionData.appuser.organisationcollege": schoolName,
           }),
-          ...(userType === "College Students" || userType === "JVL"
+          ...(userType === "College Students" || userType === "TVL"
             ? {
                 "sectionData.appuser.course": course,
                 "sectionData.appuser.coursespecialization": specialization,
