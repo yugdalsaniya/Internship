@@ -111,7 +111,7 @@ const NewsAndBlog = () => {
                   <img
                     src={post.image}
                     alt={post.title}
-                    className="w-full h-48 object-cover rounded-xl mb-4"
+                    className=" h-96 object-cover rounded-xl mb-4"
                   />
                 ) : (
                   <div className="w-full h-48 bg-gray-300 rounded-xl mb-4 blur-sm"></div>

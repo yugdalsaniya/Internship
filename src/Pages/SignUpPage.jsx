@@ -1147,7 +1147,7 @@ ertino
               roleImages[role] || wallpaper1
             })`,
             backgroundBlendMode: "multiply",
-            backgroundSize: "cover",
+            backgroundSize: "100% 100%",
             backgroundRepeat: "no-repeat",
           }}
         ></div>
