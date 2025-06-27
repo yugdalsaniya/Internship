@@ -248,7 +248,7 @@ const ProfileEditPage = () => {
   return (
     <div className="flex flex-col min-h-screen">
       <ToastContainer />
-      <div className="fixed top-0 left-0 right-0 bg-white border-b shadow-sm z-20 h-16">
+      {/* <div className="fixed top-20 left-80 right-0 bg-white border-b shadow-sm z-20 h-16">
         <div className="flex items-center justify-between p-4">
           <div className="flex items-center gap-3">
             <Link to="/">
@@ -271,11 +271,11 @@ const ProfileEditPage = () => {
             )}
           </button>
         </div>
-      </div>
+      </div> */}
 
       <div className="flex flex-col md:flex-row flex-1">
         <div
-          className={`w-full md:w-[320px] pt-16 border-r bg-white fixed top-0 left-0 h-screen flex flex-col z-10 transmission-transform duration-300 ${
+          className={`w-full md:w-[320px]  border-r bg-white fixed top-16 left-0 h-screen flex flex-col z-10 transmission-transform duration-300 ${
             isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
           } md:translate-x-0 md:block`}
         >
@@ -318,6 +318,7 @@ const ProfileEditPage = () => {
                   setIsSidebarOpen(false);
                 }}
               >
+                
                 <SidebarItem
                   completed={section.completed}
                   label={section.label}
@@ -330,10 +331,36 @@ const ProfileEditPage = () => {
         </div>
 
         <div
-          className={`w-full md:w-[calc(100%-320px)] md:ml-[320px] pt-16 bg-white p-6 overflow-y-auto min-h-[calc(100vh-4rem)] transition-all duration-300 ${
+          className={`w-full md:w-[calc(100%-320px)] md:ml-[320px]  bg-white px-6 overflow-y-auto min-h-[calc(100vh-4rem)] transition-all duration-300 ${
             isSidebarOpen ? 'opacity-50 pointer-events-none md:opacity-100 md:pointer-events-auto' : ''
           }`}
         >
+
+            <div className=" top-20 left-80 right-0 bg-white border-b shadow-sm z-20 h-16">
+        <div className="flex items-center justify-between p-4">
+          <div className="flex items-center gap-3">
+            <Link to="/">
+              <button className="w-8 h-8 flex items-center justify-center rounded-full bg-blue-100">
+                <FaChevronLeft className="text-gray-600 text-sm" />
+              </button>
+            </Link>
+            <h1 className="text-base font-semibold text-gray-800">Edit Profile</h1>
+          </div>
+          <button
+            className="md:hidden w-8 h-8 flex items-center justify-center rounded-full bg-blue-100 hover:bg-blue-200 transition-colors duration-200"
+            onClick={toggleSidebar}
+            aria-label={isSidebarOpen ? 'Close sidebar' : 'Open sidebar'}
+            aria-expanded={isSidebarOpen}
+          >
+            {isSidebarOpen ? (
+              <FaTimes className="text-gray-600 text-lg" />
+            ) : (
+              <FaBars className="text-gray-600 text-lg" />
+            )}
+          </button>
+        </div>
+      </div>
+
           <Routes>
             {allowedRoles.includes(userData.role) ? (
               <>
@@ -345,6 +372,7 @@ const ProfileEditPage = () => {
               </>
             ) : (
               <>
+              
                 <Route path="basic-details" element={<BasicDetails userData={userData} />} />
                 <Route path="resume" element={<Resume userData={userData} updateCompletionStatus={updateCompletionStatus} />} />
                 <Route path="about" element={<About userData={userData} updateCompletionStatus={updateCompletionStatus} />} />

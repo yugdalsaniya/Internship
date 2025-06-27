@@ -105,7 +105,7 @@ const Navbar = () => {
   const links = navLinks[role] || defaultLinks;
 
   return (
-    <nav className="bg-white shadow-md py-2 px-5 sm:px-12">
+    <nav className="bg-white shadow-md py-2 px-5 sm:px-12 sticky top-0 z-50">
       <div className="flex items-center justify-between mx-auto h-12">
         <div className="flex items-center ml-0 sm:ml-4">
           <Link to="/">

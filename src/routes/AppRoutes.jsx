@@ -30,6 +30,7 @@ import AllEmployers from "../Components/home/AllEmployers";
 import AllAcademies from "../Components/home/AllAcademies";
 import AcademyProfilePage from "../Pages/Academy/AcademyProfilePage";
 import AllNewsAndBlogs from "../Components/home/AllNewsAndBlogs"; // Import the new component
+import SidebarItem from "../Components/profile/SidebarItem";
 
 export default function AppRoutes() {
   return (
@@ -41,9 +42,10 @@ export default function AppRoutes() {
         <Route path="/otp" element={<OtpPage />} />
         <Route path="/forgotpassword" element={<ForgotPasswordPage />} />
         <Route path="/login" element={<SignInPage />} />
-        <Route path="/editprofile/*" element={<ProfileEditPage />} />
         <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
         <Route element={<MainLayout />}>
+        <Route path="/editprofile/*" element={<ProfileEditPage />} />
+        <Route path="/sidebar/*" element={< SidebarItem />} />
           <Route path="/" element={<HomePage />} />
           <Route path="/internship" element={<InternshipPage />} />
           <Route path="/about" element={<AboutUsPage />} />

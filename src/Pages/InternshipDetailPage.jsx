@@ -4,7 +4,6 @@ import Hero from "../assets/Hero/banner.jpg";
 import {
   FaMapMarkerAlt,
   FaRegClock,
-  FaRupeeSign,
   FaUser,
   FaGraduationCap,
   FaTags,
@@ -16,6 +15,8 @@ import { PiTwitterLogoFill } from "react-icons/pi";
 import { fetchSectionData } from "../Utils/api";
 import { formatDistanceToNow, parse, format } from "date-fns";
 import { generateInternshipSlug } from "../Utils/slugify";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 const InternshipDetailPage = () => {
   const { id: urlId } = useParams();
@@ -129,6 +130,19 @@ const InternshipDetailPage = () => {
     } else {
       navigate(`/applyinternshipform/${actualId}`);
     }
+  };
+
+  // Clean up Markdown to handle empty list items and fix escaped characters
+  const cleanMarkdown = (markdown) => {
+    if (!markdown) return markdown;
+    return markdown
+      .replace(/\\+/g, '') // Remove extra backslashes (e.g., "v\\" to "v")
+      .split('\n')
+      .filter(line => {
+        const trimmed = line.trim();
+        return trimmed && trimmed !== '-' && trimmed !== '- [ ]' && trimmed !== '- [x]';
+      })
+      .join('\n');
   };
 
   if (error) return <div className="mx-4 py-4 text-sm sm:mx-12 sm:text-base">{error}</div>;
@@ -287,6 +301,81 @@ const InternshipDetailPage = () => {
         </div>
       </div>
       <div className="max-w-[95%] mx-auto px-3 py-6 sm:max-w-7xl sm:px-4 sm:py-10">
+        <style>
+          {`
+            .markdown-content {
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+              line-height: 1.6;
+              color: #374151;
+            }
+            .markdown-content p {
+              margin: 0.75rem 0;
+            }
+            .markdown-content ul {
+              list-style-type: disc;
+              padding-left: 1.5rem;
+              margin: 0.75rem 0;
+            }
+            .markdown-content ol {
+              list-style-type: decimal;
+              padding-left: 1.5rem;
+              margin: 0.75rem 0;
+            }
+            .markdown-content ul li, .markdown-content ol li {
+              margin-bottom: 0.25rem;
+            }
+            .markdown-content ul li.task-list-item {
+              list-style-type: none;
+              position: relative;
+              padding-left: 1.5rem;
+            }
+            .markdown-content ul li.task-list-item::before {
+              content: '☐';
+              position: absolute;
+              left: 0;
+              color: #374151;
+            }
+            .markdown-content ul li.task-list-item.checked::before {
+              content: '☑';
+              color: #374151;
+            }
+            .markdown-content h1, .markdown-content h2, .markdown-content h3 {
+              font-weight: 600;
+              margin: 0.75rem 0;
+            }
+            .markdown-content h1 {
+              font-size: 1.5rem;
+            }
+            .markdown-content h2 {
+              font-size: 1.25rem;
+            }
+            .markdown-content h3 {
+              font-size: 1.125rem;
+            }
+            .markdown-content strong {
+              font-weight: 700;
+            }
+            .markdown-content em {
+              font-style: italic;
+            }
+            .markdown-content a {
+              color: #2563eb;
+              text-decoration: underline;
+            }
+            .markdown-content code {
+              background-color: #f3f4f6;
+              padding: 0.1rem 0.3rem;
+              border-radius: 3px;
+              font-family: 'Courier New', Courier, monospace;
+            }
+            .markdown-content pre {
+              background-color: #f3f4f6;
+              padding: 1rem;
+              border-radius: 5px;
+              overflow-x: auto;
+            }
+          `}
+        </style>
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-6 sm:mb-10 gap-4">
           <div>
             <div className="text-xs text-gray-400 mb-1">{relativeTime}</div>
@@ -298,7 +387,7 @@ const InternshipDetailPage = () => {
                 {jobpost?.time || "Unknown"}
               </div>
               <div className="flex items-center gap-1">
-                <FaRupeeSign />
+                <span>₱</span>
                 {jobpost?.salary ? `${jobpost.salary}` : "Not specified"}
               </div>
               <div className="flex items-center gap-1">
@@ -333,28 +422,44 @@ const InternshipDetailPage = () => {
           <div className="lg:col-span-2">
             <section className="mb-6 sm:mb-8">
               <h2 className="text-lg sm:text-xl font-semibold mb-2">Internship Description</h2>
-              <p className="text-sm sm:text-base text-gray-700">
-                {jobpost?.description || "No description available."}
-              </p>
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                className="text-sm sm:text-base text-gray-700 markdown-content"
+              >
+                {cleanMarkdown(jobpost?.description) || "No description available."}
+              </ReactMarkdown>
             </section>
-            {jobpost?.keyResponsibilities && jobpost.keyResponsibilities.length > 0 && (
+            {jobpost?.keyResponsibilities && (
               <section className="mb-6 sm:mb-8">
                 <h2 className="text-lg sm:text-xl font-semibold mb-2">Key Responsibilities</h2>
-                <ul className="list-disc ml-4 sm:ml-5 text-gray-700 space-y-1 text-sm sm:text-base">
-                  {jobpost.keyResponsibilities.map((responsibility, index) => (
-                    <li key={index}>{responsibility.text}</li>
-                  ))}
-                </ul>
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  className="text-sm sm:text-base text-gray-700 markdown-content"
+                >
+                  {cleanMarkdown(jobpost.keyResponsibilities) || "No responsibilities provided."}
+                </ReactMarkdown>
               </section>
             )}
-            {jobpost?.professionalSkills && jobpost.professionalSkills.length > 0 && (
+            {jobpost?.professionalSkills && (
               <section className="mb-6 sm:mb-8">
                 <h2 className="text-lg sm:text-xl font-semibold mb-2">Professional Skills</h2>
-                <ul className="list-disc ml-4 sm:ml-5 text-gray-700 space-y-1 text-sm sm:text-base">
-                  {jobpost.professionalSkills.map((skill, index) => (
-                    <li key={index}>{skill.text}</li>
-                  ))}
-                </ul>
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  className="text-sm sm:text-base text-gray-700 markdown-content"
+                >
+                  {cleanMarkdown(jobpost.professionalSkills) || "No skills provided."}
+                </ReactMarkdown>
+              </section>
+            )}
+            {jobpost?.applicationinstructions && (
+              <section className="mb-6 sm:mb-8">
+                <h2 className="text-lg sm:text-xl font-semibold mb-2">Application Instructions</h2>
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  className="text-sm sm:text-base text-gray-700 markdown-content"
+                >
+                  {cleanMarkdown(jobpost.applicationinstructions) || "No instructions provided."}
+                </ReactMarkdown>
               </section>
             )}
             <section className="mb-6 sm:mb-10">
@@ -398,7 +503,7 @@ const InternshipDetailPage = () => {
                             <MdWork /> {item.time}
                           </div>
                           <div className="flex items-center gap-1">
-                            <FaRupeeSign /> {item.salary}
+                            <span>₱</span> {item.salary}
                           </div>
                           <div className="flex items-center gap-1">
                             <FaMapMarkerAlt /> {item.location}
@@ -442,7 +547,7 @@ const InternshipDetailPage = () => {
                   <span>Degrees: {degreesList}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <FaRupeeSign className="text-blue-500" />
+                  <span>₱</span>
                   <span>Offered Salary: {jobpost?.salary ? `${jobpost.salary}` : "Not specified"}</span>
                 </div>
                 <div className="flex items-center gap-2">
