@@ -15,7 +15,7 @@ const PeopleUsingInternship = ({ title, subtitle, tabs, sections }) => {
               {tabs.map((tab, index) => (
                 <button
                   key={index}
-                  className="bg-gradient-to-r from-blue-500 to-purple-600 px-4 py-2 rounded-full"
+                  className="bg-gradient-to-r from-blue-500 to-purple-600 px-4 text-[#ffffff] py-2 rounded-full"
                 >
                   {tab}
                 </button>
@@ -26,28 +26,30 @@ const PeopleUsingInternship = ({ title, subtitle, tabs, sections }) => {
             {sections.map((section, index) => (
               <div
                 key={index}
-                className="bg-white p-4 rounded-bl-3xl rounded-tr-3xl border-2 border-purple-200 flex-1"
+                className="bg-white p-4 rounded-bl-3xl rounded-tr-3xl  border-2 border-purple-200 flex-1"
               >
-                <div className="flex items-center justify-between space-x-4">
+                <div className="flex justify-between mb-4 mt-4 items-center space-x-4">
                   <div>
                     <h3 className="font-semibold text-gray-800">
                       {section.title}
                     </h3>
                     <p className="text-gray-600">{section.description}</p>
-                    <ul className="list-disc list-inside text-gray-600 mt-2 space-y-1">
+                    <ul className="list-disc list-inside text-gray-600 mt-6 space-y-1">
                       {section.items.map((item, itemIndex) => (
                         <li key={itemIndex}>{item}</li>
                       ))}
                     </ul>
+                  </div>
+                  <div className="flex flex-col items-center space-y-4">
+                    <img
+                      src={section.image}
+                      alt={section.title}
+                      className="w-28 h-28 rounded-full shadow-lg"
+                    />
                     <button className="mt-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-2 rounded-full">
                       Read More
                     </button>
                   </div>
-                  <img
-                    src={section.image}
-                    alt={section.title}
-                    className="w-28 h-28 rounded-full -mt-12 shadow-lg"
-                  />
                 </div>
               </div>
             ))}
