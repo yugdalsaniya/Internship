@@ -133,17 +133,19 @@ const InternshipDetailPage = () => {
   };
 
   // Clean up Markdown to handle empty list items and fix escaped characters
-  const cleanMarkdown = (markdown) => {
-    if (!markdown) return markdown;
-    return markdown
-      .replace(/\\+/g, '') // Remove extra backslashes (e.g., "v\\" to "v")
-      .split('\n')
-      .filter(line => {
-        const trimmed = line.trim();
-        return trimmed && trimmed !== '-' && trimmed !== '- [ ]' && trimmed !== '- [x]';
-      })
-      .join('\n');
-  };
+ const cleanMarkdown = (markdown) => {
+  if (!markdown || typeof markdown !== 'string') {
+    return "No content available.";
+  }
+  return markdown
+    .replace(/\\+/g, '')
+    .split('\n')
+    .filter(line => {
+      const trimmed = line.trim();
+      return trimmed && trimmed !== '-' && trimmed !== '- [ ]' && trimmed !== '- [x]';
+    })
+    .join('\n');
+};
 
   if (error) return <div className="mx-4 py-4 text-sm sm:mx-12 sm:text-base">{error}</div>;
 
