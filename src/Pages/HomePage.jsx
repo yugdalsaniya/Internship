@@ -46,7 +46,7 @@ export default function HomePage() {
       <PeopleUsingInternship/>
       {/* <FeaturedInterns /> */}
       <TopEmployers />
-      <Slider />
+      {/* <Slider /> */}
       <AcademyPartners />
       <NewsAndBlog />
     </>

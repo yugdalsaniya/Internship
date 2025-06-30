@@ -26,7 +26,7 @@ const PeopleUsingInternship = ({ title, subtitle, tabs, sections }) => {
             {sections.map((section, index) => (
               <div
                 key={index}
-                className="bg-white p-4 rounded-bl-3xl rounded-tr-3xl  border-2 border-purple-200 flex-1"
+                className="bg-white p-4 rounded-bl-3xl rounded-tr-3xl  border-2  flex-1"
               >
                 <div className="flex justify-between mb-4 mt-4 items-center space-x-4">
                   <div>
@@ -44,7 +44,7 @@ const PeopleUsingInternship = ({ title, subtitle, tabs, sections }) => {
                     <img
                       src={section.image}
                       alt={section.title}
-                      className="w-28 h-28 rounded-full shadow-lg"
+                      className="w-28 h-28 rounded-full shadow-lg object-cover"
                     />
                     <button className="mt-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-2 rounded-full">
                       Read More
