@@ -306,6 +306,7 @@ const Hero = ({
       className="relative bg-cover bg-center py-16 px-4 sm:px-12"
       style={{
         backgroundImage: `${gradient}, url(${backgroundImage})`,
+         backgroundPosition: "10% 20%"
       }}
     >
       <div className="relative flex flex-col items-center text-center max-w-7xl mx-auto">
@@ -320,78 +321,87 @@ const Hero = ({
         </p>
 
         {/* Search Bar */}
-        {searchFields.length > 0 && (
-          <div className="bg-white rounded-lg shadow-md flex flex-col md:flex-row items-center w-full max-w-3xl p-3 space-y-3 md:space-y-0 md:space-x-3 relative">
-            {searchFields.map((field, index) => (
-              <React.Fragment key={index}>
-                {field.type === 'input' && field.placeholder === 'Internship Title or Company' ? (
-                  <div className="relative w-full md:flex-1">
-                    <input
-                      type="text"
-                      placeholder={field.placeholder}
-                      className="w-full border border-gray-300 rounded-md p-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                    />
-                    {suggestions.length > 0 && (
-                      <ul className="absolute z-10 w-full bg-white border border-gray-300 rounded-md mt-1 max-h-60 overflow-auto shadow-lg">
-                        {isLoadingSuggestions ? (
-                          <li className="p-2 text-sm text-gray-600">Loading...</li>
-                        ) : (
-                          suggestions.map((suggestion, idx) => (
-                            <li
-                              key={idx}
-                              className="p-2 text-sm text-gray-800 hover:bg-gray-100 cursor-pointer"
-                              onClick={() => handleSuggestionSelect(suggestion)}
-                            >
-                              {suggestion.title} - {suggestion.company}
-                            </li>
-                          ))
-                        )}
-                      </ul>
-                    )}
-                  </div>
-                ) : field.type === 'input' && field.placeholder === 'Search Location' ? (
-                  <div className="relative w-full md:flex-1">
-                    <input
-                      type="text"
-                      placeholder={isGoogleMapsLoaded ? field.placeholder : 'Type city manually'}
-                      className="w-full border border-gray-300 rounded-md p-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      ref={locationInputRef}
-                      value={location}
-                      onChange={(e) => setLocation(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                      disabled={!isGoogleMapsLoaded && error}
-                    />
-                    {!isGoogleMapsLoaded && error && (
-                      <p className="text-red-500 text-xs mt-1">{error}</p>
-                    )}
-                  </div>
-                ) : field.type === 'select' ? (
-                  <select
-                    className="w-full md:flex-1 border border-gray-300 rounded-md p-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                  >
-                    {categoryOptions.map((option, optIndex) => (
-                      <option key={optIndex} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
-                ) : null}
-              </React.Fragment>
-            ))}
-            <button
-              onClick={handleSearch}
-              className="bg-blue-600 text-white rounded-md py-2 px-4 text-xs hover:bg-blue-700 transition-colors"
-            >
-              Search
-            </button>
+      
+{/* Search Bar */}
+{searchFields.length > 0 && (
+  <div className="bg-white rounded-lg shadow-md flex flex-col md:flex-row items-stretch w-full max-w-3xl overflow-hidden">
+    {searchFields.map((field, index) => (
+      <React.Fragment key={index}>
+        {field.type === 'input' && field.placeholder === 'Internship Title or Company' ? (
+          <div className="relative flex-1 px-4 py-4">
+            <input
+              type="text"
+              placeholder={field.placeholder}
+              className="w-full h-full border-none text-center text-xs focus:outline-none placeholder-gray-500"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+            />
+            {suggestions.length > 0 && (
+              <ul className="absolute z-10 w-full bg-white border border-gray-300 rounded-md mt-1 max-h-60 overflow-auto shadow-lg left-0">
+                {isLoadingSuggestions ? (
+                  <li className="p-2 text-sm text-gray-600">Loading...</li>
+                ) : (
+                  suggestions.map((suggestion, idx) => (
+                    <li
+                      key={idx}
+                      className="p-2 text-sm text-gray-800 hover:bg-gray-100 cursor-pointer"
+                      onClick={() => handleSuggestionSelect(suggestion)}
+                    >
+                      {suggestion.title} - {suggestion.company}
+                    </li>
+                  ))
+                )}
+              </ul>
+            )}
           </div>
-        )}
+        ) : field.type === 'input' && field.placeholder === 'Search Location' ? (
+          <div className="relative flex-1 px-4 py-3 border-l border-gray-200">
+            <input
+              type="text"
+              placeholder={isGoogleMapsLoaded ? field.placeholder : 'Type city manually'}
+              className="w-full h-full border-none text-center text-xs focus:outline-none placeholder-gray-500"
+              ref={locationInputRef}
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+              disabled={!isGoogleMapsLoaded && error}
+            />
+            {!isGoogleMapsLoaded && error && (
+              <p className="text-red-500 text-xs mt-1">{error}</p>
+            )}
+          </div>
+        ) : field.type === 'select' ? (
+          <div className="relative flex-1 px-4 py-3 border-l border-gray-200">
+            <select
+              className="w-full h-full border-none text-center text-xs focus:outline-none appearance-none bg-transparent"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+            >
+              {categoryOptions.map((option, optIndex) => (
+                <option key={optIndex} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+            <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+              <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </div>
+        ) : null}
+      </React.Fragment>
+    ))}
+    <button
+      onClick={handleSearch}
+      className="flex-shrink-0 bg-gradient-to-r from-blue-500 to-purple-600 text-white px-7 py-3 text-xs font-medium hover:from-blue-600 hover:to-purple-700 transition-colors"
+    >
+      Search Internship
+    </button>
+  </div>
+)}
 
         {/* Post Internship Button (Conditional) */}
         {showPostButton && (
