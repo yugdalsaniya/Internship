@@ -8,7 +8,6 @@ import FeaturedInterns from "../Components/home/FeaturedInterns";
 import TopEmployers from "../Components/home/TopEmployers";
 import AcademyPartners from "../Components/home/AcademyPartners";
 import NewsAndBlog from "../Components/home/NewsAndBlog";
-import logo from "../assets/Navbar/logo.png"; // Import your logo for SEO
 import Slider from "../Components/home/Slider.jsx"
 import PeopleUsingInternship from "../Components/home/PeopleUsingInternship";
 
@@ -46,7 +45,7 @@ export default function HomePage() {
 <Helmet>
         <title>Internship & OJT Platform Philippines</title>
         <meta property="og:title" content="Internship & OJT Platform Philippines - Find Your Dream Internship" />
-        <meta property="og:image" content={logo} />
+        <meta property="og:image" content="https://crmapi.conscor.com/uploads/app8657281202648/newsandblog/file-1751288717156-733529112.png" />
         <meta property="og:description" content="Discover internships and OJT opportunities in the Philippines. Connect with top companies and academies to kickstart your career!" />
         <meta property="og:url" content="https://inturnshp.com/ph/" />
         <meta property="og:type" content="website" />
