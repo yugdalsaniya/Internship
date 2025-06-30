@@ -65,6 +65,39 @@ const SignUpPage = () => {
     recruiter: wallpaper5,
   };
 
+  const roleDescriptions = {
+    student: [
+      "Find internships, OJTs, and entry-level jobs",
+      "Apply directly with a smart Inturnshp profile",
+      "Learn with free workshops and short courses",
+      "Get career-ready through real-world experiences",
+    ],
+    company: [
+      "Post internships and job openings",
+      "Search from a pool of pre-screened candidates",
+      "Build your employer brand on campus",
+      "Manage hiring with simple, effective tools",
+    ],
+    academy: [
+      "Track internship activity & student growth",
+      "Connect with verified industry partners",
+      "Monitor performance and placement metrics",
+      "Enable smooth campus-to-industry transition",
+    ],
+    recruiter: [
+      "Post internships and job openings",
+      "Search from a pool of pre-screened candidates",
+      "Build your employer brand on campus",
+      "Manage hiring with simple, effective tools",
+    ],
+    mentor: [
+      "Offer 1-on-1 mentorship or group sessions",
+      "Share insights via talks, webinars, or Q&As",
+      "Help students build their career roadmap",
+      "Boost your professional visibility and impact",
+    ],
+  };
+
   useEffect(() => {
     const path = location.pathname.split("/").pop();
     const validRoles = ["student", "company", "academy", "recruiter", "mentor"];
@@ -213,7 +246,9 @@ const SignUpPage = () => {
   };
 
   const handleResendOtp = async () => {
-    if (!validateEmail(formData.email)) {
+    if (!
+
+validateEmail(formData.email)) {
       setErrors((prev) => ({
         ...prev,
         email: "Please enter a valid email address.",
@@ -278,7 +313,6 @@ const SignUpPage = () => {
       setErrors((prev) => ({
         ...prev,
         otp: "OTP has expired or is invalid. Please request a new one.",
-ertino
       }));
       setTimeout(() => {
         setErrors((prev) => ({ ...prev, otp: "" }));
@@ -297,7 +331,6 @@ ertino
       setErrors((prev) => ({
         ...prev,
         otp: "",
-      
       }));
       setTimeout(() => {
         setErrors((prev) => ({ ...prev, general: "" }));
@@ -888,89 +921,89 @@ ertino
                         />
                       </div>
                     ) : field.isEmail ? (
-    <>
-      <div className="relative flex items-center">
-        <input
-          type={field.type}
-          name={field.name}
-          placeholder={field.placeholder}
-          className={`w-full px-3 py-2 xs:px-4 xs:py-2.5 border rounded-md outline-none text-xs xs:text-sm sm:text-base focus:ring-2 focus:ring-[#3D7EFF] ${
-            errors[field.name] ? "border-red-500" : ""
-          }`}
-          value={formData[field.name]}
-          onChange={handleChange}
-          required={field.required}
-          maxLength={field.maxLength}
-          disabled={isLoading || isEmailVerified || (role === "company" && showOtpField)}
-          aria-describedby={errors[field.name] ? `error-${field.name}` : undefined}
-        />
-        {isEmailVerified ? (
-          <MdCheckCircle
-            className="absolute top-1/2 right-2 xs:right-3 transform -translate-y-1/2 text-green-500 text-base xs:text-lg"
-          />
-        ) : role === "company" && (timeLeft === null || timeLeft === 0) ? (
-          <button
-            type="button"
-            onClick={handleVerifyEmail}
-            className={`absolute top-1/2 right-2 xs:right-3 transform -translate-y-1/2 text-xs xs:text-sm text-[#3D7EFF] font-semibold hover:underline ${
-              isVerifying || isLoading ? "opacity-75 cursor-not-allowed" : ""
-            }`}
-            disabled={isVerifying || isLoading}
-          >
-            {isVerifying ? "Verifying..." : "Verify"}
-          </button>
-        ) : null}
-      </div>
-      {showOtpField && role === "company" && (
-        <div className="flex flex-col mt-2">
-          <div className="flex items-center gap-2">
-            <input
-              type="text"
-              name="otp"
-              placeholder="Enter OTP"
-              className={`w-full px-3 py-2 xs:px-4 xs:py-2.5 border rounded-md outline-none text-xs xs:text-sm sm:text-base focus:ring-2 focus:ring-[#3D7EFF] ${
-                errors.otp ? "border-red-500" : ""
-              }`}
-              value={formData.otp}
-              onChange={handleChange}
-              maxLength={4}
-              disabled={isLoading || timeLeft === 0}
-              aria-describedby={errors.otp ? "error-otp" : undefined}
-            />
-            <button
-              type="button"
-              onClick={handleVerifyOtp}
-              className={`px-3 py-2 xs:px-4 xs:py-2.5 bg-[#3D7EFF] text-white rounded-md text-xs xs:text-sm font-semibold hover:bg-[#2b66cc] transition-colors ${
-                isLoading || timeLeft === 0 ? "opacity-75 cursor-not-allowed" : ""
-              }`}
-              disabled={isLoading || timeLeft === 0}
-            >
-              Verify OTP
-            </button>
-          </div>
-          <div className="flex justify-between items-center mt-1">
-            {timeLeft !== null && timeLeft > 0 && (
-              <p className="text-xs xs:text-sm text-gray-500">
-                Time left: {Math.floor(timeLeft / 60)}:
-                {(timeLeft % 60).toString().padStart(2, "0")}
-              </p>
-            )}
-            {timeLeft === 0 && (
-              <button
-                type="button"
-                onClick={handleResendOtp}
-                className={`text-xs xs:text-sm text-[#3D7EFF] font-semibold hover:underline ${
-                  isVerifying || isLoading ? "opacity-75 cursor-not-allowed" : ""
-                }`}
-                disabled={isVerifying || isLoading}
-              >
-                {isVerifying ? "Resending..." : "Resend OTP"}
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-    </>
+                      <>
+                        <div className="relative flex items-center">
+                          <input
+                            type={field.type}
+                            name={field.name}
+                            placeholder={field.placeholder}
+                            className={`w-full px-3 py-2 xs:px-4 xs:py-2.5 border rounded-md outline-none text-xs xs:text-sm sm:text-base focus:ring-2 focus:ring-[#3D7EFF] ${
+                              errors[field.name] ? "border-red-500" : ""
+                            }`}
+                            value={formData[field.name]}
+                            onChange={handleChange}
+                            required={field.required}
+                            maxLength={field.maxLength}
+                            disabled={isLoading || isEmailVerified || (role === "company" && showOtpField)}
+                            aria-describedby={errors[field.name] ? `error-${field.name}` : undefined}
+                          />
+                          {isEmailVerified ? (
+                            <MdCheckCircle
+                              className="absolute top-1/2 right-2 xs:right-3 transform -translate-y-1/2 text-green-500 text-base xs:text-lg"
+                            />
+                          ) : role === "company" && (timeLeft === null || timeLeft === 0) ? (
+                            <button
+                              type="button"
+                              onClick={handleVerifyEmail}
+                              className={`absolute top-1/2 right-2 xs:right-3 transform -translate-y-1/2 text-xs xs:text-sm text-[#3D7EFF] font-semibold hover:underline ${
+                                isVerifying || isLoading ? "opacity-75 cursor-not-allowed" : ""
+                              }`}
+                              disabled={isVerifying || isLoading}
+                            >
+                              {isVerifying ? "Verifying..." : "Verify"}
+                            </button>
+                          ) : null}
+                        </div>
+                        {showOtpField && role === "company" && (
+                          <div className="flex flex-col mt-2">
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="text"
+                                name="otp"
+                                placeholder="Enter OTP"
+                                className={`w-full px-3 py-2 xs:px-4 xs:py-2.5 border rounded-md outline-none text-xs xs:text-sm sm:text-base focus:ring-2 focus:ring-[#3D7EFF] ${
+                                  errors.otp ? "border-red-500" : ""
+                                }`}
+                                value={formData.otp}
+                                onChange={handleChange}
+                                maxLength={4}
+                                disabled={isLoading || timeLeft === 0}
+                                aria-describedby={errors.otp ? "error-otp" : undefined}
+                              />
+                              <button
+                                type="button"
+                                onClick={handleVerifyOtp}
+                                className={`px-3 py-2 xs:px-4 xs:py-2.5 bg-[#3D7EFF] text-white rounded-md text-xs xs:text-sm font-semibold hover:bg-[#2b66cc] transition-colors ${
+                                  isLoading || timeLeft === 0 ? "opacity-75 cursor-not-allowed" : ""
+                                }`}
+                                disabled={isLoading || timeLeft === 0}
+                              >
+                                Verify OTP
+                              </button>
+                            </div>
+                            <div className="flex justify-between items-center mt-1">
+                              {timeLeft !== null && timeLeft > 0 && (
+                                <p className="text-xs xs:text-sm text-gray-500">
+                                  Time left: {Math.floor(timeLeft / 60)}:
+                                  {(timeLeft % 60).toString().padStart(2, "0")}
+                                </p>
+                              )}
+                              {timeLeft === 0 && (
+                                <button
+                                  type="button"
+                                  onClick={handleResendOtp}
+                                  className={`text-xs xs:text-sm text-[#3D7EFF] font-semibold hover:underline ${
+                                    isVerifying || isLoading ? "opacity-75 cursor-not-allowed" : ""
+                                  }`}
+                                  disabled={isVerifying || isLoading}
+                                >
+                                  {isVerifying ? "Resending..." : "Resend OTP"}
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </>
                     ) : (
                       <div className="relative flex items-center">
                         <input
@@ -1127,7 +1160,7 @@ ertino
           )}
         </div>
       </div>
-      <div className="hidden lg:flex w-1/2 p-2">
+      <div className="hidden lg:flex w-1/2 p-2 relative">
         <div
           className="w-full h-full bg-contain bg-center rounded-3xl opacity-50"
           style={{
@@ -1139,6 +1172,17 @@ ertino
             backgroundRepeat: "no-repeat",
           }}
         ></div>
+        {role && (
+          <div className="absolute inset-0 flex items-center justify-between p-20">
+            <ul className="text-[#050748] text-lg font-semibold list-disc pl-6">
+              {roleDescriptions[role].map((description, index) => (
+                <li key={index} className="mb-2">
+                  {description}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
     </div>
   );
