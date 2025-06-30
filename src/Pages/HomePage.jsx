@@ -43,8 +43,8 @@ export default function HomePage() {
       <FeaturedCompany />
       <RecentInternships />
       <Category />
+      <FeaturedInterns />
       <PeopleUsingInternship/>
-      {/* <FeaturedInterns /> */}
       <TopEmployers />
       {/* <Slider /> */}
       <AcademyPartners />
