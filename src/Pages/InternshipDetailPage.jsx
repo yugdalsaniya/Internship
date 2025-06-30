@@ -293,14 +293,23 @@ const InternshipDetailPage = () => {
           backgroundPosition: "center",
         }}
       >
-        <div className="relative flex flex-col items-center text-center max-w-[90%] sm:max-w-7xl mx-auto z-10">
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#050748] mb-2 sm:mb-3">
-            {jobpost?.title || "Unknown Role"}
-          </h1>
-          <p className="text-sm sm:text-base md:text-lg text-[#45457D] mb-4 sm:mb-6 max-w-xl sm:max-w-3xl">
-            {jobpost?.company || "Unknown Company"}
-          </p>
-        </div>
+       <div className="relative flex flex-col items-center text-center max-w-[90%] sm:max-w-7xl mx-auto z-10">
+  <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#050748] mb-2 sm:mb-3">
+    {jobpost?.title || "Unknown Role"}
+  </h1>
+  <p className="text-sm sm:text-base md:text-lg text-[#45457D] mb-2 sm:mb-3 max-w-xl sm:max-w-3xl">
+    {jobpost?.company || "Unknown Company"}
+  </p>
+  <div className="flex flex-wrap justify-center gap-2 sm:gap-4 text-xs sm:text-sm text-[#45457D] mb-4 sm:mb-6">
+    <span>{jobpost?.time || "Unknown Subtype"}</span>
+    <span>|</span>
+    <span>{jobpost?.location || "Unknown Location"}</span>
+    <span>|</span>
+    <span>{categoryMap[jobpost?.subtype] || jobpost?.subtype || "Unknown Category"}</span>
+    <span>|</span>
+    <span>{jobpost?.salary || "Unknown Location"}</span>
+  </div>
+</div>
       </div>
       <div className="max-w-[95%] mx-auto px-3 py-6 sm:max-w-7xl sm:px-4 sm:py-10">
         <style>
