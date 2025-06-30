@@ -132,69 +132,68 @@ const InternshipDetailPage = () => {
     }
   };
 
-  // Clean up Markdown to handle empty list items and fix escaped characters
- const cleanMarkdown = (markdown) => {
-  if (!markdown || typeof markdown !== 'string') {
-    return "No content available.";
-  }
-  return markdown
-    .replace(/\\+/g, '')
-    .split('\n')
-    .filter(line => {
-      const trimmed = line.trim();
-      return trimmed && trimmed !== '-' && trimmed !== '- [ ]' && trimmed !== '- [x]';
-    })
-    .join('\n');
-};
+  const cleanMarkdown = (markdown) => {
+    if (!markdown || typeof markdown !== 'string') {
+      return "No content available.";
+    }
+    return markdown
+      .replace(/\\+/g, '')
+      .split('\n')
+      .filter(line => {
+        const trimmed = line.trim();
+        return trimmed && trimmed !== '-' && trimmed !== '- [ ]' && trimmed !== '- [x]';
+      })
+      .join('\n');
+  };
 
-  if (error) return <div className="mx-4 py-4 text-sm sm:mx-12 sm:text-base">{error}</div>;
+  if (error) return <div className="mx-4 py-4 text-sm md:text-base">{error}</div>;
 
   if (loading) {
     return (
       <div className="min-h-screen bg-white">
         {/* Hero Section Skeleton */}
-        <div className="w-full h-[200px] sm:h-[300px] bg-gray-200 animate-pulse relative flex items-center justify-center">
-          <div className="relative max-w-[90%] sm:max-w-7xl mx-auto z-10 flex flex-col items-center text-center">
-            <div className="w-3/4 h-8 sm:h-10 bg-gray-300 rounded-md mb-3"></div>
-            <div className="w-1/2 h-4 sm:h-6 bg-gray-300 rounded-md"></div>
+        <div className="w-full h-48 sm:h-64 md:h-80 bg-gray-200 animate-pulse relative flex items-center justify-center">
+          <div className="relative max-w-[95%] md:max-w-7xl mx-auto z-10 flex flex-col items-center text-center">
+            <div className="w-3/4 h-6 sm:h-8 md:h-10 bg-gray-300 rounded-md mb-2 sm:mb-3"></div>
+            <div className="w-1/2 h-4 sm:h-5 md:h-6 bg-gray-300 rounded-md"></div>
           </div>
         </div>
         {/* Content Skeleton */}
-        <div className="max-w-[95%] mx-auto px-3 py-6 sm:max-w-7xl sm:px-4 sm:py-10">
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-6 sm:mb-10 gap-4">
-            <div className="w-full sm:w-3/4">
-              <div className="w-1/4 h-3 bg-gray-200 rounded-md mb-2 animate-pulse"></div>
-              <div className="w-3/4 h-6 sm:h-8 bg-gray-200 rounded-md mb-2 animate-pulse"></div>
-              <div className="w-1/2 h-4 sm:h-5 bg-gray-200 rounded-md mb-3 animate-pulse"></div>
-              <div className="flex flex-wrap gap-3 sm:gap-5">
-                <div className="w-20 h-4 bg-gray-200 rounded-md animate-pulse"></div>
-                <div className="w-20 h-4 bg-gray-200 rounded-md animate-pulse"></div>
-                <div className="w-20 h-4 bg-gray-200 rounded-md animate-pulse"></div>
-                <div className="w-20 h-4 bg-gray-200 rounded-md animate-pulse"></div>
+        <div className="max-w-[95%] mx-auto px-2 sm:px-4 py-4 sm:py-6 md:py-8">
+          <div className="flex flex-col md:flex-row md:justify-between md:items-start mb-4 sm:mb-6 md:mb-8 gap-3 sm:gap-4">
+            <div className="w-full">
+              <div className="w-1/3 h-3 bg-gray-200 rounded-md mb-2 animate-pulse"></div>
+              <div className="w-3/4 h-6 sm:h-7 md:h-8 bg-gray-200 rounded-md mb-2 animate-pulse"></div>
+              <div className="w-1/2 h-4 sm:h-5 bg-gray-200 rounded-md mb-2 animate-pulse"></div>
+              <div className="flex flex-wrap gap-2 sm:gap-3">
+                <div className="w-16 sm:w-20 h-4 bg-gray-200 rounded-md animate-pulse"></div>
+                <div className="w-16 sm:w-20 h-4 bg-gray-200 rounded-md animate-pulse"></div>
+                <div className="w-16 sm:w-20 h-4 bg-gray-200 rounded-md animate-pulse"></div>
+                <div className="w-16 sm:w-20 h-4 bg-gray-200 rounded-md animate-pulse"></div>
               </div>
             </div>
-            <div className="w-full sm:w-32 h-10 bg-gray-200 rounded-md animate-pulse"></div>
+            <div className="w-full md:w-32 h-8 sm:h-9 md:h-10 bg-gray-200 rounded-md animate-pulse"></div>
           </div>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-10">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
             <div className="lg:col-span-2">
               {/* Description Skeleton */}
-              <div className="mb-6 sm:mb-8">
-                <div className="w-1/3 h-5 sm:h-6 bg-gray-200 rounded-md mb-3 animate-pulse"></div>
-                <div className="w-full h-4 bg-gray-200 rounded-md mb-2 animate-pulse"></div>
-                <div className="w-full h-4 bg-gray-200 rounded-md mb-2 animate-pulse"></div>
-                <div className="w-3/4 h-4 bg-gray-200 rounded-md animate-pulse"></div>
+              <div className="mb-4 sm:mb-6">
+                <div className="w-1/3 h-5 sm:h-6 bg-gray-200 rounded-md mb-2 animate-pulse"></div>
+                <div className="w-full h-4 sm:h-5 bg-gray-200 rounded-md mb-2 animate-pulse"></div>
+                <div className="w-full h-4 sm:h-5 bg-gray-200 rounded-md mb-2 animate-pulse"></div>
+                <div className="w-3/4 h-4 sm:h-5 bg-gray-200 rounded-md animate-pulse"></div>
               </div>
               {/* Responsibilities Skeleton */}
-              <div className="mb-6 sm:mb-8">
-                <div className="w-1/3 h-5 sm:h-6 bg-gray-200 rounded-md mb-3 animate-pulse"></div>
-                <div className="w-full h-4 bg-gray-200 rounded-md mb-2 animate-pulse"></div>
-                <div className="w-5/6 h-4 bg-gray-200 rounded-md mb-2 animate-pulse"></div>
-                <div className="w-4/5 h-4 bg-gray-200 rounded-md animate-pulse"></div>
+              <div className="mb-4 sm:mb-6">
+                <div className="w-1/3 h-5 sm:h-6 bg-gray-200 rounded-md mb-2 animate-pulse"></div>
+                <div className="w-full h-4 sm:h-5 bg-gray-200 rounded-md mb-2 animate-pulse"></div>
+                <div className="w-5/6 h-4 sm:h-5 bg-gray-200 rounded-md mb-2 animate-pulse"></div>
+                <div className="w-4/5 h-4 sm:h-5 bg-gray-200 rounded-md animate-pulse"></div>
               </div>
               {/* Tags Skeleton */}
-              <div className="mb-6 sm:mb-10">
-                <div className="w-1/4 h-5 sm:h-6 bg-gray-200 rounded-md mb-3 animate-pulse"></div>
-                <div className="flex flex-wrap gap-2 mb-4">
+              <div className="mb-4 sm:mb-6">
+                <div className="w-1/4 h-5 sm:h-6 bg-gray-200 rounded-md mb-2 animate-pulse"></div>
+                <div className="flex flex-wrap gap-2 mb-3">
                   <div className="w-16 h-6 bg-gray-200 rounded-md animate-pulse"></div>
                   <div className="w-16 h-6 bg-gray-200 rounded-md animate-pulse"></div>
                   <div className="w-16 h-6 bg-gray-200 rounded-md animate-pulse"></div>
@@ -202,49 +201,49 @@ const InternshipDetailPage = () => {
               </div>
               {/* Related Internships Skeleton */}
               <div>
-                <div className="w-1/2 h-6 sm:h-7 bg-gray-200 rounded-md mb-4 animate-pulse"></div>
+                <div className="w-1/2 h-6 sm:h-7 bg-gray-200 rounded-md mb-3 animate-pulse"></div>
                 {[1, 2, 3].map((_, idx) => (
                   <div
                     key={idx}
-                    className="border p-3 sm:p-4 rounded-lg mb-3 sm:mb-4 bg-gray-100 flex flex-col sm:flex-row sm:justify-between sm:items-center animate-pulse"
+                    className="border p-2 sm:p-3 rounded-lg mb-3 sm:mb-4 bg-gray-100 flex flex-col sm:flex-row sm:justify-between sm:items-center animate-pulse"
                   >
-                    <div className="w-full sm:pr-3">
-                      <div className="w-1/4 h-3 bg-gray-200 rounded-md mb-2"></div>
-                      <div className="w-3/4 h-5 bg-gray-200 rounded-md mb-2"></div>
-                      <div className="w-1/2 h-4 bg-gray-200 rounded-md mb-2"></div>
-                      <div className="flex flex-wrap gap-3">
-                        <div className="w-20 h-4 bg-gray-200 rounded-md"></div>
-                        <div className="w-20 h-4 bg-gray-200 rounded-md"></div>
-                        <div className="w-20 h-4 bg-gray-200 rounded-md"></div>
+                    <div className="w-full sm:pr-2">
+                      <div className="w-1/3 h-3 bg-gray-200 rounded-md mb-1"></div>
+                      <div className="w-3/4 h-5 sm:h-6 bg-gray-200 rounded-md mb-1"></div>
+                      <div className="w-1/2 h-4 sm:h-5 bg-gray-200 rounded-md mb-1"></div>
+                      <div className="flex flex-wrap gap-2">
+                        <div className="w-16 sm:w-20 h-4 bg-gray-200 rounded-md"></div>
+                        <div className="w-16 sm:w-20 h-4 bg-gray-200 rounded-md"></div>
+                        <div className="w-16 sm:w-20 h-4 bg-gray-200 rounded-md"></div>
                       </div>
                     </div>
-                    <div className="w-full sm:w-32 h-8 bg-gray-200 rounded-md mt-3 sm:mt-0"></div>
+                    <div className="w-full sm:w-32 h-8 sm:h-9 bg-gray-200 rounded-md mt-2 sm:mt-0"></div>
                   </div>
                 ))}
               </div>
             </div>
-            <div className="space-y-4 sm:space-y-6">
+            <div className="space-y-3 sm:space-y-4">
               {/* Overview Skeleton */}
-              <div className="bg-gray-100 p-4 sm:p-5 rounded-2xl animate-pulse">
-                <div className="w-1/3 h-5 sm:h-6 bg-gray-200 rounded-md mb-3"></div>
-                <div className="space-y-2 sm:space-y-3">
-                  <div className="w-full h-4 bg-gray-200 rounded-md"></div>
-                  <div className="w-full h-4 bg-gray-200 rounded-md"></div>
-                  <div className="w-full h-4 bg-gray-200 rounded-md"></div>
-                  <div className="w-full h-4 bg-gray-200 rounded-md"></div>
-                  <div className="w-full h-4 bg-gray-200 rounded-md"></div>
+              <div className="bg-gray-100 p-3 sm:p-4 rounded-2xl animate-pulse">
+                <div className="w-1/3 h-5 sm:h-6 bg-gray-200 rounded-md mb-2"></div>
+                <div className="space-y-1 sm:space-y-2">
+                  <div className="w-full h-4 sm:h-5 bg-gray-200 rounded-md"></div>
+                  <div className="w-full h-4 sm:h-5 bg-gray-200 rounded-md"></div>
+                  <div className="w-full h-4 sm:h-5 bg-gray-200 rounded-md"></div>
+                  <div className="w-full h-4 sm:h-5 bg-gray-200 rounded-md"></div>
+                  <div className="w-full h-4 sm:h-5 bg-gray-200 rounded-md"></div>
                 </div>
-                <div className="w-full h-32 bg-gray-200 rounded-lg mt-4"></div>
+                <div className="w-full h-20 sm:h-24 md:h-32 bg-gray-200 rounded-lg mt-2 sm:mt-3"></div>
               </div>
               {/* Contact Form Skeleton */}
-              <div className="bg-gray-100 p-4 sm:p-5 rounded-2xl animate-pulse">
-                <div className="w-1/3 h-5 sm:h-6 bg-gray-200 rounded-md mb-3"></div>
-                <div className="space-y-2 sm:space-y-3">
-                  <div className="w-full h-8 bg-gray-200 rounded-md"></div>
-                  <div className="w-full h-8 bg-gray-200 rounded-md"></div>
-                  <div className="w-full h-8 bg-gray-200 rounded-md"></div>
-                  <div className="w-full h-16 bg-gray-200 rounded-md"></div>
-                  <div className="w-full h-8 bg-gray-200 rounded-md"></div>
+              <div className="bg-gray-100 p-3 sm:p-4 rounded-2xl animate-pulse">
+                <div className="w-1/3 h-5 sm:h-6 bg-gray-200 rounded-md mb-2"></div>
+                <div className="space-y-1 sm:space-y-2">
+                  <div className="w-full h-7 sm:h-8 bg-gray-200 rounded-md"></div>
+                  <div className="w-full h-7 sm:h-8 bg-gray-200 rounded-md"></div>
+                  <div className="w-full h-7 sm:h-8 bg-gray-200 rounded-md"></div>
+                  <div className="w-full h-10 sm:h-12 bg-gray-200 rounded-md"></div>
+                  <div className="w-full h-7 sm:h-8 bg-gray-200 rounded-md"></div>
                 </div>
               </div>
             </div>
@@ -284,53 +283,56 @@ const InternshipDetailPage = () => {
   const showApplyButton = user.role !== "company" || (user.role === "company" && user.companyId !== internship?.companyId);
 
   return (
-    <div>
+    <div className="min-h-screen bg-white">
+      {/* Hero Section */}
       <div
-        className="w-full h-[200px] sm:h-[300px] bg-cover bg-center relative flex items-center justify-center text-center"
+        className="w-full h-48 sm:h-64 md:h-80 lg:h-96 bg-cover bg-center relative flex items-center justify-center text-center"
         style={{
           backgroundImage: `linear-gradient(to right, rgba(249, 220, 223, 0.8), rgba(181, 217, 211, 0.8)), url(${Hero})`,
           backgroundSize: "cover",
           backgroundPosition: "center",
         }}
       >
-       <div className="relative flex flex-col items-center text-center max-w-[90%] sm:max-w-7xl mx-auto z-10">
-  <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#050748] mb-2 sm:mb-3">
-    {jobpost?.title || "Unknown Role"}
-  </h1>
-  <p className="text-sm sm:text-base md:text-lg text-[#45457D] mb-2 sm:mb-3 max-w-xl sm:max-w-3xl">
-    {jobpost?.company || "Unknown Company"}
-  </p>
-  <div className="flex flex-wrap justify-center gap-2 sm:gap-4 text-xs sm:text-sm text-[#45457D] mb-4 sm:mb-6">
-    <span>{jobpost?.time || "Unknown Subtype"}</span>
-    <span>|</span>
-    <span>{jobpost?.location || "Unknown Location"}</span>
-    <span>|</span>
-    <span>{categoryMap[jobpost?.subtype] || jobpost?.subtype || "Unknown Category"}</span>
-    <span>|</span>
-    <span>{jobpost?.salary || "Unknown Location"}</span>
-  </div>
-</div>
+        <div className="relative flex flex-col items-center text-center max-w-[95%] mx-auto px-2 sm:px-4 md:px-6 z-10">
+          <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-[#050748] mb-2 sm:mb-3 line-clamp-2">
+            {jobpost?.title || "Unknown Role"}
+          </h1>
+          <p className="text-sm sm:text-base md:text-lg text-[#45457D] mb-2 sm:mb-3 max-w-xs sm:max-w-md md:max-w-xl">
+            {jobpost?.company || "Unknown Company"}
+          </p>
+          <div className="flex flex-wrap justify-center gap-1 sm:gap-2 text-xs sm:text-sm md:text-base text-[#45457D]">
+            <span>{jobpost?.time || "Unknown Subtype"}</span>
+            <span className="hidden sm:inline">|</span>
+            <span>{jobpost?.location || "Unknown Location"}</span>
+            <span className="hidden sm:inline">|</span>
+            <span>{categoryMap[jobpost?.subtype] || jobpost?.subtype || "Unknown Category"}</span>
+            <span className="hidden sm:inline">|</span>
+            <span>{jobpost?.salary || "Unknown Salary"}</span>
+          </div>
+        </div>
       </div>
-      <div className="max-w-[95%] mx-auto px-3 py-6 sm:max-w-7xl sm:px-4 sm:py-10">
+      {/* Main Content */}
+      <div className="max-w-[95%] mx-auto px-2 sm:px-4 md:px-6 py-4 sm:py-6 md:py-8">
         <style>
           {`
             .markdown-content {
               font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
               line-height: 1.6;
               color: #374151;
+              word-break: break-word;
             }
             .markdown-content p {
-              margin: 0.75rem 0;
+              margin: 0.5rem 0;
             }
             .markdown-content ul {
               list-style-type: disc;
               padding-left: 1.5rem;
-              margin: 0.75rem 0;
+              margin: 0.5rem 0;
             }
             .markdown-content ol {
               list-style-type: decimal;
               padding-left: 1.5rem;
-              margin: 0.75rem 0;
+              margin: 0.5rem 0;
             }
             .markdown-content ul li, .markdown-content ol li {
               margin-bottom: 0.25rem;
@@ -352,16 +354,19 @@ const InternshipDetailPage = () => {
             }
             .markdown-content h1, .markdown-content h2, .markdown-content h3 {
               font-weight: 600;
-              margin: 0.75rem 0;
+              margin: 0.5rem 0;
             }
             .markdown-content h1 {
-              font-size: 1.5rem;
+              font-size: 1.25rem;
+              @media (min-width: 640px) { font-size: 1.5rem; }
             }
             .markdown-content h2 {
-              font-size: 1.25rem;
+              font-size: 1.125rem;
+              @media (min-width: 640px) { font-size: 1.25rem; }
             }
             .markdown-content h3 {
-              font-size: 1.125rem;
+              font-size: 1rem;
+              @media (min-width: 640px) { font-size: 1.125rem; }
             }
             .markdown-content strong {
               font-weight: 700;
@@ -381,20 +386,21 @@ const InternshipDetailPage = () => {
             }
             .markdown-content pre {
               background-color: #f3f4f6;
-              padding: 1rem;
+              padding: 0.75rem;
               border-radius: 5px;
               overflow-x: auto;
+              word-wrap: break-word;
             }
           `}
         </style>
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-6 sm:mb-10 gap-4">
-          <div>
-            <div className="text-xs text-gray-400 mb-1">{relativeTime}</div>
-            <h1 className="text-xl sm:text-3xl font-bold mb-1">{jobpost?.title || "Unknown Role"}</h1>
-            <p className="text-sm sm:text-base text-gray-500">{jobpost?.company || "Unknown Company"}</p>
-            <div className="flex flex-wrap gap-3 sm:gap-5 text-xs sm:text-sm text-gray-500 mt-2 sm:mt-3">
+        <div className="flex flex-col md:flex-row md:justify-between md:items-start mb-4 sm:mb-6 md:mb-8 gap-3 sm:gap-4">
+          <div className="w-full">
+            <div className="text-xs sm:text-sm text-gray-400 mb-1">{relativeTime}</div>
+            <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold mb-1 line-clamp-2">{jobpost?.title || "Unknown Role"}</h1>
+            <p className="text-sm sm:text-base text-gray-500 mb-2">{jobpost?.company || "Unknown Company"}</p>
+            <div className="flex flex-wrap gap-1 sm:gap-2 text-xs sm:text-sm md:text-base text-gray-500">
               <div className="flex items-center gap-1">
-                <MdWork />
+                <MdWork className="text-sm sm:text-base" />
                 {jobpost?.time || "Unknown"}
               </div>
               <div className="flex items-center gap-1">
@@ -402,11 +408,11 @@ const InternshipDetailPage = () => {
                 {jobpost?.salary ? `${jobpost.salary}` : "Not specified"}
               </div>
               <div className="flex items-center gap-1">
-                <FaMapMarkerAlt />
+                <FaMapMarkerAlt className="text-sm sm:text-base" />
                 {jobpost?.location || "Unknown"}
               </div>
               <div className="flex items-center gap-1">
-                <MdDateRange />
+                <MdDateRange className="text-sm sm:text-base" />
                 Deadline: {applicationDeadline}
               </div>
             </div>
@@ -414,24 +420,24 @@ const InternshipDetailPage = () => {
           {showApplyButton && (
             hasApplied ? (
               <button
-                className="bg-green-500 text-white px-4 py-2 rounded-md text-sm cursor-not-allowed w-full sm:w-auto"
+                className="bg-green-500 text-white px-4 py-2 rounded-md text-sm cursor-not-allowed w-full md:w-auto mt-3 md:mt-0"
                 disabled
               >
                 You Have Applied
               </button>
             ) : (
               <button
-                className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-4 py-2 rounded-md text-sm w-full sm:w-auto"
+                className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-4 py-2 rounded-md text-sm w-full md:w-auto mt-3 md:mt-0"
                 onClick={handleApplyClick}
               >
                 Apply Internship
-              </button>  
+              </button>
             )
           )}
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-10">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
           <div className="lg:col-span-2">
-            <section className="mb-6 sm:mb-8">
+            <section className="mb-4 sm:mb-6">
               <h2 className="text-lg sm:text-xl font-semibold mb-2">Internship Description</h2>
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
@@ -441,7 +447,7 @@ const InternshipDetailPage = () => {
               </ReactMarkdown>
             </section>
             {jobpost?.keyResponsibilities && (
-              <section className="mb-6 sm:mb-8">
+              <section className="mb-4 sm:mb-6">
                 <h2 className="text-lg sm:text-xl font-semibold mb-2">Key Responsibilities</h2>
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
@@ -452,7 +458,7 @@ const InternshipDetailPage = () => {
               </section>
             )}
             {jobpost?.professionalSkills && (
-              <section className="mb-6 sm:mb-8">
+              <section className="mb-4 sm:mb-6">
                 <h2 className="text-lg sm:text-xl font-semibold mb-2">Professional Skills</h2>
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
@@ -463,7 +469,7 @@ const InternshipDetailPage = () => {
               </section>
             )}
             {jobpost?.applicationinstructions && (
-              <section className="mb-6 sm:mb-8">
+              <section className="mb-4 sm:mb-6">
                 <h2 className="text-lg sm:text-xl font-semibold mb-2">Application Instructions</h2>
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
@@ -473,9 +479,9 @@ const InternshipDetailPage = () => {
                 </ReactMarkdown>
               </section>
             )}
-            <section className="mb-6 sm:mb-10">
-              <h2 className="text-lg sm:text-xl font-semibold mb-2">Tags:</h2>
-              <div className="flex flex-wrap gap-2 mb-3 sm:mb-4">
+            <section className="mb-4 sm:mb-6">
+              <h2 className="text-lg sm:text-xl font-semibold mb-2">Tags</h2>
+              <div className="flex flex-wrap gap-2 mb-3">
                 {[
                   jobpost?.time || "Full Time",
                   categoryName,
@@ -489,7 +495,7 @@ const InternshipDetailPage = () => {
                   </span>
                 ))}
               </div>
-              <div className="flex items-center gap-3 sm:gap-4">
+              <div className="flex items-center gap-2 sm:gap-3">
                 <p className="text-xs sm:text-sm font-medium">Share Internship:</p>
                 <FaFacebookF className="text-[#4267B2] text-base sm:text-lg cursor-pointer" title="Facebook" />
                 <PiTwitterLogoFill className="text-black text-base sm:text-lg cursor-pointer" title="X" />
@@ -498,33 +504,33 @@ const InternshipDetailPage = () => {
             </section>
             {formattedRelatedInternships.length > 0 && (
               <section>
-                <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-5">Related Internships</h2>
+                <h2 className="text-lg sm:text-xl md:text-2xl font-bold mb-3 sm:mb-4">Related Internships</h2>
                 {formattedRelatedInternships.map((item) => (
                   <div
                     key={item.id}
-                    className="border p-3 sm:p-4 rounded-lg shadow-sm flex flex-col sm:flex-row sm:justify-between sm:items-center mb-3 sm:mb-4 bg-white min-h-[100px] sm:min-h-[120px]"
+                    className="border p-2 sm:p-3 md:p-4 rounded-lg shadow-sm flex flex-col sm:flex-row sm:justify-between sm:items-center mb-3 sm:mb-4 bg-white"
                   >
-                    <div className="flex flex-col justify-between h-full w-full sm:pr-3">
+                    <div className="flex flex-col justify-between w-full sm:pr-3">
                       <div>
-                        <div className="text-xs text-gray-600 mb-1">{item.relativeTime}</div>
+                        <div className="text-xs sm:text-sm text-gray-600 mb-1">{item.relativeTime}</div>
                         <h3 className="text-base sm:text-lg font-semibold line-clamp-1">{item.title}</h3>
                         <div className="text-gray-500 text-xs sm:text-sm line-clamp-1">{item.company}</div>
-                        <div className="flex flex-wrap gap-3 sm:gap-4 text-xs sm:text-sm text-gray-500 mt-1 sm:mt-2">
+                        <div className="flex flex-wrap gap-1 sm:gap-2 text-xs sm:text-sm md:text-base text-gray-500 mt-1 sm:mt-2">
                           <div className="flex items-center gap-1">
-                            <MdWork /> {item.time}
+                            <MdWork className="text-sm sm:text-base" /> {item.time}
                           </div>
                           <div className="flex items-center gap-1">
                             <span>₱</span> {item.salary}
                           </div>
                           <div className="flex items-center gap-1">
-                            <FaMapMarkerAlt /> {item.location}
+                            <FaMapMarkerAlt className="text-sm sm:text-base" /> {item.location}
                           </div>
                         </div>
                       </div>
                     </div>
                     <button
                       onClick={() => navigate(`/internshipdetail/${item.slug}`)}
-                      className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm whitespace-nowrap mt-3 sm:mt-0 w-full sm:w-auto"
+                      className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-2 sm:px-3 md:px-4 py-1 sm:py-2 rounded-md text-xs sm:text-sm md:text-base whitespace-nowrap mt-2 sm:mt-0 w-full sm:w-auto"
                     >
                       Internship Details
                     </button>
@@ -533,28 +539,28 @@ const InternshipDetailPage = () => {
               </section>
             )}
           </div>
-          <div className="space-y-4 sm:space-y-6">
-            <div className="bg-gradient-to-br from-[#fff7f9] to-[#f4f9fd] p-4 sm:p-5 rounded-2xl shadow-md">
+          <div className="space-y-3 sm:space-y-4">
+            <div className="bg-gradient-to-br from-[#fff7f9] to-[#f4f9fd] p-3 sm:p-4 md:p-5 rounded-2xl shadow-md">
               <h3 className="font-semibold text-base sm:text-lg mb-2 sm:mb-3">Internship Overview</h3>
-              <div className="space-y-2 sm:space-y-3 text-xs sm:text-sm text-[#333]">
+              <div className="space-y-1 sm:space-y-2 text-xs sm:text-sm md:text-base text-[#333]">
                 <div className="flex items-center gap-2">
-                  <FaUser className="text-blue-500" />
+                  <FaUser className="text-blue-500 text-sm sm:text-base" />
                   <span>Internship Title: {jobpost?.title || "Unknown Role"}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <MdWork className="text-blue-500" />
+                  <MdWork className="text-blue-500 text-sm sm:text-base" />
                   <span>Internship Type: {jobpost?.time || "Unknown"}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <FaTags className="text-blue-500" />
+                  <FaTags className="text-blue-500 text-sm sm:text-base" />
                   <span>Category: {categoryName}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <FaRegClock className="text-blue-500" />
+                  <FaRegClock className="text-blue-500 text-sm sm:text-base" />
                   <span>Experience: {jobpost?.experiencelevel || "Not specified"}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <FaGraduationCap className="text-blue-500" />
+                  <FaGraduationCap className="text-blue-500 text-sm sm:text-base" />
                   <span>Degrees: {degreesList}</span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -562,19 +568,19 @@ const InternshipDetailPage = () => {
                   <span>Offered Salary: {jobpost?.salary ? `${jobpost.salary}` : "Not specified"}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <FaMapMarkerAlt className="text-blue-500" />
+                  <FaMapMarkerAlt className="text-blue-500 text-sm sm:text-base" />
                   <span>Location: {jobpost?.location || "Unknown"}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <MdDateRange className="text-blue-500" />
+                  <MdDateRange className="text-blue-500 text-sm sm:text-base" />
                   <span>Application Deadline: {applicationDeadline}</span>
                 </div>
               </div>
-              <div className="mt-3 sm:mt-4">
+              <div className="mt-2 sm:mt-3">
                 <iframe
                   src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3670.005659035671!2d72.57136231578908!3d23.022505984951904!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x395e84f8f2a83b8f%3A0xc4bb2c3cccf0f0f!2sAhmedabad%2C%20Gujarat!5e0!3m2!1sen!2sin!4v1625215052287!5m2!1sen!2sin"
                   width="100%"
-                  height="150"
+                  height="120 sm:150 md:180 lg:200"
                   style={{ border: 0 }}
                   allowFullScreen=""
                   loading="lazy"
@@ -583,30 +589,30 @@ const InternshipDetailPage = () => {
                 ></iframe>
               </div>
             </div>
-            <div className="bg-gradient-to-br from-[#fff7f9] to-[#f4f9fd] p-4 sm:p-5 rounded-2xl shadow-md">
-              <h3 className="font-semibold text-base sm:text-lg mb-3 sm:mb-4">Send Us Message</h3>
-              <div className="space-y-2 sm:space-y-3 text-xs sm:text-sm">
+            <div className="bg-gradient-to-br from-[#fff7f9] to-[#f4f9fd] p-3 sm:p-4 md:p-5 rounded-2xl shadow-md">
+              <h3 className="font-semibold text-base sm:text-lg mb-2 sm:mb-3">Send Us Message</h3>
+              <div className="space-y-1 sm:space-y-2 text-xs sm:text-sm md:text-base">
                 <input
                   type="text"
                   placeholder="Full name"
-                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none"
+                  className="w-full p-2 sm:p-3 border border-gray-300 rounded-md focus:outline-none"
                 />
                 <input
                   type="email"
                   placeholder="Email Address"
-                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none"
+                  className="w-full p-2 sm:p-3 border border-gray-300 rounded-md focus:outline-none"
                 />
                 <input
                   type="tel"
                   placeholder="Phone Number"
-                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none"
+                  className="w-full p-2 sm:p-3 border border-gray-300 rounded-md focus:outline-none"
                 />
                 <textarea
                   placeholder="Your Message"
-                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none"
+                  className="w-full p-2 sm:p-3 border border-gray-300 rounded-md focus:outline-none"
                   rows={3}
                 ></textarea>
-                <button className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white w-full py-2 rounded-md text-xs sm:text-sm font-medium">
+                <button className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white w-full py-2 sm:py-3 rounded-md text-xs sm:text-sm md:text-base font-medium">
                   Send Message
                 </button>
               </div>
