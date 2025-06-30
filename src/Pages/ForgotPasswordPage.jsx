@@ -4,7 +4,7 @@ import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 import { MdVisibility, MdVisibilityOff } from 'react-icons/md';
 import logo from '../assets/Navbar/logo.png';
-import rightImage from '../assets/SignUp/wallpaper.jpg';
+import rightImage from '../assets/SignUp/wallpaper1.png';
 import { forgotPassword, verifyOtp, resetPassword } from '../Utils/api';
 
 const MySwal = withReactContent(Swal);

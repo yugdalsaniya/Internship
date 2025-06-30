@@ -18,16 +18,19 @@ const OrganizationDetails = ({ userData, updateCompletionStatus, onBack }) => {
     industry: [],
     noOfEmployees: "",
     logoImage: null,
-    website: "", // Added website field
+    primaryImage: null,
+    website: "",
   });
   const [error, setError] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isCompleted, setIsCompleted] = useState(false);
   const [logoPreview, setLogoPreview] = useState(null);
+  const [bannerPreview, setBannerPreview] = useState(null);
   const locationInputRef = useRef(null);
   const autocompleteRef = useRef(null);
-  const fileInputRef = useRef(null);
+  const logoInputRef = useRef(null);
+  const bannerInputRef = useRef(null);
 
   const industryOptions = [
     { value: "Technology", label: "Technology" },
@@ -146,7 +149,8 @@ const OrganizationDetails = ({ userData, updateCompletionStatus, onBack }) => {
             : [],
           noOfEmployees: companyData.noofemployees || "",
           logoImage: companyData.logoImage || null,
-          website: companyData.website || "", // Added website field
+          primaryImage: companyData.primaryImage || null,
+          website: companyData.website || "",
         };
 
         const isFormComplete =
@@ -163,6 +167,9 @@ const OrganizationDetails = ({ userData, updateCompletionStatus, onBack }) => {
 
         if (companyData.logoImage) {
           setLogoPreview(companyData.logoImage);
+        }
+        if (companyData.primaryImage) {
+          setBannerPreview(companyData.primaryImage);
         }
       } catch (err) {
         const errorMessage = err.message || "Failed to load organization data.";
@@ -254,7 +261,7 @@ const OrganizationDetails = ({ userData, updateCompletionStatus, onBack }) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleFileChange = (e) => {
+  const handleFileChange = (e, type) => {
     const file = e.target.files[0];
     if (file) {
       if (file.size > 1 * 1024 * 1024) {
@@ -269,14 +276,24 @@ const OrganizationDetails = ({ userData, updateCompletionStatus, onBack }) => {
         toast.error("Only JPG, PNG, GIF, and BMP formats are supported.");
         return;
       }
-      setFormData((prev) => ({ ...prev, logoImage: file }));
-      setLogoPreview(URL.createObjectURL(file));
+      if (type === "logo") {
+        setFormData((prev) => ({ ...prev, logoImage: file }));
+        setLogoPreview(URL.createObjectURL(file));
+      } else if (type === "banner") {
+        setFormData((prev) => ({ ...prev, primaryImage: file }));
+        setBannerPreview(URL.createObjectURL(file));
+      }
     }
   };
 
   const handleRemoveLogo = () => {
     setFormData((prev) => ({ ...prev, logoImage: null }));
     setLogoPreview(null);
+  };
+
+  const handleRemoveBanner = () => {
+    setFormData((prev) => ({ ...prev, primaryImage: null }));
+    setBannerPreview(null);
   };
 
   const validateForm = () => {
@@ -291,9 +308,7 @@ const OrganizationDetails = ({ userData, updateCompletionStatus, onBack }) => {
     }
     if (
       formData.website &&
-      !/^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([/\w .-]*)*\/?$/.test(
-        formData.website
-      )
+      !/^https?:\/\/[\w.-]+\.[a-z]{2,}(\/\S*)?$/i.test(formData.website)
     ) {
       return "Please enter a valid website URL (e.g., https://example.com).";
     }
@@ -349,7 +364,7 @@ const OrganizationDetails = ({ userData, updateCompletionStatus, onBack }) => {
         );
       }
 
-      let uploadedFilePath = formData.logoImage;
+      let uploadedLogoPath = formData.logoImage;
       if (formData.logoImage instanceof File) {
         const uploadResponse = await uploadAndStoreFile({
           appName: "app8657281202648",
@@ -358,12 +373,30 @@ const OrganizationDetails = ({ userData, updateCompletionStatus, onBack }) => {
           userId,
         });
 
-        uploadedFilePath =
+        uploadedLogoPath =
           uploadResponse?.filePath ||
           uploadResponse?.fileUrl ||
           uploadResponse?.data?.fileUrl;
-        if (!uploadedFilePath) {
+        if (!uploadedLogoPath) {
           throw new Error("Failed to upload logo: No file path returned.");
+        }
+      }
+
+      let uploadedBannerPath = formData.primaryImage;
+      if (formData.primaryImage instanceof File) {
+        const uploadResponse = await uploadAndStoreFile({
+          appName: "app8657281202648",
+          moduleName: "company",
+          file: formData.primaryImage,
+          userId,
+        });
+
+        uploadedBannerPath =
+          uploadResponse?.filePath ||
+          uploadResponse?.fileUrl ||
+          uploadResponse?.data?.fileUrl;
+        if (!uploadedBannerPath) {
+          throw new Error("Failed to upload banner: No file path returned.");
         }
       }
 
@@ -373,14 +406,20 @@ const OrganizationDetails = ({ userData, updateCompletionStatus, onBack }) => {
         "sectionData.Company.organizationcity": formData.organizationCity,
         "sectionData.Company.industry": formData.industry,
         "sectionData.Company.noofemployees": formData.noOfEmployees,
-        "sectionData.Company.website": formData.website, // Added website field
+        "sectionData.Company.website": formData.website,
         "sectionData.Company.lastUpdated": new Date().toISOString(),
       };
 
-      if (uploadedFilePath && uploadedFilePath !== formData.logoImage) {
-        updateData["sectionData.Company.logoImage"] = uploadedFilePath;
+      if (uploadedLogoPath && uploadedLogoPath !== formData.logoImage) {
+        updateData["sectionData.Company.logoImage"] = uploadedLogoPath;
       } else if (formData.logoImage === null) {
         updateData["sectionData.Company.logoImage"] = null;
+      }
+
+      if (uploadedBannerPath && uploadedBannerPath !== formData.primaryImage) {
+        updateData["sectionData.Company.primaryImage"] = uploadedBannerPath;
+      } else if (formData.primaryImage === null) {
+        updateData["sectionData.Company.primaryImage"] = null;
       }
 
       const response = await mUpdate({
@@ -402,9 +441,13 @@ const OrganizationDetails = ({ userData, updateCompletionStatus, onBack }) => {
         if (updateCompletionStatus) {
           updateCompletionStatus("Organization Details", true);
         }
-        if (uploadedFilePath && uploadedFilePath !== formData.logoImage) {
-          setFormData((prev) => ({ ...prev, logoImage: uploadedFilePath }));
-          setLogoPreview(uploadedFilePath);
+        if (uploadedLogoPath && uploadedLogoPath !== formData.logoImage) {
+          setFormData((prev) => ({ ...prev, logoImage: uploadedLogoPath }));
+          setLogoPreview(uploadedLogoPath);
+        }
+        if (uploadedBannerPath && uploadedBannerPath !== formData.primaryImage) {
+          setFormData((prev) => ({ ...prev, primaryImage: uploadedBannerPath }));
+          setBannerPreview(uploadedBannerPath);
         }
       } else {
         throw new Error("Failed to update organization details in database.");
@@ -571,7 +614,7 @@ const OrganizationDetails = ({ userData, updateCompletionStatus, onBack }) => {
                   />
                 </div>
                 <button
-                  onClick={() => fileInputRef.current?.click()}
+                  onClick={() => logoInputRef.current?.click()}
                   className="mt-2 bg-blue-500 text-white px-4 py-1 rounded hover:bg-blue-600 transition"
                   disabled={isProcessing}
                 >
@@ -583,8 +626,8 @@ const OrganizationDetails = ({ userData, updateCompletionStatus, onBack }) => {
                   accept="image/jpeg,image/png,image/gif,image/bmp"
                   className="hidden"
                   id="logo-upload"
-                  ref={fileInputRef}
-                  onChange={handleFileChange}
+                  ref={logoInputRef}
+                  onChange={(e) => handleFileChange(e, "logo")}
                   disabled={isProcessing}
                 />
               </div>
@@ -598,8 +641,8 @@ const OrganizationDetails = ({ userData, updateCompletionStatus, onBack }) => {
                   accept="image/jpeg,image/png,image/gif,image/bmp"
                   className="hidden"
                   id="logo-upload"
-                  ref={fileInputRef}
-                  onChange={handleFileChange}
+                  ref={logoInputRef}
+                  onChange={(e) => handleFileChange(e, "logo")}
                   disabled={isProcessing}
                 />
                 <label
@@ -612,6 +655,67 @@ const OrganizationDetails = ({ userData, updateCompletionStatus, onBack }) => {
             )}
             <p className="text-xs text-gray-500 mt-2">
               Max file size: 1MB and max resolution: 500px x 500px. File type:
+              jpg, png, gif, bmp
+            </p>
+          </div>
+        </div>
+
+        <div className="mb-6 text-center">
+          <label className="block font-medium mb-2 text-sm text-gray-700">
+            Organization Banner
+          </label>
+          <div className="flex flex-col items-center">
+            {bannerPreview ? (
+              <div className="relative">
+                <div className="w-64 h-32 bg-gray-200 rounded-lg overflow-hidden flex items-center justify-center">
+                  <img
+                    src={bannerPreview}
+                    alt="Banner Preview"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <button
+                  onClick={() => bannerInputRef.current?.click()}
+                  className="mt-2 bg-blue-500 text-white px-4 py-1 rounded hover:bg-blue-600 transition"
+                  disabled={isProcessing}
+                >
+                  Change Banner
+                </button>
+              
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/gif,image/bmp"
+                  className="hidden"
+                  id="banner-upload"
+                  ref={bannerInputRef}
+                  onChange={(e) => handleFileChange(e, "banner")}
+                  disabled={isProcessing}
+                />
+              </div>
+            ) : (
+              <>
+                <div className="w-64 h-32 bg-gray-200 rounded-lg flex items-center justify-center text-gray-500">
+                  No Banner
+                </div>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/gif,image/bmp"
+                  className="hidden"
+                  id="banner-upload"
+                  ref={bannerInputRef}
+                  onChange={(e) => handleFileChange(e, "banner")}
+                  disabled={isProcessing}
+                />
+                <label
+                  htmlFor="banner-upload"
+                  className="mt-2 cursor-pointer bg-blue-500 text-white px-4 py-1 rounded hover:bg-blue-600 transition"
+                >
+                  Upload Banner
+                </label>
+              </>
+            )}
+            <p className="text-xs text-gray-500 mt-2">
+              Max file size: 1MB and max resolution: 1500px x 500px. File type:
               jpg, png, gif, bmp
             </p>
           </div>

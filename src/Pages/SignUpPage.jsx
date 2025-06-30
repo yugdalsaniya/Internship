@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
-import { MdVisibility, MdVisibilityOff } from "react-icons/md";
+import { MdVisibility, MdVisibilityOff, MdCheckCircle } from "react-icons/md";
 import { jwtDecode } from "jwt-decode";
 import student from "../assets/SignUp/student.png";
 import company from "../assets/SignUp/company.png";
@@ -13,7 +13,7 @@ import wallpaper3 from "../assets/SignUp/wallpaper3.jpg";
 import wallpaper4 from "../assets/SignUp/wallpaper4.jpg";
 import wallpaper5 from "../assets/SignUp/wallpaper5.jpg";
 import logo from "../assets/Navbar/logo.png";
-import { signup, signupCompany, login } from "../Utils/api";
+import { signup, signupCompany, login, sendOtp } from "../Utils/api";
 
 const SignUpPage = () => {
   const location = useLocation();
@@ -28,12 +28,18 @@ const SignUpPage = () => {
     email: "",
     password: "",
     confirmPassword: "",
+    otp: "",
   });
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [consentChecked, setConsentChecked] = useState(false);
   const [showFullPolicy, setShowFullPolicy] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [isEmailVerified, setIsEmailVerified] = useState(false);
+  const [showOtpField, setShowOtpField] = useState(false);
+  const [otpExpiration, setOtpExpiration] = useState(null);
+  const [timeLeft, setTimeLeft] = useState(null);
 
   const roleIds = {
     student: "1747825619417",
@@ -70,11 +76,34 @@ const SignUpPage = () => {
     }
   }, [location.pathname, navigate]);
 
+  useEffect(() => {
+    let timer;
+    if (otpExpiration) {
+      timer = setInterval(() => {
+        const now = Date.now();
+        const timeRemaining = Math.max(0, Math.floor((otpExpiration - now) / 1000));
+        setTimeLeft(timeRemaining);
+        if (timeRemaining === 0) {
+          localStorage.removeItem("generatedOtp");
+          setShowOtpField(false);
+          setOtpExpiration(null);
+          setErrors((prev) => ({ ...prev, otp: "" }));
+        }
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [otpExpiration]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     if (name === "mobile") {
       const digitsOnly = value.replace(/\D/g, "");
       if (digitsOnly.length <= 10) {
+        setFormData({ ...formData, [name]: digitsOnly });
+      }
+    } else if (name === "otp") {
+      const digitsOnly = value.replace(/\D/g, "");
+      if (digitsOnly.length <= 4) {
         setFormData({ ...formData, [name]: digitsOnly });
       }
     } else {
@@ -103,6 +132,11 @@ const SignUpPage = () => {
     return mobileRegex.test(mobile);
   };
 
+  const validateOtp = (otp) => {
+    const otpRegex = /^\d{4}$/;
+    return otpRegex.test(otp);
+  };
+
   const handleRoleChange = (newRole) => {
     setRole(newRole);
     navigate(`/signup/${newRole}`);
@@ -115,10 +149,16 @@ const SignUpPage = () => {
       email: "",
       password: "",
       confirmPassword: "",
+      otp: "",
     });
     setErrors({});
     setConsentChecked(false);
     setShowFullPolicy(false);
+    setIsEmailVerified(false);
+    setShowOtpField(false);
+    setOtpExpiration(null);
+    setTimeLeft(null);
+    localStorage.removeItem("generatedOtp");
   };
 
   const handleConsentChange = () => {
@@ -128,6 +168,149 @@ const SignUpPage = () => {
 
   const togglePolicyVisibility = () => {
     setShowFullPolicy(!showFullPolicy);
+  };
+
+  const handleVerifyEmail = async () => {
+    if (!validateEmail(formData.email)) {
+      setErrors((prev) => ({
+        ...prev,
+        email: "Please enter a valid email address.",
+      }));
+      setTimeout(() => {
+        setErrors((prev) => ({ ...prev, email: "" }));
+      }, 5000);
+      return;
+    }
+
+    setIsVerifying(true);
+    try {
+      const response = await sendOtp(formData.email.toLowerCase().trim());
+      if (response.success) {
+        setShowOtpField(true);
+        setOtpExpiration(Date.now() + 2 * 60 * 1000);
+        setTimeLeft(120);
+        setErrors((prev) => ({ ...prev, otp: "" }));
+      } else {
+        setErrors((prev) => ({
+          ...prev,
+          general: response.message || "Failed to send OTP.",
+        }));
+        setTimeout(() => {
+          setErrors((prev) => ({ ...prev, general: "" }));
+        }, 5000);
+      }
+    } catch (error) {
+      setErrors((prev) => ({
+        ...prev,
+        general: error.message || "Failed to send OTP.",
+      }));
+      setTimeout(() => {
+        setErrors((prev) => ({ ...prev, general: "" }));
+      }, 5000);
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    if (!validateEmail(formData.email)) {
+      setErrors((prev) => ({
+        ...prev,
+        email: "Please enter a valid email address.",
+      }));
+      setTimeout(() => {
+        setErrors((prev) => ({ ...prev, email: "" }));
+      }, 5000);
+      return;
+    }
+
+    setIsVerifying(true);
+    try {
+      const response = await sendOtp(formData.email.toLowerCase().trim());
+      if (response.success) {
+        setShowOtpField(true);
+        setOtpExpiration(Date.now() + 2 * 60 * 1000);
+        setTimeLeft(120);
+        setErrors((prev) => ({
+          ...prev,
+          otp: "",
+          general: "New OTP sent to your email. Please enter it below.",
+        }));
+        setTimeout(() => {
+          setErrors((prev) => ({ ...prev, general: "" }));
+        }, 5000);
+      } else {
+        setErrors((prev) => ({
+          ...prev,
+          general: response.message || "Failed to resend OTP.",
+        }));
+        setTimeout(() => {
+          setErrors((prev) => ({ ...prev, general: "" }));
+        }, 5000);
+      }
+    } catch (error) {
+      setErrors((prev) => ({
+        ...prev,
+        general: error.message || "Failed to resend OTP.",
+      }));
+      setTimeout(() => {
+        setErrors((prev) => ({ ...prev, general: "" }));
+      }, 5000);
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  const handleVerifyOtp = () => {
+    const storedOtp = localStorage.getItem("generatedOtp");
+    if (!validateOtp(formData.otp)) {
+      setErrors((prev) => ({
+        ...prev,
+        otp: "OTP must be a 4-digit number.",
+      }));
+      setTimeout(() => {
+        setErrors((prev) => ({ ...prev, otp: "" }));
+      }, 5000);
+      return;
+    }
+
+    if (!storedOtp) {
+      setErrors((prev) => ({
+        ...prev,
+        otp: "OTP has expired or is invalid. Please request a new one.",
+ertino
+      }));
+      setTimeout(() => {
+        setErrors((prev) => ({ ...prev, otp: "" }));
+      }, 5000);
+      setShowOtpField(false);
+      return;
+    }
+
+    if (formData.otp === storedOtp) {
+      setIsEmailVerified(true);
+      setShowOtpField(false);
+      setFormData((prev) => ({ ...prev, otp: "" }));
+      setOtpExpiration(null);
+      setTimeLeft(null);
+      localStorage.removeItem("generatedOtp");
+      setErrors((prev) => ({
+        ...prev,
+        otp: "",
+      
+      }));
+      setTimeout(() => {
+        setErrors((prev) => ({ ...prev, general: "" }));
+      }, 5000);
+    } else {
+      setErrors((prev) => ({
+        ...prev,
+        otp: "Invalid OTP. Please try again.",
+      }));
+      setTimeout(() => {
+        setErrors((prev) => ({ ...prev, otp: "" }));
+      }, 5000);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -143,6 +326,9 @@ const SignUpPage = () => {
       newErrors.email = "Please enter a valid email address.";
     } else if (formData.email.trim().length > 100) {
       newErrors.email = "Email must be 100 characters or less.";
+    }
+    if (role === "company" && !isEmailVerified) {
+      newErrors.email = "Please verify your email address.";
     }
     if (!validatePassword(formData.password)) {
       newErrors.password =
@@ -175,6 +361,9 @@ const SignUpPage = () => {
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       setIsLoading(false);
+      setTimeout(() => {
+        setErrors({});
+      }, 5000);
       return;
     }
 
@@ -184,9 +373,7 @@ const SignUpPage = () => {
       let payload;
       let response;
 
-      const fullMobileNumber = `${
-        formData.countryCode
-      }${formData.mobile.trim()}`;
+      const fullMobileNumber = `${formData.countryCode}${formData.mobile.trim()}`;
 
       if (role === "company") {
         payload = {
@@ -212,10 +399,15 @@ const SignUpPage = () => {
             email: "",
             password: "",
             confirmPassword: "",
+            otp: "",
           });
           setErrors({});
           setConsentChecked(false);
           setShowFullPolicy(false);
+          setIsEmailVerified(false);
+          setShowOtpField(false);
+          setOtpExpiration(null);
+          setTimeLeft(null);
 
           const loginResponse = await login({
             appName: "app8657281202648",
@@ -234,6 +426,9 @@ const SignUpPage = () => {
                 general:
                   "Invalid or unrecognized role. Please contact support@conscor.com.",
               });
+              setTimeout(() => {
+                setErrors((prev) => ({ ...prev, general: "" }));
+              }, 5000);
               setIsLoading(false);
               return;
             }
@@ -248,13 +443,15 @@ const SignUpPage = () => {
                 general:
                   "Role verification failed. Please contact support@conscor.com.",
               });
+              setTimeout(() => {
+                setErrors((prev) => ({ ...prev, general: "" }));
+              }, 5000);
               setIsLoading(false);
               return;
             }
 
             const userData = {
-              legalname:
-                loginResponse.user.legalname || loginResponse.user.email,
+              legalname: loginResponse.user.legalname || loginResponse.user.email,
               email: loginResponse.user.email,
               role: roleName,
               roleId: roleId,
@@ -277,9 +474,15 @@ const SignUpPage = () => {
                 loginResponse.message ||
                 "Automatic login failed. Please sign in manually.",
             });
+            setTimeout(() => {
+              setErrors((prev) => ({ ...prev, general: "" }));
+            }, 5000);
           }
         } else {
           setErrors({ general: response.message || "Signup failed" });
+          setTimeout(() => {
+            setErrors((prev) => ({ ...prev, general: "" }));
+          }, 5000);
         }
       } else {
         payload = {
@@ -324,13 +527,21 @@ const SignUpPage = () => {
             email: "",
             password: "",
             confirmPassword: "",
+            otp: "",
           });
           setErrors({});
           setConsentChecked(false);
           setShowFullPolicy(false);
+          setIsEmailVerified(false);
+          setShowOtpField(false);
+          setOtpExpiration(null);
+          setTimeLeft(null);
           navigate("/otp");
         } else {
           setErrors({ general: response.message || "Signup failed" });
+          setTimeout(() => {
+            setErrors((prev) => ({ ...prev, general: "" }));
+          }, 5000);
         }
       }
     } catch (err) {
@@ -347,10 +558,16 @@ const SignUpPage = () => {
           email:
             "This email is already registered. Please use a different email or sign in.",
         });
+        setTimeout(() => {
+          setErrors((prev) => ({ ...prev, email: "" }));
+        }, 5000);
       } else {
         setErrors({
           general: `${errorMessage}. Please try again or contact support@conscor.com.`,
         });
+        setTimeout(() => {
+          setErrors((prev) => ({ ...prev, general: "" }));
+        }, 5000);
       }
     } finally {
       setIsLoading(false);
@@ -379,6 +596,7 @@ const SignUpPage = () => {
         type: "email",
         required: true,
         maxLength: 100,
+        isEmail: true,
       },
       {
         name: "password",
@@ -423,12 +641,13 @@ const SignUpPage = () => {
         type: "email",
         required: true,
         maxLength: 100,
+        isEmail: true,
       },
       {
         name: "password",
         placeholder: "Password",
         type: showPassword ? "text" : "password",
-        required: "true",
+        required: true,
         maxLength: 20,
       },
       {
@@ -467,6 +686,7 @@ const SignUpPage = () => {
         type: "email",
         required: true,
         maxLength: 100,
+        isEmail: true,
       },
       {
         name: "password",
@@ -504,6 +724,7 @@ const SignUpPage = () => {
         type: "email",
         required: true,
         maxLength: 100,
+        isEmail: true,
       },
       {
         name: "password",
@@ -541,6 +762,7 @@ const SignUpPage = () => {
         type: "email",
         required: true,
         maxLength: 100,
+        isEmail: true,
       },
       {
         name: "password",
@@ -561,9 +783,8 @@ const SignUpPage = () => {
 
   return (
     <div className="flex h-screen">
-      <div className="w-full lg:w-1/2 flex flex-col px-4 py-8 xs:px-6 sm:px-8">
+      <div className="w-full lg:w-1/2 flex flex-col px-4 py-4 xs:px-6 sm:px-8">
         <div className="max-w-[20rem] xs:max-w-[24rem] sm:max-w-[28rem] mx-auto w-full flex flex-col flex-grow">
-          {/* Fixed Header Section */}
           <div className="mb-3 flex flex-col items-center">
             <div className="flex items-center mb-3">
               <img
@@ -609,7 +830,6 @@ const SignUpPage = () => {
               )}
             </div>
           </div>
-          {/* Form Content Section */}
           {role ? (
             <div className="w-full flex flex-col">
               <h2 className="text-base xs:text-lg sm:text-xl font-bold mb-1 text-black">
@@ -620,7 +840,11 @@ const SignUpPage = () => {
               </p>
               {errors.general && (
                 <p
-                  className="text-red-500 text-xs xs:text-sm mb-2"
+                  className={`text-xs xs:text-sm mb-2 ${
+                    errors.general.includes("verified successfully")
+                      ? "text-green-500"
+                      : "text-red-500"
+                  }`}
                   aria-live="polite"
                 >
                   {errors.general}
@@ -640,7 +864,7 @@ const SignUpPage = () => {
                           value={formData.countryCode}
                           onChange={handleChange}
                           className="border border-gray-300 rounded-md px-3 py-2 text-xs xs:text-sm focus:ring-2 focus:ring-[#3D7EFF]"
-                          disabled={isLoading}
+                          disabled={isLoading || isEmailVerified}
                         >
                           <option value="+63">+63</option>
                         </select>
@@ -655,6 +879,7 @@ const SignUpPage = () => {
                           onChange={handleChange}
                           maxLength={field.maxLength}
                           required={field.required}
+                          disabled={isLoading || isEmailVerified}
                           aria-describedby={
                             errors[field.name]
                               ? `error-${field.name}`
@@ -662,6 +887,90 @@ const SignUpPage = () => {
                           }
                         />
                       </div>
+                    ) : field.isEmail ? (
+    <>
+      <div className="relative flex items-center">
+        <input
+          type={field.type}
+          name={field.name}
+          placeholder={field.placeholder}
+          className={`w-full px-3 py-2 xs:px-4 xs:py-2.5 border rounded-md outline-none text-xs xs:text-sm sm:text-base focus:ring-2 focus:ring-[#3D7EFF] ${
+            errors[field.name] ? "border-red-500" : ""
+          }`}
+          value={formData[field.name]}
+          onChange={handleChange}
+          required={field.required}
+          maxLength={field.maxLength}
+          disabled={isLoading || isEmailVerified || (role === "company" && showOtpField)}
+          aria-describedby={errors[field.name] ? `error-${field.name}` : undefined}
+        />
+        {isEmailVerified ? (
+          <MdCheckCircle
+            className="absolute top-1/2 right-2 xs:right-3 transform -translate-y-1/2 text-green-500 text-base xs:text-lg"
+          />
+        ) : role === "company" && (timeLeft === null || timeLeft === 0) ? (
+          <button
+            type="button"
+            onClick={handleVerifyEmail}
+            className={`absolute top-1/2 right-2 xs:right-3 transform -translate-y-1/2 text-xs xs:text-sm text-[#3D7EFF] font-semibold hover:underline ${
+              isVerifying || isLoading ? "opacity-75 cursor-not-allowed" : ""
+            }`}
+            disabled={isVerifying || isLoading}
+          >
+            {isVerifying ? "Verifying..." : "Verify"}
+          </button>
+        ) : null}
+      </div>
+      {showOtpField && role === "company" && (
+        <div className="flex flex-col mt-2">
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              name="otp"
+              placeholder="Enter OTP"
+              className={`w-full px-3 py-2 xs:px-4 xs:py-2.5 border rounded-md outline-none text-xs xs:text-sm sm:text-base focus:ring-2 focus:ring-[#3D7EFF] ${
+                errors.otp ? "border-red-500" : ""
+              }`}
+              value={formData.otp}
+              onChange={handleChange}
+              maxLength={4}
+              disabled={isLoading || timeLeft === 0}
+              aria-describedby={errors.otp ? "error-otp" : undefined}
+            />
+            <button
+              type="button"
+              onClick={handleVerifyOtp}
+              className={`px-3 py-2 xs:px-4 xs:py-2.5 bg-[#3D7EFF] text-white rounded-md text-xs xs:text-sm font-semibold hover:bg-[#2b66cc] transition-colors ${
+                isLoading || timeLeft === 0 ? "opacity-75 cursor-not-allowed" : ""
+              }`}
+              disabled={isLoading || timeLeft === 0}
+            >
+              Verify OTP
+            </button>
+          </div>
+          <div className="flex justify-between items-center mt-1">
+            {timeLeft !== null && timeLeft > 0 && (
+              <p className="text-xs xs:text-sm text-gray-500">
+                Time left: {Math.floor(timeLeft / 60)}:
+                {(timeLeft % 60).toString().padStart(2, "0")}
+              </p>
+            )}
+            {timeLeft === 0 && (
+              <button
+                type="button"
+                onClick={handleResendOtp}
+                className={`text-xs xs:text-sm text-[#3D7EFF] font-semibold hover:underline ${
+                  isVerifying || isLoading ? "opacity-75 cursor-not-allowed" : ""
+                }`}
+                disabled={isVerifying || isLoading}
+              >
+                {isVerifying ? "Resending..." : "Resend OTP"}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+    </>
                     ) : (
                       <div className="relative flex items-center">
                         <input
@@ -675,6 +984,7 @@ const SignUpPage = () => {
                           onChange={handleChange}
                           required={field.required}
                           maxLength={field.maxLength}
+                          disabled={isLoading}
                           aria-describedby={
                             errors[field.name]
                               ? `error-${field.name}`
@@ -702,6 +1012,14 @@ const SignUpPage = () => {
                         className="text-red-500 text-xs xs:text-sm mt-1"
                       >
                         {errors[field.name]}
+                      </p>
+                    )}
+                    {field.isEmail && errors.otp && (
+                      <p
+                        id="error-otp"
+                        className="text-red-500 text-xs xs:text-sm mt-1"
+                      >
+                        {errors.otp}
                       </p>
                     )}
                   </div>
@@ -817,7 +1135,7 @@ const SignUpPage = () => {
               roleImages[role] || wallpaper1
             })`,
             backgroundBlendMode: "multiply",
-            backgroundSize: "cover",
+            backgroundSize: "100% 100%",
             backgroundRepeat: "no-repeat",
           }}
         ></div>

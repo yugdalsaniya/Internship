@@ -41,7 +41,7 @@ const CompanyDetails = ({ userData, updateCompletionStatus, onBack }) => {
         boxShadow: "0 0 0 2px rgba(59, 130, 246, 0.5)",
       },
     }),
-    option: (provided, state) => ({
+   option: (provided, state) => ({
       ...provided,
       backgroundColor: state.isSelected
         ? "#dbeafe"
@@ -138,7 +138,7 @@ const CompanyDetails = ({ userData, updateCompletionStatus, onBack }) => {
             (!!newData.organisationcollege && !!newData.post));
         setIsCompleted(isFormComplete);
         if (updateCompletionStatus) {
-          updateCompletionStatus("Company Details", isFormComplete);
+          updateCompletionStatus("Personal Details", isFormComplete);
         }
 
         // Fetch institute options
@@ -360,7 +360,7 @@ const CompanyDetails = ({ userData, updateCompletionStatus, onBack }) => {
         });
         setIsCompleted(true);
         if (updateCompletionStatus) {
-          updateCompletionStatus("Company Details", true);
+          updateCompletionStatus("Personal Details", true);
         }
       } else {
         throw new Error("Failed to update profile in database.");
@@ -397,7 +397,7 @@ const CompanyDetails = ({ userData, updateCompletionStatus, onBack }) => {
           ) : (
             <BiTime className="text-gray-600 text-xl" />
           )}
-          Company Details
+          Personal Details
         </div>
       </div>
 
@@ -498,7 +498,6 @@ const CompanyDetails = ({ userData, updateCompletionStatus, onBack }) => {
                 isSearchable
                 menuPortalTarget={document.body}
               />
-             
             </div>
 
             <div>
@@ -521,7 +520,6 @@ const CompanyDetails = ({ userData, updateCompletionStatus, onBack }) => {
                 isSearchable
                 menuPortalTarget={document.body}
               />
-             
             </div>
           </>
         )}
@@ -545,7 +543,7 @@ const CompanyDetails = ({ userData, updateCompletionStatus, onBack }) => {
             className="flex items-center gap-2 bg-blue-600 text-white rounded-3xl px-4 py-2 hover:bg-blue-700 transition disabled:opacity-50"
             onClick={handleSave}
             disabled={isProcessing}
-            aria-label="Save Company Details"
+            aria-label="Save Personal Details"
           >
             <IoCheckmark />
             {isProcessing ? "Saving..." : "Save"}

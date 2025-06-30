@@ -7,6 +7,8 @@ import FeaturedInterns from "../Components/home/FeaturedInterns";
 import TopEmployers from "../Components/home/TopEmployers";
 import AcademyPartners from "../Components/home/AcademyPartners";
 import NewsAndBlog from "../Components/home/NewsAndBlog";
+import Slider from "../Components/home/Slider.jsx"
+import PeopleUsingInternship from "../Components/home/PeopleUsingInternship";
 
 export default function HomePage() {
   const [location, setLocation] = useState(null);
@@ -41,8 +43,10 @@ export default function HomePage() {
       <FeaturedCompany />
       <RecentInternships />
       <Category />
+      <PeopleUsingInternship/>
       {/* <FeaturedInterns /> */}
       <TopEmployers />
+      <Slider />
       <AcademyPartners />
       <NewsAndBlog />
     </>

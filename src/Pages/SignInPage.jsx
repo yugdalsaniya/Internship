@@ -273,7 +273,7 @@ const SignIn = () => {
                 style={{
                   backgroundImage: `linear-gradient(to right, #F9DCDF, #B5D9D3), url(${image})`,
                   backgroundBlendMode: 'multiply',
-                  backgroundSize: 'cover',
+                  backgroundSize: '100% 100%',
                   backgroundPosition: 'center'
                 }}
               ></div>

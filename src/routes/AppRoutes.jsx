@@ -1,5 +1,7 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route , useLocation } from "react-router-dom";
+import { useDocumentTitle } from "../Utils/useDocumentTitle";
+import { getPageTitle } from "../Utils/titles";
 import MainLayout from "../Layouts/MainLayout";
 import HomePage from "../Pages/HomePage";
 import InternshipPage from "../Pages/InternshipPage";
@@ -30,63 +32,58 @@ import AllEmployers from "../Components/home/AllEmployers";
 import AllAcademies from "../Components/home/AllAcademies";
 import AcademyProfilePage from "../Pages/Academy/AcademyProfilePage";
 import AllNewsAndBlogs from "../Components/home/AllNewsAndBlogs"; // Import the new component
+import SidebarItem from "../Components/profile/SidebarItem";
+
+
+
+function AppRoutesInner() {
+  const location = useLocation();
+  const title = getPageTitle(location.pathname, location);
+  useDocumentTitle(title);
+
+  return (
+    <Routes>
+      <Route path="/signup" element={<SignUpPage />} />
+      <Route path="/signup/:role" element={<SignUpPage />} />
+      <Route path="/otp" element={<OtpPage />} />
+      <Route path="/forgotpassword" element={<ForgotPasswordPage />} />
+      <Route path="/login" element={<SignInPage />} />
+      <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+      <Route element={<MainLayout />}>
+        <Route path="/editprofile/*" element={<ProfileEditPage />} />
+        <Route path="/sidebar/*" element={<SidebarItem />} />
+        <Route path="/" element={<HomePage />} />
+        <Route path="/internship" element={<InternshipPage />} />
+        <Route path="/about" element={<AboutUsPage />} />
+        <Route path="/contact" element={<ContactUsPage />} />
+        <Route path="/internshipdetail/:id" element={<InternshipDetailPage />} />
+        <Route path="/applyinternshipform/:id" element={<ApplyInternshipForm />} />
+        <Route path="/my-applications" element={<MyApplicationsPage />} />
+        <Route path="/requested-internships" element={<RequestedInternshipsPage />} />
+        <Route path="/:categoryname/internships/:id" element={<CategoryInternshipsPage />} />
+        <Route path="/post-internship" element={<PostInternship />} />
+        <Route path="/post-internship/form" element={<PostInternshipForm />} />
+        <Route path="/manage-internships" element={<ManageInternships />} />
+        <Route path="/internship/:id/candidates" element={<InternshipCandidates />} />
+        <Route path="/StudentPostForm" element={<StudentPostForm />} />
+        <Route path="/interns" element={<StudentInternshipList />} />
+        <Route path="/company/:id" element={<CompanyProfilePage />} />
+        <Route path="/newsandblog/:slug/:id" element={<NewsAndBlogPage />} />
+        <Route path="/:companySlug/:id" element={<CompanyProfilePage />} />
+        <Route path="/all-employers" element={<AllEmployers />} />
+        <Route path="/all-academies" element={<AllAcademies />} />
+        <Route path="/academy/:slug/:id" element={<AcademyProfilePage />} />
+        <Route path="/news-and-blog" element={<AllNewsAndBlogs />} />
+      </Route>
+    </Routes>
+  );
+}
 
 export default function AppRoutes() {
   return (
     <Router basename="/ph">
       {/* <ScrollToTop /> */}
-      <Routes>
-        <Route path="/signup" element={<SignUpPage />} />
-        <Route path="/signup/:role" element={<SignUpPage />} />
-        <Route path="/otp" element={<OtpPage />} />
-        <Route path="/forgotpassword" element={<ForgotPasswordPage />} />
-        <Route path="/login" element={<SignInPage />} />
-        <Route path="/editprofile/*" element={<ProfileEditPage />} />
-        <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
-        <Route element={<MainLayout />}>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/internship" element={<InternshipPage />} />
-          <Route path="/about" element={<AboutUsPage />} />
-          <Route path="/contact" element={<ContactUsPage />} />
-          <Route
-            path="/internshipdetail/:id"
-            element={<InternshipDetailPage />}
-          />
-          <Route
-            path="/applyinternshipform/:id"
-            element={<ApplyInternshipForm />}
-          />
-          <Route path="/my-applications" element={<MyApplicationsPage />} />
-          <Route
-            path="/requested-internships"
-            element={<RequestedInternshipsPage />}
-          />
-          <Route
-            path="/:categoryname/internships/:id"
-            element={<CategoryInternshipsPage />}
-          />
-          <Route path="/post-internship" element={<PostInternship />} />
-          <Route
-            path="/post-internship/form"
-            element={<PostInternshipForm />}
-          />
-          <Route path="/manage-internships" element={<ManageInternships />} />
-          <Route
-            path="/internship/:id/candidates"
-            element={<InternshipCandidates />}
-          />
-          <Route path="/StudentPostForm" element={<StudentPostForm />} />
-          <Route path="/interns" element={<StudentInternshipList />} />
-          <Route path="/company/:id" element={<CompanyProfilePage />} />
-          <Route path="/newsandblog/:slug/:id" element={<NewsAndBlogPage />} />
-          <Route path="/:companySlug/:id" element={<CompanyProfilePage />} />
-          <Route path="/all-employers" element={<AllEmployers />} />
-          <Route path="/all-academies" element={<AllAcademies />} />
-          <Route path="/academy/:slug/:id" element={<AcademyProfilePage />} />
-          <Route path="/news-and-blog" element={<AllNewsAndBlogs />} />{" "}
-          {/* New route */}
-        </Route>
-      </Routes>
+      <AppRoutesInner />
     </Router>
   );
 }
