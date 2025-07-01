@@ -12,27 +12,32 @@ import Slider from "../Components/home/Slider.jsx"
 import PeopleUsingInternship from "../Components/home/PeopleUsingInternship";
 
 export default function HomePage() {
-  const [location, setLocation] = useState(null);
-  const [error, setError] = useState(null);
 
-  useEffect(() => {
-    // Auto-request location on page load
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          setLocation({ latitude, longitude });
-          setError(null);
-        },
-        (err) => {
-          setError("Permission denied or location unavailable.");
-          setLocation(null);
-        }
-      );
-    } else {
-      setError("Geolocation is not supported by this browser.");
-    }
-  }, []); // Empty dependency array ensures it runs once on mount
+
+  // THIS IS FOR AUTO-REQUESTING LOCATION ON PAGE LOAD
+
+
+  // const [location, setLocation] = useState(null);
+  // const [error, setError] = useState(null);
+
+  // useEffect(() => {
+  //   Auto-request location on page load
+  //   if (navigator.geolocation) {
+  //     navigator.geolocation.getCurrentPosition(
+  //       (position) => {
+  //         const { latitude, longitude } = position.coords;
+  //         setLocation({ latitude, longitude });
+  //         setError(null);
+  //       },
+  //       (err) => {
+  //         setError("Permission denied or location unavailable.");
+  //         setLocation(null);
+  //       }
+  //     );
+  //   } else {
+  //     setError("Geolocation is not supported by this browser.");
+  //   }
+  // }, []); // Empty dependency array ensures it runs once on mount
 
   // You can use the location data here for further processing (e.g., fetching internships)
   // For now, it's stored in the state but not displayed in the UI
