@@ -1,6 +1,6 @@
 import React from "react";
 import Hero from "../Components/home/Hero";
-import backgroundImg from "../assets/Hero/banner.jpg";
+import bannerImage from "../assets/Hero/banner4.png";
 import { FaPhoneAlt, FaEnvelope, FaClock, FaMapMarkerAlt } from "react-icons/fa";
 
 export default function InternshipPage() {
@@ -12,7 +12,7 @@ export default function InternshipPage() {
         subtitle="Reach Out Anytime: Let’s Turn Your Vision into Reality!"
         searchFields={[]}
         stats={[]}
-        backgroundImage={backgroundImg}
+        backgroundImage={bannerImage}
         gradient="linear-gradient(to right, rgba(249, 220, 223, 0.8), rgba(181, 217, 211, 0.8))"
       />
 

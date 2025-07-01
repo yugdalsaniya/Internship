@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { fetchSectionData } from "../Utils/api";
 import { formatDistanceToNow, parse, sub } from "date-fns";
 import Hero from "../Components/home/Hero";
-import backgroundImg from "../assets/Hero/banner.jpg";
+import bannerImage from "../assets/Hero/banner1.jpg";
 import { generateInternshipSlug } from "../Utils/slugify";
 
 const InternshipPage = () => {
@@ -34,7 +34,7 @@ const InternshipPage = () => {
   // Preload background image to prevent rendering delay
   useEffect(() => {
     const preloadImage = new Image();
-    preloadImage.src = backgroundImg;
+    preloadImage.src = bannerImage;
   }, []);
 
   // Fetch categories and create categoryMap
@@ -434,7 +434,7 @@ const InternshipPage = () => {
           subtitle="Empower Your Future: Unleash Limitless Career Possibilities!"
           searchFields={[]}
           stats={[]}
-          backgroundImage={backgroundImg}
+          backgroundImage={bannerImage}
           gradient="linear-gradient(to right, rgba(249, 220, 223, 0.8), rgba(181, 217, 211, 0.8))"
           showPostButton={true}
         />
@@ -467,7 +467,9 @@ const InternshipPage = () => {
         subtitle="Empower Your Future: Unleash Limitless Career Possibilities!"
         searchFields={[]}
         stats={[]}
-        backgroundImage={backgroundImg}
+        backgroundImage={bannerImage}
+                 backgroundPosition= "10% 20%"
+
         gradient="linear-gradient(to right, rgba(249, 220, 223, 0.8), rgba(181, 217, 211, 0.8))"
         showPostButton={true}
       />

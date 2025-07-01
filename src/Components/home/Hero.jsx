@@ -324,7 +324,7 @@ const Hero = ({
       
 {/* Search Bar */}
 {searchFields.length > 0 && (
-  <div className="bg-white rounded-lg shadow-md flex flex-col md:flex-row items-stretch w-full max-w-3xl overflow-hidden">
+  <div className="bg-white rounded-2xl shadow-md flex flex-col md:flex-row items-stretch w-full max-w-3xl overflow-visible"> {/* Changed rounded-lg to rounded-2xl */}
     {searchFields.map((field, index) => (
       <React.Fragment key={index}>
         {field.type === 'input' && field.placeholder === 'Internship Title or Company' ? (
@@ -338,7 +338,7 @@ const Hero = ({
               onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
             />
             {suggestions.length > 0 && (
-              <ul className="absolute z-10 w-full bg-white border border-gray-300 rounded-md mt-1 max-h-60 overflow-auto shadow-lg left-0">
+              <ul className="absolute z-100 w-full bg-white border border-gray-300 rounded-md mt-1 max-h-60 overflow-auto shadow-lg left-0">
                 {isLoadingSuggestions ? (
                   <li className="p-2 text-sm text-gray-600">Loading...</li>
                 ) : (
@@ -396,8 +396,7 @@ const Hero = ({
     ))}
     <button
       onClick={handleSearch}
-      className="flex-shrink-0 bg-gradient-to-r from-blue-500 to-purple-600 text-white px-7 py-3 text-xs font-medium hover:from-blue-600 hover:to-purple-700 transition-colors"
-    >
+      className="flex-shrink-0 bg-gradient-to-r from-blue-500 to-purple-600 text-white px-7 py-3 text-xs font-medium hover:from-blue-600 hover:to-purple-700 transition-colors rounded-r-2xl"> {/* Added rounded-r-2xl for button's right edge */}
       Search Internship
     </button>
   </div>

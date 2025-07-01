@@ -1,6 +1,6 @@
 import React from "react";
 import Hero from "../Components/home/Hero";
-import backgroundImg from "../assets/Hero/banner.jpg";
+import bannerImage from "../assets/Hero/banner3.jpg";
 import {
     FaUserAlt,
     FaFileAlt,
@@ -23,7 +23,7 @@ export default function AboutUsPage() {
                 subtitle="Our Story: Building a Future Where Ideas Thrive!"
                 searchFields={[]}
                 stats={[]}
-                backgroundImage={backgroundImg}
+                backgroundImage={bannerImage}
                 gradient="linear-gradient(to right, rgba(249, 220, 223, 0.8), rgba(181, 217, 211, 0.8))"
             />
 

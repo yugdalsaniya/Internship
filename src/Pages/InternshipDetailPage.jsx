@@ -439,44 +439,40 @@ const InternshipDetailPage = () => {
           <div className="lg:col-span-2">
             <section className="mb-4 sm:mb-6">
               <h2 className="text-lg sm:text-xl font-semibold mb-2">Internship Description</h2>
-              <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
-                className="text-sm sm:text-base text-gray-700 markdown-content"
-              >
-                {cleanMarkdown(jobpost?.description) || "No description available."}
-              </ReactMarkdown>
+              <div className="text-sm sm:text-base text-gray-700 markdown-content">
+  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+    {cleanMarkdown(jobpost?.description) || "No description available."}
+  </ReactMarkdown>
+</div>
             </section>
             {jobpost?.keyResponsibilities && (
               <section className="mb-4 sm:mb-6">
                 <h2 className="text-lg sm:text-xl font-semibold mb-2">Key Responsibilities</h2>
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm]}
-                  className="text-sm sm:text-base text-gray-700 markdown-content"
-                >
-                  {cleanMarkdown(jobpost.keyResponsibilities) || "No responsibilities provided."}
-                </ReactMarkdown>
+                <div className="text-sm sm:text-base text-gray-700 markdown-content">
+      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+        {cleanMarkdown(jobpost.keyResponsibilities) || "No responsibilities provided."}
+      </ReactMarkdown>
+    </div>
               </section>
             )}
             {jobpost?.professionalSkills && (
               <section className="mb-4 sm:mb-6">
                 <h2 className="text-lg sm:text-xl font-semibold mb-2">Professional Skills</h2>
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm]}
-                  className="text-sm sm:text-base text-gray-700 markdown-content"
-                >
-                  {cleanMarkdown(jobpost.professionalSkills) || "No skills provided."}
-                </ReactMarkdown>
+                 <div className="text-sm sm:text-base text-gray-700 markdown-content">
+      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+        {cleanMarkdown(jobpost.professionalSkills) || "No skills provided."}
+      </ReactMarkdown>
+    </div>
               </section>
             )}
             {jobpost?.applicationinstructions && (
               <section className="mb-4 sm:mb-6">
                 <h2 className="text-lg sm:text-xl font-semibold mb-2">Application Instructions</h2>
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm]}
-                  className="text-sm sm:text-base text-gray-700 markdown-content"
-                >
-                  {cleanMarkdown(jobpost.applicationinstructions) || "No instructions provided."}
-                </ReactMarkdown>
+                <div className="text-sm sm:text-base text-gray-700 markdown-content">
+      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+        {cleanMarkdown(jobpost.applicationinstructions) || "No instructions provided."}
+      </ReactMarkdown>
+    </div>
               </section>
             )}
             <section className="mb-4 sm:mb-6">
