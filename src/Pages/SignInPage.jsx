@@ -24,6 +24,41 @@ const SignIn = () => {
 
   const images = [wallpaper1, wallpaper2, wallpaper3, wallpaper4, wallpaper5];
 
+  const roleDescriptions = {
+    student: [
+      "Find internships, OJTs, and entry-level jobs",
+      "Apply directly with a smart Inturnshp profile",
+      "Learn with free workshops and short courses",
+      "Get career-ready through real-world experiences",
+    ],
+    company: [
+      "Post internships and job openings",
+      "Search from a pool of pre-screened candidates",
+      "Build your employer brand on campus",
+      "Manage hiring with simple, effective tools",
+    ],
+    academy: [
+      "Track internship activity & student growth",
+      "Connect with verified industry partners",
+      "Monitor performance and placement metrics",
+      "Enable smooth campus-to-industry transition",
+    ],
+    mentor: [
+      "Offer 1-on-1 mentorship or group sessions",
+      "Share insights via talks, webinars, or Q&As",
+      "Help students build their career roadmap",
+      "Boost your professional visibility and impact",
+    ],
+    recruiter: [
+      "Post internships and job openings",
+      "Search from a pool of pre-screened candidates",
+      "Build your employer brand on campus",
+      "Manage hiring with simple, effective tools",
+    ],
+  };
+
+  const roleOrder = ['student', 'company', 'academy', 'mentor', 'recruiter'];
+
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentImageIndex((prevIndex) => (prevIndex + 1) % images.length);
@@ -133,6 +168,7 @@ const SignIn = () => {
       } else {
         setErrors({ general: response.message || 'Login failed' });
       }
+ activateDeepSearch
     } catch (err) {
       const errorMessage = err.response?.data?.message || err.message || 'Invalid email or password';
       console.error('Login Error:', err.response?.data);
@@ -260,7 +296,7 @@ const SignIn = () => {
           </div>
         </div>
       </div>
-      <div className="hidden lg:flex w-1/2 p-2">
+      <div className="hidden lg:flex w-1/2 p-2 relative">
         <div className="w-full h-full overflow-hidden rounded-3xl">
           <div
             className="flex h-full transition-transform duration-1000 ease-in-out"
@@ -279,6 +315,15 @@ const SignIn = () => {
               ></div>
             ))}
           </div>
+        </div>
+        <div className="absolute inset-0 flex items-center justify-between p-20">
+          <ul className="text-[#050748] text-lg font-semibold list-disc pl-6">
+            {roleDescriptions[roleOrder[currentImageIndex]].map((description, index) => (
+              <li key={index} className="mb-2">
+                {description}
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
     </div>

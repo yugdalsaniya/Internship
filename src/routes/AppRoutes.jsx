@@ -1,5 +1,6 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route , useLocation } from "react-router-dom";
+import { HelmetProvider } from 'react-helmet-async';
 import { useDocumentTitle } from "../Utils/useDocumentTitle";
 import { getPageTitle } from "../Utils/titles";
 import MainLayout from "../Layouts/MainLayout";
@@ -81,9 +82,11 @@ function AppRoutesInner() {
 
 export default function AppRoutes() {
   return (
+    <HelmetProvider>
     <Router basename="/ph">
       {/* <ScrollToTop /> */}
       <AppRoutesInner />
     </Router>
+    </HelmetProvider>
   );
 }

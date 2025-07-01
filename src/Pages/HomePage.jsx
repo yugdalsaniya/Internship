@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Helmet } from 'react-helmet-async'; // Import Helmet for SEO
 import Hero from "../Components/home/Hero";
 import FeaturedCompany from "../Components/home/FeaturedCompany";
 import RecentInternships from "../Components/home/RecentInternships";
@@ -38,15 +39,29 @@ export default function HomePage() {
 
   return (
     <>
+
+
+
+<Helmet>
+        <title>Internship & OJT Platform Philippines</title>
+        <meta property="og:title" content="Internship & OJT Platform Philippines - Find Your Dream Internship" />
+        <meta property="og:image" content="https://crmapi.conscor.com/uploads/app8657281202648/newsandblog/file-1751288717156-733529112.png" />
+        <meta property="og:description" content="Discover internships and OJT opportunities in the Philippines. Connect with top companies and academies to kickstart your career!" />
+        <meta property="og:url" content="https://inturnshp.com/ph/" />
+        <meta property="og:type" content="website" />
+      </Helmet>
+
+
+
       {/* Existing Components - No location UI */}
       <Hero />
       <FeaturedCompany />
       <RecentInternships />
       <Category />
+      <FeaturedInterns />
       <PeopleUsingInternship/>
-      {/* <FeaturedInterns /> */}
       <TopEmployers />
-      <Slider />
+      {/* <Slider /> */}
       <AcademyPartners />
       <NewsAndBlog />
     </>

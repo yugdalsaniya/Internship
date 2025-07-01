@@ -103,15 +103,16 @@ const NewsAndBlog = () => {
         {!loading && !error && posts.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             {posts.slice(0, 2).map((post, index) => (
-              <div
+              <Link
+                to={post.link}
                 key={index}
-                className="bg-white rounded-2xl p-6 flex flex-col shadow-sm hover:shadow-md transition-shadow duration-300"
+                className="bg-white rounded-2xl p-6 flex flex-col shadow-sm hover:shadow-md transition-shadow duration-300 no-underline"
               >
                 {post.image ? (
                   <img
                     src={post.image}
                     alt={post.title}
-                    className=" h-96 object-cover rounded-xl mb-4"
+                    className="h-96 object-cover rounded-xl mb-4"
                   />
                 ) : (
                   <div className="w-full h-48 bg-gray-300 rounded-xl mb-4 blur-sm"></div>
@@ -119,31 +120,15 @@ const NewsAndBlog = () => {
                 <span className="bg-gray-200 text-gray-700 text-sm font-medium px-3 py-1 rounded-full self-start mb-2">
                   {post.category}
                 </span>
-                <p className="text-gray-600 text-sm mb-2">{post.date}</p>
+              
                 <h3 className="text-lg font-semibold text-blue-900 mb-4">
                   {post.title}
                 </h3>
-                <Link
-                  to={post.link}
-                  className="text-blue-600 font-medium flex items-center space-x-1 hover:underline self-start"
-                >
-                  <span>Read more</span>
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M9 5l7 7-7 7"
-                    />
-                  </svg>
-                </Link>
-              </div>
+                <div className="text-blue-600 font-medium flex items-center space-x-1 hover:underline self-start">
+                 
+              
+                </div>
+              </Link>
             ))}
           </div>
         )}

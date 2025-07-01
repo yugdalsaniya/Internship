@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { BsBookmarkPlus } from "react-icons/bs";
 import { fetchSectionData } from "../../Utils/api";
 import { formatDistanceToNow, parse } from "date-fns";
@@ -137,10 +137,18 @@ export default function RecentInternship() {
 
   return (
     <div className="px-12 md:px-12 py-4 bg-[#fafafa]">
-      <div>
-            <h2 className="text-3xl font-bold text-[#050748] mb-2">Internships | OJTs | Jobs</h2>
-            <p className="text-[#6A6A8E]  mb-4">New Opportunities, Just Posted!</p>
-          </div>
+      <div className="flex justify-between items-center mb-4">
+        <div>
+          <h2 className="text-3xl font-bold text-[#050748] mb-2">Internships | OJTs | Jobs</h2>
+          <p className="text-[#6A6A8E] mb-2">New Opportunities, Just Posted!</p>
+        </div>
+        <Link 
+          to="/internship" 
+          className="text-[#6A6A8E] font-medium hover:underline"
+        >
+          View all
+        </Link>
+      </div>
       <div className="space-y-4">
         {processedInternships.map((internship) => (
           <div
@@ -244,4 +252,4 @@ export default function RecentInternship() {
       </div>
     </div>
   );
-} 
+}
