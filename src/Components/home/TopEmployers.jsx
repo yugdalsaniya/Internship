@@ -90,11 +90,11 @@ const TopEmployers = () => {
             {[...Array(4)].map((_, index) => (
               <div
                 key={`skeleton-${index}`}
-                className="bg-white rounded-xl p-4 flex flex-col items-center shadow-sm border border-gray-300 min-h-[160px]"
+                className="bg-white rounded-xl p-4 flex flex-col items-center shadow-sm border border-gray-300 min-h-[200px]"
               >
                 <div className="w-28 h-16 bg-gray-200 animate-pulse rounded mb-3" />
                 <div className="h-4 w-2/3 bg-gray-200 animate-pulse rounded mb-3" />
-                <div className="h-7 w-20 bg-gray-200 animate-pulse rounded-full" />
+                <div className="h-7 w-20 bg-gray-200 animate-pulse rounded-full mt-auto" />
               </div>
             ))}
           </div>
@@ -111,7 +111,7 @@ const TopEmployers = () => {
             {employers.slice(0, 4).map((employer) => (
               <div
                 key={employer.id}
-                className="bg-white rounded-xl p-4 flex flex-col items-center shadow-sm hover:shadow-md transition-shadow duration-300 border border-gray-300"
+                className="bg-white rounded-xl p-4 flex flex-col items-center shadow-sm hover:shadow-md transition-shadow duration-300 border border-gray-300 min-h-[200px]"
               >
                 <div className="w-28 h-16 flex items-center justify-center mb-3">
                   <img
@@ -145,7 +145,7 @@ const TopEmployers = () => {
                   </svg>
                   <span className="line-clamp-1">{employer.location}</span>
                 </div>
-                <div className="flex space-x-3">
+                <div className="mt-auto">
                   <Link
                     to={`/${encodeURIComponent(employer.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''))}/${employer.id}`}
                     className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs sm:text-sm font-medium py-1.5 sm:py-2 px-3 sm:px-4 rounded-full hover:from-blue-600 hover:to-purple-700 whitespace-nowrap"
