@@ -341,7 +341,7 @@ const Hero = ({
 
   return (
     <section
-      className="relative bg-cover bg-center py-8 px-4 sm:px-6 lg:px-12"
+      className="relative bg-cover bg-center py-20 px-4 sm:px-6 lg:px-12"
       style={{
         backgroundImage: `${gradient}, url(${backgroundImage})`,
         backgroundPosition: '10% 20%',

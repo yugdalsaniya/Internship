@@ -62,8 +62,8 @@ const SignIn = () => {
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentImageIndex((prevIndex) => (prevIndex + 1) % images.length);
-    }, 3000); // Change image every 3 seconds
-    return () => clearInterval(interval); // Cleanup on unmount
+    }, 3000);
+    return () => clearInterval(interval);
   }, []);
 
   const roleNames = {
@@ -113,6 +113,7 @@ const SignIn = () => {
     }
 
     setLoading(true);
+    setErrors({}); // Clear previous errors
 
     try {
       const response = await login({
@@ -122,13 +123,12 @@ const SignIn = () => {
       });
 
       if (response.success) {
-        console.log('API Response User:', response.user);
-
         const roleId = response.user.role?.role || '';
         const roleName = roleNames[roleId];
 
         if (!roleName) {
           setErrors({ general: 'Invalid or unrecognized role. Please contact support@conscor.com.' });
+          setLoading(false);
           return;
         }
 
@@ -139,6 +139,7 @@ const SignIn = () => {
             jwtRoleId: decodedToken.roleId,
           });
           setErrors({ general: 'Role verification failed. Please contact support@conscor.com.' });
+          setLoading(false);
           return;
         }
 
@@ -166,28 +167,27 @@ const SignIn = () => {
 
         navigate(from, { replace: true });
       } else {
-        setErrors({ general: response.message || 'Login failed' });
+        setErrors({ general: response.message || 'Login failed. Please check your credentials.' });
+        setLoading(false);
       }
- activateDeepSearch
     } catch (err) {
-      const errorMessage = err.response?.data?.message || err.message || 'Invalid email or password';
-      console.error('Login Error:', err.response?.data);
-      if (errorMessage.includes('OTP not verified')) {
-        setErrors({ general: 'Please verify your email with OTP before logging in.' });
-      } else if (errorMessage.includes('Invalid credentials')) {
-        setErrors({
-          email: 'Invalid email address. Please check and try again.',
-          password: 'Incorrect password. Please try again.',
-        });
-      } else if (err.response?.status === 401) {
-        setErrors({
-          email: 'Unauthorized access. Please check your email.',
-          password: 'Unauthorized access. Please check your password.',
-        });
-      } else {
-        setErrors({ general: `${errorMessage}. Please try again or contact support@conscor.com.` });
+      let errorMessage = 'Invalid email or password. Please try again.';
+      
+      if (err.response) {
+        if (err.response.data && err.response.data.message) {
+          errorMessage = err.response.data.message;
+        } else if (err.response.status === 401) {
+          errorMessage = 'Invalid credentials. Please check your email and password.';
+        }
+      } else if (err.message) {
+        errorMessage = err.message;
       }
-    } finally {
+
+      setErrors({ 
+        general: errorMessage,
+        email: ' ',
+        password: ' '
+      });
       setLoading(false);
     }
   };
@@ -204,7 +204,11 @@ const SignIn = () => {
           <div className="w-full">
             <h2 className="text-base xs:text-lg sm:text-xl font-bold mb-1 text-black">Sign in</h2>
             <p className="text-xs xs:text-sm text-gray-500 mb-2">Please login to continue to your account.</p>
-            {errors.general && <p className="text-red-500 text-xs xs:text-sm mb-2" aria-live="polite">{errors.general}</p>}
+            {errors.general && (
+              <p className="text-red-500 text-xs xs:text-sm mb-2" aria-live="polite">
+                {errors.general}
+              </p>
+            )}
             <form className="space-y-2" onSubmit={handleSubmit} aria-busy={loading}>
               <div className="relative flex flex-col">
                 <input
@@ -212,7 +216,7 @@ const SignIn = () => {
                   name="email"
                   placeholder="Email"
                   className={`w-full px-3 py-2 xs:px-4 xs:py-2.5 border rounded-md outline-none text-xs xs:text-sm sm:text-base focus:ring-2 focus:ring-[#3D7EFF] ${
-                    errors.email ? 'border-red-500' : ''
+                    errors.email ? 'border-red-500' : 'border-gray-300'
                   }`}
                   value={formData.email}
                   onChange={handleChange}
@@ -220,7 +224,7 @@ const SignIn = () => {
                   maxLength={100}
                   aria-describedby={errors.email ? 'error-email' : undefined}
                 />
-                {errors.email && (
+                {errors.email && errors.email.trim() !== ' ' && (
                   <p id="error-email" className="text-red-500 text-xs xs:text-sm mt-1">
                     {errors.email}
                   </p>
@@ -233,7 +237,7 @@ const SignIn = () => {
                     name="password"
                     placeholder="Password"
                     className={`w-full px-3 py-2 xs:px-4 xs:py-2.5 border rounded-md outline-none text-xs xs:text-sm sm:text-base focus:ring-2 focus:ring-[#3D7EFF] ${
-                      errors.password ? 'border-red-500' : ''
+                      errors.password ? 'border-red-500' : 'border-gray-300'
                     }`}
                     value={formData.password}
                     onChange={handleChange}
@@ -253,7 +257,7 @@ const SignIn = () => {
                     />
                   )}
                 </div>
-                {errors.password && (
+                {errors.password && errors.password.trim() !== ' ' && (
                   <p id="error-password" className="text-red-500 text-xs xs:text-sm mt-1">
                     {errors.password}
                   </p>

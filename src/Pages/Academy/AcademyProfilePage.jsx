@@ -6,17 +6,22 @@ const AcademyProfilePage = () => {
   const { id } = useParams();
   const [academy, setAcademy] = useState(null);
   const [courses, setCourses] = useState([]);
+  const [students, setStudents] = useState([]);
+  const [courseOptions, setCourseOptions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const academyRef = useRef(null);
   const aboutRef = useRef(null);
   const coursesRef = useRef(null);
+  const studentsRef = useRef(null);
   const [activeSection, setActiveSection] = useState("academy");
 
   useEffect(() => {
     const fetchAcademyData = async () => {
       try {
+        // Fetch academy data
         const academyData = await fetchSectionData({
+          dbName: "internph",
           collectionName: "institute",
           query: { _id: id },
           limit: 1,
@@ -27,7 +32,9 @@ const AcademyProfilePage = () => {
           setError("Academy not found");
         }
 
+        // Fetch courses
         const courseData = await fetchSectionData({
+          dbName: "internph",
           collectionName: "course",
           query: { createdBy: id },
           limit: 20,
@@ -35,8 +42,32 @@ const AcademyProfilePage = () => {
           sortedBy: "createdAt",
         });
         setCourses(courseData || []);
+
+        // Fetch students associated with this academy, filtered by student role
+        const studentData = await fetchSectionData({
+          dbName: "internph",
+          collectionName: "appuser",
+          query: {
+            "sectionData.appuser.organisationcollege": id,
+            "sectionData.appuser.role": "1747825619417", // Only users with student role
+          },
+          limit: 50,
+        });
+        setStudents(studentData || []);
+
+        // Fetch course options for name resolution
+        const courseOptionData = await fetchSectionData({
+          dbName: "internph",
+          collectionName: "course",
+          query: {},
+        });
+        const courses = courseOptionData.map((item) => ({
+          _id: item._id,
+          name: item.sectionData.course.name,
+        }));
+        setCourseOptions(courses);
       } catch (err) {
-        setError("Error fetching academy or course data");
+        setError("Error fetching academy, course, or student data");
         console.error("AcademyProfile API Error:", err);
       } finally {
         setLoading(false);
@@ -101,14 +132,13 @@ const AcademyProfilePage = () => {
     },
   } = academy;
 
-  // Enhanced handling for multiple contact numbers in (XXX) XXX-XXXX format
   const contactNumbers = Array.isArray(faxtelephoneno)
     ? faxtelephoneno
     : typeof faxtelephoneno === "string" && faxtelephoneno
     ? faxtelephoneno
-        .split(/[,;\n]+/) // Split by commas, semicolons, or newlines
+        .split(/[,;\n]+/)
         .map((num) => num.trim())
-        .filter((num) => num && /^\(\d{3}\)\s?\d{3}-\d{4}$/.test(num)) // Validate format (XXX) XXX-XXXX
+        .filter((num) => num && /^\(\d{3}\)\s?\d{3}-\d{4}$/.test(num))
     : [];
 
   return (
@@ -176,6 +206,17 @@ const AcademyProfilePage = () => {
               aria-label="Scroll to Courses section"
             >
               Courses
+            </button>
+            <button
+              onClick={() => scrollToSection(studentsRef, "students")}
+              className={`text-base font-medium transition-colors ${
+                activeSection === "students"
+                  ? "text-blue-600 border-b-2 border-blue-600"
+                  : "text-gray-600 hover:text-blue-600"
+              }`}
+              aria-label="Scroll to Students section"
+            >
+              Students
             </button>
           </div>
         </div>
@@ -319,6 +360,70 @@ const AcademyProfilePage = () => {
                     </div>
                   </div>
                 </Link>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Students Section */}
+        <div
+          ref={studentsRef}
+          className="px-6 sm:px-8 py-10 border-t border-gray-200 animate-fadeIn"
+        >
+          <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-4">
+            Students
+          </h2>
+          {students.length === 0 ? (
+            <p className="text-gray-600 text-base">
+              No students are currently associated with this academy.
+            </p>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {students.map((student) => (
+                <div
+                  key={student._id}
+                  className="border border-gray-200 rounded-xl p-6 bg-white hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+                >
+                  <div className="flex items-start space-x-4">
+                    <img
+                      src={
+                        student.sectionData.appuser.profile ||
+                        "https://placehold.co/60x60"
+                      }
+                      alt={`${student.sectionData.appuser.legalname} Profile`}
+                      className="w-12 h-12 object-cover rounded-full flex-shrink-0"
+                    />
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        {student.sectionData.appuser.legalname || "Anonymous"}
+                      </h3>
+                      <p className="text-gray-600 text-sm mt-1">
+                        <span className="font-medium">User Type:</span>{" "}
+                        {student.sectionData.appuser.usertype || "Not specified"}
+                      </p>
+                      {student.sectionData.appuser.usertype ===
+                      "Senior High School" ? (
+                        <p className="text-gray-600 text-sm mt-1">
+                          <span className="font-medium">Stream:</span>{" "}
+                          {student.sectionData.appuser.stream || "Not specified"}
+                        </p>
+                      ) : (
+                        <p className="text-gray-600 text-sm mt-1">
+                          <span className="font-medium">Course:</span>{" "}
+                          {student.sectionData.appuser.course
+                            ? courseOptions.find(
+                                (c) => c._id === student.sectionData.appuser.course
+                              )?.name || "Not specified"
+                            : "Not specified"}
+                        </p>
+                      )}
+                      <p className="text-gray-600 text-sm mt-1">
+                        <span className="font-medium">Location:</span>{" "}
+                        {student.sectionData.appuser.location || "Not specified"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
               ))}
             </div>
           )}
