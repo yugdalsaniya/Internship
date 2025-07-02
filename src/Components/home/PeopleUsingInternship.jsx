@@ -188,7 +188,8 @@ const PeopleUsingInternship = () => {
           className="flex space-x-4 sm:space-x-6 overflow-x-auto scrollbar-thin scrollbar-thumb-purple-500 scrollbar-track-gray-200 snap-x snap-mandatory"
           style={{ scrollBehavior: "smooth" }}
         >
-          {data.sections.map((section, index) => (
+          {data.sections.map
+          ((section, index) => (
             <div
               key={index}
               className="bg-white p-3 sm:p-4 rounded-bl-3xl mb-4 sm:mb-5 rounded-tr-3xl border-2 w-[calc(100vw-2rem)] sm:w-[600px] min-w-[calc(100vw-2rem)] sm:min-w-[700px] max-w-[calc(100vw-2rem)] sm:max-w-[600px] snap-center"
