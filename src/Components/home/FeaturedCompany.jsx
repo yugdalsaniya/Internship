@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchSectionData } from '../../Utils/api';
-import { slugify } from '../../Utils/slugify'; // Import slugify utility
+import { slugify } from '../../Utils/slugify';
 
 const FeaturedCompany = () => {
   const [companies, setCompanies] = useState([]);
@@ -14,7 +14,7 @@ const FeaturedCompany = () => {
         const data = await fetchSectionData({
           collectionName: 'company',
           limit: 50,
-          query: {}, // Removed logoImage filter, will handle in useMemo
+          query: {},
         });
         setCompanies(data);
       } catch (err) {
@@ -32,16 +32,16 @@ const FeaturedCompany = () => {
     return companies
       .filter((company) => {
         const homepageCheckbox = company.sectionData?.Company?.homepageCheckbox;
-        return homepageCheckbox === true; // Filter only companies with homepageCheckbox: true
+        return homepageCheckbox === true;
       })
       .filter((company) => {
         const logo = company.sectionData?.Company?.logoImage;
-        return logo && logo !== '' && logo.startsWith('http'); // Keep logo validation
+        return logo && logo !== '' && logo.startsWith('http');
       })
       .map((company) => ({
         ...company,
         logoSrc: company.sectionData.Company.logoImage || 'https://placehold.co/150x150',
-        slug: slugify(company.sectionData.Company.name || 'company'), // Generate slug from company name
+        slug: slugify(company.sectionData.Company.name || 'company'),
       }));
   }, [companies]);
 
@@ -53,9 +53,9 @@ const FeaturedCompany = () => {
             {[...Array(5)].map((_, index) => (
               <div
                 key={`skeleton-${index}`}
-                className="flex-shrink-0 w-[100px] sm:w-[calc(20%-32px)] md:w-[calc(20%-48px)] border border-gray-200 rounded-lg flex items-center justify-center p-3 sm:p-4 bg-white"
+                className="flex-shrink-0 w-[150px] sm:w-[calc(20%-32px)] md:w-[calc(20%-48px)] border border-gray-200 rounded-xl flex items-center justify-center p-4 bg-white shadow-sm"
               >
-                <div className="h-5 sm:h-8 md:h-10 w-[80px] sm:w-[120px] bg-gray-200 animate-pulse rounded" />
+                <div className="h-8 w-[100px] sm:h-10 sm:w-[120px] bg-gray-200 animate-pulse rounded-lg" />
               </div>
             ))}
           </div>
@@ -63,6 +63,7 @@ const FeaturedCompany = () => {
       </div>
     </div>
   );
+
   if (error) return <div className="py-6 sm:py-10 text-center text-red-500 text-sm sm:text-base">{error}</div>;
   if (filteredCompanies.length === 0) return <div className="py-6 sm:py-10 text-center text-sm sm:text-base">No companies with valid logos found.</div>;
 
@@ -73,14 +74,14 @@ const FeaturedCompany = () => {
           <div className="flex gap-3 overflow-x-auto pb-3 px-2 sm:gap-4 sm:pb-4 sm:px-8 md:px-12 sm:space-x-8 md:space-x-12 snap-x snap-mandatory scrollbar">
             {filteredCompanies.map((company) => (
               <Link
-                to={`/${company.slug}/${company._id}`} // Updated URL format: /<company-name-slug>/<id>
+                to={`/${company.slug}/${company._id}`}
                 key={company._id}
-                className="flex-shrink-0 w-[100px] sm:w-[calc(20%-32px)] md:w-[calc(20%-48px)] border border-gray-200 rounded-lg flex items-center justify-center p-3 sm:p-4 bg-white snap-center hover:shadow-md transition-shadow"
+                className="flex-shrink-0 w-[150px] sm:w-[calc(20%-32px)] md:w-[calc(20%-48px)] border border-gray-200 rounded-xl flex items-center justify-center p-4 bg-white snap-center hover:shadow-lg active:shadow-md transition-all hover:scale-105 active:scale-100"
               >
                 <img
                   src={company.logoSrc}
                   alt={`${company.sectionData.Company.companyName} Logo`}
-                  className="h-5 sm:h-8 md:h-10 max-w-[80px] sm:max-w-[120px] object-contain"
+                  className="h-8 sm:h-10 max-w-[100px] sm:max-w-[120px] object-contain"
                 />
               </Link>
             ))}
@@ -91,7 +92,7 @@ const FeaturedCompany = () => {
       <style jsx>{`
         .scrollbar::-webkit-scrollbar {
           height: 4px;
-          display: block;
+          display: none;
         }
         .scrollbar::-webkit-scrollbar-track {
           background: #f1f1f1;
@@ -107,7 +108,6 @@ const FeaturedCompany = () => {
         @media (min-width: 640px) {
           .scrollbar::-webkit-scrollbar {
             height: 6px;
-            display: none;
           }
         }
       `}</style>
