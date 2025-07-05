@@ -15,7 +15,7 @@ import { PiTwitterLogoFill } from "react-icons/pi";
 import { fetchSectionData } from "../Utils/api";
 import { formatDistanceToNow, parse, format } from "date-fns";
 import { generateInternshipSlug } from "../Utils/slugify";
-import ReactMarkdown from "react-markdown";
+import ReactMarkdown from "react-markdown"; // Updated import
 import remarkGfm from "remark-gfm";
 
 const InternshipDetailPage = () => {
@@ -65,6 +65,11 @@ const InternshipDetailPage = () => {
 
         if (internshipData && internshipData.length > 0) {
           setInternship(internshipData[0]);
+          console.log("Internship raw data:", internshipData[0]);
+          console.log(
+            "Application Instructions raw:",
+            internshipData[0]?.sectionData?.jobpost?.applicationinstructions
+          );
 
           if (userId && user.role === "student") {
             const applicationData = await fetchSectionData({
@@ -99,7 +104,11 @@ const InternshipDetailPage = () => {
         }
       } catch (err) {
         setError("Error fetching internship details.");
-        console.error("InternshipDetailPage API Error:", err);
+        console.error("InternshipDetailPage API Error:", {
+          message: err.message,
+          response: err.response?.data,
+          status: err.response?.status,
+        });
       } finally {
         setLoading(false);
       }
@@ -142,23 +151,17 @@ const InternshipDetailPage = () => {
     if (!markdown || typeof markdown !== "string") {
       return "No content available.";
     }
+    // Preserve double newlines for paragraph breaks, remove excessive backslashes
     return markdown
-      .replace(/\\+/g, "")
-      .split("\n")
-      .filter((line) => {
-        const trimmed = line.trim();
-        return (
-          trimmed &&
-          trimmed !== "-" &&
-          trimmed !== "- [ ]" &&
-          trimmed !== "- [x]"
-        );
-      })
-      .join("\n");
+      .replace(/\\+/g, "") // Remove excessive backslashes
+      .replace(/\n{2,}/g, "\n\n") // Ensure exactly two newlines for paragraphs
+      .replace(/^\s*-\s*$/gm, "") // Remove standalone hyphens
+      .replace(/^\s*-\s*\[\s*\]\s*$/gm, "") // Remove empty checklist items
+      .replace(/^\s*-\s*\[x\]\s*$/gm, ""); // Remove checked checklist items
   };
 
   if (error)
-    return <div className="mx-4 py-4 text-sm md:text-base">{error}</div>;
+    return <div className="mx-4 py-4 text-sm md:text-base text-red-600">{error}</div>;
 
   if (loading) {
     return (
@@ -181,7 +184,7 @@ const InternshipDetailPage = () => {
                 <div className="w-16 sm:w-20 h-4 bg-gray-200 rounded-md animate-pulse"></div>
                 <div className="w-16 sm:w-20 h-4 bg-gray-200 rounded-md animate-pulse"></div>
                 <div className="w-16 sm:w-20 h-4 bg-gray-200 rounded-md animate-pulse"></div>
-                <div className="w-16 sm:w-20 h-4 bg-gray-200 сезона-pulse"></div>
+                <div className="w-16 sm:w-20 h-4 bg-gray-200 rounded-md animate-pulse"></div>
               </div>
             </div>
             <div className="w-full md:w-32 h-8 sm:h-9 md:h-10 bg-gray-200 rounded-md animate-pulse"></div>
@@ -343,25 +346,25 @@ const InternshipDetailPage = () => {
           {`
             .markdown-content {
               font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-              line-height: 1.6;
+              line-height: 1.8;
               color: #374151;
               word-break: break-word;
             }
             .markdown-content p {
-              margin: 0.5rem 0;
+              margin: 1rem 0;
             }
             .markdown-content ul {
               list-style-type: disc;
               padding-left: 1.5rem;
-              margin: 0.5rem 0;
+              margin: 1rem 0;
             }
             .markdown-content ol {
               list-style-type: decimal;
               padding-left: 1.5rem;
-              margin: 0.5rem 0;
+              margin: 1rem 0;
             }
             .markdown-content ul li, .markdown-content ol li {
-              margin-bottom: 0.25rem;
+              margin: 0.5rem 0;
             }
             .markdown-content ul li.task-list-item {
               list-style-type: none;
@@ -380,19 +383,16 @@ const InternshipDetailPage = () => {
             }
             .markdown-content h1, .markdown-content h2, .markdown-content h3 {
               font-weight: 600;
-              margin: 0.5rem 0;
+              margin: 1rem 0;
             }
             .markdown-content h1 {
-              font-size: 1.25rem;
-              @media (min-width: 640px) { font-size: 1.5rem; }
+              font-size: 1.5rem;
             }
             .markdown-content h2 {
-              font-size: 1.125rem;
-              @media (min-width: 640px) { font-size: 1.25rem; }
+              font-size: 1.25rem;
             }
             .markdown-content h3 {
-              font-size: 1rem;
-              @media (min-width: 640px) { font-size: 1.125rem; }
+              font-size: 1.125rem;
             }
             .markdown-content strong {
               font-weight: 700;
