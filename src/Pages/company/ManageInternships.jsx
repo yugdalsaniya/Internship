@@ -111,15 +111,23 @@ const ManageInternships = () => {
     }
   };
 
-  if (loading) return <div className="mx-12 py-4">Loading...</div>;
-  if (error) return <div className="mx-12 py-4">{error}</div>;
+  if (loading)
+    return (
+      <div className="mx-4 sm:mx-8 md:mx-12 py-4 text-center">Loading...</div>
+    );
+  if (error)
+    return (
+      <div className="mx-4 sm:mx-8 md:mx-12 py-4 text-center text-red-500">
+        {error}
+      </div>
+    );
   if (formattedInternships.length === 0)
     return (
-      <div className="mx-12 py-4 text-center">
+      <div className="mx-4 sm:mx-8 md:mx-12 py-4 text-center">
         No internships posted yet.{" "}
         <button
           onClick={() => navigate("/post-internship")}
-          className="text-blue-600 underline"
+          className="text-blue-600 underline hover:text-blue-800"
         >
           Post an internship
         </button>
@@ -130,21 +138,21 @@ const ManageInternships = () => {
     <div className="min-h-screen bg-[#fafafa]">
       {/* Hero Section */}
       <div
-        className="relative bg-cover bg-center h-96 flex items-center justify-center"
+        className="relative bg-cover bg-center h-64 sm:h-80 md:h-96 flex items-center justify-center"
         style={{
           backgroundImage: `linear-gradient(to right, rgba(249, 220, 223, 0.8), rgba(181, 217, 211, 0.8)), url(${backgroundImg})`,
         }}
       >
-        <div className="text-center px-4">
-          <h1 className="text-3xl md:text-4xl font-bold text-[#050748] mb-2">
+        <div className="text-center px-4 sm:px-6 md:px-8">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#050748] mb-2">
             Manage Your Internships
           </h1>
-          <p className="text-sm md:text-base text-gray-700 max-w-md mx-auto mb-6">
+          <p className="text-sm sm:text-base md:text-lg text-gray-700 max-w-md mx-auto mb-4 sm:mb-6">
             View and manage all internships posted by your company.
           </p>
           <button
             onClick={() => navigate("/post-internship")}
-            className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm md:text-base font-medium py-2 px-6 rounded-full hover:from-blue-600 hover:to-purple-700 transition-all"
+            className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm sm:text-base font-medium py-2 px-4 sm:px-6 rounded-full hover:from-blue-600 hover:to-purple-700 transition-all"
           >
             Post New Internship
           </button>
@@ -152,43 +160,43 @@ const ManageInternships = () => {
       </div>
 
       {/* Internships List */}
-      <div className="px-4 md:px-12 py-8">
-        <div className="max-w-4xl mx-auto">
-          <h2 className="text-2xl md:text-3xl font-bold text-[#050748] mb-6">
+      <div className="px-4 sm:px-8 md:px-12 py-6 sm:py-8">
+        <div className="max-w-5xl mx-auto">
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-[#050748] mb-4 sm:mb-6">
             Your Posted Internships
           </h2>
           <div className="space-y-4">
             {paginatedInternships.map((internship) => (
               <div
                 key={internship.id}
-                className="flex flex-col bg-white rounded-lg shadow-md p-4"
+                className="flex flex-col bg-white rounded-lg shadow-md p-4 sm:p-6"
               >
                 <div className="flex justify-between items-center mb-2">
                   <span className="inline-block bg-gray-200 text-gray-800 text-xs font-medium px-2 py-0.5 rounded-full">
                     {internship.time}
                   </span>
                 </div>
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
                   <div className="flex-1">
-                    <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-3 sm:space-x-4">
                       <img
                         src={internship.logo}
                         alt={`${internship.company} Logo`}
-                        className="w-10 h-10 rounded-full object-contain"
+                        className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-contain"
                       />
                       <div>
-                        <h3 className="text-lg font-bold text-[#050748]">
+                        <h3 className="text-base sm:text-lg font-bold text-[#050748] truncate">
                           {internship.title}
                         </h3>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-xs sm:text-sm text-gray-500">
                           {internship.company}
                         </p>
                       </div>
                     </div>
-                    <div className="flex flex-wrap items-center space-x-2 mt-2 text-sm text-gray-600">
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2 text-xs sm:text-sm text-gray-600">
                       <span className="flex items-center">
                         <svg
-                          className="w-4 h-4 mr-1"
+                          className="w-4 h-4 sm:w-5 sm:h-5 mr-1"
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
@@ -205,7 +213,7 @@ const ManageInternships = () => {
                       </span>
                       <span className="flex items-center">
                         <svg
-                          className="w-4 h-4 mr-1"
+                          className="w-4 h-4 sm:w-5 sm:h-5 mr-1"
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
@@ -222,7 +230,7 @@ const ManageInternships = () => {
                       </span>
                       <span className="flex items-center">
                         <svg
-                          className="w-4 h-4 mr-1"
+                          className="w-4 h-4 sm:w-5 sm:h-5 mr-1"
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
@@ -241,16 +249,18 @@ const ManageInternships = () => {
                             d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
                           />
                         </svg>
-                        {internship.location}
+                        <span className="truncate max-w-[150px] sm:max-w-[200px]">
+                          {internship.location}
+                        </span>
                       </span>
                     </div>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                     <button
                       onClick={() =>
                         navigate(`/internship/${internship.id}/candidates`)
                       }
-                      className="bg-gradient-to-r from-green-500 to-teal-600 text-white text-sm font-medium py-2 px-4 rounded-full hover:from-green-600 hover:to-teal-700"
+                      className="bg-gradient-to-r from-green-500 to-teal-600 text-white text-xs sm:text-sm font-medium py-1.5 sm:py-2 px-3 sm:px-4 rounded-full hover:from-green-600 hover:to-teal-700 whitespace-nowrap"
                     >
                       Candidates
                     </button>
@@ -258,9 +268,17 @@ const ManageInternships = () => {
                       onClick={() =>
                         navigate(`/internshipdetail/${internship.id}`)
                       }
-                      className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-medium py-2 px-4 rounded-full hover:from-blue-600 hover:to-purple-700"
+                      className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs sm:text-sm font-medium py-1.5 sm:py-2 px-3 sm:px-4 rounded-full hover:from-blue-600 hover:to-purple-700 whitespace-nowrap"
                     >
                       View Details
+                    </button>
+                    <button
+                      onClick={() =>
+                        navigate(`/edit-internship/${internship.id}`)
+                      }
+                      className="bg-gradient-to-r from-yellow-500 to-orange-600 text-white text-xs sm:text-sm font-medium py-1.5 sm:py-2 px-3 sm:px-4 rounded-full hover:from-yellow-600 hover:to-orange-700 whitespace-nowrap"
+                    >
+                      Edit Internship
                     </button>
                   </div>
                 </div>
@@ -268,13 +286,13 @@ const ManageInternships = () => {
             ))}
           </div>
           {totalPages > 1 && (
-            <div className="flex justify-between items-center mt-6">
-              <div className="flex gap-4 justify-center w-full">
+            <div className="flex flex-col sm:flex-row justify-between items-center mt-6 gap-4">
+              <div className="flex flex-wrap justify-center gap-2">
                 {Array.from({ length: totalPages }, (_, index) => (
                   <button
                     key={index + 1}
                     onClick={() => handlePageChange(index + 1)}
-                    className={`w-8 h-8 flex items-center justify-center rounded-lg font-bold ${
+                    className={`w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-lg font-semibold text-sm ${
                       currentPage === index + 1
                         ? "bg-gradient-to-r from-indigo-500 to-purple-500 text-white"
                         : "border border-gray-400 text-gray-700 hover:bg-gray-100"
@@ -284,13 +302,21 @@ const ManageInternships = () => {
                   </button>
                 ))}
               </div>
-              <div className="ml-auto">
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="flex items-center gap-1 px-3 py-1.5 border border-gray-400 rounded-lg text-gray-700 hover:bg-gray-100 disabled:opacity-50 text-sm"
+                >
+                  <span className="text-base">❮</span>
+                  <span>Prev</span>
+                </button>
                 <button
                   onClick={() => handlePageChange(currentPage + 1)}
                   disabled={currentPage === totalPages}
-                  className="flex items-center gap-1 px-3 py-1.5 border border-gray-400 rounded-lg text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+                  className="flex items-center gap-1 px-3 py-1.5 border border-gray-400 rounded-lg text-gray-700 hover:bg-gray-100 disabled:opacity-50 text-sm"
                 >
-                  <span className="font-semibold">Next</span>
+                  <span>Next</span>
                   <span className="text-base">❯</span>
                 </button>
               </div>

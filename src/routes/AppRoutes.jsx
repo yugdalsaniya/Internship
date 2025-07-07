@@ -1,5 +1,5 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route , useLocation } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
 import { useDocumentTitle } from "../Utils/useDocumentTitle";
 import { getPageTitle } from "../Utils/titles";
 import MainLayout from "../Layouts/MainLayout";
@@ -31,10 +31,9 @@ import NewsAndBlogPage from "../Pages/student/NewsAndBlogPage";
 import AllEmployers from "../Components/home/AllEmployers";
 import AllAcademies from "../Components/home/AllAcademies";
 import AcademyProfilePage from "../Pages/Academy/AcademyProfilePage";
-import AllNewsAndBlogs from "../Components/home/AllNewsAndBlogs"; // Import the new component
+import AllNewsAndBlogs from "../Components/home/AllNewsAndBlogs";
 import SidebarItem from "../Components/profile/SidebarItem";
-
-
+import EditInternship from "../Pages/company/EditInternship"; // Import the EditInternship component
 
 function AppRoutesInner() {
   const location = useLocation();
@@ -62,9 +61,10 @@ function AppRoutesInner() {
         <Route path="/requested-internships" element={<RequestedInternshipsPage />} />
         <Route path="/:categoryname/internships/:id" element={<CategoryInternshipsPage />} />
         <Route path="/post-internship" element={<PostInternship />} />
-        <Route path="/post-internship/form" element={<PostInternshipForm />} />
+        <Route path="/post-internship/form" element={<PostInternshipForm />}管理Internships />
         <Route path="/manage-internships" element={<ManageInternships />} />
         <Route path="/internship/:id/candidates" element={<InternshipCandidates />} />
+        <Route path="/edit-internship/:id" element={<EditInternship />} /> {/* New route */}
         <Route path="/StudentPostForm" element={<StudentPostForm />} />
         <Route path="/interns" element={<StudentInternshipList />} />
         <Route path="/company/:id" element={<CompanyProfilePage />} />
