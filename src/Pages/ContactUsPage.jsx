@@ -37,7 +37,7 @@ export default function InternshipPage() {
               </div>
               <div>
                 <p className="font-semibold text-sm text-[#0B0B0B]">Call for inquiry</p>
-                <p className="text-[#6A6A8E]">+91 9876543210</p>
+                <p className="text-[#6A6A8E]">+63 906 568 7199</p>
               </div>
             </div>
             <div className="flex gap-3 items-start">
@@ -46,7 +46,7 @@ export default function InternshipPage() {
               </div>
               <div>
                 <p className="font-semibold text-sm text-[#0B0B0B]">Send us email</p>
-                <p className="text-[#6A6A8E]">hana4intern@gmail.com</p>
+                <p className="text-[#6A6A8E]">contact@upraisit.com</p>
               </div>
             </div>
             <div className="flex gap-3 items-start">
@@ -64,7 +64,7 @@ export default function InternshipPage() {
               </div>
               <div>
                 <p className="font-semibold text-sm text-[#0B0B0B]">Office</p>
-                <p className="text-[#6A6A8E]">Work24 Near, Gulbai tekra BRTS</p>
+                <p className="text-[#6A6A8E]">iSquare Building, 15 Meralco Ave, Ortigas Center, Pasig, 1600 Metro Manila, Philippines</p>
               </div>
             </div>
           </div>
