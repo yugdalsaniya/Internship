@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import Hero from "../assets/Hero/banner.jpg";
 import {
@@ -9,14 +9,18 @@ import {
   FaTags,
   FaFacebookF,
   FaLinkedinIn,
+  FaMoneyBillWave
 } from "react-icons/fa";
 import { MdWork, MdDateRange } from "react-icons/md";
 import { PiTwitterLogoFill } from "react-icons/pi";
 import { fetchSectionData } from "../Utils/api";
 import { formatDistanceToNow, parse, format } from "date-fns";
 import { generateInternshipSlug } from "../Utils/slugify";
-import ReactMarkdown from "react-markdown"; // Updated import
+import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+
+// Google Maps API key from environment
+const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "YOUR_API_KEY_HERE";
 
 const InternshipDetailPage = () => {
   const { id: urlId } = useParams();
@@ -28,19 +32,65 @@ const InternshipDetailPage = () => {
   const [hasApplied, setHasApplied] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [mapCoordinates, setMapCoordinates] = useState({ lat: null, lng: null });
 
+  const mapRef = useRef(null); // Reference for map container
   const actualId = urlId.split("-").pop();
   const user = JSON.parse(localStorage.getItem("user")) || {};
   const userId = user.userid;
 
+  // Load Google Maps API script
+  const loadGoogleMapsScript = () => {
+    return new Promise((resolve, reject) => {
+      if (window.google && window.google.maps) {
+        resolve();
+        return;
+      }
+      const existingScript = document.querySelector(
+        'script[src*="maps.googleapis.com/maps/api/js"]'
+      );
+      if (existingScript) {
+        existingScript.addEventListener("load", resolve);
+        return;
+      }
+      const script = document.createElement("script");
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places`;
+      script.async = true;
+      script.defer = true;
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error("Failed to load Google Maps API"));
+      document.head.appendChild(script);
+    });
+  };
+
+  // Geocode location string to coordinates
+  const geocodeLocation = async (locationString) => {
+    if (!locationString || !window.google?.maps) return null;
+    const geocoder = new window.google.maps.Geocoder();
+    return new Promise((resolve, reject) => {
+      geocoder.geocode(
+        { address: locationString, componentRestrictions: { country: "ph" } },
+        (results, status) => {
+          if (status === "OK" && results[0]) {
+            const { lat, lng } = results[0].geometry.location;
+            resolve({ lat: lat(), lng: lng() });
+          } else {
+            reject(new Error(`Geocoding failed: ${status}`));
+          }
+        }
+      );
+    });
+  };
+
+  // Fetch internship data and geocode location
   useEffect(() => {
     const fetchCategoriesAndInternship = async () => {
       try {
+        // Fetch categories
         const categoriesData = await fetchSectionData({
           collectionName: "category",
           query: {},
         });
-
         const categoryMapping = categoriesData.reduce(
           (map, category) => {
             const categoryId = category._id;
@@ -51,13 +101,11 @@ const InternshipDetailPage = () => {
             map[categoryName.toUpperCase()] = categoryName;
             return map;
           },
-          {
-            Education: "Education",
-            Tourism: "Tourism",
-          }
+          { Education: "Education", Tourism: "Tourism" }
         );
         setCategoryMap(categoryMapping);
 
+        // Fetch internship data
         const internshipData = await fetchSectionData({
           collectionName: "jobpost",
           query: { _id: actualId },
@@ -65,12 +113,8 @@ const InternshipDetailPage = () => {
 
         if (internshipData && internshipData.length > 0) {
           setInternship(internshipData[0]);
-          console.log("Internship raw data:", internshipData[0]);
-          console.log(
-            "Application Instructions raw:",
-            internshipData[0]?.sectionData?.jobpost?.applicationinstructions
-          );
 
+          // Check if user has applied
           if (userId && user.role === "student") {
             const applicationData = await fetchSectionData({
               collectionName: "applications",
@@ -79,17 +123,15 @@ const InternshipDetailPage = () => {
             setHasApplied(applicationData.length > 0);
           }
 
-          const currentSubtype =
-            internshipData[0]?.sectionData?.jobpost?.subtype;
+          // Fetch related internships
+          const currentSubtype = internshipData[0]?.sectionData?.jobpost?.subtype;
           const relatedQuery = {
             "sectionData.jobpost.type": "Internship",
             _id: { $ne: actualId },
           };
-
           if (currentSubtype) {
             relatedQuery["sectionData.jobpost.subtype"] = currentSubtype;
           }
-
           const relatedData = await fetchSectionData({
             collectionName: "jobpost",
             limit: 3,
@@ -97,8 +139,21 @@ const InternshipDetailPage = () => {
             order: -1,
             sortedBy: "createdDate",
           });
-
           setRelatedInternships(relatedData);
+
+          // Geocode internship location
+          const locationString = internshipData[0]?.sectionData?.jobpost?.location;
+          if (locationString) {
+            try {
+              const coords = await geocodeLocation(locationString);
+              setMapCoordinates(coords);
+            } catch (err) {
+              console.error("Geocoding error:", err);
+              setMapCoordinates({ lat: 14.5995, lng: 120.9842 }); // Fallback to Manila
+            }
+          } else {
+            setMapCoordinates({ lat: 14.5995, lng: 120.9842 }); // Fallback to Manila
+          }
         } else {
           setError("Internship not found.");
         }
@@ -114,8 +169,32 @@ const InternshipDetailPage = () => {
       }
     };
 
-    fetchCategoriesAndInternship();
+    // Load Google Maps and fetch data
+    loadGoogleMapsScript()
+      .then(() => fetchCategoriesAndInternship())
+      .catch((err) => {
+        console.error("Error loading Google Maps:", err);
+        setError("Failed to load map. Please try again later.");
+        fetchCategoriesAndInternship();
+      });
   }, [actualId, userId]);
+
+  // Initialize Google Map
+  useEffect(() => {
+    if (mapCoordinates.lat && mapCoordinates.lng && window.google?.maps && mapRef.current) {
+      const map = new window.google.maps.Map(mapRef.current, {
+        center: { lat: mapCoordinates.lat, lng: mapCoordinates.lng },
+        zoom: 12,
+        mapTypeId: "roadmap",
+      });
+
+      new window.google.maps.Marker({
+        position: { lat: mapCoordinates.lat, lng: mapCoordinates.lng },
+        map,
+        title: internship?.sectionData?.jobpost?.location || "Internship Location",
+      });
+    }
+  }, [mapCoordinates, internship]);
 
   const getRelativeTime = (dateString) => {
     try {
@@ -151,31 +230,29 @@ const InternshipDetailPage = () => {
     if (!markdown || typeof markdown !== "string") {
       return "No content available.";
     }
-    // Preserve double newlines for paragraph breaks, remove excessive backslashes
     return markdown
-      .replace(/\\+/g, "") // Remove excessive backslashes
-      .replace(/\n{2,}/g, "\n\n") // Ensure exactly two newlines for paragraphs
-      .replace(/^\s*-\s*$/gm, "") // Remove standalone hyphens
-      .replace(/^\s*-\s*\[\s*\]\s*$/gm, "") // Remove empty checklist items
-      .replace(/^\s*-\s*\[x\]\s*$/gm, ""); // Remove checked checklist items
+      .replace(/\\+/g, "")
+      .replace(/\n{2,}/g, "\n\n")
+      .replace(/^\s*-\s*$/gm, "")
+      .replace(/^\s*-\s*\[\s*\]\s*$/gm, "")
+      .replace(/^\s*-\s*\[x\]\s*$/gm, "");
   };
 
-  if (error)
+  if (error) {
     return (
       <div className="mx-4 py-4 text-sm md:text-base text-red-600">{error}</div>
     );
+  }
 
   if (loading) {
     return (
       <div className="min-h-screen bg-white">
-        {/* Hero Section Skeleton */}
         <div className="w-full h-48 sm:h-64 md:h-80 bg-gray-200 animate-pulse relative flex items-center justify-center">
           <div className="relative max-w-[95%] md:max-w-7xl mx-auto z-10 flex flex-col items-center text-center">
             <div className="w-3/4 h-6 sm:h-8 md:h-10 bg-gray-300 rounded-md mb-2 sm:mb-3"></div>
             <div className="w-1/2 h-4 sm:h-5 md:h-6 bg-gray-300 rounded-md"></div>
           </div>
         </div>
-        {/* Content Skeleton */}
         <div className="max-w-[95%] mx-auto px-2 sm:px-4 py-4 sm:py-6 md:py-8">
           <div className="flex flex-col md:flex-row md:justify-between md:items-start mb-4 sm:mb-6 md:mb-8 gap-3 sm:gap-4">
             <div className="w-full">
@@ -193,21 +270,18 @@ const InternshipDetailPage = () => {
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
             <div className="lg:col-span-2">
-              {/* Description Skeleton */}
               <div className="mb-4 sm:mb-6">
                 <div className="w-1/3 h-5 sm:h-6 bg-gray-200 rounded-md mb-2 animate-pulse"></div>
                 <div className="w-full h-4 sm:h-5 bg-gray-200 rounded-md mb-2 animate-pulse"></div>
                 <div className="w-full h-4 sm:h-5 bg-gray-200 rounded-md mb-2 animate-pulse"></div>
                 <div className="w-3/4 h-4 sm:h-5 bg-gray-200 rounded-md animate-pulse"></div>
               </div>
-              {/* Responsibilities Skeleton */}
               <div className="mb-4 sm:mb-6">
                 <div className="w-1/3 h-5 sm:h-6 bg-gray-200 rounded-md mb-2 animate-pulse"></div>
                 <div className="w-full h-4 sm:h-5 bg-gray-200 rounded-md mb-2 animate-pulse"></div>
                 <div className="w-5/6 h-4 sm:h-5 bg-gray-200 rounded-md mb-2 animate-pulse"></div>
                 <div className="w-4/5 h-4 sm:h-5 bg-gray-200 rounded-md animate-pulse"></div>
               </div>
-              {/* Tags Skeleton */}
               <div className="mb-4 sm:mb-6">
                 <div className="w-1/4 h-5 sm:h-6 bg-gray-200 rounded-md mb-2 animate-pulse"></div>
                 <div className="flex flex-wrap gap-2 mb-3">
@@ -216,7 +290,6 @@ const InternshipDetailPage = () => {
                   <div className="w-16 h-6 bg-gray-200 rounded-md animate-pulse"></div>
                 </div>
               </div>
-              {/* Related Internships Skeleton */}
               <div>
                 <div className="w-1/2 h-6 sm:h-7 bg-gray-200 rounded-md mb-3 animate-pulse"></div>
                 {[1, 2, 3].map((_, idx) => (
@@ -228,11 +301,6 @@ const InternshipDetailPage = () => {
                       <div className="w-1/3 h-3 bg-gray-200 rounded-md mb-1"></div>
                       <div className="w-3/4 h-5 sm:h-6 bg-gray-200 rounded-md mb-1"></div>
                       <div className="w-1/2 h-4 sm:h-5 bg-gray-200 rounded-md mb-1"></div>
-                      <div className="flex flex-wrap gap-2">
-                        <div className="w-16 sm:w-20 h-4 bg-gray-200 rounded-md"></div>
-                        <div className="w-16 sm:w-20 h-4 bg-gray-200 rounded-md"></div>
-                        <div className="w-16 sm:w-20 h-4 bg-gray-200 rounded-md"></div>
-                      </div>
                     </div>
                     <div className="w-full sm:w-32 h-8 sm:h-9 bg-gray-200 rounded-md mt-2 sm:mt-0"></div>
                   </div>
@@ -240,7 +308,6 @@ const InternshipDetailPage = () => {
               </div>
             </div>
             <div className="space-y-3 sm:space-y-4">
-              {/* Overview Skeleton */}
               <div className="bg-gray-100 p-3 sm:p-4 rounded-2xl animate-pulse">
                 <div className="w-1/3 h-5 sm:h-6 bg-gray-200 rounded-md mb-2"></div>
                 <div className="space-y-1 sm:space-y-2">
@@ -250,9 +317,8 @@ const InternshipDetailPage = () => {
                   <div className="w-full h-4 sm:h-5 bg-gray-200 rounded-md"></div>
                   <div className="w-full h-4 sm:h-5 bg-gray-200 rounded-md"></div>
                 </div>
-                <div className="w-full h-20 sm:h-24 md:h-32 bg-gray-200 rounded-lg mt-2 sm:mt-3"></div>
+                <div className="w-full h-20 sm:h-24 md:h-32 bg-gray-200 rounded-lg mt-2"></div>
               </div>
-              {/* Contact Form Skeleton */}
               <div className="bg-gray-100 p-3 sm:p-4 rounded-2xl animate-pulse">
                 <div className="w-1/3 h-5 sm:h-6 bg-gray-200 rounded-md mb-2"></div>
                 <div className="space-y-1 sm:space-y-2">
@@ -352,73 +418,22 @@ const InternshipDetailPage = () => {
               color: #374151;
               word-break: break-word;
             }
-            .markdown-content p {
-              margin: 1rem 0;
-            }
-            .markdown-content ul {
-              list-style-type: disc;
-              padding-left: 1.5rem;
-              margin: 1rem 0;
-            }
-            .markdown-content ol {
-              list-style-type: decimal;
-              padding-left: 1.5rem;
-              margin: 1rem 0;
-            }
-            .markdown-content ul li, .markdown-content ol li {
-              margin: 0.5rem 0;
-            }
-            .markdown-content ul li.task-list-item {
-              list-style-type: none;
-              position: relative;
-              padding-left: 1.5rem;
-            }
-            .markdown-content ul li.task-list-item::before {
-              content: '☐';
-              position: absolute;
-              left: 0;
-              color: #374151;
-            }
-            .markdown-content ul li.task-list-item.checked::before {
-              content: '☑';
-              color: #374151;
-            }
-            .markdown-content h1, .markdown-content h2, .markdown-content h3 {
-              font-weight: 600;
-              margin: 1rem 0;
-            }
-            .markdown-content h1 {
-              font-size: 1.5rem;
-            }
-            .markdown-content h2 {
-              font-size: 1.25rem;
-            }
-            .markdown-content h3 {
-              font-size: 1.125rem;
-            }
-            .markdown-content strong {
-              font-weight: 700;
-            }
-            .markdown-content em {
-              font-style: italic;
-            }
-            .markdown-content a {
-              color: #2563eb;
-              text-decoration: underline;
-            }
-            .markdown-content code {
-              background-color: #f3f4f6;
-              padding: 0.1rem 0.3rem;
-              border-radius: 3px;
-              font-family: 'Courier New', Courier, monospace;
-            }
-            .markdown-content pre {
-              background-color: #f3f4f6;
-              padding: 0.75rem;
-              border-radius: 5px;
-              overflow-x: auto;
-              word-wrap: break-word;
-            }
+            .markdown-content p { margin: 1rem 0; }
+            .markdown-content ul { list-style-type: disc; padding-left: 1.5rem; margin: 1rem 0; }
+            .markdown-content ol { list-style-type: decimal; padding-left: 1.5rem; margin: 1rem 0; }
+            .markdown-content ul li, .markdown-content ol li { margin: 0.5rem 0; }
+            .markdown-content ul li.task-list-item { list-style-type: none; position: relative; padding-left: 1.5rem; }
+            .markdown-content ul li.task-list-item::before { content: '☐'; position: absolute; left: 0; color: #374151; }
+            .markdown-content ul li.task-list-item.checked::before { content: '☑'; color: #374151; }
+            .markdown-content h1, .markdown-content h2, .markdown-content h3 { font-weight: 600; margin: 1rem 0; }
+            .markdown-content h1 { font-size: 1.5rem; }
+            .markdown-content h2 { font-size: 1.25rem; }
+            .markdown-content h3 { font-size: 1.125rem; }
+            .markdown-content strong { font-weight: 700; }
+            .markdown-content em { font-style: italic; }
+            .markdown-content a { color: #2563eb; text-decoration: underline; }
+            .markdown-content code { background-color: #f3f4f6; padding: 0.1rem 0.3rem; border-radius: 3px; font-family: 'Courier New', Courier, monospace; }
+            .markdown-content pre { background-color: #f3f4f6; padding: 0.75rem; border-radius: 5px; overflow-x: auto; word-wrap: break-word; }
           `}
         </style>
         <div className="flex flex-col md:flex-row md:justify-between md:items-start mb-4 sm:mb-6 md:mb-8 gap-3 sm:gap-4">
@@ -458,8 +473,7 @@ const InternshipDetailPage = () => {
               </h2>
               <div className="text-sm sm:text-base text-gray-700 markdown-content">
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                  {cleanMarkdown(jobpost?.description) ||
-                    "No description available."}
+                  {cleanMarkdown(jobpost?.description) || "No description available."}
                 </ReactMarkdown>
               </div>
             </section>
@@ -483,8 +497,7 @@ const InternshipDetailPage = () => {
                 </h2>
                 <div className="text-sm sm:text-base text-gray-700 markdown-content">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {cleanMarkdown(jobpost.professionalSkills) ||
-                      "No skills provided."}
+                    {cleanMarkdown(jobpost.professionalSkills) || "No skills provided."}
                   </ReactMarkdown>
                 </div>
               </section>
@@ -519,9 +532,7 @@ const InternshipDetailPage = () => {
                 ))}
               </div>
               <div className="flex items-center gap-2 sm:gap-3">
-                <p className="text-xs sm:text-sm font-medium">
-                  Share Internship:
-                </p>
+                <p className="text-xs sm:text-sm font-medium">Share Internship:</p>
                 <FaFacebookF
                   className="text-[#4267B2] text-base sm:text-lg cursor-pointer"
                   title="Facebook"
@@ -559,8 +570,7 @@ const InternshipDetailPage = () => {
                         </div>
                         <div className="flex flex-wrap gap-1 sm:gap-2 text-xs sm:text-sm md:text-base text-gray-500 mt-1 sm:mt-2">
                           <div className="flex items-center gap-1">
-                            <MdWork className="text-sm sm:text-base" />{" "}
-                            {item.time}
+                            <MdWork className="text-sm sm:text-base" /> {item.time}
                           </div>
                           <div className="flex items-center gap-1">
                             <span>₱</span> {item.salary}
@@ -591,9 +601,7 @@ const InternshipDetailPage = () => {
               <div className="space-y-1 sm:space-y-2 text-xs sm:text-sm md:text-base text-[#333]">
                 <div className="flex items-center gap-2">
                   <FaUser className="text-blue-500 text-sm sm:text-base" />
-                  <span>
-                    Internship Title: {jobpost?.title || "Unknown Role"}
-                  </span>
+                  <span>Internship Title: {jobpost?.title || "Unknown Role"}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <MdWork className="text-blue-500 text-sm sm:text-base" />
@@ -605,21 +613,16 @@ const InternshipDetailPage = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <FaRegClock className="text-blue-500 text-sm sm:text-base" />
-                  <span>
-                    Experience: {jobpost?.experiencelevel || "Not specified"}
-                  </span>
+                  <span>Experience: {jobpost?.experiencelevel || "Not specified"}</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <FaGraduationCap className="text-blue-500 text-sm sm:text-base" />
-                  <span>Degrees: {degreesList}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span>₱</span>
-                  <span>
-                    Offered Salary:{" "}
-                    {jobpost?.salary ? `${jobpost.salary}` : "Not specified"}
-                  </span>
-                </div>
+               <div className="flex items-center gap-2">
+  <FaGraduationCap className="text-blue-500 text-sm sm:text-base" />
+  <span>Degrees: {degreesList}</span>
+</div>
+<div className="flex items-center gap-2">
+  <span className="text-blue-500 text-sm sm:text-base pl-1">₱</span>
+  <span className="pl-1">Offered Salary: {jobpost?.salary ? `${jobpost.salary}` : "Not specified"}</span>
+</div>
                 <div className="flex items-center gap-2">
                   <FaMapMarkerAlt className="text-blue-500 text-sm sm:text-base" />
                   <span>Location: {jobpost?.location || "Unknown"}</span>
@@ -630,16 +633,17 @@ const InternshipDetailPage = () => {
                 </div>
               </div>
               <div className="mt-2 sm:mt-3">
-                <iframe
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3670.005659035671!2d72.57136231578908!3d23.022505984951904!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x395e84f8f2a83b8f%3A0xc4bb2c3cccf0f0f!2sAhmedabad%2C%20Gujarat!5e0!3m2!1sen!2sin!4v1625215052287!5m2!1sen!2sin"
-                  width="100%"
-                  height="120 sm:150 md:180 lg:200"
-                  style={{ border: 0 }}
-                  allowFullScreen=""
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                  className="w-full rounded-lg"
-                ></iframe>
+                {mapCoordinates.lat && mapCoordinates.lng ? (
+                  <div
+                    ref={mapRef}
+                    className="w-full rounded-lg"
+                    style={{ height: "120px", minHeight: "120px" }}
+                  ></div>
+                ) : (
+                  <div className="w-full h-[120px] bg-gray-200 rounded-lg flex items-center justify-center text-sm text-gray-600">
+                    Loading map...
+                  </div>
+                )}
               </div>
             </div>
             <div className="bg-gradient-to-br from-[#fff7f9] to-[#f4f9fd] p-3 sm:p-4 md:p-5 rounded-2xl shadow-md">
@@ -667,7 +671,7 @@ const InternshipDetailPage = () => {
                   className="w-full p-2 sm:p-3 border border-gray-300 rounded-md focus:outline-none"
                   rows={3}
                 ></textarea>
-                <button className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white w-full py-2 sm:py-3 rounded-md text-xs sm:text-sm md:text-base font-medium">
+                <button className="bg-gradient-to-r from-indigo-500 Adoptive purple-500 text-white w-full py-2 sm:py-3 rounded-md text-xs sm:text-sm md:text-base font-medium">
                   Send Message
                 </button>
               </div>
