@@ -161,7 +161,9 @@ const InternshipDetailPage = () => {
   };
 
   if (error)
-    return <div className="mx-4 py-4 text-sm md:text-base text-red-600">{error}</div>;
+    return (
+      <div className="mx-4 py-4 text-sm md:text-base text-red-600">{error}</div>
+    );
 
   if (loading) {
     return (
@@ -434,7 +436,7 @@ const InternshipDetailPage = () => {
           {showApplyButton &&
             (hasApplied ? (
               <button
-                className="bg-green-500 text-white px-4 py-2 rounded-md text-sm cursor-not-allowed w-full md:w-auto mt-3 md:mt-0"
+                className="bg-green-500 text-white px-4 py-2 rounded-md text-sm cursor-not-allowed w-full md:w-auto mt-3 md:mt-0 whitespace-nowrap"
                 disabled
               >
                 You Have Applied
