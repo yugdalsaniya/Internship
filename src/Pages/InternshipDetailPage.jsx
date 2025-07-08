@@ -664,7 +664,7 @@ const InternshipDetailPage = () => {
                   <div
                     ref={mapRef}
                     className="w-full rounded-lg"
-                    style={{ height: "120px", minHeight: "120px" }}
+                    style={{ height: "200px", minHeight: "180px" }}
                   ></div>
                 ) : (
                   <div className="w-full h-[120px] bg-gray-200 rounded-lg flex items-center justify-center text-sm text-gray-600">
