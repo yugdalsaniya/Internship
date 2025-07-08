@@ -1,66 +1,115 @@
-import React, { useState, useEffect, useRef } from 'react';
-import bannerImage from '../../assets/Hero/banner.jpg';
-import internshipImage from '../../assets/Hero/internship.png';
-import candidateImage from '../../assets/Hero/candidate.png';
-import companiesImage from '../../assets/Hero/company.png';
-import academyImage from '../../assets/Hero/company.png';
-import { fetchSectionData } from '../../Utils/api';
-import { useNavigate } from 'react-router-dom';
-import { toast } from 'react-toastify';
+import React, { useState, useEffect, useRef } from "react";
+import bannerImage from "../../assets/Hero/banner.jpg";
+import internshipImage from "../../assets/Hero/internship.png";
+import candidateImage from "../../assets/Hero/candidate.png";
+import companiesImage from "../../assets/Hero/company.png";
+import academyImage from "../../assets/Hero/company.png";
+import { fetchSectionData } from "../../Utils/api";
+import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
+// Levenshtein distance function to calculate string similarity
+const getLevenshteinDistance = (str1, str2) => {
+  const m = str1.length;
+  const n = str2.length;
+  const dp = Array(m + 1)
+    .fill(null)
+    .map(() => Array(n + 1).fill(null));
+
+  for (let i = 0; i <= m; i++) dp[i][0] = i;
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      const cost =
+        str1[i - 1].toLowerCase() === str2[j - 1].toLowerCase() ? 0 : 1;
+      dp[i][j] = Math.min(
+        dp[i - 1][j] + 1, // Deletion
+        dp[i][j - 1] + 1, // Insertion
+        dp[i - 1][j - 1] + cost // Substitution
+      );
+    }
+  }
+
+  return dp[m][n];
+};
+
+// Calculate similarity score (0 to 1)
+const getSimilarityScore = (str1, str2) => {
+  const distance = getLevenshteinDistance(str1, str2);
+  const maxLength = Math.max(str1.length, str2.length);
+  if (maxLength === 0) return 1; // Handle empty strings
+  return 1 - distance / maxLength;
+};
+
 const Hero = ({
-  title = 'Top Internships and OJT Programs in the Philippines for Career Launch',
-  subtitle = 'Connecting Talent with Opportunity: Your Gateway to Career Success',
+  title = "Top Internships and OJT Programs in the Philippines for Career Launch",
+  subtitle = "Connecting Talent with Opportunity: Your Gateway to Career Success",
   searchFields = [
-    { type: 'input', placeholder: 'Internship Title or Company' },
-    { type: 'input', placeholder: 'Search Location' },
-    { type: 'select', placeholder: 'Select Category', options: ['Select Category'] },
+    { type: "input", placeholder: "Internship Title or Company" },
+    { type: "input", placeholder: "Search Location" },
+    {
+      type: "select",
+      placeholder: "Select Category",
+      options: ["Select Category"],
+    },
   ],
   backgroundImage = bannerImage,
-  gradient = 'linear-gradient(to right, rgba(249, 220, 223, 0.8), rgba(181, 217, 211, 0.8))',
+  gradient = "linear-gradient(to right, rgba(249, 220, 223, 0.8), rgba(181, 217, 211, 0.8))",
   showPostButton = false,
   stats: statsProp,
 }) => {
   const [stats, setStats] = useState([
     {
-      count: '0',
-      label: 'Internships',
+      count: "0",
+      label: "Internships",
       image: internshipImage,
-      bgColor: 'bg-[#6A6A8E]',
+      bgColor: "bg-[#6A6A8E]",
     },
     {
-      count: '0',
-      label: 'Candidates',
+      count: "0",
+      label: "Candidates",
       image: candidateImage,
-      bgColor: 'bg-[#6A6A8E]',
+      bgColor: "bg-[#6A6A8E]",
     },
     {
-      count: '0',
-      label: 'Companies',
+      count: "0",
+      label: "Companies",
       image: companiesImage,
-      bgColor: 'bg-[#6A6A8E]',
+      bgColor: "bg-[#6A6A8E]",
     },
     {
-      count: '0',
-      label: 'Academy',
+      count: "0",
+      label: "Academy",
       image: academyImage,
-      bgColor: 'bg-[#6A6A8E]',
+      bgColor: "bg-[#6A6A8E]",
     },
   ]);
 
   const navigate = useNavigate();
-  const [error, setError] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [location, setLocation] = useState('');
-  const [category, setCategory] = useState('');
+  const [error, setError] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [location, setLocation] = useState("");
+  const [category, setCategory] = useState("");
   const [suggestions, setSuggestions] = useState([]);
-  const [categoryOptions, setCategoryOptions] = useState(['Select Category']);
+  const [categoryOptions, setCategoryOptions] = useState(["Select Category"]);
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
   const [isGoogleMapsLoaded, setIsGoogleMapsLoaded] = useState(false);
   const locationInputRef = useRef(null);
   const autocompleteRef = useRef(null);
+
+  // Toast configuration to match EditInternship
+  const toastConfig = {
+    position: "top-right",
+    autoClose: 5000,
+    hideProgressBar: false,
+    closeOnClick: true,
+    pauseOnHover: true,
+    draggable: true,
+    theme: "light",
+  };
 
   // Preload background image
   useEffect(() => {
@@ -73,16 +122,18 @@ const Hero = ({
     const fetchCategories = async () => {
       try {
         const response = await fetchSectionData({
-          collectionName: 'category',
+          collectionName: "category",
           query: {},
         });
-        const categories = response.map((cat) => cat.sectionData?.category?.titleofinternship || 'Unknown');
-        setCategoryOptions(['Select Category', ...new Set(categories)]);
+        const categories = response.map(
+          (cat) => cat.sectionData?.category?.titleofinternship || "Unknown"
+        );
+        setCategoryOptions(["Select Category", ...new Set(categories)]);
       } catch (err) {
-        console.error('Error fetching categories:', err);
-        toast.error('Failed to load categories.', {
-          position: 'top-right',
-          autoClose: 5000,
+        console.error("Error fetching categories:", err);
+        toast.error("Failed to load categories.", {
+          ...toastConfig,
+          toastId: `categories-${Date.now()}`,
         });
       }
     };
@@ -92,11 +143,11 @@ const Hero = ({
   // Load Google Maps API
   useEffect(() => {
     if (!GOOGLE_MAPS_API_KEY) {
-      console.error('Google Maps API key is missing');
-      setError('Location search unavailable: API key not configured.');
-      toast.error('Location search unavailable: API key not configured.', {
-        position: 'top-right',
-        autoClose: 5000,
+      console.error("Google Maps API key is missing");
+      setError("Location search unavailable: API key not configured.");
+      toast.error("Location search unavailable: API key not configured.", {
+        ...toastConfig,
+        toastId: `maps-key-${Date.now()}`,
       });
       return;
     }
@@ -104,33 +155,33 @@ const Hero = ({
     const loadGoogleMapsScript = () => {
       return new Promise((resolve, reject) => {
         if (window.google && window.google.maps && window.google.maps.places) {
-          console.log('Google Maps API already loaded');
+          console.log("Google Maps API already loaded");
           resolve();
           return;
         }
-        const scriptId = 'google-maps-script';
+        const scriptId = "google-maps-script";
         let script = document.getElementById(scriptId);
         if (!script) {
-          script = document.createElement('script');
+          script = document.createElement("script");
           script.id = scriptId;
           script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places`;
           script.async = true;
           script.defer = true;
           script.onload = () => {
-            console.log('Google Maps API script loaded successfully');
+            console.log("Google Maps API script loaded successfully");
             resolve();
           };
           script.onerror = () => {
-            console.error('Failed to load Google Maps API script');
-            reject(new Error('Failed to load Google Maps API'));
+            console.error("Failed to load Google Maps API script");
+            reject(new Error("Failed to load Google Maps API"));
           };
           document.head.appendChild(script);
         } else {
           if (script.dataset.loaded) {
             resolve();
           } else {
-            script.addEventListener('load', resolve);
-            script.addEventListener('error', reject);
+            script.addEventListener("load", resolve);
+            script.addEventListener("error", reject);
           }
         }
       });
@@ -139,24 +190,31 @@ const Hero = ({
     loadGoogleMapsScript()
       .then(() => {
         if (!window.google?.maps?.places) {
-          throw new Error('Google Maps Places library not loaded');
+          throw new Error("Google Maps Places library not loaded");
         }
-        console.log('Google Maps Places library loaded');
+        console.log("Google Maps Places library loaded");
         setIsGoogleMapsLoaded(true);
       })
       .catch((err) => {
-        console.error('Error loading Google Maps:', err);
-        setError('Location suggestions unavailable. Please type a city manually.');
-        toast.error('Location suggestions unavailable. Please type a city manually.', {
-          position: 'top-right',
-          autoClose: 5000,
-        });
+        console.error("Error loading Google Maps:", err);
+        setError(
+          "Location suggestions unavailable. Please type a city manually."
+        );
+        toast.error(
+          "Location suggestions unavailable. Please type a city manually.",
+          {
+            ...toastConfig,
+            toastId: `maps-load-${Date.now()}`,
+          }
+        );
       });
 
     return () => {
       if (autocompleteRef.current && window.google?.maps?.event) {
-        console.log('Cleaning up Google Maps Autocomplete listeners');
-        window.google.maps.event.clearInstanceListeners(autocompleteRef.current);
+        console.log("Cleaning up Google Maps Autocomplete listeners");
+        window.google.maps.event.clearInstanceListeners(
+          autocompleteRef.current
+        );
         autocompleteRef.current = null;
       }
     };
@@ -164,35 +222,44 @@ const Hero = ({
 
   // Initialize Autocomplete
   useEffect(() => {
-    if (isGoogleMapsLoaded && locationInputRef.current && !autocompleteRef.current) {
+    if (
+      isGoogleMapsLoaded &&
+      locationInputRef.current &&
+      !autocompleteRef.current
+    ) {
       try {
         autocompleteRef.current = new window.google.maps.places.Autocomplete(
           locationInputRef.current,
           {
-            types: ['(cities)'],
-            fields: ['formatted_address', 'name'],
-            componentRestrictions: { country: 'ph' },
+            types: ["(cities)"],
+            fields: ["formatted_address", "name"],
+            componentRestrictions: { country: "ph" },
           }
         );
-        console.log('Google Maps Autocomplete initialized');
-        autocompleteRef.current.addListener('place_changed', () => {
+        console.log("Google Maps Autocomplete initialized");
+        autocompleteRef.current.addListener("place_changed", () => {
           const place = autocompleteRef.current.getPlace();
-          console.log('Place changed:', place);
+          console.log("Place changed:", place);
           if (place.formatted_address || place.name) {
             setLocation(place.formatted_address || place.name);
-            setError('');
+            setError("");
           } else {
-            setLocation('');
-            setError('Please select a valid location.');
+            setLocation("");
+            setError("Please select a valid location.");
           }
         });
       } catch (err) {
-        console.error('Error initializing Google Maps Autocomplete:', err);
-        setError('Location suggestions unavailable. Please type a city manually.');
-        toast.error('Location suggestions unavailable. Please type a city manually.', {
-          position: 'top-right',
-          autoClose: 5000,
-        });
+        console.error("Error initializing Google Maps Autocomplete:", err);
+        setError(
+          "Location suggestions unavailable. Please type a city manually."
+        );
+        toast.error(
+          "Location suggestions unavailable. Please type a city manually.",
+          {
+            ...toastConfig,
+            toastId: `maps-autocomplete-${Date.now()}`,
+          }
+        );
       }
     }
   }, [isGoogleMapsLoaded]);
@@ -207,23 +274,33 @@ const Hero = ({
       setIsLoadingSuggestions(true);
       try {
         const response = await fetchSectionData({
-          collectionName: 'jobpost',
+          collectionName: "jobpost",
           query: {
-            'sectionData.jobpost.type': 'Internship',
+            "sectionData.jobpost.type": "Internship",
             $or: [
-              { 'sectionData.jobpost.title': { $regex: searchQuery, $options: 'i' } },
-              { 'sectionData.jobpost.company': { $regex: searchQuery, $options: 'i' } },
+              {
+                "sectionData.jobpost.title": {
+                  $regex: searchQuery,
+                  $options: "i",
+                },
+              },
+              {
+                "sectionData.jobpost.company": {
+                  $regex: searchQuery,
+                  $options: "i",
+                },
+              },
             ],
           },
           limit: 5,
         });
         const suggestionItems = response.map((job) => ({
-          title: job.sectionData?.jobpost?.title || 'Unknown Title',
-          company: job.sectionData?.jobpost?.company || 'Unknown Company',
+          title: job.sectionData?.jobpost?.title || "Unknown Title",
+          company: job.sectionData?.jobpost?.company || "Unknown Company",
         }));
         setSuggestions(suggestionItems);
       } catch (error) {
-        console.error('Error fetching suggestions:', error);
+        console.error("Error fetching suggestions:", error);
       } finally {
         setIsLoadingSuggestions(false);
       }
@@ -237,48 +314,48 @@ const Hero = ({
     const fetchCounts = async () => {
       try {
         const internshipResponse = await fetchSectionData({
-          collectionName: 'jobpost',
-          query: { 'sectionData.jobpost.type': 'Internship' },
+          collectionName: "jobpost",
+          query: { "sectionData.jobpost.type": "Internship" },
         });
         const internshipCount = internshipResponse.length * 11;
 
         const studentResponse = await fetchSectionData({
-          collectionName: 'appuser',
-          query: { 'sectionData.appuser.role': '1747825619417' },
+          collectionName: "appuser",
+          query: { "sectionData.appuser.role": "1747825619417" },
         });
         const studentCount = studentResponse.length * 11;
 
         const companyResponse = await fetchSectionData({
-          collectionName: 'appuser',
-          query: { 'sectionData.appuser.role': '1747723485001' },
+          collectionName: "appuser",
+          query: { "sectionData.appuser.role": "1747723485001" },
         });
         const companyCount = companyResponse.length * 11;
 
         const academyResponse = await fetchSectionData({
-          collectionName: 'appuser',
-          query: { 'sectionData.appuser.role': '1747903042943' },
+          collectionName: "appuser",
+          query: { "sectionData.appuser.role": "1747903042943" },
         });
         const academyCount = academyResponse.length * 11;
 
         setStats((prevStats) =>
           prevStats.map((stat) => {
-            if (stat.label === 'Internships') {
+            if (stat.label === "Internships") {
               return { ...stat, count: internshipCount.toLocaleString() };
             }
-            if (stat.label === 'Candidates') {
+            if (stat.label === "Candidates") {
               return { ...stat, count: studentCount.toLocaleString() };
             }
-            if (stat.label === 'Companies') {
+            if (stat.label === "Companies") {
               return { ...stat, count: companyCount.toLocaleString() };
             }
-            if (stat.label === 'Academy') {
+            if (stat.label === "Academy") {
               return { ...stat, count: academyCount.toLocaleString() };
             }
             return stat;
           })
         );
       } catch (error) {
-        console.error('Error fetching counts:', error);
+        console.error("Error fetching counts:", error);
       }
     };
 
@@ -290,46 +367,123 @@ const Hero = ({
   const effectiveStats = statsProp !== undefined ? statsProp : stats;
 
   const handlePostInternship = () => {
-    const user = JSON.parse(localStorage.getItem('user'));
-    const isAuthenticated = !!user && !!localStorage.getItem('accessToken');
+    const user = JSON.parse(localStorage.getItem("user"));
+    const isAuthenticated = !!user && !!localStorage.getItem("accessToken");
 
     if (isAuthenticated) {
-      if (user.roleId === '1747825619417') {
-        navigate('/StudentPostForm');
+      if (user.roleId === "1747825619417") {
+        navigate("/StudentPostForm");
       } else {
-        setError('Only company users can post internships.');
-        toast.error('Only company users can post internships.', {
-          position: 'top-right',
-          autoClose: 5000,
+        setError("Only company users can post internships.");
+        toast.error("Only company users can post internships.", {
+          ...toastConfig,
+          toastId: `post-internship-${Date.now()}`,
         });
       }
     } else {
-      navigate('/login', { state: { from: '/StudentPostForm' } });
+      navigate("/login", { state: { from: "/StudentPostForm" } });
     }
   };
 
-  const handleSearch = () => {
-    console.log('Search triggered with:', { searchQuery, location, category });
+  const handleSearch = async () => {
+    console.log("Search triggered with:", { searchQuery, location, category });
+
+    // Check if all fields are empty
+    if (
+      !searchQuery.trim() &&
+      !location.trim() &&
+      (!category || category === "Select Category")
+    ) {
+      console.log("All search fields are empty, preventing navigation");
+      toast.error("Please fill in at least one search field.", {
+        ...toastConfig,
+        toastId: `empty-search-${Date.now()}`,
+      });
+      return;
+    }
+
+    // If only searchQuery is filled, check for 40% match
+    if (
+      searchQuery.trim() &&
+      !location.trim() &&
+      (!category || category === "Select Category")
+    ) {
+      try {
+        const response = await fetchSectionData({
+          collectionName: "jobpost",
+          query: {
+            "sectionData.jobpost.type": "Internship",
+          },
+          limit: 100, // Fetch more to ensure comprehensive matching
+        });
+
+        const jobs = response.map((job) => ({
+          title: job.sectionData?.jobpost?.title || "",
+          company: job.sectionData?.jobpost?.company || "",
+        }));
+
+        const hasMatch = jobs.some((job) => {
+          const titleSimilarity = getSimilarityScore(
+            searchQuery.trim(),
+            job.title
+          );
+          const companySimilarity = getSimilarityScore(
+            searchQuery.trim(),
+            job.company
+          );
+          const maxSimilarity = Math.max(titleSimilarity, companySimilarity);
+          console.log(
+            `Checking match for "${searchQuery}": Title="${job.title}" (${titleSimilarity}), Company="${job.company}" (${companySimilarity})`
+          );
+          return maxSimilarity >= 0.4; // 40% match threshold
+        });
+
+        if (!hasMatch) {
+          console.log(
+            "No 40% match found for searchQuery, preventing navigation"
+          );
+          toast.error(
+            "No internships or companies match your search. Try a different term.",
+            {
+              ...toastConfig,
+              toastId: `no-match-${Date.now()}`,
+            }
+          );
+          return;
+        }
+      } catch (err) {
+        console.error("Error checking searchQuery match:", err);
+        toast.error("Failed to validate search. Please try again.", {
+          ...toastConfig,
+          toastId: `search-error-${Date.now()}`,
+        });
+        return;
+      }
+    }
+
+    // Proceed with navigation if conditions are met
     const queryParams = new URLSearchParams();
     if (searchQuery.trim()) {
-      queryParams.set('search', searchQuery.trim());
+      queryParams.set("search", searchQuery.trim());
     }
     if (location.trim()) {
-      queryParams.set('location', location.trim());
+      queryParams.set("location", location.trim());
     }
-    if (category && category !== 'Select Category') {
-      queryParams.set('category', category.trim());
+    if (category && category !== "Select Category") {
+      queryParams.set("category", category.trim());
     }
     const queryString = queryParams.toString();
-    const targetUrl = queryString ? `/internship?${queryString}` : '/internship';
+    const targetUrl = queryString
+      ? `/internship?${queryString}`
+      : "/internship";
     try {
       navigate(targetUrl);
     } catch (err) {
-      console.error('Navigation error:', err);
-      setError('Failed to perform search. Please try again.');
-      toast.error('Failed to perform search. Please try again.', {
-        position: 'top-right',
-        autoClose: 5000,
+      console.error("Navigation error:", err);
+      setError("Failed to perform search. Please try again.");
+      toast.error("Failed to perform search. Please try again.", {
+        ...toastConfig,
+        toastId: `search-error-${Date.now()}`,
       });
     }
   };
@@ -344,7 +498,7 @@ const Hero = ({
       className="relative bg-cover bg-center py-20 px-4 sm:px-6 lg:px-12"
       style={{
         backgroundImage: `${gradient}, url(${backgroundImage})`,
-        backgroundPosition: '10% 20%',
+        backgroundPosition: "10% 20%",
       }}
     >
       <div className="relative flex flex-col items-center text-center max-w-7xl mx-auto w-full">
@@ -363,7 +517,8 @@ const Hero = ({
           <div className="bg-white rounded-2xl shadow-md flex flex-col w-full max-w-3xl overflow-visible space-y-2 sm:space-y-0 sm:flex-row">
             {searchFields.map((field, index) => (
               <React.Fragment key={index}>
-                {field.type === 'input' && field.placeholder === 'Internship Title or Company' ? (
+                {field.type === "input" &&
+                field.placeholder === "Internship Title or Company" ? (
                   <div className="relative flex-1 px-4 py-3">
                     <input
                       type="text"
@@ -371,12 +526,14 @@ const Hero = ({
                       className="w-full h-10 border-none text-center text-sm sm:text-xs focus:outline-none placeholder-gray-500 touch-manipulation"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                      onKeyPress={(e) => e.key === "Enter" && handleSearch()}
                     />
                     {suggestions.length > 0 && (
                       <ul className="absolute z-10 w-full bg-white border border-gray-300 rounded-md mt-1 max-h-60 overflow-auto shadow-lg left-0 touch-manipulation">
                         {isLoadingSuggestions ? (
-                          <li className="p-2 text-sm text-gray-600">Loading...</li>
+                          <li className="p-2 text-sm text-gray-600">
+                            Loading...
+                          </li>
                         ) : (
                           suggestions.map((suggestion, idx) => (
                             <li
@@ -391,28 +548,33 @@ const Hero = ({
                       </ul>
                     )}
                   </div>
-                ) : field.type === 'input' && field.placeholder === 'Search Location' ? (
+                ) : field.type === "input" &&
+                  field.placeholder === "Search Location" ? (
                   <div className="relative flex-1 px-4 py-3 sm:border-l sm:border-gray-200">
                     <input
                       type="text"
-                      placeholder={isGoogleMapsLoaded ? field.placeholder : 'Type city manually'}
+                      placeholder={
+                        isGoogleMapsLoaded
+                          ? field.placeholder
+                          : "Type city manually"
+                      }
                       className="w-full h-10 border-none text-center text-sm sm:text-xs focus:outline-none placeholder-gray-500 touch-manipulation"
                       ref={locationInputRef}
                       value={location}
                       onChange={(e) => setLocation(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                      onKeyPress={(e) => e.key === "Enter" && handleSearch()}
                     />
                     {error && (
                       <p className="text-red-500 text-xs mt-1">{error}</p>
                     )}
                   </div>
-                ) : field.type === 'select' ? (
+                ) : field.type === "select" ? (
                   <div className="relative flex-1 px-4 py-3 sm:border-l sm:border-gray-200">
                     <select
                       className="w-full h-10 border-none text-center text-sm sm:text-xs focus:outline-none appearance-none bg-transparent touch-manipulation"
                       value={category}
                       onChange={(e) => setCategory(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                      onKeyPress={(e) => e.key === "Enter" && handleSearch()}
                     >
                       {categoryOptions.map((option, optIndex) => (
                         <option key={optIndex} value={option}>
@@ -421,8 +583,19 @@ const Hero = ({
                       ))}
                     </select>
                     <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                      <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      <svg
+                        className="w-4 h-4 text-gray-500"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 9l-7 7-7-7"
+                        />
                       </svg>
                     </div>
                   </div>
@@ -476,8 +649,14 @@ const Hero = ({
 
 const StatCard = ({ count, label, image, bgColor }) => (
   <div className="flex items-center justify-center space-x-3 w-full sm:w-auto">
-    <div className={`w-10 h-10 ${bgColor} rounded-full flex items-center justify-center`}>
-      <img src={image} alt={`${label} icon`} className="w-6 h-6 object-contain" />
+    <div
+      className={`w-10 h-10 ${bgColor} rounded-full flex items-center justify-center`}
+    >
+      <img
+        src={image}
+        alt={`${label} icon`}
+        className="w-6 h-6 object-contain"
+      />
     </div>
     <div className="flex flex-col text-left">
       <p className="text-lg font-semibold text-gray-800">{count}</p>
