@@ -96,7 +96,7 @@ export default function RecentInternship() {
   if (loading) return (
     <div className="px-4 md:px-12 py-4 md:py-4 bg-gray-50 md:bg-[#fafafa] min-h-[300px]">
       <h2 className="text-2xl font-bold text-gray-900 mb-4">Recent Internships</h2>
-      <div className="space-y-4">
+      <div className="space-y-4 md:space-y-4">
         {[...Array(maxInternships)].map((_, index) => (
           <div
             key={`skeleton-${index}`}
@@ -137,7 +137,7 @@ export default function RecentInternship() {
     <div className="px-4 md:px-12 py-6 md:py-4 bg-gray-50 md:bg-[#fafafa]">
       <div className="flex justify-between items-center mb-4">
         <div>
-          <h2 className="text-2xl md:text-3xl font-bold text-[#050748] md:text-[#050748] mb-1 md:mb-2">Internships | OJTs | Jobs</h2>
+          <h2 className="text-2xl md:text-3xl font-bold text-[#050748] mb-1 md:mb-2">Internships | OJTs | Jobs</h2>
           <p className="text-sm md:text-base text-gray-500 md:text-[#6A6A8E] mt-1 md:mb-2">New Opportunities, Just Posted!</p>
         </div>
         <Link 
@@ -150,11 +150,11 @@ export default function RecentInternship() {
       {processedInternships.length === 0 ? (
         <div className="px-4 md:px-12 py-4 md:py-4 text-gray-600 md:text-gray-600 text-center">Internships not posted</div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3 md:space-y-4">
           {processedInternships.map((internship) => (
             <div
               key={internship.id}
-              className="flex flex-col bg-white rounded-xl md:rounded-lg shadow-sm md:shadow-md p-4 min-h-[150px]"
+              className="flex flex-col bg-white rounded-lg md:rounded-lg shadow-sm md:shadow-md p-4 md:p-4 min-h-[140px] md:min-h-[150px]"
             >
               <div className="flex justify-between items-center mb-2">
                 <span className="bg-gray-100 md:bg-gray-200 text-gray-700 md:text-gray-800 text-xs font-medium px-2 py-1 md:py-0.5 rounded-full">
@@ -162,27 +162,27 @@ export default function RecentInternship() {
                 </span>
                 <BsBookmarkPlus className="h-5 md:h-6 w-5 md:w-6 text-gray-600 md:text-gray-600" aria-label="Bookmark Plus Icon" />
               </div>
-              <div className="flex md:flex-row flex-col md:items-center gap-3 md:gap-0">
+              <div className="flex flex-col md:flex-row gap-2 md:gap-0 md:items-center">
                 <div className="flex-1 flex flex-col justify-between h-full">
-                  <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-3 md:space-x-4">
                     <img
                       src={internship.logo}
                       alt={`${internship.company} Logo`}
-                      className="w-12 md:w-10 h-12 md:h-10 rounded-full object-contain"
+                      className="w-10 md:w-10 h-10 md:h-10 rounded-full object-contain"
                     />
                     <div className="flex-1">
-                      <h3 className="text-lg md:text-lg font-semibold md:font-bold text-gray-900 md:text-black line-clamp-2 md:line-clamp-1">
+                      <h3 className="text-base md:text-lg font-semibold md:font-bold text-gray-900 md:text-black line-clamp-2 md:line-clamp-1">
                         {internship.role}
                       </h3>
-                      <p className="text-sm text-gray-500 line-clamp-1">
+                      <p className="text-xs md:text-sm text-gray-500 line-clamp-1">
                         {internship.company}
                       </p>
                     </div>
                   </div>
-                  <div className="flex flex-wrap items-center space-x-2 mt-2 text-sm text-gray-600">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 md:space-x-2 mt-2 text-xs md:text-sm text-gray-600">
                     <span className="flex items-center gap-1">
                       <svg
-                        className="w-4 h-4"
+                        className="w-3.5 md:w-4 h-3.5 md:h-4"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -199,7 +199,7 @@ export default function RecentInternship() {
                     </span>
                     <span className="flex items-center gap-1">
                       <svg
-                        className="w-4 h-4"
+                        className="w-3.5 md:w-4 h-3.5 md:h-4"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -216,7 +216,7 @@ export default function RecentInternship() {
                     </span>
                     <span className="flex items-center gap-1">
                       <svg
-                        className="w-4 h-4"
+                        className="w-3.5 md:w-4 h-3.5 md:h-4"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -239,10 +239,10 @@ export default function RecentInternship() {
                     </span>
                   </div>
                 </div>
-                <div className="flex items-end mt-4 md:mt-0">
+                <div className="flex items-end mt-3 md:mt-0">
                   <button
                     onClick={() => navigate(`/internshipdetail/${internship.slug}`)}
-                    className="w-full md:w-auto bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-medium py-2.5 md:py-2 px-4 rounded-full hover:from-blue-600 hover:to-purple-700 transition-colors"
+                    className="w-full md:w-auto bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-medium py-2 md:py-2.5 px-4 rounded-full hover:from-blue-600 hover:to-purple-700 transition-colors"
                   >
                     Internship Details
                   </button>
