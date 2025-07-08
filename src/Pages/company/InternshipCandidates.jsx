@@ -1,22 +1,22 @@
-import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { fetchSectionData } from '../../Utils/api';
-import logo from '../../assets/Navbar/logo.png';
-import backgroundImg from '../../assets/Hero/banner.jpg';
+import React, { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { fetchSectionData } from "../../Utils/api";
+import logo from "../../assets/Navbar/logo.png";
+import backgroundImg from "../../assets/Hero/banner.jpg";
 
 const InternshipCandidates = () => {
   const { id } = useParams(); // jobId
   const navigate = useNavigate();
   const [candidates, setCandidates] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [courseMap, setCourseMap] = useState({});
-  const [filters, setFilters] = useState({ status: 'All' });
-  const user = JSON.parse(localStorage.getItem('user')) || {};
+  const [filters, setFilters] = useState({ status: "All" });
+  const user = JSON.parse(localStorage.getItem("user")) || {};
 
   // Redirect if not a company user
-  if (user.role !== 'company') {
-    navigate('/');
+  if (user.role !== "company") {
+    navigate("/");
     return null;
   }
 
@@ -25,8 +25,8 @@ const InternshipCandidates = () => {
       try {
         // Fetch course data
         const courseResponse = await fetchSectionData({
-          dbName: 'internph',
-          collectionName: 'course',
+          dbName: "internph",
+          collectionName: "course",
           query: {},
           projection: { sectionData: 1, _id: 1 },
         });
@@ -34,13 +34,16 @@ const InternshipCandidates = () => {
           id: item._id,
           name: item.sectionData.course.name,
         }));
-        const map = courses.reduce((acc, course) => ({ ...acc, [course.id]: course.name }), {});
+        const map = courses.reduce(
+          (acc, course) => ({ ...acc, [course.id]: course.name }),
+          {}
+        );
         setCourseMap(map);
 
         // Fetch applications
         const applications = await fetchSectionData({
-          dbName: 'internph',
-          collectionName: 'applications',
+          dbName: "internph",
+          collectionName: "applications",
           query: { jobId: id },
           projection: { userId: 1, resume: 1, _id: 1 },
         });
@@ -54,8 +57,8 @@ const InternshipCandidates = () => {
         // Fetch user details
         const userIds = applications.map((app) => app.userId).filter(Boolean);
         const users = await fetchSectionData({
-          dbName: 'internph',
-          collectionName: 'appuser',
+          dbName: "internph",
+          collectionName: "appuser",
           query: { _id: { $in: userIds } },
           projection: { sectionData: 1 },
         });
@@ -66,26 +69,31 @@ const InternshipCandidates = () => {
         }, {});
 
         // Load statuses from localStorage
-        const storedStatuses = JSON.parse(localStorage.getItem('applicationStatuses') || '{}');
+        const storedStatuses = JSON.parse(
+          localStorage.getItem("applicationStatuses") || "{}"
+        );
 
         // Format candidates
         const formattedCandidates = applications.map((app) => ({
           id: app._id,
           userId: app.userId,
-          name: userMap[app.userId]?.legalname || 'Unknown',
-          email: userMap[app.userId]?.email || 'N/A',
-          mobile: userMap[app.userId]?.mobile || 'N/A',
-          course: map[userMap[app.userId]?.course] || userMap[app.userId]?.course || 'N/A',
-          specialization: userMap[app.userId]?.coursespecialization || 'N/A',
-          resume: app.resume || userMap[app.userId]?.resume || '',
-          status: storedStatuses[app._id]?.status || 'Applied',
-          feedback: storedStatuses[app._id]?.feedback || '',
+          name: userMap[app.userId]?.legalname || "Unknown",
+          email: userMap[app.userId]?.email || "N/A",
+          mobile: userMap[app.userId]?.mobile || "N/A",
+          course:
+            map[userMap[app.userId]?.course] ||
+            userMap[app.userId]?.course ||
+            "N/A",
+          specialization: userMap[app.userId]?.coursespecialization || "N/A",
+          resume: app.resume || userMap[app.userId]?.resume || "",
+          status: storedStatuses[app._id]?.status || "Applied",
+          feedback: storedStatuses[app._id]?.feedback || "",
         }));
 
         setCandidates(formattedCandidates);
       } catch (err) {
-        console.error('Error fetching candidates:', err);
-        setError('Failed to load candidates. Please try again.');
+        console.error("Error fetching candidates:", err);
+        setError("Failed to load candidates. Please try again.");
       } finally {
         setLoading(false);
       }
@@ -94,7 +102,7 @@ const InternshipCandidates = () => {
     fetchData();
   }, [id, navigate]);
 
-  const updateStatus = (applicationId, newStatus, feedback = '') => {
+  const updateStatus = (applicationId, newStatus, feedback = "") => {
     try {
       // Update local state
       setCandidates((prev) =>
@@ -106,17 +114,22 @@ const InternshipCandidates = () => {
       );
 
       // Update localStorage
-      const storedStatuses = JSON.parse(localStorage.getItem('applicationStatuses') || '{}');
+      const storedStatuses = JSON.parse(
+        localStorage.getItem("applicationStatuses") || "{}"
+      );
       storedStatuses[applicationId] = { status: newStatus, feedback };
-      localStorage.setItem('applicationStatuses', JSON.stringify(storedStatuses));
+      localStorage.setItem(
+        "applicationStatuses",
+        JSON.stringify(storedStatuses)
+      );
     } catch (err) {
-      console.error('Status Update Error:', err);
-      setError('Failed to update status. Please try again.');
+      console.error("Status Update Error:", err);
+      setError("Failed to update status. Please try again.");
     }
   };
 
   const filteredCandidates = candidates.filter((candidate) =>
-    filters.status === 'All' ? true : candidate.status === filters.status
+    filters.status === "All" ? true : candidate.status === filters.status
   );
 
   if (loading) return <div className="mx-12 py-4">Loading...</div>;
@@ -132,13 +145,6 @@ const InternshipCandidates = () => {
         }}
       >
         <div className="text-center px-4">
-          <div className="flex items-center mb-3">
-                      <img
-                        src={logo}
-                        alt="Internship-OJT Logo"
-                        className="h-16 w-auto mr-2"
-                      />
-                    </div>
           <h1 className="text-3xl md:text-4xl font-bold text-[#050748] mb-2">
             Internship Candidates
           </h1>
@@ -146,7 +152,7 @@ const InternshipCandidates = () => {
             Manage candidates who applied for this internship.
           </p>
           <button
-            onClick={() => navigate('/manage-internships')}
+            onClick={() => navigate("/manage-internships")}
             className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm md:text-base font-medium py-2 px-6 rounded-full hover:from-blue-600 hover:to-purple-700 transition-all"
           >
             Back to Internships
@@ -161,10 +167,14 @@ const InternshipCandidates = () => {
             Applied Candidates
           </h2>
           <div className="mb-6">
-            <label className="text-sm font-medium mr-2">Filter by Status:</label>
+            <label className="text-sm font-medium mr-2">
+              Filter by Status:
+            </label>
             <select
               value={filters.status}
-              onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+              onChange={(e) =>
+                setFilters({ ...filters, status: e.target.value })
+              }
               className="p-2 border rounded-md"
             >
               <option value="All">All</option>
@@ -175,7 +185,9 @@ const InternshipCandidates = () => {
             </select>
           </div>
           {filteredCandidates.length === 0 ? (
-            <p className="text-center text-gray-600">No candidates match the selected filter.</p>
+            <p className="text-center text-gray-600">
+              No candidates match the selected filter.
+            </p>
           ) : (
             <div className="space-y-4">
               {filteredCandidates.map((candidate) => (
@@ -189,16 +201,20 @@ const InternshipCandidates = () => {
                         {candidate.name}
                       </h3>
                       <p className="text-sm text-gray-600">
-                        <span className="font-medium">Email:</span> {candidate.email}
+                        <span className="font-medium">Email:</span>{" "}
+                        {candidate.email}
                       </p>
                       <p className="text-sm text-gray-600">
-                        <span className="font-medium">Mobile:</span> {candidate.mobile}
+                        <span className="font-medium">Mobile:</span>{" "}
+                        {candidate.mobile}
                       </p>
                       <p className="text-sm text-gray-600">
-                        <span className="font-medium">Course:</span> {candidate.course}
+                        <span className="font-medium">Course:</span>{" "}
+                        {candidate.course}
                       </p>
                       <p className="text-sm text-gray-600">
-                        <span className="font-medium">Specialization:</span> {candidate.specialization}
+                        <span className="font-medium">Specialization:</span>{" "}
+                        {candidate.specialization}
                       </p>
                       {candidate.resume && (
                         <a
@@ -212,7 +228,8 @@ const InternshipCandidates = () => {
                       )}
                       {candidate.feedback && (
                         <p className="text-sm text-gray-600 mt-2">
-                          <span className="font-medium">Feedback:</span> {candidate.feedback}
+                          <span className="font-medium">Feedback:</span>{" "}
+                          {candidate.feedback}
                         </p>
                       )}
                     </div>
@@ -221,7 +238,12 @@ const InternshipCandidates = () => {
                         value={candidate.status}
                         onChange={(e) => {
                           const newStatus = e.target.value;
-                          const feedback = newStatus === 'Rejected' ? prompt('Enter rejection feedback (optional):') || '' : '';
+                          const feedback =
+                            newStatus === "Rejected"
+                              ? prompt(
+                                  "Enter rejection feedback (optional):"
+                                ) || ""
+                              : "";
                           updateStatus(candidate.id, newStatus, feedback);
                         }}
                         className="p-2 border rounded-md"
