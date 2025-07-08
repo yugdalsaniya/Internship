@@ -9,7 +9,7 @@ import {
   FaTags,
   FaFacebookF,
   FaLinkedinIn,
-  FaMoneyBillWave
+  FaMoneyBillWave,
 } from "react-icons/fa";
 import { MdWork, MdDateRange } from "react-icons/md";
 import { PiTwitterLogoFill } from "react-icons/pi";
@@ -20,7 +20,8 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
 // Google Maps API key from environment
-const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "YOUR_API_KEY_HERE";
+const GOOGLE_MAPS_API_KEY =
+  import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "YOUR_API_KEY_HERE";
 
 const InternshipDetailPage = () => {
   const { id: urlId } = useParams();
@@ -32,7 +33,10 @@ const InternshipDetailPage = () => {
   const [hasApplied, setHasApplied] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [mapCoordinates, setMapCoordinates] = useState({ lat: null, lng: null });
+  const [mapCoordinates, setMapCoordinates] = useState({
+    lat: null,
+    lng: null,
+  });
 
   const mapRef = useRef(null); // Reference for map container
   const actualId = urlId.split("-").pop();
@@ -58,7 +62,8 @@ const InternshipDetailPage = () => {
       script.async = true;
       script.defer = true;
       script.onload = () => resolve();
-      script.onerror = () => reject(new Error("Failed to load Google Maps API"));
+      script.onerror = () =>
+        reject(new Error("Failed to load Google Maps API"));
       document.head.appendChild(script);
     });
   };
@@ -124,7 +129,8 @@ const InternshipDetailPage = () => {
           }
 
           // Fetch related internships
-          const currentSubtype = internshipData[0]?.sectionData?.jobpost?.subtype;
+          const currentSubtype =
+            internshipData[0]?.sectionData?.jobpost?.subtype;
           const relatedQuery = {
             "sectionData.jobpost.type": "Internship",
             _id: { $ne: actualId },
@@ -142,7 +148,8 @@ const InternshipDetailPage = () => {
           setRelatedInternships(relatedData);
 
           // Geocode internship location
-          const locationString = internshipData[0]?.sectionData?.jobpost?.location;
+          const locationString =
+            internshipData[0]?.sectionData?.jobpost?.location;
           if (locationString) {
             try {
               const coords = await geocodeLocation(locationString);
@@ -181,7 +188,12 @@ const InternshipDetailPage = () => {
 
   // Initialize Google Map
   useEffect(() => {
-    if (mapCoordinates.lat && mapCoordinates.lng && window.google?.maps && mapRef.current) {
+    if (
+      mapCoordinates.lat &&
+      mapCoordinates.lng &&
+      window.google?.maps &&
+      mapRef.current
+    ) {
       const map = new window.google.maps.Map(mapRef.current, {
         center: { lat: mapCoordinates.lat, lng: mapCoordinates.lng },
         zoom: 12,
@@ -191,7 +203,8 @@ const InternshipDetailPage = () => {
       new window.google.maps.Marker({
         position: { lat: mapCoordinates.lat, lng: mapCoordinates.lng },
         map,
-        title: internship?.sectionData?.jobpost?.location || "Internship Location",
+        title:
+          internship?.sectionData?.jobpost?.location || "Internship Location",
       });
     }
   }, [mapCoordinates, internship]);
@@ -473,7 +486,8 @@ const InternshipDetailPage = () => {
               </h2>
               <div className="text-sm sm:text-base text-gray-700 markdown-content">
                 <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                  {cleanMarkdown(jobpost?.description) || "No description available."}
+                  {cleanMarkdown(jobpost?.description) ||
+                    "No description available."}
                 </ReactMarkdown>
               </div>
             </section>
@@ -497,7 +511,8 @@ const InternshipDetailPage = () => {
                 </h2>
                 <div className="text-sm sm:text-base text-gray-700 markdown-content">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {cleanMarkdown(jobpost.professionalSkills) || "No skills provided."}
+                    {cleanMarkdown(jobpost.professionalSkills) ||
+                      "No skills provided."}
                   </ReactMarkdown>
                 </div>
               </section>
@@ -532,7 +547,9 @@ const InternshipDetailPage = () => {
                 ))}
               </div>
               <div className="flex items-center gap-2 sm:gap-3">
-                <p className="text-xs sm:text-sm font-medium">Share Internship:</p>
+                <p className="text-xs sm:text-sm font-medium">
+                  Share Internship:
+                </p>
                 <FaFacebookF
                   className="text-[#4267B2] text-base sm:text-lg cursor-pointer"
                   title="Facebook"
@@ -570,7 +587,8 @@ const InternshipDetailPage = () => {
                         </div>
                         <div className="flex flex-wrap gap-1 sm:gap-2 text-xs sm:text-sm md:text-base text-gray-500 mt-1 sm:mt-2">
                           <div className="flex items-center gap-1">
-                            <MdWork className="text-sm sm:text-base" /> {item.time}
+                            <MdWork className="text-sm sm:text-base" />{" "}
+                            {item.time}
                           </div>
                           <div className="flex items-center gap-1">
                             <span>₱</span> {item.salary}
@@ -601,7 +619,9 @@ const InternshipDetailPage = () => {
               <div className="space-y-1 sm:space-y-2 text-xs sm:text-sm md:text-base text-[#333]">
                 <div className="flex items-center gap-2">
                   <FaUser className="text-blue-500 text-sm sm:text-base" />
-                  <span>Internship Title: {jobpost?.title || "Unknown Role"}</span>
+                  <span>
+                    Internship Title: {jobpost?.title || "Unknown Role"}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <MdWork className="text-blue-500 text-sm sm:text-base" />
@@ -613,16 +633,23 @@ const InternshipDetailPage = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <FaRegClock className="text-blue-500 text-sm sm:text-base" />
-                  <span>Experience: {jobpost?.experiencelevel || "Not specified"}</span>
+                  <span>
+                    Experience: {jobpost?.experiencelevel || "Not specified"}
+                  </span>
                 </div>
-               <div className="flex items-center gap-2">
-  <FaGraduationCap className="text-blue-500 text-sm sm:text-base" />
-  <span>Degrees: {degreesList}</span>
-</div>
-<div className="flex items-center gap-2">
-  <span className="text-blue-500 text-sm sm:text-base pl-1">₱</span>
-  <span className="pl-1">Offered Salary: {jobpost?.salary ? `${jobpost.salary}` : "Not specified"}</span>
-</div>
+                <div className="flex items-center gap-2">
+                  <FaGraduationCap className="text-blue-500 text-sm sm:text-base" />
+                  <span>Degrees: {degreesList}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-blue-500 text-sm sm:text-base pl-1">
+                    ₱
+                  </span>
+                  <span className="pl-1">
+                    Offered Salary:{" "}
+                    {jobpost?.salary ? `${jobpost.salary}` : "Not specified"}
+                  </span>
+                </div>
                 <div className="flex items-center gap-2">
                   <FaMapMarkerAlt className="text-blue-500 text-sm sm:text-base" />
                   <span>Location: {jobpost?.location || "Unknown"}</span>
@@ -637,7 +664,7 @@ const InternshipDetailPage = () => {
                   <div
                     ref={mapRef}
                     className="w-full rounded-lg"
-                    style={{ height: "120px", minHeight: "120px" }}
+                    style={{ height: "200px", minHeight: "180px" }}
                   ></div>
                 ) : (
                   <div className="w-full h-[120px] bg-gray-200 rounded-lg flex items-center justify-center text-sm text-gray-600">
@@ -671,7 +698,7 @@ const InternshipDetailPage = () => {
                   className="w-full p-2 sm:p-3 border border-gray-300 rounded-md focus:outline-none"
                   rows={3}
                 ></textarea>
-                <button className="bg-gradient-to-r from-indigo-500 Adoptive purple-500 text-white w-full py-2 sm:py-3 rounded-md text-xs sm:text-sm md:text-base font-medium">
+                <button className="bg-indigo-500 text-white w-full py-2 sm:py-3 rounded-md text-xs sm:text-sm md:text-base font-medium">
                   Send Message
                 </button>
               </div>
