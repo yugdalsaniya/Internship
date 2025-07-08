@@ -161,10 +161,7 @@ const Footer = () => {
           >
             Privacy Policy
           </button>
-          <button
-            onClick={() => navigate("/terms-conditions")}
-            className="hover:underline bg-transparent border-none p-0 text-left"
-          >
+          <button className="hover:underline bg-transparent border-none p-0 text-left">
             Terms & Conditions
           </button>
         </div>

@@ -698,7 +698,7 @@ const PostInternshipForm = () => {
               </button>
               <button
                 type="button"
-                onClick={() => navigate('/post-internship')}
+                onClick={() => navigate('/internship')}
                 className="flex-1 border border-gray-400 text-gray-700 py-2 rounded-lg text-sm font-bold hover:bg-gray-100"
                 disabled={loading}
               >
