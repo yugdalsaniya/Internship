@@ -37,7 +37,7 @@ const Footer = () => {
               <img
                 src={logo}
                 alt="Internship-OJT Logo"
-                className="h-16 w-auto mr-2"
+                className="h-20 w-auto mr-2"
               />
             </div>
             <div className="text-xs sm:text-sm space-y-1">

@@ -823,7 +823,7 @@ validateEmail(formData.email)) {
               <img
                 src={logo}
                 alt="Internship-OJT Logo"
-                className="h-16 w-auto mr-2"
+                className="h-20 w-auto mr-2"
               />
             </div>
             <div className="flex justify-center gap-2 xs:gap-3 sm:gap-4 mb-3">
