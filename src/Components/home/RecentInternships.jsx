@@ -22,6 +22,7 @@ export default function RecentInternship() {
           order: -1,
           sortedBy: "createdDate",
         });
+        console.log("RecentInternship - Fetched data:", data); // Debug log
         setRecentInternships(data);
       } catch (err) {
         setError("Error fetching recent internships");
@@ -37,8 +38,21 @@ export default function RecentInternship() {
   }, []);
 
   const processedInternships = useMemo(() => {
+    console.log(
+      "RecentInternship - Processing internships:",
+      recentInternships
+    ); // Debug log
     return recentInternships
-      .filter((job) => job.sectionData?.jobpost?.type === "Internship")
+      .filter((job) => {
+        const isInternship = job.sectionData?.jobpost?.type === "Internship";
+        const isPublished = job.sectionData?.jobpost?.published !== false; // Only show published internships
+        console.log("RecentInternship - Job:", job._id, {
+          isInternship,
+          isPublished,
+          published: job.sectionData?.jobpost?.published,
+        }); // Debug log
+        return isInternship && isPublished;
+      })
       .map((job) => {
         let relativeTime = "Just now";
         try {
@@ -71,19 +85,30 @@ export default function RecentInternship() {
           salary: job.sectionData?.jobpost?.salary
             ? `${job.sectionData.jobpost.salary}`
             : "Not specified",
-          location: (job.sectionData?.jobpost?.location || "Unknown").toUpperCase(),
-          logo: job.sectionData?.jobpost?.logo &&
+          location: (
+            job.sectionData?.jobpost?.location || "Unknown"
+          ).toUpperCase(),
+          logo:
+            job.sectionData?.jobpost?.logo &&
             job.sectionData.jobpost.logo.startsWith("http")
-            ? job.sectionData.jobpost.logo
-            : "https://placehold.co/40x40",
+              ? job.sectionData.jobpost.logo
+              : "https://placehold.co/40x40",
           createdDate: job.createdDate,
           slug: slug,
         };
       })
       .sort((a, b) => {
         try {
-          const dateA = parse(a.createdDate, "dd/MM/yyyy, h:mm:ss a", new Date());
-          const dateB = parse(b.createdDate, "dd/MM/yyyy, h:mm:ss a", new Date());
+          const dateA = parse(
+            a.createdDate,
+            "dd/MM/yyyy, h:mm:ss a",
+            new Date()
+          );
+          const dateB = parse(
+            b.createdDate,
+            "dd/MM/yyyy, h:mm:ss a",
+            new Date()
+          );
           return dateB - dateA;
         } catch (err) {
           console.error("Sorting error:", err);
@@ -93,62 +118,76 @@ export default function RecentInternship() {
       .slice(0, maxInternships);
   }, [recentInternships]);
 
-  if (loading) return (
-    <div className="px-4 md:px-12 py-4 md:py-4 bg-gray-50 md:bg-[#fafafa] min-h-[300px]">
-      <h2 className="text-2xl font-bold text-gray-900 mb-4">Recent Internships</h2>
-      <div className="space-y-4">
-        {[...Array(maxInternships)].map((_, index) => (
-          <div
-            key={`skeleton-${index}`}
-            className="flex flex-col bg-white rounded-xl md:rounded-lg shadow-sm md:shadow-md p-4 min-h-[150px]"
-          >
-            <div className="flex justify-between items-center mb-2">
-              <div className="h-5 w-16 bg-gray-200 animate-pulse rounded-full" />
-              <div className="h-6 w-6 bg-gray-200 animate-pulse rounded" />
-            </div>
-            <div className="flex md:flex-row flex-col md:items-center gap-3 md:gap-0">
-              <div className="flex-1 flex flex-col justify-between h-full">
-                <div className="flex items-center space-x-4">
-                  <div className="w-12 md:w-10 h-12 md:h-10 bg-gray-200 animate-pulse rounded-full" />
-                  <div className="flex-1 space-y-2">
-                    <div className="h-5 w-3/4 bg-gray-200 animate-pulse rounded" />
-                    <div className="h-4 w-1/2 bg-gray-200 animate-pulse rounded" />
+  if (loading)
+    return (
+      <div className="px-4 md:px-12 py-4 md:py-4 bg-gray-50 md:bg-[#fafafa] min-h-[300px]">
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">
+          Recent Internships
+        </h2>
+        <div className="space-y-4">
+          {[...Array(maxInternships)].map((_, index) => (
+            <div
+              key={`skeleton-${index}`}
+              className="flex flex-col bg-white rounded-xl md:rounded-lg shadow-sm md:shadow-md p-4 min-h-[150px]"
+            >
+              <div className="flex justify-between items-center mb-2">
+                <div className="h-5 w-16 bg-gray-200 animate-pulse rounded-full" />
+                <div className="h-6 w-6 bg-gray-200 animate-pulse rounded" />
+              </div>
+              <div className="flex md:flex-row flex-col md:items-center gap-3 md:gap-0">
+                <div className="flex-1 flex flex-col justify-between h-full">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-12 md:w-10 h-12 md:h-10 bg-gray-200 animate-pulse rounded-full" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-5 w-3/4 bg-gray-200 animate-pulse rounded" />
+                      <div className="h-4 w-1/2 bg-gray-200 animate-pulse rounded" />
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center space-x-2 mt-2 text-sm text-gray-600">
+                    <div className="h-4 w-20 bg-gray-200 animate-pulse rounded" />
+                    <div className="h-4 w-20 bg-gray-200 animate-pulse rounded" />
+                    <div className="h-4 w-20 bg-gray-200 animate-pulse rounded" />
                   </div>
                 </div>
-                <div className="flex flex-wrap items-center space-x-2 mt-2 text-sm text-gray-600">
-                  <div className="h-4 w-20 bg-gray-200 animate-pulse rounded" />
-                  <div className="h-4 w-20 bg-gray-200 animate-pulse rounded" />
-                  <div className="h-4 w-20 bg-gray-200 animate-pulse rounded" />
+                <div className="flex items-end mt-4 md:mt-0">
+                  <div className="h-10 md:h-8 w-full md:w-32 bg-gray-200 animate-pulse rounded-full" />
                 </div>
               </div>
-              <div className="flex items-end mt-4 md:mt-0">
-                <div className="h-10 md:h-8 w-full md:w-32 bg-gray-200 animate-pulse rounded-full" />
-              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
-    </div>
-  );
+    );
 
-  if (error) return <div className="px-4 md:px-12 py-4 md:py-4 text-red-600 md:text-red-600 text-center">{error}</div>;
+  if (error)
+    return (
+      <div className="px-4 md:px-12 py-4 md:py-4 text-red-600 md:text-red-600 text-center">
+        {error}
+      </div>
+    );
 
   return (
     <div className="px-4 md:px-12 py-6 md:py-4 bg-gray-50 md:bg-[#fafafa]">
       <div className="flex justify-between items-center mb-4">
         <div>
-          <h2 className="text-2xl md:text-3xl font-bold text-[#050748] md:text-[#050748] mb-1 md:mb-2">Internships | OJTs | Jobs</h2>
-          <p className="text-sm md:text-base text-gray-500 md:text-[#6A6A8E] mt-1 md:mb-2">New Opportunities, Just Posted!</p>
+          <h2 className="text-2xl md:text-3xl font-bold text-[#050748] md:text-[#050748] mb-1 md:mb-2">
+            Internships | OJTs | Jobs
+          </h2>
+          <p className="text-sm md:text-base text-gray-500 md:text-[#6A6A8E] mt-1 md:mb-2">
+            New Opportunities, Just Posted!
+          </p>
         </div>
-        <Link 
-          to="/internship" 
+        <Link
+          to="/internship"
           className="text-blue-600 md:text-[#6A6A8E] text-sm md:text-base font-medium hover:underline"
         >
           View all
         </Link>
       </div>
       {processedInternships.length === 0 ? (
-        <div className="px-4 md:px-12 py-4 md:py-4 text-gray-600 md:text-gray-600 text-center">Internships not posted</div>
+        <div className="px-4 md:px-12 py-4 md:py-4 text-gray-600 md:text-gray-600 text-center">
+          Internships not posted
+        </div>
       ) : (
         <div className="space-y-4">
           {processedInternships.map((internship) => (
@@ -160,7 +199,10 @@ export default function RecentInternship() {
                 <span className="bg-gray-100 md:bg-gray-200 text-gray-700 md:text-gray-800 text-xs font-medium px-2 py-1 md:py-0.5 rounded-full">
                   {internship.time}
                 </span>
-                <BsBookmarkPlus className="h-5 md:h-6 w-5 md:w-6 text-gray-600 md:text-gray-600" aria-label="Bookmark Plus Icon" />
+                <BsBookmarkPlus
+                  className="h-5 md:h-6 w-5 md:w-6 text-gray-600 md:text-gray-600"
+                  aria-label="Bookmark Plus Icon"
+                />
               </div>
               <div className="flex md:flex-row flex-col md:items-center gap-3 md:gap-0">
                 <div className="flex-1 flex flex-col justify-between h-full">
@@ -241,7 +283,9 @@ export default function RecentInternship() {
                 </div>
                 <div className="flex items-end mt-4 md:mt-0">
                   <button
-                    onClick={() => navigate(`/internshipdetail/${internship.slug}`)}
+                    onClick={() =>
+                      navigate(`/internshipdetail/${internship.slug}`)
+                    }
                     className="w-full md:w-auto bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-medium py-2.5 md:py-2 px-4 rounded-full hover:from-blue-600 hover:to-purple-700 transition-colors"
                   >
                     Internship Details

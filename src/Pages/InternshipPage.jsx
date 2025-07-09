@@ -1,5 +1,10 @@
 import React, { useEffect, useState, useMemo, useCallback } from "react";
-import { BsBookmarkPlus, BsBookmarkFill, BsSearch, BsGeoAlt } from "react-icons/bs";
+import {
+  BsBookmarkPlus,
+  BsBookmarkFill,
+  BsSearch,
+  BsGeoAlt,
+} from "react-icons/bs";
 import { useNavigate, useLocation } from "react-router-dom";
 import { fetchSectionData } from "../Utils/api";
 import { formatDistanceToNow, parse, sub } from "date-fns";
@@ -45,16 +50,20 @@ const InternshipPage = () => {
           collectionName: "category",
           query: {},
         });
-        const categoryMapping = response.reduce((map, category) => {
-          const categoryId = category._id;
-          const categoryName = category.sectionData?.category?.titleofinternship || "Unknown";
-          map[categoryId] = categoryName;
-          map[categoryName.toUpperCase()] = categoryName;
-          return map;
-        }, {
-          Education: "Education",
-          Tourism: "Tourism",
-        });
+        const categoryMapping = response.reduce(
+          (map, category) => {
+            const categoryId = category._id;
+            const categoryName =
+              category.sectionData?.category?.titleofinternship || "Unknown";
+            map[categoryId] = categoryName;
+            map[categoryName.toUpperCase()] = categoryName;
+            return map;
+          },
+          {
+            Education: "Education",
+            Tourism: "Tourism",
+          }
+        );
         setCategoryMap(categoryMapping);
         setCategories([...new Set(Object.values(categoryMapping))]);
       } catch (err) {
@@ -73,10 +82,10 @@ const InternshipPage = () => {
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    const search = params.get('search')?.trim() || '';
-    const loc = params.get('location')?.trim() || '';
-    const cat = params.get('category')?.trim() || '';
-    console.log('URL Query Parameters:', { search, loc, cat });
+    const search = params.get("search")?.trim() || "";
+    const loc = params.get("location")?.trim() || "";
+    const cat = params.get("category")?.trim() || "";
+    console.log("URL Query Parameters:", { search, loc, cat });
     setSearchQuery(search);
     setLocationQuery(loc);
     setAppliedCategories(cat ? [cat] : []);
@@ -122,7 +131,7 @@ const InternshipPage = () => {
           order: -1,
           sortedBy: "createdDate",
         });
-        console.log('Fetched internships:', data.length);
+        console.log("Fetched internships:", data.length);
         setInternships(data);
       } catch (err) {
         setError("Error fetching internships");
@@ -193,7 +202,7 @@ const InternshipPage = () => {
     setAppliedExperienceLevels([]);
     setAppliedDatePosted("All");
     setCurrentPage(1);
-    navigate('/internship');
+    navigate("/internship");
     window.scrollTo(0, 0);
   };
 
@@ -201,7 +210,8 @@ const InternshipPage = () => {
     const filtered = internships
       .filter((job) => {
         const isInternship = job.sectionData?.jobpost?.type === "Internship";
-        if (!isInternship) return false;
+        const isPublished = job.sectionData?.jobpost?.published !== false; // Only show published internships
+        if (!isInternship || !isPublished) return false;
 
         const jobCategory = (
           categoryMap[job.sectionData?.jobpost?.subtype] ||
@@ -257,13 +267,19 @@ const InternshipPage = () => {
         const searchLower = searchQuery.toLowerCase().trim();
         const matchesSearch =
           searchQuery === "" ||
-          (job.sectionData?.jobpost?.title || "").toLowerCase().includes(searchLower) ||
-          (job.sectionData?.jobpost?.company || "").toLowerCase().includes(searchLower);
+          (job.sectionData?.jobpost?.title || "")
+            .toLowerCase()
+            .includes(searchLower) ||
+          (job.sectionData?.jobpost?.company || "")
+            .toLowerCase()
+            .includes(searchLower);
 
         const locationLower = locationQuery.toLowerCase().trim();
         const matchesLocation =
           locationQuery === "" ||
-          (job.sectionData?.jobpost?.location || "").toLowerCase().includes(locationLower);
+          (job.sectionData?.jobpost?.location || "")
+            .toLowerCase()
+            .includes(locationLower);
 
         const jobSalary = parseFloat(job.sectionData?.jobpost?.salary) || 0;
         const matchesSalary = jobSalary <= maxSalary;
@@ -357,7 +373,11 @@ const InternshipPage = () => {
         }
       });
 
-    console.log('Filtered internships:', filtered.length, { searchQuery, locationQuery, appliedCategories });
+    console.log("Filtered internships:", filtered.length, {
+      searchQuery,
+      locationQuery,
+      appliedCategories,
+    });
     return filtered;
   }, [
     internships,
@@ -468,8 +488,7 @@ const InternshipPage = () => {
         searchFields={[]}
         stats={[]}
         backgroundImage={bannerImage}
-                 backgroundPosition= "10% 20%"
-
+        backgroundPosition="10% 20%"
         gradient="linear-gradient(to right, rgba(249, 220, 223, 0.8), rgba(181, 217, 211, 0.8))"
         showPostButton={true}
       />
@@ -528,9 +547,7 @@ const InternshipPage = () => {
                 {category}
               </label>
             ))}
-            <button
-              className="w-full bg-gradient-to-r from-[#6146B6] to-[#1F93EA] text-white py-2 rounded-lg mt-2 text-sm font-semibold"
-            >
+            <button className="w-full bg-gradient-to-r from-[#6146B6] to-[#1F93EA] text-white py-2 rounded-lg mt-2 text-sm font-semibold">
               Show More
             </button>
           </div>
@@ -643,8 +660,12 @@ const InternshipPage = () => {
                   className="p-2 border text-sm rounded-lg"
                 >
                   <option value="latest">Sort by latest</option>
-                  <option value="salary-desc">Sort by salary (high to low)</option>
-                  <option value="salary-asc">Sort by salary (low to high)</option>
+                  <option value="salary-desc">
+                    Sort by salary (high to low)
+                  </option>
+                  <option value="salary-asc">
+                    Sort by salary (low to high)
+                  </option>
                   <option value="title-asc">Sort by title (A-Z)</option>
                 </select>
               </div>
@@ -661,7 +682,11 @@ const InternshipPage = () => {
                       <button
                         onClick={() => toggleBookmark(internship.id)}
                         className="text-gray-600 hover:text-blue-600"
-                        aria-label={bookmarked[internship.id] ? "Remove bookmark" : "Add bookmark"}
+                        aria-label={
+                          bookmarked[internship.id]
+                            ? "Remove bookmark"
+                            : "Add bookmark"
+                        }
                       >
                         {bookmarked[internship.id] ? (
                           <BsBookmarkFill className="h-6 w-6" />

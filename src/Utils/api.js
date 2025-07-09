@@ -5,9 +5,6 @@ const API_URL = "https://crmapi.conscor.com/api";
 const DB_NAME = "internph";
 const API_KEY = "LHCHoE0IlCOuESA4VQuJ";
 
-
-
-
 // Role ID to name mapping (for normalizing login response)
 const roleNames = {
   1747825619417: "student",
@@ -437,5 +434,38 @@ export const sendOtp = async (email) => {
       headers: error.response?.headers,
     });
     throw error.response?.data || { message: "Failed to send OTP" };
+  }
+};
+
+export const updateSectionData = async ({ dbName, collectionName, id, updateData }) => {
+  try {
+    const accessToken = localStorage.getItem("accessToken");
+    if (!accessToken) {
+      throw new Error("Authorization token is missing. Please log in again.");
+    }
+
+    const response = await mUpdate({
+      appName: "app8657281202648", // Match appName used in login
+      collectionName,
+      query: { _id: id },
+      update: { $set: updateData },
+      options: { upsert: false },
+    });
+
+    console.log("updateSectionData response:", {
+      id,
+      updateData,
+      response: response,
+    });
+
+    return response;
+  } catch (error) {
+    console.error("Error in updateSectionData:", {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status,
+      headers: error.response?.headers,
+    });
+    throw error.response?.data || { message: "Failed to update internship status" };
   }
 };
