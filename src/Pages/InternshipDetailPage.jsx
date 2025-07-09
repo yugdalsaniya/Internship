@@ -380,6 +380,7 @@ const InternshipDetailPage = () => {
       relativeTime: job.createdDate
         ? getRelativeTime(job.createdDate)
         : "Just now",
+      createdDate: job.createdDate, // Store raw createdDate for related internships
       slug: slug,
     };
   });
@@ -454,10 +455,16 @@ const InternshipDetailPage = () => {
             <div className="text-xs sm:text-sm text-gray-400 mb-1">
               {relativeTime}
             </div>
-            <div className="flex flex-wrap gap-1 sm:gap-2 text-xs sm:text-sm md:text-base text-gray-500">
+            <div className="text-xs sm:text-sm md:text-base text-gray-500">
+              <div className="flex items-center gap-1 mb-1">
+                <MdDateRange className="text-sm sm:text-base" />
+                <span>
+                  Posted on: {internship?.createdDate || "Not specified"}
+                </span>
+              </div>
               <div className="flex items-center gap-1">
                 <MdDateRange className="text-sm sm:text-base" />
-                Deadline: {applicationDeadline}
+                <span>Deadline: {applicationDeadline}</span>
               </div>
             </div>
           </div>
@@ -577,7 +584,7 @@ const InternshipDetailPage = () => {
                     <div className="flex flex-col justify-between w-full sm:pr-3">
                       <div>
                         <div className="text-xs sm:text-sm text-gray-600 mb-1">
-                          {item.relativeTime}
+                          {item.relativeTime} (Posted on: {item.createdDate})
                         </div>
                         <h3 className="text-base sm:text-lg font-semibold line-clamp-1">
                           {item.title}
@@ -657,6 +664,12 @@ const InternshipDetailPage = () => {
                 <div className="flex items-center gap-2">
                   <MdDateRange className="text-blue-500 text-sm sm:text-base" />
                   <span>Application Deadline: {applicationDeadline}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <MdDateRange className="text-blue-500 text-sm sm:text-base" />
+                  <span>
+                    Posted on: {internship?.createdDate || "Not specified"}
+                  </span>
                 </div>
               </div>
               <div className="mt-2 sm:mt-3">
