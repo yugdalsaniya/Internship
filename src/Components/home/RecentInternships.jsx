@@ -172,12 +172,7 @@ export default function RecentInternship() {
         <div>
           <h2 className="text-2xl md:text-3xl font-bold text-[#050748] mb-1 md:mb-2">Internships | OJTs | Jobs</h2>
           <p className="text-sm md:text-base text-gray-500 md:text-[#6A6A8E] mt-1 md:mb-2">New Opportunities, Just Posted!</p>
-          <h2 className="text-2xl md:text-3xl font-bold text-[#050748] md:text-[#050748] mb-1 md:mb-2">
-            Internships | OJTs | Jobs
-          </h2>
-          <p className="text-sm md:text-base text-gray-500 md:text-[#6A6A8E] mt-1 md:mb-2">
-            New Opportunities, Just Posted!
-          </p>
+          
         </div>
         <Link
           to="/internship"
