@@ -222,11 +222,11 @@ const InternshipDetailPage = () => {
     }
   };
 
-  const formatDeadline = (deadline) => {
+  const formatDate = (dateString) => {
     try {
-      return format(new Date(deadline), "MMM dd, yyyy");
+      return format(new Date(dateString), "MMM dd, yyyy");
     } catch (err) {
-      console.error("Error formatting deadline:", err);
+      console.error("Error formatting date:", err);
       return "Not specified";
     }
   };
@@ -267,7 +267,7 @@ const InternshipDetailPage = () => {
           </div>
         </div>
         <div className="max-w-[95%] mx-auto px-2 sm:px-4 py-4 sm:py-6 md:py-8">
-          <div className="flex flex-col md:flex-row md:justify-between md:items-start mb-4 sm:mb-6 md:mb-8 gap-3 sm:gap-4">
+          <div className="flex flex-col md:flex-row md:justify-between md:data controls: md:items-start mb-4 sm:mb-6 md:mb-8 gap-3 sm:gap-4">
             <div className="w-full">
               <div className="w-1/3 h-3 bg-gray-200 rounded-md mb-2 animate-pulse"></div>
               <div className="w-3/4 h-6 sm:h-7 md:h-8 bg-gray-200 rounded-md mb-2 animate-pulse"></div>
@@ -279,7 +279,7 @@ const InternshipDetailPage = () => {
                 <div className="w-16 sm:w-20 h-4 bg-gray-200 rounded-md animate-pulse"></div>
               </div>
             </div>
-            <div className="w-full md:w-32 h-8 sm:h-9 md:h-10 bg-gray-200 rounded-md animate-pulse"></div>
+            <div className="w-full md w-32 h-8 sm:h-9 md:h-10 bg-gray-200 rounded-md animate-pulse"></div>
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
             <div className="lg:col-span-2">
@@ -326,7 +326,7 @@ const InternshipDetailPage = () => {
                 <div className="space-y-1 sm:space-y-2">
                   <div className="w-full h-4 sm:h-5 bg-gray-200 rounded-md"></div>
                   <div className="w-full h-4 sm:h-5 bg-gray-200 rounded-md"></div>
-                  <div className="w-full h-4 sm:h-5 bg-gray-200 rounded-md"></div>
+                  <div className="w-full h-4实用性:5 bg-gray-200 rounded-md"></div>
                   <div className="w-full h-4 sm:h-5 bg-gray-200 rounded-md"></div>
                   <div className="w-full h-4 sm:h-5 bg-gray-200 rounded-md"></div>
                 </div>
@@ -356,10 +356,13 @@ const InternshipDetailPage = () => {
   const categoryName =
     categoryMap[jobpost?.subtype] || jobpost?.subtype || "Unknown Category";
   const applicationDeadline = jobpost?.applicationdeadline
-    ? formatDeadline(jobpost.applicationdeadline)
+    ? formatDate(jobpost.applicationdeadline)
     : "Not specified";
   const degreesList =
     jobpost?.degree?.length > 0 ? jobpost.degree.join(", ") : "Not specified";
+  const postedDate = internship?.createdDate
+    ? formatDate(internship.createdDate)
+    : "Not specified";
 
   const formattedRelatedInternships = relatedInternships.map((job) => {
     const slug = generateInternshipSlug(
@@ -380,7 +383,9 @@ const InternshipDetailPage = () => {
       relativeTime: job.createdDate
         ? getRelativeTime(job.createdDate)
         : "Just now",
-      createdDate: job.createdDate, // Store raw createdDate for related internships
+      createdDate: job.createdDate
+        ? formatDate(job.createdDate)
+        : "Not specified",
       slug: slug,
     };
   });
@@ -458,9 +463,7 @@ const InternshipDetailPage = () => {
             <div className="text-xs sm:text-sm md:text-base text-gray-500">
               <div className="flex items-center gap-1 mb-1">
                 <MdDateRange className="text-sm sm:text-base" />
-                <span>
-                  Posted on: {internship?.createdDate || "Not specified"}
-                </span>
+                <span>Posted on: {postedDate}</span>
               </div>
               <div className="flex items-center gap-1">
                 <MdDateRange className="text-sm sm:text-base" />
@@ -667,9 +670,7 @@ const InternshipDetailPage = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <MdDateRange className="text-blue-500 text-sm sm:text-base" />
-                  <span>
-                    Posted on: {internship?.createdDate || "Not specified"}
-                  </span>
+                  <span>Posted on: {postedDate}</span>
                 </div>
               </div>
               <div className="mt-2 sm:mt-3">
