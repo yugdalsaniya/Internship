@@ -666,11 +666,11 @@ const InternshipDetailPage = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <MdDateRange className="text-blue-500 text-sm sm:text-base" />
-                  <span>Application Deadline: {applicationDeadline}</span>
+                  <span>Posted on: {postedDate}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <MdDateRange className="text-blue-500 text-sm sm:text-base" />
-                  <span>Posted on: {postedDate}</span>
+                  <span>Application Deadline: {applicationDeadline}</span>
                 </div>
               </div>
               <div className="mt-2 sm:mt-3">
