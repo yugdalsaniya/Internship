@@ -34,6 +34,8 @@ import AcademyProfilePage from "../Pages/Academy/AcademyProfilePage";
 import AllNewsAndBlogs from "../Components/home/AllNewsAndBlogs";
 import SidebarItem from "../Components/profile/SidebarItem";
 import EditInternship from "../Pages/company/EditInternship"; // Import the EditInternship component
+import PublicRoute from '../routes/PublicRoute';
+
 
 function AppRoutesInner() {
   const location = useLocation();
@@ -42,11 +44,14 @@ function AppRoutesInner() {
 
   return (
     <Routes>
+      {/* Public routes: Only accessible to unauthenticated users */}
+      <Route element={<PublicRoute />}>
       <Route path="/signup" element={<SignUpPage />} />
       <Route path="/signup/:role" element={<SignUpPage />} />
       <Route path="/otp" element={<OtpPage />} />
       <Route path="/forgotpassword" element={<ForgotPasswordPage />} />
       <Route path="/login" element={<SignInPage />} />
+      </Route>
       <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
       <Route element={<MainLayout />}>
         <Route path="/editprofile/*" element={<ProfileEditPage />} />
