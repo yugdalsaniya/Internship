@@ -68,7 +68,7 @@ const SignUpPage = () => {
   const roleDescriptions = {
     student: [
       "Find internships, OJTs, and entry-level jobs",
-      "Apply directly with a smart Inturnshp profile",
+      "Apply directly with a smart Inturship profile",
       "Learn with free workshops and short courses",
       "Get career-ready through real-world experiences",
     ],
@@ -246,9 +246,7 @@ const SignUpPage = () => {
   };
 
   const handleResendOtp = async () => {
-    if (!
-
-validateEmail(formData.email)) {
+    if (!validateEmail(formData.email)) {
       setErrors((prev) => ({
         ...prev,
         email: "Please enter a valid email address.",
@@ -488,6 +486,7 @@ validateEmail(formData.email)) {
               email: loginResponse.user.email,
               role: roleName,
               roleId: roleId,
+              mobile: fullMobileNumber,
             };
 
             if (roleName === "company" || roleName === "academy") {
@@ -580,6 +579,7 @@ validateEmail(formData.email)) {
     } catch (err) {
       const errorMessage =
         err.response?.data?.message ||
+        err.response?.data?.error ||
         err.message ||
         "An error occurred during signup";
       console.error("Signup Error Response:", err.response?.data);
@@ -594,9 +594,22 @@ validateEmail(formData.email)) {
         setTimeout(() => {
           setErrors((prev) => ({ ...prev, email: "" }));
         }, 5000);
+      } else if (
+        errorMessage.includes("User with this mobile number already exists") ||
+        (errorMessage.includes("duplicate key error") &&
+          errorMessage.includes("mobile"))
+      ) {
+        setErrors({
+          mobile:
+            "This mobile number is already registered. Please use a different mobile number or sign in.",
+        });
+        setTimeout(() => {
+          setErrors((prev) => ({ ...prev, mobile: "" }));
+        }, 5000);
       } else {
         setErrors({
-          general: `${errorMessage}. Please try again or contact support@conscor.com.`,
+          general:
+            "This mobile number is already registered. Please use a different mobile number or sign in.",
         });
         setTimeout(() => {
           setErrors((prev) => ({ ...prev, general: "" }));
