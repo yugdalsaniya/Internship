@@ -95,6 +95,7 @@ const SignUpPage = () => {
       "Share insights via talks, webinars, or Q&As",
       "Help students build their career roadmap",
       "Boost your professional visibility and impact",
+      "Find Mentorship / Apprenticeship Opportunities"
     ],
   };
 
