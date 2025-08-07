@@ -261,12 +261,12 @@ const ApplyInternshipForm = () => {
 
         if (companyResponse.length > 0) {
           const companyData = companyResponse[0].sectionData.Company;
-          setCompanyEmail(companyData.username || 'support@internph.com');
+          setCompanyEmail(companyData.username || 'support@internsph.com');
           setCompanyContact(companyData.companyName || 'Team');
           console.log('Fetched company email:', companyData.username);
         } else {
           console.warn('Company data not found for createdBy:', createdBy);
-          setCompanyEmail('support@internph.com');
+          setCompanyEmail('support@internsph.com');
         }
       } else {
         setError('Job post data not found.');
@@ -480,7 +480,7 @@ const ApplyInternshipForm = () => {
         Category: jobPostData.category || 'Not specified',
         Salary: jobPostData.salary || 'Not specified',
         support_email: 'support@internph.com',
-        your_portal_url: 'https://internph.com',
+        your_portal_url: 'https://inturnshp.com/ph/',
         Year: new Date().getFullYear().toString(),
         'Your Portal Name': 'InternPH',
         'Social Media Links': '<a href="https://twitter.com/internph">Twitter</a> | <a href="https://linkedin.com/company/internph">LinkedIn</a> | <a href="https://facebook.com/internph">Facebook</a>',
