@@ -14,6 +14,7 @@ const PostInternship = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [isApproved, setIsApproved] = useState(false);
+  const [isTrialActive, setIsTrialActive] = useState(true); // Assume active initially, updated in fetch
   const [approvalError, setApprovalError] = useState('');
   const [isCheckingApproval, setIsCheckingApproval] = useState(false);
   const [isButtonChecking, setIsButtonChecking] = useState(false); // New state for button-triggered checks
@@ -67,6 +68,18 @@ const PostInternship = () => {
 
       // Update approval status
       setIsApproved(approvalStatus);
+
+      // Manage approval timestamp (store when first approved)
+      let approvalTimestamp = parseInt(localStorage.getItem('approvalTimestamp'));
+      if (approvalStatus && !approvalTimestamp) {
+        approvalTimestamp = Date.now();
+        localStorage.setItem('approvalTimestamp', approvalTimestamp.toString());
+      }
+
+      // Calculate if trial is active (5 min for demo; 6 months for prod)
+      const trialPeriod = 6 * 30 * 24 * 60 * 60 * 1000; // Demo: 5 minutes. 5 * 60 * 1000  For prod: 6 * 30 * 24 * 60 * 60 * 1000 (approx 6 months)
+      const trialActive = approvalStatus && approvalTimestamp && (Date.now() - approvalTimestamp < trialPeriod);
+      setIsTrialActive(trialActive);
 
       // Update localStorage with the latest data
       const updatedUser = {
@@ -271,12 +284,26 @@ const PostInternship = () => {
           ) : isCheckingApproval && isButtonChecking ? (
             <p className="text-sm text-gray-600">Checking approval status...</p>
           ) : isApproved ? (
-            <button
-              onClick={() => navigate('/post-internship/form')}
-              className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm md:text-base font-medium py-2 px-6 rounded-full hover:from-blue-600 hover:to-purple-700 transition-all"
-            >
-              Post Internship
-            </button>
+            isTrialActive ? (
+              <button
+                onClick={() => navigate('/post-internship/form')}
+                className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm md:text-base font-medium py-2 px-6 rounded-full hover:from-blue-600 hover:to-purple-700 transition-all"
+              >
+                Post Internship
+              </button>
+            ) : (
+              <div>
+                <p className="text-sm text-red-600 mb-4 max-w-md mx-auto">
+                  Your free trial period has expired. Please subscribe to become a member and continue posting internships.
+                </p>
+                <button
+                  onClick={() => navigate('/subscription-plans')}
+                  className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm md:text-base font-medium py-2 px-6 rounded-full hover:from-blue-600 hover:to-purple-700 transition-all"
+                >
+                  Subscribe Now
+                </button>
+              </div>
+            )
           ) : (
             <div>
               <button
@@ -338,8 +365,10 @@ const PostInternship = () => {
             <p className="text-center text-sm text-gray-600">{error}</p>
           ) : recentInternships.length === 0 ? (
             <p className="text-center text-sm text-gray-600">
-              {isApproved
+              {isApproved && isTrialActive
                 ? 'No internships posted yet. Start by posting your first internship!'
+                : isApproved
+                ? 'Your free trial has expired. Subscribe to post more internships.'
                 : 'Your company needs approval to post internships.'}
             </p>
           ) : (
@@ -450,8 +479,10 @@ const PostInternship = () => {
             Ready to Find More Talent?
           </h2>
           <p className="text-sm text-gray-600 mb-6">
-            {isApproved
+            {isApproved && isTrialActive
               ? 'Explore our platform features or contact our support team to learn more about how Inturnshp Philippines can help your company grow.'
+              : isApproved
+              ? 'Your free trial has expired. Subscribe to become a member and post internships.'
               : 'Your company needs approval to post internships. Contact support to get approved and start posting!'}
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-4">

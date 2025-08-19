@@ -35,7 +35,7 @@ import AllNewsAndBlogs from "../Components/home/AllNewsAndBlogs";
 import SidebarItem from "../Components/profile/SidebarItem";
 import EditInternship from "../Pages/company/EditInternship"; // Import the EditInternship component
 import PublicRoute from '../routes/PublicRoute';
-
+import SubscriptionPlans from '../Pages/company/SubscriptionPlans'; // Import SubscriptionPlans component
 
 function AppRoutesInner() {
   const location = useLocation();
@@ -79,6 +79,7 @@ function AppRoutesInner() {
         <Route path="/all-academies" element={<AllAcademies />} />
         <Route path="/academy/:slug/:id" element={<AcademyProfilePage />} />
         <Route path="/news-and-blog" element={<AllNewsAndBlogs />} />
+        <Route path="/subscription-plans" element={<SubscriptionPlans />} />
       </Route>
     </Routes>
   );
