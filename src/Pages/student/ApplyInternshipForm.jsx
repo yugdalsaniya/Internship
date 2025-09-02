@@ -479,11 +479,11 @@ const ApplyInternshipForm = () => {
         Time: formData.duration || jobPostData.internshipduration || 'Not specified',
         Category: jobPostData.category || 'Not specified',
         Salary: jobPostData.salary || 'Not specified',
-        support_email: 'support@internph.com',
+        support_email: 'support@inturnsph.com',
         your_portal_url: 'https://inturnshp.com/ph/',
         Year: new Date().getFullYear().toString(),
-        'Your Portal Name': 'InternPH',
-        'Social Media Links': '<a href="https://twitter.com/internph">Twitter</a> | <a href="https://linkedin.com/company/internph">LinkedIn</a> | <a href="https://facebook.com/internph">Facebook</a>',
+        'Your Portal Name': 'Inturnshp',
+        'Social Media Links': '<a href="https://twitter.com/inturnsph">Twitter</a> | <a href="https://linkedin.com/company/inturnsph">LinkedIn</a> | <a href="https://facebook.com/inturnsph">Facebook</a>',
         'Company Contact': companyContact,
       };
 

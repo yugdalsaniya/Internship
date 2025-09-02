@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { debounce } from 'lodash';
 import { fetchSectionData } from '../../Utils/api';
 
 const Category = () => {
@@ -7,41 +8,76 @@ const Category = () => {
   const [internshipCounts, setInternshipCounts] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isFetching, setIsFetching] = useState(false); // Track fetching state
   const navigate = useNavigate();
+  // Local cache to store counts within session
+  const [cachedCounts, setCachedCounts] = useState(() => {
+    try {
+      return JSON.parse(sessionStorage.getItem('internshipCounts') || '{}');
+    } catch {
+      return {};
+    }
+  });
 
   useEffect(() => {
     const fetchCategoriesAndCounts = async () => {
+      if (isFetching) {
+        console.log('Fetch skipped: already fetching');
+        return;
+      }
+      setIsFetching(true);
       try {
         // Fetch categories
         const categoryData = await fetchSectionData({
           collectionName: 'category',
-          limit: 20,
+          limit: 8,
           cacheBust: new Date().getTime(),
         });
         console.log('Category API Response:', categoryData);
-        setCategories(categoryData);
+        setCategories(categoryData || []);
 
-        // Fetch internship counts for each category
-        const counts = {};
-        for (const category of categoryData) {
-          const countData = await fetchSectionData({
-            collectionName: 'jobpost',
-            query: {
-              'sectionData.jobpost.type': 'Internship',
-              'sectionData.jobpost.subtype': category._id,
-            },
-            limit: 0,
-            projection: { _id: 1 },
-          });
-          counts[category._id] = countData.length;
-          console.log('Internship Counts:', counts);
-          setInternshipCounts(counts);
+        // Fetch only missing counts
+        const missingCategoryIds = (categoryData || [])
+          .filter(category => !(category._id in cachedCounts))
+          .map(category => category._id);
+
+        if (missingCategoryIds.length > 0) {
+          console.log('Fetching counts for categories:', missingCategoryIds);
+          const countPromises = missingCategoryIds.map(categoryId =>
+            fetchSectionData({
+              collectionName: 'jobpost',
+              query: {
+                'sectionData.jobpost.type': 'Internship',
+                'sectionData.jobpost.subtype': categoryId,
+              },
+              limit: 0,
+              projection: { _id: 1 },
+            }).then(countData => ({ id: categoryId, count: countData.length }))
+          );
+
+          const countResults = await Promise.all(countPromises);
+          const newCounts = countResults.reduce((acc, { id, count }) => {
+            acc[id] = count;
+            return acc;
+          }, { ...cachedCounts });
+
+          setInternshipCounts(newCounts);
+          // Cache counts in sessionStorage
+          try {
+            sessionStorage.setItem('internshipCounts', JSON.stringify(newCounts));
+          } catch (err) {
+            console.error('Failed to cache counts:', err);
+          }
+        } else {
+          console.log('Using cached counts:', cachedCounts);
+          setInternshipCounts(cachedCounts);
         }
       } catch (err) {
         setError('Failed to fetch categories or internship counts. Please try again.');
         console.error('Category API Error:', err);
       } finally {
         setLoading(false);
+        setIsFetching(false);
       }
     };
 
@@ -49,37 +85,43 @@ const Category = () => {
   }, []);
 
   const filteredCategories = useMemo(() => {
-    const uniqueCategories = [];
     const seenTitles = new Set();
-
-    categories.forEach((category) => {
-      const title = category.sectionData?.category?.titleofinternship;
-      if (title && !seenTitles.has(title.toLowerCase())) {
-        seenTitles.add(title.toLowerCase());
-        uniqueCategories.push(category);
-      }
-    });
-
-    return uniqueCategories
-      .filter((category) => {
-        const cat = category.sectionData?.category;
-        return cat && cat.titleofinternship && cat.showinhomepage === true;
+    const filtered = (categories || [])
+      .filter(category => {
+        const title = category.sectionData?.category?.titleofinternship;
+        const showInHomepage = category.sectionData?.category?.showinhomepage === true;
+        const isUnique = title && !seenTitles.has(title.toLowerCase());
+        console.log('Category Filter:', {
+          id: category._id,
+          title,
+          showInHomepage,
+          isUnique,
+        });
+        return title && isUnique && showInHomepage && (seenTitles.add(title.toLowerCase()), true);
       })
-      .map((category) => ({
+      .map(category => ({
         id: category._id,
         name: category.sectionData.category.titleofinternship.toUpperCase(),
         originalName: category.sectionData.category.titleofinternship,
-        count: (internshipCounts[category._id] || 0) * 11, // Multiply count by 11
-        logo: category.sectionData?.category?.logo && category.sectionData.category.logo.startsWith('http')
+        count: (internshipCounts[category._id] || 0) * 11,
+        logo: category.sectionData?.category?.logo?.startsWith('http')
           ? category.sectionData.category.logo
           : '/assets/placeholder-logo.png',
       }));
+    console.log('Filtered Categories:', filtered);
+    return filtered;
   }, [categories, internshipCounts]);
 
-  const handleCategoryClick = (category) => {
-    const encodedCategoryName = encodeURIComponent(category.originalName);
-    navigate(`/${encodedCategoryName}/internships/${category.id}`);
-  };
+  const handleCategoryClick = useMemo(
+    () =>
+      debounce((category) => {
+        const encodedCategoryName = encodeURIComponent(category.originalName);
+        navigate(`/${encodedCategoryName}/internships/${category.id}`);
+      }, 300),
+    [navigate]
+  );
+
+  useEffect(() => () => handleCategoryClick.cancel(), [handleCategoryClick]);
 
   if (loading) return (
     <section className="bg-gradient-to-b from-[#FFFCF2] to-[#FEEFF4] py-4">
@@ -91,16 +133,11 @@ const Category = () => {
           Explore Opportunities by Category
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-8">
-          {[...Array(4)].map((_, index) => (
-            <div
-              key={`skeleton-${index}`}
-              className="bg-white rounded-tl-none rounded-br-none rounded-tr-3xl rounded-bl-3xl p-4 sm:p-8 flex flex-col items-center border border-gray-200 shadow-md min-h-[180px] sm:min-h-[250px] animate-pulse"
-            >
-              <div className="h-8 sm:h-10 w-8 sm:w-10 bg-gray-200 rounded-full mb-4 sm:mb-6" />
-              <div className="h-5 sm:h-6 w-3/4 bg-gray-200 rounded mb-4 sm:mb-6" />
-              <div className="h-5 sm:h-6 w-24 sm:w-32 bg-gray-200 rounded-full" />
-            </div>
-          ))}
+          <div className="bg-white rounded-tl-none rounded-br-none rounded-tr-3xl rounded-bl-3xl p-4 sm:p-8 flex flex-col items-center border border-gray-200 shadow-md min-h-[180px] sm:min-h-[250px] animate-pulse">
+            <div className="h-8 sm:h-10 w-8 sm:w-10 bg-gray-200 rounded-full mb-4 sm:mb-6" />
+            <div className="h-5 sm:h-6 w-3/4 bg-gray-200 rounded mb-4 sm:mb-6" />
+            <div className="h-5 sm:h-6 w-24 sm:w-32 bg-gray-200 rounded-full" />
+          </div>
         </div>
       </div>
     </section>
@@ -114,7 +151,7 @@ const Category = () => {
 
   if (filteredCategories.length === 0) return (
     <div className="px-4 sm:px-12 py-12 text-center text-base sm:text-lg text-[#050748]">
-      No categories found.
+      No categories available at the moment. Please check back later.
     </div>
   );
 
@@ -161,4 +198,4 @@ const Category = () => {
   );
 };
 
-export default Category;
+export default React.memo(Category);
