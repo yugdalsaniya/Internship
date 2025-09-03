@@ -13,6 +13,9 @@ import PersonalDetails from '../Components/profile/PersonalDetails';
 import SocialLinks from '../Components/profile/SocialLinks';
 import CompanyDetails from '../Components/profile/CompanyDetails';
 import OrganizationDetails from '../Components/profile/OrganizationDetails';
+import MentorBasicDetails from '../Components/profile/MentorBasicDetails';
+import MentorProfessionalDetails from '../Components/profile/MentorProfessionalDetails';
+import MentorAvailability from '../Components/profile/MentorAvailability';
 import { fetchSectionData } from '../Utils/api';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -25,6 +28,7 @@ const ProfileEditPage = () => {
   const user = JSON.parse(localStorage.getItem('user')) || {};
   const pendingUser = JSON.parse(localStorage.getItem('pendingUser')) || {};
   const allowedRoles = ['company', 'academy'];
+  const mentorRoleId = '1747902955524';
 
   const userData = {
     ...pendingUser,
@@ -44,6 +48,7 @@ const ProfileEditPage = () => {
 
   const pathToSection = {
     'basic-details': 'Basic Details',
+    'mentor-basic-details': 'Basic Details',
     resume: 'Resume',
     about: 'About',
     skills: 'Skills',
@@ -54,13 +59,23 @@ const ProfileEditPage = () => {
     'social-links': 'Social Links',
     'company-details': 'Personal Details',
     'organization-details': 'Organization Details',
+    'mentor-professional-details': 'Professional Details',
+    'mentor-availability': 'Availability',
   };
 
   useEffect(() => {
     const path = location.pathname.split('/').pop();
-    const section = pathToSection[path] || (allowedRoles.includes(userData.role) ? 'Personal Details' : 'Basic Details');
+    let defaultSection = 'Basic Details';
+    
+    if (allowedRoles.includes(userData.role)) {
+      defaultSection = 'Personal Details';
+    } else if (userData.roleId === mentorRoleId) {
+      defaultSection = 'Basic Details';
+    }
+    
+    const section = pathToSection[path] || defaultSection;
     setActiveSection(section);
-  }, [location, userData.role]);
+  }, [location, userData.role, userData.roleId]);
 
   const updateCompletionStatus = useCallback((section, status) => {
     setCompletionStatus((prev) => {
@@ -134,6 +149,10 @@ const ProfileEditPage = () => {
               'sectionData.appuser.projectdetails': 1,
               'sectionData.appuser.achievementsdetails': 1,
               'sectionData.appuser.responsibilitydetails': 1,
+              'sectionData.appuser.mentorExpertise': 1,
+              'sectionData.appuser.mentorExperience': 1,
+              'sectionData.appuser.mentorSpecializations': 1,
+              'sectionData.appuser.mentorAvailability': 1,
             },
           })
         );
@@ -158,6 +177,8 @@ const ProfileEditPage = () => {
 
         console.log('fetchSectionData response in ProfileEditPage:', JSON.stringify({ userResponse, organizationData }, null, 2));
         const apiData = userResponse[0]?.sectionData?.appuser || {};
+        
+        // Common completion statuses
         const newCompletionStatus = {
           Resume: !!apiData.resume,
           About: !!apiData.about?.trim(),
@@ -202,6 +223,14 @@ const ProfileEditPage = () => {
             !!apiData.achievementsdetails?.length ||
             !!apiData.responsibilitydetails?.length,
         };
+        
+        // Mentor-specific completion statuses
+        if (userData.roleId === mentorRoleId) {
+          newCompletionStatus['Basic Details'] = !!apiData.legalname && !!apiData.email && !!apiData.mobile;
+          newCompletionStatus['Professional Details'] = !!apiData.mentorExpertise && !!apiData.mentorExperience && !!apiData.mentorSpecializations?.length;
+          newCompletionStatus['Availability'] = !!apiData.mentorAvailability;
+        }
+
         setCompletionStatus(newCompletionStatus);
         console.log('Set completionStatus:', newCompletionStatus);
       } catch (err) {
@@ -216,7 +245,7 @@ const ProfileEditPage = () => {
     if (userData.userid) {
       fetchCompletionStatuses();
     }
-  }, [userData.userid, userData.companyId, userData.role]);
+  }, [userData.userid, userData.companyId, userData.role, userData.roleId]);
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
@@ -226,56 +255,46 @@ const ProfileEditPage = () => {
     setIsSidebarOpen(false);
   };
 
-  const sections = allowedRoles.includes(userData.role)
-    ? [
-        { label: 'Personal Details', path: 'company-details', completed: completionStatus['Personal Details'] || false, required: false },
-        ...(userData.roleId !== '1747903042943' ? [
-          { label: 'Organization Details', path: 'organization-details', completed: completionStatus['Organization Details'] || false, required: false }
-        ] : []),
-      ]
-    : [
-        { label: 'Basic Details', path: 'basic-details', completed: completionStatus['Basic Details'] || true, required: true },
-        { label: 'Resume', path: 'resume', completed: completionStatus['Resume'] || false, required: true },
-        { label: 'About', path: 'about', completed: completionStatus['About'] || false, required: true },
-        { label: 'Skills', path: 'skills', completed: completionStatus['Skills'] || false, required: true },
-        { label: 'Education', path: 'education', completed: completionStatus['Education'] || false, required: false },
-        { label: 'Work Experience', path: 'work-experience', completed: completionStatus['Work Experience'] || false, required: false },
-        { label: 'Accomplishments & Initiatives', path: 'accomplishments-and-initiatives', completed: completionStatus['Accomplishments & Initiatives'] || false, required: false },
-        { label: 'Personal Details', path: 'personal-details', completed: completionStatus['Personal Details'] || false, required: false },
-        { label: 'Social Links', path: 'social-links', completed: completionStatus['Social Links'] || false, required: false },
-      ];
+  // Define sections based on user role
+  let sections = [];
+  
+  if (allowedRoles.includes(userData.role)) {
+    sections = [
+      { label: 'Personal Details', path: 'company-details', completed: completionStatus['Personal Details'] || false, required: false },
+      ...(userData.roleId !== '1747903042943' ? [
+        { label: 'Organization Details', path: 'organization-details', completed: completionStatus['Organization Details'] || false, required: false }
+      ] : []),
+    ];
+  } else if (userData.roleId === mentorRoleId) {
+    sections = [
+      { label: 'Basic Details', path: 'mentor-basic-details', completed: completionStatus['Basic Details'] || false, required: true },
+      { label: 'Professional Details', path: 'mentor-professional-details', completed: completionStatus['Professional Details'] || false, required: true },
+      { label: 'Availability', path: 'mentor-availability', completed: completionStatus['Availability'] || false, required: true },
+            { label: 'Resume', path: 'resume', completed: completionStatus['Resume'] || false, required: true },
+
+      
+    ];
+  } else {
+    sections = [
+      { label: 'Basic Details', path: 'basic-details', completed: completionStatus['Basic Details'] || true, required: true },
+      { label: 'Resume', path: 'resume', completed: completionStatus['Resume'] || false, required: true },
+      { label: 'About', path: 'about', completed: completionStatus['About'] || false, required: true },
+      { label: 'Skills', path: 'skills', completed: completionStatus['Skills'] || false, required: true },
+      { label: 'Education', path: 'education', completed: completionStatus['Education'] || false, required: false },
+      { label: 'Work Experience', path: 'work-experience', completed: completionStatus['Work Experience'] || false, required: false },
+      { label: 'Accomplishments & Initiatives', path: 'accomplishments-and-initiatives', completed: completionStatus['Accomplishments & Initiatives'] || false, required: false },
+      { label: 'Personal Details', path: 'personal-details', completed: completionStatus['Personal Details'] || false, required: false },
+      { label: 'Social Links', path: 'social-links', completed: completionStatus['Social Links'] || false, required: false },
+    ];
+  }
 
   return (
     <div className="flex flex-col min-h-screen">
       <ToastContainer />
-      {/* <div className="fixed top-20 left-80 right-0 bg-white border-b shadow-sm z-20 h-16">
-        <div className="flex items-center justify-between p-4">
-          <div className="flex items-center gap-3">
-            <Link to="/">
-              <button className="w-8 h-8 flex items-center justify-center rounded-full bg-blue-100">
-                <FaChevronLeft className="text-gray-600 text-sm" />
-              </button>
-            </Link>
-            <h1 className="text-base font-semibold text-gray-800">Edit Profile</h1>
-          </div>
-          <button
-            className="md:hidden w-8 h-8 flex items-center justify-center rounded-full bg-blue-100 hover:bg-blue-200 transition-colors duration-200"
-            onClick={toggleSidebar}
-            aria-label={isSidebarOpen ? 'Close sidebar' : 'Open sidebar'}
-            aria-expanded={isSidebarOpen}
-          >
-            {isSidebarOpen ? (
-              <FaTimes className="text-gray-600 text-lg" />
-            ) : (
-              <FaBars className="text-gray-600 text-lg" />
-            )}
-          </button>
-        </div>
-      </div> */}
-
+      
       <div className="flex flex-col md:flex-row flex-1">
         <div
-          className={`w-full md:w-[320px]  border-r bg-white fixed top-16 left-0 h-screen flex flex-col z-10 transmission-transform duration-300 ${
+          className={`w-full md:w-[320px] border-r bg-white fixed top-16 left-0 h-screen flex flex-col z-10 transmission-transform duration-300 ${
             isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
           } md:translate-x-0 md:block`}
         >
@@ -289,7 +308,7 @@ const ProfileEditPage = () => {
             </button>
           </div>
           <div className="p-4 space-y-4">
-            {!allowedRoles.includes(userData.role) && (
+            {!allowedRoles.includes(userData.role) && userData.roleId !== mentorRoleId && (
               <div className="flex items-center justify-center">
                 <button className="bg-[#0073e6] text-white font-semibold px-14 py-2 rounded flex items-center gap-2">
                   <FaFileMedical className="text-white text-lg" />
@@ -299,7 +318,7 @@ const ProfileEditPage = () => {
             )}
             <div className="bg-gray-100 p-4 rounded-lg">
               <h3 className="font-semibold text-sm">Enhance your Profile</h3>
-              <p className="text-xs text-gray-500. mt-1">
+              <p className="text-xs text-gray-500 mt-1">
                 Stay ahead of the competition by regularly updating your profile.
               </p>
               <div className="w-full bg-gray-300 h-2 rounded-full mt-3 relative">
@@ -331,35 +350,35 @@ const ProfileEditPage = () => {
         </div>
 
         <div
-          className={`w-full md:w-[calc(100%-320px)] md:ml-[320px]  bg-white px-6 overflow-y-auto min-h-[calc(100vh-4rem)] transition-all duration-300 ${
+          className={`w-full md:w-[calc(100%-320px)] md:ml-[320px] bg-white px-6 overflow-y-auto min-h-[calc(100vh-4rem)] transition-all duration-300 ${
             isSidebarOpen ? 'opacity-50 pointer-events-none md:opacity-100 md:pointer-events-auto' : ''
           }`}
         >
 
-            <div className=" top-20 left-80 right-0 bg-white border-b shadow-sm z-20 h-16">
-        <div className="flex items-center justify-between p-4">
-          <div className="flex items-center gap-3">
-            <Link to="/">
-              <button className="w-8 h-8 flex items-center justify-center rounded-full bg-blue-100">
-                <FaChevronLeft className="text-gray-600 text-sm" />
+          <div className="top-20 left-80 right-0 bg-white border-b shadow-sm z-20 h-16">
+            <div className="flex items-center justify-between p-4">
+              <div className="flex items-center gap-3">
+                <Link to="/">
+                  <button className="w-8 h-8 flex items-center justify-center rounded-full bg-blue-100">
+                    <FaChevronLeft className="text-gray-600 text-sm" />
+                  </button>
+                </Link>
+                <h1 className="text-base font-semibold text-gray-800">Edit Profile</h1>
+              </div>
+              <button
+                className="md:hidden w-8 h-8 flex items-center justify-center rounded-full bg-blue-100 hover:bg-blue-200 transition-colors duration-200"
+                onClick={toggleSidebar}
+                aria-label={isSidebarOpen ? 'Close sidebar' : 'Open sidebar'}
+                aria-expanded={isSidebarOpen}
+              >
+                {isSidebarOpen ? (
+                  <FaTimes className="text-gray-600 text-lg" />
+                ) : (
+                  <FaBars className="text-gray-600 text-lg" />
+                )}
               </button>
-            </Link>
-            <h1 className="text-base font-semibold text-gray-800">Edit Profile</h1>
+            </div>
           </div>
-          <button
-            className="md:hidden w-8 h-8 flex items-center justify-center rounded-full bg-blue-100 hover:bg-blue-200 transition-colors duration-200"
-            onClick={toggleSidebar}
-            aria-label={isSidebarOpen ? 'Close sidebar' : 'Open sidebar'}
-            aria-expanded={isSidebarOpen}
-          >
-            {isSidebarOpen ? (
-              <FaTimes className="text-gray-600 text-lg" />
-            ) : (
-              <FaBars className="text-gray-600 text-lg" />
-            )}
-          </button>
-        </div>
-      </div>
 
           <Routes>
             {allowedRoles.includes(userData.role) ? (
@@ -370,9 +389,18 @@ const ProfileEditPage = () => {
                 )}
                 <Route path="*" element={<Navigate to="/editprofile/company-details" replace />} />
               </>
+            ) : userData.roleId === mentorRoleId ? (
+              <>
+                <Route path="mentor-basic-details" element={<MentorBasicDetails userData={userData} updateCompletionStatus={updateCompletionStatus} />} />
+                <Route path="mentor-professional-details" element={<MentorProfessionalDetails userData={userData} updateCompletionStatus={updateCompletionStatus} />} />
+                <Route path="mentor-availability" element={<MentorAvailability userData={userData} updateCompletionStatus={updateCompletionStatus} />} />
+                
+                <Route path="*" element={<MentorBasicDetails userData={userData} updateCompletionStatus={updateCompletionStatus} />} />
+                                <Route path="resume" element={<Resume userData={userData} updateCompletionStatus={updateCompletionStatus} />} />
+
+              </>
             ) : (
               <>
-              
                 <Route path="basic-details" element={<BasicDetails userData={userData} />} />
                 <Route path="resume" element={<Resume userData={userData} updateCompletionStatus={updateCompletionStatus} />} />
                 <Route path="about" element={<About userData={userData} updateCompletionStatus={updateCompletionStatus} />} />

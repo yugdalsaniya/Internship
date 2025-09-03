@@ -114,7 +114,7 @@ export default function ContactUsPage() {
               </div>
               <div>
                 <p className="font-semibold text-sm text-[#0B0B0B]">Send us email</p>
-                <p className="text-[#6A6A8E]">contact@upraisit.com</p>
+                <p className="text-[#6A6A8E]">info@inturnshp.com</p>
               </div>
             </div>
             <div className="flex gap-3 items-start">
