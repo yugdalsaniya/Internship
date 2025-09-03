@@ -10,10 +10,15 @@ export default function RecentInternship() {
   const [recentInternships, setRecentInternships] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isFetching, setIsFetching] = useState(false); // Track fetching state
   const maxInternships = 4;
 
   useEffect(() => {
+    let intervalId = null;
+
     const fetchRecentInternships = async () => {
+      if (isFetching) return; // Prevent duplicate fetches
+      setIsFetching(true);
       try {
         const data = await fetchSectionData({
           collectionName: "jobpost",
@@ -29,13 +34,25 @@ export default function RecentInternship() {
         console.error("RecentInternship API Error:", err);
       } finally {
         setLoading(false);
+        setIsFetching(false);
       }
     };
 
+    // Initial fetch
     fetchRecentInternships();
-    const interval = setInterval(fetchRecentInternships, 60000);
-    return () => clearInterval(interval);
-  }, []);
+
+    // Set up interval for periodic fetching
+    intervalId = setInterval(() => {
+      fetchRecentInternships();
+    }, 60000);
+
+    // Cleanup interval on unmount
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, []); // Empty dependency array to run only on mount
 
   const processedInternships = useMemo(() => {
     console.log(
@@ -172,7 +189,6 @@ export default function RecentInternship() {
         <div>
           <h2 className="text-2xl md:text-3xl font-bold text-[#050748] mb-1 md:mb-2">Internships | OJTs | Jobs</h2>
           <p className="text-sm md:text-base text-gray-500 md:text-[#6A6A8E] mt-1 md:mb-2">New Opportunities, Just Posted!</p>
-          
         </div>
         <Link
           to="/internship"

@@ -52,15 +52,14 @@ export default function AboutUsPage() {
         <section className="pt-12 text-center">
           <h2 className="text-3xl font-bold mb-2">How it works</h2>
           <p className="text-sm text-gray-500 mb-10 max-w-xl mx-auto">
-            Lorem Ipsum Lorem IpsumLorem IpsumLorem IpsumLorem IpsumLorem
-            IpsumLorem...
+           Discover internships, connect with employers, and launch your career!
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
             {[
-              { icon: <FaUserAlt />, title: "Create Account" },
-              { icon: <FaFileAlt />, title: "Upload Resume" },
-              { icon: <FaBriefcase />, title: "Find Internships" },
-              { icon: <FaCheckCircle />, title: "Apply Internship" },
+              { icon: <FaUserAlt />, title: "Create Account", discription: "Get Started with Inturnshp for Career Success" },
+              { icon: <FaFileAlt />, title: "Upload Resume" ,discription: "Upload Your Resume and Showcase Your Skills"},
+              { icon: <FaBriefcase />, title: "Find Internships" ,discription: "Unlock Internship Opportunities with Inturnshp" },
+              { icon: <FaCheckCircle />, title: "Apply Internship" , discription: "Start Your Career with an Internship Application"},
             ].map((item, index) => (
               <div
                 key={index}
@@ -71,7 +70,7 @@ export default function AboutUsPage() {
                 </div>
                 <h3 className="text-base font-bold mb-1">{item.title}</h3>
                 <p className="text-xs text-gray-500">
-                  Lorem IpsumLorem IpsumLorem IpsumLorem Ipsum
+                  {item.discription}
                 </p>
               </div>
             ))}
@@ -84,7 +83,7 @@ export default function AboutUsPage() {
             Frequently Asked Questions
           </h2>
           <p className="text-sm text-gray-600 text-center mb-10">
-            Lorem Ipsum Lorem Ipsum Lorem Ipsum Lorem Ipsum
+           Learn More with Our Frequently Asked Questions
           </p>
           <div className="space-y-4">
             {/* Opened FAQ Item */}
@@ -95,12 +94,7 @@ export default function AboutUsPage() {
                   Can I upload a CV?
                 </h4>
                 <p className="text-xs text-[#444444] leading-relaxed">
-                  Nunc sed a nisl purus. Nibh dis faucibus proin lacus
-                  tristique. Sit congue non vitae odio sit erat in. Felis eu
-                  ultrices a sed massa. Commodo fringilla sed tempor risus
-                  laoreet ultricies Ipsum. Habbitasse morbi faucibus in iaculis
-                  lectus. Nisi enim feugiat enim volutpat. Sem quis viverra
-                  viverra odio mauris nunc
+                  You can easily upload your CV during account setup or in the profile section. This allows companies, recruiters, and mentors to view your skills and experience, increasing your chances of landing internships, OJT, or jobs. Ensure your CV is up-to-date and in PDF format for best results.
                 </p>
               </div>
               <button className="w-6 h-6 flex items-center justify-center bg-[#0C0C0C] text-white rounded-full mt-1">
@@ -170,7 +164,7 @@ export default function AboutUsPage() {
               With The Best
             </h2>
             <p className="text-sm text-gray-600 mt-3 mb-6">
-              Lorem ipsum Lorem ipsum Lorem ipsum Lorem ipsum Lorem ipsum
+              Connecting you to industry-leading mentors and companies.
             </p>
             <div className="grid grid-cols-2 gap-4 text-sm">
               {[

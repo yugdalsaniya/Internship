@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { addGeneralData, fetchSectionData, mUpdate } from "../../Utils/api";
+import { addGeneralData, fetchSectionData, mUpdate, sendEmailTemplate } from "../../Utils/api";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { FaCrosshairs } from "react-icons/fa";
@@ -68,7 +68,17 @@ const PostInternshipForm = () => {
   // Google Maps API Key
   const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 
-  // Fetch company data and skills
+  // Function to replace placeholders in email templates
+  const replacePlaceholders = (body, data) => {
+    let updatedBody = body;
+    Object.keys(data).forEach((key) => {
+      const regex = new RegExp(`\\{data.${key}\\}`, 'g');
+      updatedBody = updatedBody.replace(regex, data[key] || '');
+    });
+    return updatedBody;
+  };
+
+  // Fetch company data, skills, categories
   useEffect(() => {
     const fetchCompanyAndSkills = async () => {
       try {
@@ -82,6 +92,7 @@ const PostInternshipForm = () => {
           projection: {
             "sectionData.Company.organizationName": 1,
             "sectionData.Company.logoImage": 1,
+            "sectionData.Company.username": 1,
           },
           limit: 1,
         });
@@ -528,88 +539,326 @@ const PostInternshipForm = () => {
     }
 
     try {
-      // Format the current date in 'dd/MM/yyyy, h:mm:ss a' format
-      const currentDate = new Date();
-      const formattedDate = currentDate.toLocaleString("en-GB", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-        hour12: true,
-      });
-
-      const jobpostData = {
-        sectionData: {
-          jobpost: {
-            title: formData.title,
-            company: formData.company,
-            type: "Internship",
-            time: formData.time,
-            location: formData.location,
-            salary: validateSalary(formData.salary),
-            subtype: formData.subtype,
-            experiencelevel: formData.experiencelevel,
-            applicationdeadline: formData.applicationdeadline,
-            internshipduration: validateDuration(formData.internshipduration),
-            skillsrequired: formData.skillsrequired
-              .map((skill) => skill.label)
-              .join(", "),
-            applicationinstructions: formData.applicationinstructions,
-            description: formData.description,
-            logo: formData.logo,
-            keyResponsibilities: formData.keyResponsibilities,
-            professionalSkills: formData.professionalSkills,
-            degree: formData.degree,
-          },
-        },
-        createdBy: user.companyId,
-        companyId: user.companyId,
-        createdDate: formattedDate,
-      };
-
-      const response = await addGeneralData({
+      // Prepare job post data
+      const jobPostData = {
         dbName: "internph",
         collectionName: "jobpost",
-        data: jobpostData,
-      });
+        data: {
+          sectionData: {
+            jobpost: {
+              title: formData.title.trim(),
+              company: formData.company,
+              type: "Internship",
+              time: formData.time,
+              location: validateLocation(formData.location),
+              salary: validateSalary(formData.salary),
+              subtype: formData.subtype,
+              experiencelevel: formData.experiencelevel,
+              applicationdeadline: formData.applicationdeadline,
+              internshipduration: validateDuration(formData.internshipduration),
+              skillsrequired: formData.skillsrequired.map((skill) => skill.value),
+              applicationinstructions: formData.applicationinstructions.trim(),
+              description: formData.description.trim(),
+              keyResponsibilities: formData.keyResponsibilities.trim(),
+              professionalSkills: formData.professionalSkills.trim(),
+              degree: formData.degree,
+              logo: formData.logo,
+            },
+          },
+          createdBy: user.companyId,
+          companyId: user.companyId,
+          createdDate: new Date().toLocaleString(),
+          createdAt: new Date().toISOString(),
+        },
+      };
+
+      // Post the internship
+      const response = await addGeneralData(jobPostData);
 
       if (response.success) {
+        // Update category's numberofinternships
         try {
-          const categoryResponse = await fetchSectionData({
-            collectionName: "category",
-            query: { _id: formData.subtype },
-            projection: { "sectionData.category.numberofinternships": 1 },
-            limit: 1,
-          });
-
-          if (categoryResponse.length === 0) {
-            throw new Error(
-              `Category with ID '${formData.subtype}' not found.`
-            );
-          }
-
-          const currentCount =
-            parseInt(
-              categoryResponse[0].sectionData.category.numberofinternships,
-              10
-            ) || 0;
-          const newCount = currentCount + 1;
-
           await mUpdate({
             appName: "app8657281202648",
             collectionName: "category",
             query: { _id: formData.subtype },
-            update: {
-              $set: {
-                "sectionData.category.numberofinternships": newCount.toString(),
-              },
-            },
+            update: { $inc: { "sectionData.category.numberofinternships": 1 } },
             options: { upsert: false },
           });
+        } catch (updateError) {
+         
+        }
 
-          toast.success("Internship posted successfully!", {
+        // Fetch matching student applications
+        const studentApplications = await fetchSectionData({
+          collectionName: "application",
+          query: {
+            "sectionData.application.industry": formData.subtype,
+            $or: [
+              { "sectionData.application.desiredinternshiptitle": { $regex: formData.title, $options: "i" } },
+              { "sectionData.application.skills": { $in: formData.skillsrequired.map(skill => skill.value) } },
+              { "sectionData.application.preferredlocation": { $regex: formData.location, $options: "i" } },
+              { "sectionData.application.internshiptype": formData.time },
+            ],
+          },
+          projection: { sectionData: 1, createdBy: 1 },
+        });
+
+        if (studentApplications.length > 0) {
+          // Fetch company email template
+          const templateResponse = await fetchSectionData({
+            collectionName: "template",
+            query: { _id: "1755673004561" }, // companyrequirement template
+            projection: { sectionData: 1 },
+          });
+
+          let companyEmailTemplate = {
+            subject: "Potential Student Matches",
+            body: `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Potential Student Matches</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f5f5f5;
+            color: #333333;
+        }
+        .container {
+            max-width: 700px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #007bff, #00c4b4);
+            color: #ffffff;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 26px;
+            font-weight: 700;
+        }
+        .content {
+            padding: 25px;
+        }
+        .content p {
+            font-size: 16px;
+            line-height: 1.6;
+            margin: 10px 0;
+        }
+        .content h2 {
+            font-size: 20px;
+            color: #007bff;
+            margin: 20px 0 10px;
+            font-weight: 600;
+        }
+        .card {
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+            border: 1px solid #e0e0e0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        table td {
+            padding: 10px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        table td:first-child {
+            font-weight: 600;
+            width: 30%;
+            color: #333333;
+            background-color: #f1f1f1;
+        }
+        .student-card {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            background-color: #f9f9f9;
+        }
+        .cta-button {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #007bff;
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            margin: 15px 0;
+            text-align: center;
+        }
+        .footer {
+            background-color: #f5f5f5;
+            padding: 20px;
+            text-align: center;
+            font-size: 14px;
+            color: #666666;
+        }
+        @media screen and (max-width: 600px) {
+            .container {
+                width: 100%;
+                margin: 0;
+                border-radius: 0;
+            }
+            .header h1 {
+                font-size: 22px;
+            }
+            table td {
+                display: block;
+                width: 100%;
+                box-sizing: border-box;
+            }
+            table td:first-child {
+                width: 100%;
+                background-color: #e8e8e8;
+                border-bottom: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Potential Student Matches</h1>
+            <p>Students Matching Your {data.Internship Title} Requirements</p>
+        </div>
+        <div class="content">
+            <p>Hello {data.Company Contact},</p>
+            <p>We found {data.MatchCount} students whose preferences match your internship posting for <strong>{data.Internship Title}</strong>.</p>
+            
+            <div class="card">
+                <h2>Your Internship Details</h2>
+                <table>
+                    <tr><td>Position Title</td><td>{data.Internship Title}</td></tr>
+                    <tr><td>Location</td><td>{data.Location}</td></tr>
+                    <tr><td>Internship Type</td><td>{data.Type}</td></tr>
+                    <tr><td>Duration</td><td>{data.Duration}</td></tr>
+                    <tr><td>Required Skills</td><td>{data.Skills}</td></tr>
+                </table>
+            </div>
+            
+            <h2>Matching Students</h2>
+            {data.Students}
+            
+            <p>You can review these student profiles on your {data.Your Portal Name} dashboard.</p>
+            <p>For support, contact us at <a href="mailto:{data.support_email}">{data.support_email}</a>.</p>
+            <p>Best regards,<br>The {data.Your Portal Name} Team</p>
+            <a href="{data.your_portal_url}/dashboard" class="cta-button">View Student Profiles</a>
+        </div>
+        <div class="footer">
+            <p>Follow us on {data.Social Media Links}</p>
+            <p>© {data.Year} {data.Your Portal Name}. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>`,
+          };
+
+          if (templateResponse.length > 0) {
+            companyEmailTemplate = {
+              subject: templateResponse[0].sectionData.template.subject || companyEmailTemplate.subject,
+              body: templateResponse[0].sectionData.template.body || companyEmailTemplate.body,
+            };
+          }
+
+          // Fetch company email
+          const companyDataResponse = await fetchSectionData({
+            collectionName: "company",
+            query: { _id: user.companyId },
+            projection: { "sectionData.Company.username": 1, "sectionData.Company.organizationName": 1 },
+          });
+
+          const companyEmail = companyDataResponse[0]?.sectionData?.Company?.username || "support@internsph.com";
+          const companyContact = companyDataResponse[0]?.sectionData?.Company?.organizationName || "Team";
+
+          // Fetch student details and prepare student list
+          const studentList = [];
+          const sentStudentEmails = new Set(); // Track sent student emails to prevent duplicates
+          for (const app of studentApplications) {
+            const studentId = app.createdBy;
+            if (sentStudentEmails.has(studentId)) continue; // Skip if already processed
+
+            const studentDataResponse = await fetchSectionData({
+              collectionName: "appuser",
+              query: { _id: studentId },
+              projection: {
+                "sectionData.appuser.legalname": 1,
+                "sectionData.appuser.email": 1,
+                "sectionData.appuser.mobile": 1,
+                "sectionData.appuser.resume": 1,
+                "sectionData.appuser.usertype": 1,
+              },
+            });
+
+            if (studentDataResponse.length > 0) {
+              const student = studentDataResponse[0].sectionData.appuser;
+              studentList.push({
+                name: student.legalname || "Unknown",
+                email: student.email || "N/A",
+                mobile: student.mobile || "N/A",
+                resume: student.resume || "N/A",
+                usertype: student.usertype || "N/A",
+              });
+              sentStudentEmails.add(studentId); // Mark student as processed
+            }
+          }
+
+          // Generate student HTML for company email
+          const studentHtml = studentList.map(student => `
+            <div class="student-card">
+                <table>
+                    <tr><td>Name</td><td>${student.name}</td></tr>
+                    <tr><td>Email</td><td>${student.email}</td></tr>
+                    <tr><td>Mobile</td><td>${student.mobile}</td></tr>
+                    <tr><td>User Type</td><td>${student.usertype}</td></tr>
+                    <tr><td>Resume</td><td><a href="${student.resume}" target="_blank">View Resume</a></td></tr>
+                </table>
+            </div>
+          `).join('');
+
+          // Prepare company email data
+          const companyEmailData = {
+            "Internship Title": formData.title,
+            Location: formData.location,
+            Type: formData.time,
+            Duration: validateDuration(formData.internshipduration),
+            Skills: formData.skillsrequired.map(skill => skill.label).join(", "),
+            MatchCount: studentList.length,
+            Students: studentHtml,
+            "Company Contact": companyContact,
+            "Your Portal Name": "InternPH",
+            support_email: "support@internsph.com",
+            "Social Media Links": "LinkedIn | Twitter | Facebook",
+            Year: new Date().getFullYear(),
+            your_portal_url: "https://internsph.com",
+          };
+
+          // Send single email to company
+          await sendEmailTemplate({
+            email: companyEmail,
+            smtpId: "1750933648545",
+            templateId: "1755673004561",
+            data: companyEmailData,
+            category: "primary",
+          });
+
+          toast.success("Email sent to company with matching students!", {
             position: "top-right",
             autoClose: 3000,
             hideProgressBar: false,
@@ -617,13 +866,254 @@ const PostInternshipForm = () => {
             pauseOnHover: true,
             draggable: true,
             theme: "light",
-            onClose: () => navigate("/"),
           });
-        } catch (updateError) {
-          console.error("Error updating numberofinternships:", updateError);
-          toast.error(
-            "Internship posted, but failed to update category count.",
-            {
+
+          // Fetch student email template
+          const studentTemplateResponse = await fetchSectionData({
+            collectionName: "template",
+            query: { _id: "1755673066029" }, // studentrequirement template
+            projection: { sectionData: 1 },
+          });
+
+          let studentEmailTemplate = {
+            subject: "Potential Internship Opportunities",
+            body: `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Potential Internship Opportunities</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f5f5f5;
+            color: #333333;
+        }
+        .container {
+            max-width: 700px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #007bff, #00c4b4);
+            color: #ffffff;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 26px;
+            font-weight: 700;
+        }
+        .content {
+            padding: 25px;
+        }
+        .content p {
+            font-size: 16px;
+            line-height: 1.6;
+            margin: 10px 0;
+        }
+        .content h2 {
+            font-size: 20px;
+            color: #007bff;
+            margin: 20px 0 10px;
+            font-weight: 600;
+        }
+        .card {
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+            border: 1px solid #e0e0e0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        table td {
+            padding: 10px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        table td:first-child {
+            font-weight: 600;
+            width: 30%;
+            color: #333333;
+            background-color: #f1f1f1;
+        }
+        .internship-card {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            background-color: #f9f9f9;
+        }
+        .cta-button {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #007bff;
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            margin: 15px 0;
+            text-align: center;
+        }
+        .footer {
+            background-color: #f5f5f5;
+            padding: 20px;
+            text-align: center;
+            font-size: 14px;
+            color: #666666;
+        }
+        @media screen and (max-width: 600px) {
+            .container {
+                width: 100%;
+                margin: 0;
+                border-radius: 0;
+            }
+            .header h1 {
+                font-size: 22px;
+            }
+            table td {
+                display: block;
+                width: 100%;
+                box-sizing: border-box;
+            }
+            table td:first-child {
+                width: 100%;
+                background-color: #e8e8e8;
+                border-bottom: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Potential Internship Opportunities</h1>
+            <p>Companies Matching Your {data.Preference Title} Preferences</p>
+        </div>
+        <div class="content">
+            <p>Hello {data.Name},</p>
+            <p>We found {data.MatchCount} internship opportunities that match your preferences for <strong>{data.Preference Title}</strong> positions.</p>
+            
+            <div class="card">
+                <h2>Your Preference Details</h2>
+                <table>
+                    <tr><td>Desired Role</td><td>{data.Preference Title}</td></tr>
+                    <tr><td>Preferred Location</td><td>{data.Location}</td></tr>
+                    <tr><td>Internship Type</td><td>{data.Type}</td></tr>
+                    <tr><td>Duration</td><td>{data.Duration}</td></tr>
+                    <tr><td>Your Skills</td><td>{data.Skills}</td></tr>
+                </table>
+            </div>
+            
+            <h2>Matching Internships</h2>
+            {data.Internships}
+            
+            <p>You can apply to these opportunities on your {data.Your Portal Name} dashboard.</p>
+            <p>For support, contact us at <a href="mailto:{data.support_email}">{data.support_email}</a>.</p>
+            <p>Best of luck,<br>The {data.Your Portal Name} Team</p>
+            <a href="{data.your_portal_url}/internships" class="cta-button">View All Internships</a>
+        </div>
+        <div class="footer">
+            <p>Follow us on {data.Social Media Links}</p>
+            <p>© {data.Year} {data.Your Portal Name}. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>`,
+          };
+
+          if (studentTemplateResponse.length > 0) {
+            studentEmailTemplate = {
+              subject: studentTemplateResponse[0].sectionData.template.subject || studentEmailTemplate.subject,
+              body: studentTemplateResponse[0].sectionData.template.body || studentEmailTemplate.body,
+            };
+          }
+
+          // Send emails to students
+          for (const app of studentApplications) {
+            const studentId = app.createdBy;
+            if (sentStudentEmails.has(studentId)) continue; // Skip if already sent
+
+            const studentDataResponse = await fetchSectionData({
+              collectionName: "appuser",
+              query: { _id: studentId },
+              projection: {
+                "sectionData.appuser.legalname": 1,
+                "sectionData.appuser.email": 1,
+                "sectionData.appuser.skills": 1,
+              },
+            });
+
+            if (studentDataResponse.length > 0) {
+              const student = studentDataResponse[0].sectionData.appuser;
+              const studentApp = app.sectionData.application;
+
+              // Fetch skill names
+              const skillNamesResponse = await fetchSectionData({
+                collectionName: "skills",
+                query: { _id: { $in: studentApp.skills } },
+                projection: { "sectionData.skills.name": 1 },
+              });
+
+              const skillNames = skillNamesResponse.map(skill => skill.sectionData.skills.name).join(", ");
+
+              // Internship HTML for student email
+              const internshipHtml = `
+                <div class="internship-card">
+                    <table>
+                        <tr><td>Company</td><td>${formData.company}</td></tr>
+                        <tr><td>Internship Title</td><td>${formData.title}</td></tr>
+                        <tr><td>Location</td><td>${formData.location}</td></tr>
+                        <tr><td>Internship Type</td><td>${formData.time}</td></tr>
+                        <tr><td>Duration</td><td>${validateDuration(formData.internshipduration)}</td></tr>
+                        <tr><td>Skills Required</td><td>${formData.skillsrequired.map(skill => skill.label).join(", ")}</td></tr>
+                    </table>
+                </div>
+              `;
+
+              // Prepare student email data
+              const studentEmailData = {
+                Name: student.legalname || "Student",
+                "Preference Title": studentApp.desiredinternshiptitle,
+                Location: studentApp.preferredlocation,
+                Type: studentApp.internshiptype,
+                Duration: studentApp.availabilityduration,
+                Skills: skillNames,
+                MatchCount: 1,
+                Internships: internshipHtml,
+                "Your Portal Name": "InternPH",
+                support_email: "support@internsph.com",
+                "Social Media Links": "LinkedIn | Twitter | Facebook",
+                Year: new Date().getFullYear(),
+                your_portal_url: "https://internsph.com",
+              };
+
+              // Send email to student
+              await sendEmailTemplate({
+                email: student.email,
+                smtpId: "1750933648545",
+                templateId: "1755673066029",
+                data: studentEmailData,
+                category: "primary",
+              });
+
+              sentStudentEmails.add(studentId); // Mark student as emailed
+            }
+          }
+
+          if (sentStudentEmails.size > 0) {
+            toast.success("Emails sent to matching students!", {
               position: "top-right",
               autoClose: 3000,
               hideProgressBar: false,
@@ -631,9 +1121,20 @@ const PostInternshipForm = () => {
               pauseOnHover: true,
               draggable: true,
               theme: "light",
-            }
-          );
+            });
+          }
         }
+
+        toast.success("Internship posted successfully!", {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          theme: "light",
+          onClose: () => navigate("/internship"),
+        });
       } else {
         toast.error(response.message || "Failed to post internship.", {
           position: "top-right",
@@ -675,9 +1176,7 @@ const PostInternshipForm = () => {
         <h2 className="text-xl md:text-2xl font-bold text-[#050748] mb-4 text-center">
           Post Internship Form
         </h2>
-        {error && (
-          <p className="text-red-500 text-sm mb-4 text-center">{error}</p>
-        )}
+        {error && <p className="text-red-500 text-sm mb-4 text-center">{error}</p>}
         <form className="space-y-6" onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 gap-4">
             <div>
@@ -815,8 +1314,7 @@ const PostInternshipForm = () => {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                Internship Duration (Months){" "}
-                <span className="text-red-500">*</span>
+                Internship Duration (Months) <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <input

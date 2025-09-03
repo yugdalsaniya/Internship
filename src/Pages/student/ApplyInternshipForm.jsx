@@ -4,7 +4,7 @@ import { FaCloudUploadAlt, FaMale, FaFemale } from 'react-icons/fa';
 import { MdOutlineWc } from 'react-icons/md';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { fetchSectionData, mUpdate, uploadAndStoreFile } from '../../Utils/api';
+import { fetchSectionData, mUpdate, uploadAndStoreFile, sendEmailTemplate, sendRawEmail } from '../../Utils/api';
 
 const genderOptions = [
   { label: 'Female', icon: <FaFemale size={20} /> },
@@ -13,8 +13,76 @@ const genderOptions = [
 ];
 
 const typeOptions = ['College Students', 'Professional', 'Others', 'Fresher'];
-const yearOptions = ['2020', '2021', '2022', '2023', '2024'];
+const yearOptions = ['2020', '2021', '2022', '2023', '2024', '2025'];
 const differentlyAbledOptions = ['No', 'Yes'];
+
+// Default email templates as fallback
+const defaultStudentEmailTemplate = {
+  subject: 'Congratulations, [Name]! Your Internship Application Has Been Submitted',
+  body: `
+Congratulations, [Name]!
+Your Internship Application Has Been Submitted
+
+Hi [Name],
+
+Great job taking the first step towards your career! We've successfully received your application for the [Internship Title] at [Company]. You're one step closer to an exciting opportunity!
+
+Your Application Details
+Name: [Name]
+Mobile: [Mobile]
+Email: [Email]
+Institute: [Institute]
+Internship Title: [Internship Title]
+Location: [Location]
+Company: [Company]
+Duration: [Time]
+Category: [Category]
+Salary: [Salary]
+
+What's next? The [Company] team will review your application and reach out to you soon. Keep an eye on your inbox (and spam/junk folder) for updates!
+
+For any questions, feel free to reach out to us at [support_email].
+
+Best of luck,
+The [Your Portal Name] Team
+
+Explore More Opportunities
+Follow us on [Social Media Links]
+
+© [Year] [Your Portal Name]. All rights reserved.
+`
+};
+
+const defaultCompanyEmailTemplate = {
+  subject: 'New Internship Application Received for [Internship Title]',
+  body: `
+New Internship Application Received
+
+Dear [Company Contact],
+
+A new application has been submitted for the [Internship Title] position at [Company].
+
+Applicant Details:
+Name: [Name]
+Mobile: [Mobile]
+Email: [Email]
+Institute: [Institute]
+Internship Title: [Internship Title]
+Location: [Location]
+Company: [Company]
+Duration: [Time]
+Category: [Category]
+Salary: [Salary]
+
+Please review the application at your earliest convenience. For any questions, contact us at [support_email].
+
+Best regards,
+The [Your Portal Name] Team
+
+© [Year] [Your Portal Name]. All rights reserved.
+[Social Media Links]
+`
+};
 
 const ApplyInternshipForm = () => {
   const { id } = useParams();
@@ -47,10 +115,26 @@ const ApplyInternshipForm = () => {
   const [isResumeUploaded, setIsResumeUploaded] = useState(false);
   const [specializationOptions, setSpecializationOptions] = useState([]);
   const [specializationMap, setSpecializationMap] = useState({});
+  const [jobPostData, setJobPostData] = useState({});
+  const [companyEmail, setCompanyEmail] = useState('');
+  const [companyContact, setCompanyContact] = useState('Team');
+  const [studentEmailTemplate, setStudentEmailTemplate] = useState(defaultStudentEmailTemplate);
+  const [companyEmailTemplate, setCompanyEmailTemplate] = useState(defaultCompanyEmailTemplate);
 
   const user = JSON.parse(localStorage.getItem('user')) || {};
   const userId = user.userid;
 
+  // Function to replace placeholders client-side as fallback
+  const replacePlaceholders = (body, data) => {
+    let updatedBody = body;
+    Object.keys(data).forEach((key) => {
+      const regex = new RegExp(`\\[${key}\\]`, 'g');
+      updatedBody = updatedBody.replace(regex, data[key] || '');
+    });
+    return updatedBody;
+  };
+
+  // Fetch data including templates and company email
   const fetchData = async () => {
     if (!userId) {
       setError('User not logged in. Please log in to continue.');
@@ -156,6 +240,65 @@ const ApplyInternshipForm = () => {
 
       setSpecializationMap(specializationMap);
       setSpecializationOptions(specializations);
+
+      // Fetch job post data
+      const jobPostResponse = await fetchSectionData({
+        collectionName: 'jobpost',
+        query: { _id: id },
+        projection: { sectionData: 1, createdBy: 1 },
+      });
+
+      if (jobPostResponse.length > 0) {
+        setJobPostData(jobPostResponse[0].sectionData.jobpost);
+        const createdBy = jobPostResponse[0].createdBy;
+
+        // Fetch company email from company collection
+        const companyResponse = await fetchSectionData({
+          collectionName: 'company',
+          query: { _id: createdBy },
+          projection: { sectionData: 1 },
+        });
+
+        if (companyResponse.length > 0) {
+          const companyData = companyResponse[0].sectionData.Company;
+          setCompanyEmail(companyData.username || 'support@internsph.com');
+          setCompanyContact(companyData.companyName || 'Team');
+          console.log('Fetched company email:', companyData.username);
+        } else {
+          console.warn('Company data not found for createdBy:', createdBy);
+          setCompanyEmail('support@internsph.com');
+        }
+      } else {
+        setError('Job post data not found.');
+      }
+
+      // Fetch email templates
+      const templateResponse = await fetchSectionData({
+        collectionName: 'template',
+        query: { _id: { $in: ['1752140834886', '1752140639684'] } },
+        projection: { sectionData: 1, _id: 1 },
+      });
+
+      console.log('Template fetch response:', JSON.stringify(templateResponse, null, 2));
+
+      if (templateResponse.length > 0) {
+        templateResponse.forEach((template) => {
+          const templateData = template.sectionData.template || {};
+          if (template._id === '1752140834886') {
+            setStudentEmailTemplate({
+              subject: templateData.subject || defaultStudentEmailTemplate.subject,
+              body: templateData.body || defaultStudentEmailTemplate.body,
+            });
+          } else if (template._id === '1752140639684') {
+            setCompanyEmailTemplate({
+              subject: templateData.subject || defaultCompanyEmailTemplate.subject,
+              body: templateData.body || defaultCompanyEmailTemplate.body,
+            });
+          }
+        });
+      } else {
+        console.warn('No email templates found; using default templates.');
+      }
     } catch (err) {
       setError('Failed to fetch data. Please try again.');
       console.error('Fetch Data Error:', err);
@@ -166,8 +309,6 @@ const ApplyInternshipForm = () => {
 
   useEffect(() => {
     fetchData();
-
-    // Add focus listener to refetch data when the window gains focus
     window.addEventListener('focus', fetchData);
     return () => {
       window.removeEventListener('focus', fetchData);
@@ -186,7 +327,7 @@ const ApplyInternshipForm = () => {
     const selectedFile = e.target.files[0];
     setFile(selectedFile);
     setFileName(selectedFile?.name || '');
-    setIsResumeUploaded(false); // Allow re-upload
+    setIsResumeUploaded(false);
   };
 
   const validateFirstForm = () => {
@@ -234,7 +375,6 @@ const ApplyInternshipForm = () => {
       setLoading(true);
       let resumeUrl = formData.resume;
 
-      // Upload new resume if a file is selected
       if (file) {
         console.log('Uploading new resume for userId:', userId);
         const uploadResponse = await uploadAndStoreFile({
@@ -255,14 +395,10 @@ const ApplyInternshipForm = () => {
 
       console.log('Resume URL to be saved:', resumeUrl);
 
-      // Prepare user data update
       const updateData = {
         sectionData: {
           appuser: {
             ...existingUserData,
-            name: formData.email,
-            fname: '',
-            lname: '',
             email: formData.email,
             mobile: formData.mobile,
             legalname: formData.name.trim(),
@@ -293,7 +429,6 @@ const ApplyInternshipForm = () => {
 
       console.log('Updating appuser with data:', JSON.stringify(updateData, null, 2));
 
-      // Update user data in appuser collection
       const updateResponse = await mUpdate({
         appName: 'app8657281202648',
         collectionName: 'appuser',
@@ -303,7 +438,6 @@ const ApplyInternshipForm = () => {
       });
       console.log('Update response:', updateResponse);
 
-      // Record application in applications collection
       const applicationResponse = await mUpdate({
         appName: 'app8657281202648',
         collectionName: 'applications',
@@ -320,7 +454,6 @@ const ApplyInternshipForm = () => {
       });
       console.log('Application recorded:', applicationResponse);
 
-      // Update jobpost to add userId to applicants array
       const jobPostUpdateResponse = await mUpdate({
         appName: 'app8657281202648',
         collectionName: 'jobpost',
@@ -334,10 +467,172 @@ const ApplyInternshipForm = () => {
       });
       console.log('Job post applicants updated:', jobPostUpdateResponse);
 
-      // Scroll to top before showing toast
-      window.scrollTo({ top: 0, behavior: 'instant' });
+      // Prepare data object for email placeholders
+      const emailData = {
+        Name: formData.name || 'Unknown',
+        Mobile: formData.mobile || 'Not provided',
+        Email: formData.email || 'Not provided',
+        Institute: instituteMap[formData.organization] || 'Unknown Institute',
+        'Internship Title': jobPostData.title || 'Internship',
+        Location: jobPostData.location || 'Not specified',
+        Company: jobPostData.company || jobPostData.organizationName || 'Unknown Company',
+        Time: formData.duration || jobPostData.internshipduration || 'Not specified',
+        Category: jobPostData.category || 'Not specified',
+        Salary: jobPostData.salary || 'Not specified',
+        support_email: 'support@inturnsph.com',
+        your_portal_url: 'https://inturnshp.com/ph/',
+        Year: new Date().getFullYear().toString(),
+        'Your Portal Name': 'Inturnshp',
+        'Social Media Links': '<a href="https://twitter.com/inturnsph">Twitter</a> | <a href="https://linkedin.com/company/inturnsph">LinkedIn</a> | <a href="https://facebook.com/inturnsph">Facebook</a>',
+        'Company Contact': companyContact,
+      };
 
-      // Show success toast and delay navigation
+      console.log('Email data prepared:', JSON.stringify(emailData, null, 2));
+
+      // Send student email
+      try {
+        console.log('Attempting to send student email to:', formData.email);
+        const studentEmailResponse = await sendEmailTemplate(
+          {
+            appName: 'app8657281202648',
+            email: formData.email,
+            templateId: '1752140834886',
+            smtpId: '1750933648545',
+            data: emailData,
+            category: 'primary',
+            subject: studentEmailTemplate.subject.replace('[Name]', emailData.Name),
+          },
+          toast
+        );
+        console.log('Student email sent successfully:', formData.email, studentEmailResponse);
+        toast.success('Student email sent successfully.', {
+          position: 'top-right',
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          theme: 'light',
+        });
+      } catch (emailError) {
+        console.error('Failed to send student email via template:', emailError);
+        // Fallback to sending raw HTML
+        const studentEmailBody = replacePlaceholders(studentEmailTemplate.body, emailData);
+        console.log('Student email body (fallback):', studentEmailBody);
+        try {
+          const studentFallbackResponse = await sendRawEmail(
+            {
+              appName: 'app8657281202648',
+              smtpId: '1750933648545',
+              to: formData.email,
+              subject: studentEmailTemplate.subject.replace('[Name]', emailData.Name),
+              html: studentEmailBody,
+            },
+            toast
+          );
+          console.log('Student email sent via fallback:', formData.email, studentFallbackResponse);
+          toast.success('Student email sent via fallback.', {
+            position: 'top-right',
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            theme: 'light',
+          });
+        } catch (fallbackError) {
+          console.error('Failed to send student email via fallback:', fallbackError);
+          toast.error(`Failed to send student email: ${fallbackError.message}`, {
+            position: 'top-right',
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            theme: 'light',
+          });
+        }
+      }
+
+      // Send company email
+      if (companyEmail) {
+        try {
+          console.log('Attempting to send company email to:', companyEmail);
+          const companyEmailResponse = await sendEmailTemplate(
+            {
+              appName: 'app8657281202648',
+              email: companyEmail,
+              templateId: '1752140639684',
+              smtpId: '1750933648545',
+              data: emailData,
+              category: 'primary',
+              subject: companyEmailTemplate.subject.replace('[Internship Title]', emailData['Internship Title']),
+            },
+            toast
+          );
+          console.log('Company email sent successfully:', companyEmail, companyEmailResponse);
+          toast.success('Company email sent successfully.', {
+            position: 'top-right',
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            theme: 'light',
+          });
+        } catch (emailError) {
+          console.error('Failed to send company email via template:', emailError);
+          // Fallback to sending raw HTML
+          const companyEmailBody = replacePlaceholders(companyEmailTemplate.body, emailData);
+          console.log('Company email body (fallback):', companyEmailBody);
+          try {
+            const companyFallbackResponse = await sendRawEmail(
+              {
+                appName: 'app8657281202648',
+                smtpId: '1750933648545',
+                to: companyEmail,
+                subject: companyEmailTemplate.subject.replace('[Internship Title]', emailData['Internship Title']),
+                html: companyEmailBody,
+              },
+              toast
+            );
+            console.log('Company email sent via fallback:', companyEmail, companyFallbackResponse);
+            toast.success('Company email sent via fallback.', {
+              position: 'top-right',
+              autoClose: 3000,
+              hideProgressBar: false,
+              closeOnClick: true,
+              pauseOnHover: true,
+              draggable: true,
+              theme: 'light',
+            });
+          } catch (fallbackError) {
+            console.error('Failed to send company email via fallback:', fallbackError);
+            toast.error(`Failed to send company email: ${fallbackError.message}`, {
+              position: 'top-right',
+              autoClose: 3000,
+              hideProgressBar: false,
+              closeOnClick: true,
+              pauseOnHover: true,
+              draggable: true,
+              theme: 'light',
+            });
+          }
+        }
+      } else {
+        console.warn('Company email not found; skipping company email.');
+        toast.warn('Company email not found; notification not sent to company.', {
+          position: 'top-right',
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          theme: 'light',
+        });
+      }
+
+      window.scrollTo({ top: 0, behavior: 'instant' });
       toast.success('Form submitted successfully!', {
         position: 'top-right',
         autoClose: 3000,
