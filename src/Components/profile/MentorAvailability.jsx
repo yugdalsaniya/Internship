@@ -1,120 +1,209 @@
-import React, { useState, useEffect } from 'react';
-import { toast } from 'react-toastify';
-import { FaCheckCircle, FaClock } from 'react-icons/fa';
-import { BiTime } from 'react-icons/bi';
-import { mUpdate } from '../../Utils/api';
+import React, { useState, useEffect } from "react";
+import { toast } from "react-toastify";
+import { FaCheckCircle } from "react-icons/fa";
+import { BiTime } from "react-icons/bi";
+import { mUpdate, fetchSectionData } from "../../Utils/api";
 
-const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+const daysOfWeek = [
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+  "Sunday",
+];
+
 const timeSlots = [
-  '9:00 AM - 10:00 AM', '10:00 AM - 11:00 AM', '11:00 AM - 12:00 PM',
-  '12:00 PM - 1:00 PM', '1:00 PM - 2:00 PM', '2:00 PM - 3:00 PM',
-  '3:00 PM - 4:00 PM', '4:00 PM - 5:00 PM', '5:00 PM - 6:00 PM'
+  "9:00 AM - 10:00 AM",
+  "10:00 AM - 11:00 AM",
+  "11:00 AM - 12:00 PM",
+  "12:00 PM - 1:00 PM",
+  "1:00 PM - 2:00 PM",
+  "2:00 PM - 3:00 PM",
+  "3:00 PM - 4:00 PM",
+  "4:00 PM - 5:00 PM",
+  "5:00 PM - 6:00 PM",
+];
+
+// Backend JSON keys
+const timeSlotKeys = [
+  "9amTo10am",
+  "10amTo11am",
+  "11amTo12pm",
+  "12pmTo1pm",
+  "1pmTo2pm",
+  "2pmTo3pm",
+  "3pmTo4pm",
+  "4pmTo5pm",
+  "5pmTo6pm",
 ];
 
 const MentorAvailability = ({ userData, updateCompletionStatus }) => {
   const [availability, setAvailability] = useState({});
   const [isProcessing, setIsProcessing] = useState(false);
   const [isFirstSaveSuccessful, setIsFirstSaveSuccessful] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
-  useEffect(() => {
-    // Initialize availability from userData or create empty structure
-    const initialAvailability = userData.mentorAvailability || {};
-    const newAvailability = {};
-    
-    daysOfWeek.forEach(day => {
-      newAvailability[day] = initialAvailability[day] || timeSlots.map(() => false);
+  // ✅ Initialize empty availability structure
+  const getEmptyAvailability = () => {
+    const empty = {};
+    daysOfWeek.forEach((day) => {
+      empty[day] = timeSlotKeys.map(() => false);
     });
-    
-    setAvailability(newAvailability);
-    
-    // Check if availability already exists
-    const hasAvailability = Object.values(initialAvailability).some(day => 
-      Array.isArray(day) && day.some(slot => slot === true)
-    );
-    
-    if (hasAvailability) {
-      setIsFirstSaveSuccessful(true);
-      updateCompletionStatus('Availability', true);
+    return empty;
+  };
+
+  // ✅ Fetch availability from DB (like Skills.jsx)
+  useEffect(() => {
+    if (!userData.userid) {
+      toast.error("Please log in to view your availability.", {
+        autoClose: 5000,
+      });
+      return;
     }
-  }, [userData, updateCompletionStatus]);
+
+    const fetchAvailability = async () => {
+      try {
+        const response = await fetchSectionData({
+          appName: "app8657281202648",
+          collectionName: "appuser",
+          query: { _id: userData.userid },
+          projection: { "sectionData.appuser.availabilitydetails": 1 },
+        });
+
+        const apiData = response[0];
+        if (!apiData) {
+          setAvailability(getEmptyAvailability());
+          updateCompletionStatus("Availability", false);
+          return;
+        }
+
+        const availabilityFromServer =
+          apiData?.sectionData?.appuser?.availabilitydetails || [];
+
+        if (!availabilityFromServer.length) {
+          setAvailability(getEmptyAvailability());
+          updateCompletionStatus("Availability", false);
+          return;
+        }
+
+        // Map DB data → state
+        const mapped = {};
+        daysOfWeek.forEach((day) => {
+          const dayData =
+            availabilityFromServer.find((d) => d.Day === day) || {};
+          mapped[day] = timeSlotKeys.map((key) => !!dayData[key]);
+        });
+
+        setAvailability(mapped);
+
+        // Mark completion if any slot is selected
+        const hasAvailability = availabilityFromServer.some((day) =>
+          timeSlotKeys.some((key) => day[key])
+        );
+        if (hasAvailability) {
+          setIsFirstSaveSuccessful(true);
+        }
+        updateCompletionStatus("Availability", hasAvailability);
+      } catch (err) {
+        console.error("Failed to load availability:", err);
+        toast.error("Failed to load availability. Please try again.", {
+          autoClose: 5000,
+        });
+        setAvailability(getEmptyAvailability());
+        updateCompletionStatus("Availability", false);
+      }
+    };
+
+    fetchAvailability();
+  }, [userData.userid, updateCompletionStatus]);
 
   const handleTimeSlotChange = (day, slotIndex) => {
-    setAvailability(prev => ({
+    setAvailability((prev) => ({
       ...prev,
-      [day]: prev[day].map((slot, index) => 
-        index === slotIndex ? !slot : slot
-      )
+      [day]: prev[day].map((slot, idx) => (idx === slotIndex ? !slot : slot)),
     }));
   };
 
   const handleSelectAllDay = (day, select) => {
-    setAvailability(prev => ({
+    setAvailability((prev) => ({
       ...prev,
-      [day]: prev[day].map(() => select)
+      [day]: prev[day].map(() => select),
     }));
   };
 
   const handleSave = async () => {
     if (isProcessing) return;
 
-    // Check if at least one time slot is selected
-    const hasAvailability = Object.values(availability).some(day => 
-      day.some(slot => slot === true)
+    const hasAvailability = Object.values(availability).some((slots) =>
+      slots.some((slot) => slot)
     );
-    
+
     if (!hasAvailability) {
-      setError('Please select at least one time slot for your availability.');
-      toast.error('Please select at least one time slot for your availability.', {
-        position: 'top-right',
-        autoClose: 5000,
-      });
-      setTimeout(() => setError(''), 5000);
+      const msg = "Please select at least one time slot for your availability.";
+      setError(msg);
+      toast.error(msg, { position: "top-right", autoClose: 5000 });
+      setTimeout(() => setError(""), 5000);
       return;
     }
 
     setIsProcessing(true);
-    setError('');
+    setError("");
 
     try {
-      const userId = userData.userid;
-      if (!userId) {
-        throw new Error('User ID not found. Please log in again.');
-      }
+      const userId = userData?.userid;
+      if (!userId) throw new Error("User ID not found. Please log in again.");
+
+      // Prepare data to save
+      const availabilityDetails = daysOfWeek.map((day) => {
+        const dayData = { Day: day };
+        timeSlotKeys.forEach((key, idx) => {
+          dayData[key] = availability[day][idx] || false;
+        });
+        return dayData;
+      });
 
       const updateData = {
         $set: {
-          'sectionData.appuser.mentorAvailability': availability,
-          editedAt: new Date().toISOString(),
+          "sectionData.appuser.availabilitydetails": availabilityDetails,
+          "sectionData.appuser.editedAt": new Date().toISOString(),
         },
       };
 
       const updateResponse = await mUpdate({
-        appName: 'app8657281202648',
-        collectionName: 'appuser',
+        appName: "app8657281202648",
+        collectionName: "appuser",
         query: { _id: userId },
         update: updateData,
-        options: { upsert: false, writeConcern: { w: 'majority' } },
+        options: { upsert: false, writeConcern: { w: "majority" } },
       });
 
-      if (updateResponse && (updateResponse.success || updateResponse.modifiedCount > 0)) {
-        toast.success('Availability updated successfully!', {
-          position: 'top-right',
+      if (
+        updateResponse &&
+        (updateResponse.success || updateResponse.modifiedCount > 0)
+      ) {
+        toast.success("Availability updated successfully!", {
+          position: "top-right",
           autoClose: 3000,
         });
-        if (!isFirstSaveSuccessful) {
-          setIsFirstSaveSuccessful(true);
+
+        // ✅ Sync frontend state
+        if (userData?.sectionData?.appuser) {
+          userData.sectionData.appuser.availabilitydetails =
+            availabilityDetails;
         }
-        updateCompletionStatus('Availability', true);
+
+        if (!isFirstSaveSuccessful) setIsFirstSaveSuccessful(true);
+        updateCompletionStatus("Availability", true);
       } else {
-        throw new Error('Failed to update availability in database.');
+        throw new Error("Failed to update availability in database.");
       }
     } catch (err) {
-      setError(err.message || 'Failed to update availability. Please try again.');
-      toast.error(err.message || 'Failed to update availability. Please try again.', {
-        position: 'top-right',
-        autoClose: 5000,
-      });
+      const msg =
+        err.message || "Failed to update availability. Please try again.";
+      setError(msg);
+      toast.error(msg, { position: "top-right", autoClose: 5000 });
     } finally {
       setIsProcessing(false);
     }
@@ -148,8 +237,11 @@ const MentorAvailability = ({ userData, updateCompletionStatus }) => {
             <thead>
               <tr>
                 <th className="px-4 py-2 border-b">Day</th>
-                {timeSlots.map((slot, index) => (
-                  <th key={index} className="px-2 py-2 border-b text-xs whitespace-nowrap">
+                {timeSlots.map((slot, idx) => (
+                  <th
+                    key={idx}
+                    className="px-2 py-2 border-b text-xs whitespace-nowrap"
+                  >
                     {slot}
                   </th>
                 ))}
@@ -157,15 +249,18 @@ const MentorAvailability = ({ userData, updateCompletionStatus }) => {
               </tr>
             </thead>
             <tbody>
-              {daysOfWeek.map(day => (
+              {daysOfWeek.map((day) => (
                 <tr key={day}>
                   <td className="px-4 py-2 border-b font-medium">{day}</td>
-                  {timeSlots.map((_, slotIndex) => (
-                    <td key={slotIndex} className="px-2 py-2 border-b text-center">
+                  {timeSlots.map((_, slotIdx) => (
+                    <td
+                      key={slotIdx}
+                      className="px-2 py-2 border-b text-center"
+                    >
                       <input
                         type="checkbox"
-                        checked={availability[day]?.[slotIndex] || false}
-                        onChange={() => handleTimeSlotChange(day, slotIndex)}
+                        checked={availability[day]?.[slotIdx] || false}
+                        onChange={() => handleTimeSlotChange(day, slotIdx)}
                         className="h-4 w-4 text-blue-600 rounded"
                         disabled={isProcessing}
                       />
@@ -174,8 +269,12 @@ const MentorAvailability = ({ userData, updateCompletionStatus }) => {
                   <td className="px-4 py-2 border-b text-center">
                     <input
                       type="checkbox"
-                      checked={availability[day]?.every(slot => slot) || false}
-                      onChange={(e) => handleSelectAllDay(day, e.target.checked)}
+                      checked={
+                        availability[day]?.every((slot) => slot) || false
+                      }
+                      onChange={(e) =>
+                        handleSelectAllDay(day, e.target.checked)
+                      }
                       className="h-4 w-4 text-blue-600 rounded"
                       disabled={isProcessing}
                     />
@@ -186,7 +285,9 @@ const MentorAvailability = ({ userData, updateCompletionStatus }) => {
           </table>
         </div>
 
-        {error && <p className="text-red-500 text-sm text-center mt-4">{error}</p>}
+        {error && (
+          <p className="text-red-500 text-sm text-center mt-4">{error}</p>
+        )}
       </div>
 
       <div className="sticky bottom-0 bg-white border-t p-4">
@@ -195,10 +296,9 @@ const MentorAvailability = ({ userData, updateCompletionStatus }) => {
             onClick={handleSave}
             className="bg-blue-600 text-white px-6 py-2 rounded-full flex items-center gap-2 text-sm font-medium hover:bg-blue-700 transition disabled:opacity-50"
             disabled={isProcessing}
-            aria-label="Save Availability"
           >
             {isProcessing ? (
-              'Processing...'
+              "Processing..."
             ) : (
               <>
                 <span className="text-lg">✓</span> Save

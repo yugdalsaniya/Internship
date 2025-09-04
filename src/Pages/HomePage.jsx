@@ -7,15 +7,13 @@ import FeaturedInterns from "../Components/home/FeaturedInterns";
 import TopEmployers from "../Components/home/TopEmployers";
 import AcademyPartners from "../Components/home/AcademyPartners";
 import NewsAndBlog from "../Components/home/NewsAndBlog";
-import Slider from "../Components/home/Slider.jsx"
+import Slider from "../Components/home/Slider.jsx";
 import PeopleUsingInternship from "../Components/home/PeopleUsingInternship";
 import bannerImage from "../assets/Hero/banner.jpg";
+import TopMentors from "../Components/home/TopMentors.jsx";
 
 export default function HomePage() {
-
-
- // THIS IS FOR AUTO-REQUESTING LOCATION ON PAGE LOAD
-
+  // THIS IS FOR AUTO-REQUESTING LOCATION ON PAGE LOAD
 
   // const [location, setLocation] = useState(null);
   // const [error, setError] = useState(null);
@@ -44,17 +42,16 @@ export default function HomePage() {
 
   return (
     <>
-     
-
       <Hero backgroundImage={bannerImage} />
       <FeaturedCompany />
       <RecentInternships />
       <Category />
       <FeaturedInterns />
-      <PeopleUsingInternship/>
+      <PeopleUsingInternship />
       <TopEmployers />
       {/* <Slider /> */}
       <AcademyPartners />
+      <TopMentors />
       <NewsAndBlog />
     </>
   );
