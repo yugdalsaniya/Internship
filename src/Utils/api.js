@@ -18,6 +18,7 @@ export const fetchSectionData = async (params) => {
   const {
     collectionName,
     query = {},
+    lookups = [],
     projection = {},
     limit = 0,
     skip = 0,
@@ -37,6 +38,7 @@ export const fetchSectionData = async (params) => {
         dbName: DB_NAME,
         collectionName,
         query,
+        lookups,
         projection,
         limit,
         skip,

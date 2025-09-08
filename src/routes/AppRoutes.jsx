@@ -43,6 +43,7 @@ import PublicRoute from "../routes/PublicRoute";
 import SubscriptionPlans from "../Pages/company/SubscriptionPlans"; // Import SubscriptionPlans component
 import MentorProfilePage from "../Pages/Mentor/MentorProfilePage";
 import AllMentors from "../Components/home/AllMentors";
+import CreateResume from "../Pages/CreateResume.jsx";
 
 function AppRoutesInner() {
   const location = useLocation();
@@ -105,6 +106,7 @@ function AppRoutesInner() {
         <Route path="/all-employers" element={<AllEmployers />} />
         <Route path="/all-academies" element={<AllAcademies />} />
         <Route path="/all-mentors" element={<AllMentors />} />
+        <Route path="/editprofile/create-resume" element={<CreateResume />} />
         <Route path="/academy/:slug/:id" element={<AcademyProfilePage />} />
         <Route path="/mentor/:slug/:id" element={<MentorProfilePage />} />
         <Route path="/news-and-blog" element={<AllNewsAndBlogs />} />
