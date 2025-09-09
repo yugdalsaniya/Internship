@@ -44,6 +44,9 @@ import SubscriptionPlans from "../Pages/company/SubscriptionPlans"; // Import Su
 import MentorProfilePage from "../Pages/Mentor/MentorProfilePage";
 import AllMentors from "../Components/home/AllMentors";
 import CreateResume from "../Pages/CreateResume.jsx";
+import PostMentorship from "../Pages/Mentor/PostMentorship.jsx";
+import PostMentorshipForm from "../Pages/Mentor/PostMentorshipForm.jsx";
+import ManageMentorships from "../Pages/Mentor/ManageMentorships.jsx";
 
 function AppRoutesInner() {
   const location = useLocation();
@@ -111,6 +114,11 @@ function AppRoutesInner() {
         <Route path="/mentor/:slug/:id" element={<MentorProfilePage />} />
         <Route path="/news-and-blog" element={<AllNewsAndBlogs />} />
         <Route path="/subscription-plans" element={<SubscriptionPlans />} />
+        <Route path="/mentorship-programs" element={<PostMentorship />} />
+                <Route path="/post-mentorship-form" element={<PostMentorshipForm />} />
+
+        <Route path="/post-mentorship-form/:id" element={<PostMentorshipForm />} />
+        <Route path="/manage-mentorship" element={<ManageMentorships />} />
       </Route>
     </Routes>
   );

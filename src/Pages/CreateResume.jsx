@@ -1,14 +1,24 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import alex from "../assets/Hero/alex-resume.jpg";
-import { Plane, Bike, Tv, Music, Camera, Gamepad2 } from "lucide-react";
+import { User, Phone, Mail, MapPin, Briefcase, BookOpen, Star, Award, Printer } from "lucide-react";
 import { fetchSectionData } from "../Utils/api";
 
 export default function App({ userData }) {
   const navigate = useNavigate();
-  const handlePrint = () => window.print();
+  const resumeRef = useRef(null);
+
+  const handlePrint = () => {
+    const printContents = resumeRef.current.innerHTML;
+    const originalContents = document.body.innerHTML;
+
+    document.body.innerHTML = `<div class="min-h-screen bg-white max-w-4xl mx-auto font-sans text-gray-800">${printContents}</div>`;
+    window.print();
+    document.body.innerHTML = originalContents;
+    window.location.reload(); // Restore event listeners after printing
+  };
 
   const [about, setAbout] = useState("");
   const [educationList, setEducationList] = useState([]);
@@ -288,7 +298,7 @@ export default function App({ userData }) {
   };
 
   return (
-    <div className="max-w-4xl mx-auto bg-white shadow-lg font-sans text-gray-800 print:shadow-none">
+    <div className="min-h-screen bg-white max-w-4xl mx-auto font-sans text-gray-800">
       <ToastContainer
         position="top-right"
         autoClose={5000}
@@ -298,71 +308,72 @@ export default function App({ userData }) {
         pauseOnHover
       />
 
-      {/* HEADER */}
-      <div className="flex items-center border-[3px] border-gray-500 mr-[90px] px-10 relative">
-        {/* LEFT SIDE: Name + Contact */}
-        <div className="flex items-center justify-between w-9/12">
-          <div>
-            {userDetails.name && (
-              <h1 className="text-4xl font-bold uppercase tracking-wide leading-tight">
-                {userDetails.name.toUpperCase()}
-              </h1>
-            )}
-            {userDetails.designation && (
-              <p className="text-base tracking-wide text-gray-500">
-                {userDetails.designation}
-              </p>
+      {/* Resume Content to Print */}
+      <div ref={resumeRef} className="shadow-lg print:shadow-none">
+        {/* HEADER */}
+        <div className="bg-white flex flex-col sm:flex-row items-center border-[3px] border-gray-500 px-8 py-6">
+          {/* LEFT SIDE: Name + Contact */}
+          <div className="flex flex-col sm:flex-row items-center justify-between w-full sm:w-9/12">
+            <div className="text-center sm:text-left">
+              {userDetails.name && (
+                <h1 className="text-4xl font-bold uppercase tracking-wide leading-tight">
+                  {userDetails.name.toUpperCase()}
+                </h1>
+              )}
+              {userDetails.designation && (
+                <p className="text-base tracking-wide text-gray-500">
+                  {userDetails.designation}
+                </p>
+              )}
+            </div>
+
+            {/* Contact Info */}
+            {(userDetails.mobile ||
+              userDetails.email ||
+              userDetails.location) && (
+              <div className="flex flex-col items-center sm:items-start mt-4 sm:mt-0">
+                <div className="w-[3px] h-8 bg-gray-500 hidden sm:block"></div>
+                <div className="flex flex-col gap-2 mt-2 mb-2">
+                  {userDetails.mobile && (
+                    <div className="flex items-center gap-2 text-gray-600 hover:text-blue-600">
+                      <Phone className="w-5 h-5" />
+                      <span>{userDetails.mobile}</span>
+                    </div>
+                  )}
+                  {userDetails.email && (
+                    <div className="flex items-center gap-2 text-gray-600 hover:text-blue-600">
+                      <Mail className="w-5 h-5" />
+                      <span>{userDetails.email}</span>
+                    </div>
+                  )}
+                  {userDetails.location && (
+                    <div className="flex items-center gap-2 text-gray-600 hover:text-blue-600">
+                      <MapPin className="w-5 h-5" />
+                      <span>{userDetails.location}</span>
+                    </div>
+                  )}
+                </div>
+                <div className="w-[3px] h-8 bg-gray-500 hidden sm:block"></div>
+              </div>
             )}
           </div>
 
-          {/* Contact Info */}
-          {(userDetails.mobile ||
-            userDetails.email ||
-            userDetails.location) && (
-            <div className="flex flex-col items-start">
-              <div className="w-[3px] h-8 ml-2 bg-gray-500"></div>
-              <div className="flex flex-col gap-2 mt-2 mb-2">
-                {userDetails.mobile && (
-                  <div className="flex items-center gap-2 text-gray-600 hover:text-blue-600">
-                    <span className="w-5 text-center">📞</span>
-                    <span>{userDetails.mobile}</span>
-                  </div>
-                )}
-                {userDetails.email && (
-                  <div className="flex items-center gap-2 text-gray-600 hover:text-blue-600">
-                    <span className="w-5 text-center">✉️</span>
-                    <span>{userDetails.email}</span>
-                  </div>
-                )}
-                {userDetails.location && (
-                  <div className="flex items-center gap-2 text-gray-600 hover:text-blue-600">
-                    <span className="w-5 text-center">📍</span>
-                    <span>{userDetails.location}</span>
-                  </div>
-                )}
-              </div>
-              <div className="w-[3px] ml-2 h-8 bg-gray-500"></div>
-            </div>
-          )}
+          {/* RIGHT SIDE: IMAGE */}
+          <div className="w-full sm:w-3/12 flex justify-center mt-4 sm:mt-0">
+            <img
+              src={alex}
+              alt="Profile"
+              className="w-32 h-32 object-cover rounded-full overflow-hidden"
+            />
+          </div>
         </div>
 
-        {/* RIGHT SIDE: IMAGE */}
-        <div className="w-3/12 flex justify-center absolute -right-[13%]">
-          <img
-            src={alex}
-            alt="Profile"
-            className="w-32 h-32 object-cover rounded-full overflow-hidden"
-          />
-        </div>
-      </div>
-
-      {/* MAIN CONTENT */}
-      <div className="grid grid-cols-3 gap-8 px-8 py-8">
-        <div className="col-span-2 space-y-8">
+        {/* MAIN CONTENT */}
+        <div className="bg-white px-8 py-8 space-y-8">
           {/* PERSONAL PROFILE (Dynamic from DB) */}
           <section className="border-b-[3px] border-gray-500 pb-10">
-            <h2 className="text-lg font-bold tracking-wide pb-1">
-              PERSONAL PROFILE
+            <h2 className="text-lg font-bold tracking-wide pb-1 flex items-center gap-2">
+              <User className="w-5 h-5" /> PERSONAL PROFILE
             </h2>
             {isLoading ? (
               <div className="animate-pulse">
@@ -383,8 +394,8 @@ export default function App({ userData }) {
 
           {/* WORK EXPERIENCE (Dynamic from DB) */}
           <section className="border-b-[3px] border-gray-500 pb-10">
-            <h2 className="text-lg font-bold tracking-wide pb-1">
-              WORK EXPERIENCE
+            <h2 className="text-lg font-bold tracking-wide pb-1 flex items-center gap-2">
+              <Briefcase className="w-5 h-5" /> WORK EXPERIENCE
             </h2>
             {isLoading ? (
               <div className="animate-pulse space-y-6 mt-3">
@@ -408,28 +419,23 @@ export default function App({ userData }) {
                     (exp.startdate4 && exp.enddate4);
 
                   return (
-                    <div key={index}>
+                    <div key={index} className="space-y-1">
                       <h3 className="font-bold text-sm uppercase">
                         {exp.designation4 || "Unknown Designation"}
                       </h3>
-
-                      {hasDetails && (
+                      {exp.organisation4 && (
                         <p className="text-xs text-gray-500">
-                          {exp.organisation4 && (
-                            <span>{exp.organisation4}</span>
-                          )}
-                          {exp.location4 && (
-                            <span>
-                              {" "}
-                              | {getCountryFromLocation(exp.location4)}
-                            </span>
-                          )}
-                          {(exp.startdate4 || exp.enddate4) && (
-                            <span>
-                              {" "}
-                              | {formatDuration(exp.startdate4, exp.enddate4)}
-                            </span>
-                          )}
+                          {exp.organisation4}
+                        </p>
+                      )}
+                      {exp.location4 && (
+                        <p className="text-xs text-gray-500">
+                          {getCountryFromLocation(exp.location4)}
+                        </p>
+                      )}
+                      {(exp.startdate4 || exp.enddate4) && (
+                        <p className="text-xs text-gray-500">
+                          {formatDuration(exp.startdate4, exp.enddate4)}
                         </p>
                       )}
                     </div>
@@ -440,8 +446,10 @@ export default function App({ userData }) {
           </section>
 
           {/* SKILLS */}
-          <section>
-            <h2 className="text-lg font-bold tracking-wide pb-1">SKILLS</h2>
+          <section className="border-b-[3px] border-gray-500 pb-10">
+            <h2 className="text-lg font-bold tracking-wide pb-1 flex items-center gap-2">
+              <Star className="w-5 h-5" /> SKILLS
+            </h2>
             <div className="mt-3">
               <h3 className="font-semibold mb-4 text-lg uppercase tracking-wide">
                 Personal Skills
@@ -460,27 +468,22 @@ export default function App({ userData }) {
                   No skills details saved yet.
                 </p>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-2">
                   {skills.map((skill, i) => (
-                    <div key={i}>
-                      <div className="flex justify-between text-base mb-1">
-                        <span className="text-gray-900">
-                          {skill || "Unknown Skill"}
-                        </span>
-                      </div>
+                    <div key={i} className="text-base text-gray-900">
+                      {skill || "Unknown Skill"}
                     </div>
                   ))}
                 </div>
               )}
             </div>
           </section>
-        </div>
 
-        {/* RIGHT COLUMN */}
-        <div className="space-y-8">
           {/* EDUCATION (Dynamic from DB) */}
           <section className="border-b-[3px] border-gray-500 pb-10">
-            <h2 className="text-lg font-bold tracking-wide pb-1">EDUCATION</h2>
+            <h2 className="text-lg font-bold tracking-wide pb-1 flex items-center gap-2">
+              <BookOpen className="w-5 h-5" /> EDUCATION
+            </h2>
             {isLoading ? (
               <div className="animate-pulse space-y-4 mt-3">
                 <div>
@@ -505,7 +508,7 @@ export default function App({ userData }) {
             ) : (
               <div className="space-y-4 mt-3 text-sm">
                 {educationList.map((edu, index) => (
-                  <div key={index}>
+                  <div key={index} className="space-y-1">
                     <p className="font-semibold">
                       {edu.specialization1 || "Unknown Specialization"}
                     </p>
@@ -521,8 +524,8 @@ export default function App({ userData }) {
 
           {/* CERTIFICATES */}
           <section className="border-b-[3px] border-gray-500 pb-10">
-            <h2 className="text-lg font-bold tracking-wide pb-1">
-              CERTIFICATES
+            <h2 className="text-lg font-bold tracking-wide pb-1 flex items-center gap-2">
+              <Award className="w-5 h-5" /> CERTIFICATES
             </h2>
             {isLoading ? (
               <div className="animate-pulse space-y-4 mt-3">
@@ -548,7 +551,7 @@ export default function App({ userData }) {
             ) : (
               <div className="space-y-4 mt-3 text-sm">
                 {certificates.map((cert, index) => (
-                  <div key={index}>
+                  <div key={index} className="space-y-1">
                     {cert.titleofcertificates && (
                       <p className="font-semibold">
                         {cert.titleofcertificates}
@@ -573,14 +576,16 @@ export default function App({ userData }) {
                       </p>
                     )}
                     {cert.certificatelink && (
-                      <a
-                        href={cert.certificatelink}
-                        className="text-blue-600 hover:underline"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        View Certificate
-                      </a>
+                      <p>
+                        <a
+                          href={cert.certificatelink}
+                          className="text-blue-600 hover:underline"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          View Certificate
+                        </a>
+                      </p>
                     )}
                   </div>
                 ))}
@@ -590,12 +595,13 @@ export default function App({ userData }) {
         </div>
       </div>
 
-      <div className="px-8 pb-8 print:hidden">
+      <div className="bg-white px-8 pb-8 print:hidden">
         <button
           type="button"
           onClick={handlePrint}
-          className="bg-gray-800 text-white px-4 py-2 rounded hover:bg-gray-700"
+          className="bg-gray-800 text-white px-4 py-2 rounded hover:bg-gray-700 flex items-center gap-2"
         >
+          <Printer className="w-5 h-5" />
           Print Resume
         </button>
       </div>

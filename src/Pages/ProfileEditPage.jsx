@@ -452,7 +452,7 @@ const ProfileEditPage = () => {
           <div className="top-20 left-80 right-0 bg-white border-b shadow-sm z-20 h-16">
             <div className="flex items-center justify-between p-4">
               <div className="flex items-center gap-3">
-                <Link to="/ph">
+                <Link to="/">
                   <button className="w-8 h-8 flex items-center justify-center rounded-full bg-blue-100">
                     <FaChevronLeft className="text-gray-600 text-sm" />
                   </button>
