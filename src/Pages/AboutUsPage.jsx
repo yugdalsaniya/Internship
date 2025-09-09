@@ -1,18 +1,16 @@
-import React from "react";
+import React, { useState } from "react";
 import Hero from "../Components/home/Hero";
 import bannerImage from "../assets/Hero/banner3.jpg";
-import herobanner from "../assets/About us/banner.jpg";
 import about1Img from "../assets/About us/about1.jpg";
 import about2Img from "../assets/About us/about2.jpg";
 import about3Img from "../assets/About us/about3.jpg";
-
 import {
   FaUserAlt,
   FaFileAlt,
   FaBriefcase,
   FaCheckCircle,
   FaPlus,
-  FaTimes,
+  FaMinus,
   FaMedal,
   FaUserTie,
   FaBuilding,
@@ -20,6 +18,35 @@ import {
 } from "react-icons/fa";
 
 export default function AboutUsPage() {
+  const [activeIndex, setActiveIndex] = useState(null);
+
+  const toggleFAQ = (index) => {
+    setActiveIndex(activeIndex === index ? null : index);
+  };
+
+  const faqItems = [
+    {
+      q: "Can I upload a CV?",
+      a: "You can easily upload your CV during account setup or in the profile section. This allows companies, recruiters, and mentors to view your skills and experience, increasing your chances of landing internships, OJT, or jobs. Ensure your CV is up-to-date and in PDF format for best results.",
+    },
+    {
+      q: "How long will the recruitment process take?",
+      a: "The recruitment process timeline depends on the employer, but typically ranges from a few days to a couple of weeks. Notifications will be sent through the platform.",
+    },
+    {
+      q: "Do you recruit for Graduates, Apprentices and Students?",
+      a: "Yes, we cater to students, apprentices, and fresh graduates, providing opportunities across multiple industries.",
+    },
+    {
+      q: "What does the recruitment and selection process involve?",
+      a: "The process usually involves CV screening, an interview, and skills assessment depending on the employer’s requirements.",
+    },
+    {
+      q: "Can I receive notifications for any future Internships that may interest me?",
+      a: "Yes, you can subscribe to notifications and receive alerts when internships matching your profile are posted.",
+    },
+  ];
+
   return (
     <>
       {/* Hero Section */}
@@ -32,34 +59,64 @@ export default function AboutUsPage() {
         gradient="linear-gradient(to right, rgba(249, 220, 223, 0.8), rgba(181, 217, 211, 0.8))"
       />
 
-      {/* Image 1 Section */}
-      <div className="w-full  bg-white text-black px-4 sm:px-8 md:px-16 lg:px-24 space-y-20">
-        <section className="pt-12">
-          {/* Hero Banner */}
-          <div className="rounded-xl overflow-hidden shadow-md w-full h-[300px] sm:h-[400px] bg-gray-300 mb-16">
-            <img
-              src={herobanner}
-              alt="Hero Banner"
-              className="w-full h-[300px] sm:h-[500px] md:h-[500px] lg:h-[900px] object-cover"
-            />
-          </div>
+      {/* About Text Section */}
+      <div className="w-full bg-white text-black px-4 sm:px-8 md:px-16 lg:px-24 py-20">
+        <section className="text-center max-w-4xl mx-auto">
+          <h2 className="text-3xl sm:text-4xl font-bold mb-6">
+            InTURNshp Platform
+          </h2>
+          <p className="text-sm sm:text-base text-gray-600 leading-relaxed">
+            inTURNshp is a modern EdTech-HRTech platform that connects students
+            and fresh graduates to internships and job opportunities through
+            verified employer partnerships. We believe inTURNshp is a timely and
+            impactful solution to a deeply rooted workforce challenge in the
+            Philippines. Our platform bridges the gap between students, schools,
+            and employers by offering an end-to-end internship and early career
+            matching ecosystem that promotes access, equity, and readiness.
+            <br />
+            <br />
+            What sets us apart is our commitment to empowering Filipino youth /
+            students, especially from public institutions (SUCs), through a
+            platform that not only facilitates internship placements but also
+            integrates mentorship, employer engagement, and AI-powered
+            recruitment tools. In a landscape where unpaid internships and
+            skills mismatches are common, inTURNshp provides a structured,
+            inclusive, and sustainable pathway from classroom to career.
+          </p>
         </section>
       </div>
 
       {/* How It Works + FAQ + Best Section */}
-      <div className="w-full  bg-white text-black px-4 sm:px-8 md:px-16 lg:px-24 space-y-20 pb-20">
+      <div className="w-full bg-white text-black px-4 sm:px-8 md:px-16 lg:px-24 space-y-20 pb-20">
         {/* How It Works */}
         <section className="pt-12 text-center">
           <h2 className="text-3xl font-bold mb-2">How it works</h2>
           <p className="text-sm text-gray-500 mb-10 max-w-xl mx-auto">
-           Discover internships, connect with employers, and launch your career!
+            Discover internships, connect with employers, and launch your
+            career!
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
             {[
-              { icon: <FaUserAlt />, title: "Create Account", discription: "Get Started with Inturnshp for Career Success" },
-              { icon: <FaFileAlt />, title: "Upload Resume" ,discription: "Upload Your Resume and Showcase Your Skills"},
-              { icon: <FaBriefcase />, title: "Find Internships" ,discription: "Unlock Internship Opportunities with Inturnshp" },
-              { icon: <FaCheckCircle />, title: "Apply Internship" , discription: "Start Your Career with an Internship Application"},
+              {
+                icon: <FaUserAlt />,
+                title: "Create Account",
+                discription: "Get Started with Inturnshp for Career Success",
+              },
+              {
+                icon: <FaFileAlt />,
+                title: "Upload Resume",
+                discription: "Upload Your Resume and Showcase Your Skills",
+              },
+              {
+                icon: <FaBriefcase />,
+                title: "Find Internships",
+                discription: "Unlock Internship Opportunities with Inturnshp",
+              },
+              {
+                icon: <FaCheckCircle />,
+                title: "Apply Internship",
+                discription: "Start Your Career with an Internship Application",
+              },
             ].map((item, index) => (
               <div
                 key={index}
@@ -69,57 +126,54 @@ export default function AboutUsPage() {
                   {item.icon}
                 </div>
                 <h3 className="text-base font-bold mb-1">{item.title}</h3>
-                <p className="text-xs text-gray-500">
-                  {item.discription}
-                </p>
+                <p className="text-xs text-gray-500">{item.discription}</p>
               </div>
             ))}
           </div>
         </section>
 
-        {/* FAQ */}
+        {/* FAQ Accordion */}
         <section>
           <h2 className="text-3xl font-bold text-center mb-2">
             Frequently Asked Questions
           </h2>
           <p className="text-sm text-gray-600 text-center mb-10">
-           Learn More with Our Frequently Asked Questions
+            Learn More with Our Frequently Asked Questions
           </p>
           <div className="space-y-4">
-            {/* Opened FAQ Item */}
-            <div className="flex gap-4 bg-[#F2F1FC] p-5 rounded-xl items-start">
-              <span className="text-[#2E2E8F] font-bold text-lg">01</span>
-              <div className="flex-1">
-                <h4 className="text-[#0C0C0C] font-bold text-sm mb-1">
-                  Can I upload a CV?
-                </h4>
-                <p className="text-xs text-[#444444] leading-relaxed">
-                  You can easily upload your CV during account setup or in the profile section. This allows companies, recruiters, and mentors to view your skills and experience, increasing your chances of landing internships, OJT, or jobs. Ensure your CV is up-to-date and in PDF format for best results.
-                </p>
-              </div>
-              <button className="w-6 h-6 flex items-center justify-center bg-[#0C0C0C] text-white rounded-full mt-1">
-                <FaTimes size={10} />
-              </button>
-            </div>
-
-            {/* Closed FAQ Items */}
-            {[
-              "How long will the recruitment process take?",
-              "Do you recruit for Graduates, Apprentices and Students?",
-              "What does the recruitment and selection process involve?",
-              "Can I receive notifications for any future Internships that may interest me?",
-            ].map((q, i) => (
+            {faqItems.map((item, index) => (
               <div
-                key={i}
-                className="flex justify-between items-center py-4 border-b"
+                key={index}
+                className={`p-5 rounded-xl transition-all duration-300 ${
+                  activeIndex === index
+                    ? "bg-[#F2F1FC] shadow-md"
+                    : "border-b"
+                }`}
               >
-                <span className="text-[#2E2E8F] font-bold text-sm">
-                  0{i + 2}
-                </span>
-                <span className="flex-1 ml-4 text-[#0C0C0C] font-semibold text-sm">
-                  {q}
-                </span>
-                <FaPlus className="text-[#2E2E8F] text-sm cursor-pointer" />
+                <button
+                  onClick={() => toggleFAQ(index)}
+                  className="flex justify-between items-center w-full text-left"
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="text-[#2E2E8F] font-bold text-sm">
+                      {String(index + 1).padStart(2, "0")}
+                    </span>
+                    <span className="text-[#0C0C0C] font-semibold text-sm">
+                      {item.q}
+                    </span>
+                  </div>
+                  {activeIndex === index ? (
+                    <FaMinus className="text-[#2E2E8F]" />
+                  ) : (
+                    <FaPlus className="text-[#2E2E8F]" />
+                  )}
+                </button>
+
+                {activeIndex === index && (
+                  <div className="mt-3 text-xs text-[#444444] leading-relaxed">
+                    {item.a}
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -129,7 +183,6 @@ export default function AboutUsPage() {
         <section className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
           {/* Images */}
           <div className="grid grid-cols-2 grid-rows-2 gap-4">
-            {/* Tall Image on the left */}
             <div className="row-span-2 h-[300px] rounded-xl overflow-hidden">
               <img
                 src={about1Img}
@@ -137,8 +190,6 @@ export default function AboutUsPage() {
                 className="w-full h-full object-cover"
               />
             </div>
-
-            {/* Top right image */}
             <div className="h-[140px] rounded-xl overflow-hidden">
               <img
                 src={about2Img}
@@ -146,8 +197,6 @@ export default function AboutUsPage() {
                 className="w-full h-auto object-cover"
               />
             </div>
-
-            {/* Bottom right image */}
             <div className="h-[140px] rounded-xl overflow-hidden">
               <img
                 src={about3Img}
