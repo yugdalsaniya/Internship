@@ -460,7 +460,9 @@ const ApplyInternshipForm = () => {
         query: { _id: id },
         update: {
           $push: {
-            'sectionData.jobpost.applicants': { text: userId },
+            'sectionData.jobpost.applicants': { text: userId ,               name: formData.name.trim(),
+ },
+
           },
         },
         options: { upsert: false },

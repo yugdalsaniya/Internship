@@ -68,7 +68,7 @@ const SignUpPage = () => {
   const roleDescriptions = {
     student: [
       "Find internships, OJTs, and entry-level jobs",
-      "Apply directly with a smart Inturship profile",
+      "Apply directly with a smart Inturshp profile",
       "Learn with free workshops and short courses",
       "Get career-ready through real-world experiences",
     ],

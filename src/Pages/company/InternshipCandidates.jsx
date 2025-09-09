@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { fetchSectionData } from "../../Utils/api";
+import { fetchSectionData, mUpdate } from "../../Utils/api";
 import logo from "../../assets/Navbar/logo.png";
 import backgroundImg from "../../assets/Hero/banner.jpg";
 
@@ -12,6 +12,7 @@ const InternshipCandidates = () => {
   const [error, setError] = useState("");
   const [courseMap, setCourseMap] = useState({});
   const [filters, setFilters] = useState({ status: "All" });
+  const [pendingStatuses, setPendingStatuses] = useState({});
   const user = JSON.parse(localStorage.getItem("user")) || {};
 
   // Redirect if not a company user
@@ -40,22 +41,30 @@ const InternshipCandidates = () => {
         );
         setCourseMap(map);
 
-        // Fetch applications
-        const applications = await fetchSectionData({
+        // Fetch jobpost applicants
+        const jobPostResponse = await fetchSectionData({
           dbName: "internph",
-          collectionName: "applications",
-          query: { jobId: id },
-          projection: { userId: 1, resume: 1, _id: 1 },
+          collectionName: "jobpost",
+          query: { _id: id },
+          projection: { "sectionData.jobpost": 1 },
         });
 
-        if (applications.length === 0) {
+        if (jobPostResponse.length === 0) {
+          setCandidates([]);
+          setLoading(false);
+          return;
+        }
+
+        const applicants = jobPostResponse[0].sectionData.jobpost.applicants || [];
+        const userIds = applicants.map((app) => app.text).filter(Boolean);
+
+        if (userIds.length === 0) {
           setCandidates([]);
           setLoading(false);
           return;
         }
 
         // Fetch user details
-        const userIds = applications.map((app) => app.userId).filter(Boolean);
         const users = await fetchSectionData({
           dbName: "internph",
           collectionName: "appuser",
@@ -68,26 +77,20 @@ const InternshipCandidates = () => {
           return map;
         }, {});
 
-        // Load statuses from localStorage
-        const storedStatuses = JSON.parse(
-          localStorage.getItem("applicationStatuses") || "{}"
-        );
-
         // Format candidates
-        const formattedCandidates = applications.map((app) => ({
-          id: app._id,
-          userId: app.userId,
-          name: userMap[app.userId]?.legalname || "Unknown",
-          email: userMap[app.userId]?.email || "N/A",
-          mobile: userMap[app.userId]?.mobile || "N/A",
+        const formattedCandidates = applicants.map((app) => ({
+          userId: app.text,
+          name: app.name || userMap[app.text]?.legalname || "Unknown",
+          email: app.email || userMap[app.text]?.email || "N/A",
+          mobile: userMap[app.text]?.mobile || "N/A",
           course:
-            map[userMap[app.userId]?.course] ||
-            userMap[app.userId]?.course ||
+            map[userMap[app.text]?.course] ||
+            userMap[app.text]?.course ||
             "N/A",
-          specialization: userMap[app.userId]?.coursespecialization || "N/A",
-          resume: app.resume || userMap[app.userId]?.resume || "",
-          status: storedStatuses[app._id]?.status || "Applied",
-          feedback: storedStatuses[app._id]?.feedback || "",
+          specialization: userMap[app.text]?.coursespecialization || "N/A",
+          resume: userMap[app.text]?.resume || "",
+          status: app.status || "Applied",
+          feedback: app.feedback || "",
         }));
 
         setCandidates(formattedCandidates);
@@ -102,30 +105,55 @@ const InternshipCandidates = () => {
     fetchData();
   }, [id, navigate]);
 
-  const updateStatus = (applicationId, newStatus, feedback = "") => {
+  const updateStatus = async (userId, newStatus, feedback = "") => {
     try {
+      await mUpdate({
+        appName: 'app8657281202648',
+        collectionName: 'jobpost',
+        query: { _id: id },
+        update: {
+          $set: {
+            "sectionData.jobpost.applicants.$[elem].status": newStatus,
+            "sectionData.jobpost.applicants.$[elem].feedback": feedback,
+          },
+        },
+        options: {
+          arrayFilters: [{ "elem.text": userId }],
+          upsert: false,
+        },
+      });
+
       // Update local state
       setCandidates((prev) =>
         prev.map((candidate) =>
-          candidate.id === applicationId
+          candidate.userId === userId
             ? { ...candidate, status: newStatus, feedback }
             : candidate
         )
-      );
-
-      // Update localStorage
-      const storedStatuses = JSON.parse(
-        localStorage.getItem("applicationStatuses") || "{}"
-      );
-      storedStatuses[applicationId] = { status: newStatus, feedback };
-      localStorage.setItem(
-        "applicationStatuses",
-        JSON.stringify(storedStatuses)
       );
     } catch (err) {
       console.error("Status Update Error:", err);
       setError("Failed to update status. Please try again.");
     }
+  };
+
+  const handleUpdate = (userId) => {
+    const candidate = candidates.find((c) => c.userId === userId);
+    const newStatus = pendingStatuses[userId] || candidate.status;
+    let feedback = candidate.feedback;
+
+    if (newStatus === "Rejected") {
+      feedback = window.prompt("Enter rejection feedback (optional):", feedback) || "";
+    }
+
+    updateStatus(userId, newStatus, feedback);
+
+    // Clear pending status
+    setPendingStatuses((prev) => {
+      const newPending = { ...prev };
+      delete newPending[userId];
+      return newPending;
+    });
   };
 
   const filteredCandidates = candidates.filter((candidate) =>
@@ -192,7 +220,7 @@ const InternshipCandidates = () => {
             <div className="space-y-4">
               {filteredCandidates.map((candidate) => (
                 <div
-                  key={candidate.id}
+                  key={candidate.userId}
                   className="bg-white rounded-lg shadow-md p-4 border border-gray-200"
                 >
                   <div className="flex justify-between items-start">
@@ -235,17 +263,13 @@ const InternshipCandidates = () => {
                     </div>
                     <div className="flex flex-col gap-2">
                       <select
-                        value={candidate.status}
-                        onChange={(e) => {
-                          const newStatus = e.target.value;
-                          const feedback =
-                            newStatus === "Rejected"
-                              ? prompt(
-                                  "Enter rejection feedback (optional):"
-                                ) || ""
-                              : "";
-                          updateStatus(candidate.id, newStatus, feedback);
-                        }}
+                        value={pendingStatuses[candidate.userId] || candidate.status}
+                        onChange={(e) =>
+                          setPendingStatuses({
+                            ...pendingStatuses,
+                            [candidate.userId]: e.target.value,
+                          })
+                        }
                         className="p-2 border rounded-md"
                       >
                         <option value="Applied">Applied</option>
@@ -253,6 +277,12 @@ const InternshipCandidates = () => {
                         <option value="Rejected">Rejected</option>
                         <option value="Interview">Interview</option>
                       </select>
+                      <button
+                        onClick={() => handleUpdate(candidate.userId)}
+                        className="bg-blue-500 text-white py-1 px-3 rounded-md text-sm"
+                      >
+                        Update
+                      </button>
                     </div>
                   </div>
                 </div>
