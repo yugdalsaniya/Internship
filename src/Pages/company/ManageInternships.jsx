@@ -1,3 +1,4 @@
+// ManageInternships.jsx
 import React, { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { fetchSectionData, updateSectionData } from "../../Utils/api";
@@ -36,27 +37,10 @@ const ManageInternships = () => {
           sortedBy: "createdDate",
         });
 
-        // Fetch application counts for each internship
-        const internshipIds = internshipsData.map(
-          (internship) => internship._id
-        );
-        const applications = await fetchSectionData({
-          dbName: "internph",
-          collectionName: "applications",
-          query: { jobId: { $in: internshipIds } },
-          projection: { jobId: 1 },
-        });
-
-        // Create a map of jobId to application count
-        const applicationCounts = applications.reduce((acc, app) => {
-          acc[app.jobId] = (acc[app.jobId] || 0) + 1;
-          return acc;
-        }, {});
-
-        // Add application count to each internship
+        // Calculate applicant counts from the applicants array in each internship
         const internshipsWithCounts = internshipsData.map((internship) => ({
           ...internship,
-          totalApplicants: applicationCounts[internship._id] || 0,
+          totalApplicants: internship.sectionData.jobpost.applicants?.length || 0,
         }));
 
         setInternships(internshipsWithCounts);
@@ -135,9 +119,7 @@ const ManageInternships = () => {
           salary: job.sectionData?.jobpost?.salary
             ? `${job.sectionData.jobpost.salary}`
             : "Not specified",
-          location: (
-            job.sectionData?.jobpost?.location || "Unknown"
-          ).toUpperCase(),
+          location: job.sectionData?.jobpost?.location ? (job.sectionData.jobpost.location.length > 1 ? job.sectionData.jobpost.location.toUpperCase() : job.sectionData.jobpost.location) : "Unknown",
           logo: job.sectionData?.jobpost?.logo || "https://placehold.co/40x40",
           subtype: job.sectionData?.jobpost?.subtype || "Unknown",
           experiencelevel:

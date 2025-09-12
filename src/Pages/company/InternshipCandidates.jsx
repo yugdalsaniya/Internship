@@ -1,11 +1,19 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { fetchSectionData, mUpdate } from "../../Utils/api";
+import { fetchSectionData, mUpdate, sendEmailTemplate, sendRawEmail } from "../../Utils/api";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import Modal from "react-modal";
+import { gapi } from "gapi-script";
+import { loadGapiInsideDOM } from "gapi-script";
 import logo from "../../assets/Navbar/logo.png";
 import backgroundImg from "../../assets/Hero/banner.jpg";
 
+// Bind modal to app element for accessibility
+Modal.setAppElement("#root");
+
 const InternshipCandidates = () => {
-  const { id } = useParams(); // jobId
+  const { id } = useParams();
   const navigate = useNavigate();
   const [candidates, setCandidates] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -13,18 +21,111 @@ const InternshipCandidates = () => {
   const [courseMap, setCourseMap] = useState({});
   const [filters, setFilters] = useState({ status: "All" });
   const [pendingStatuses, setPendingStatuses] = useState({});
+  const [jobPostData, setJobPostData] = useState({});
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalCandidateId, setModalCandidateId] = useState(null);
+  const [modalData, setModalData] = useState({ date: "", time: "", googleMeetLink: "" });
+  const [gapiInited, setGapiInited] = useState(false);
+  const [tokenClient, setTokenClient] = useState(null);
+  const [gisLoaded, setGisLoaded] = useState(false);
+  const [googleApiLoading, setGoogleApiLoading] = useState(false);
   const user = JSON.parse(localStorage.getItem("user")) || {};
+  const initAttempted = useRef(false);
 
-  // Redirect if not a company user
+  // Google API Credentials
+  const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
+  const API_KEY = import.meta.env.VITE_GOOGLE_API_KEY || "";
+  const DISCOVERY_DOC = "https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest";
+  const SCOPES = "https://www.googleapis.com/auth/calendar";
+
+  useEffect(() => {
+    if (!CLIENT_ID || !API_KEY) {
+      setError("Google API credentials are missing. Please contact support.");
+      toast.error("Google API credentials are missing.", { autoClose: 5000 });
+    }
+  }, [CLIENT_ID, API_KEY]);
+
   if (user.role !== "company") {
     navigate("/");
     return null;
   }
 
+  // Initialize Google API and GIS
+  useEffect(() => {
+    const initGoogleApi = async () => {
+      if (initAttempted.current) return;
+      initAttempted.current = true;
+      setGoogleApiLoading(true);
+
+      try {
+        await loadGapiInsideDOM();
+        await new Promise((resolve, reject) => {
+          gapi.load("client:auth2", {
+            callback: resolve,
+            onerror: () => reject(new Error("Failed to load gapi client")),
+          });
+        });
+
+        await gapi.client.init({
+          apiKey: API_KEY,
+          discoveryDocs: [DISCOVERY_DOC],
+        });
+
+        setGapiInited(true);
+
+        await new Promise((resolve, reject) => {
+          const script = document.createElement("script");
+          script.src = "https://accounts.google.com/gsi/client";
+          script.async = true;
+          script.onload = () => resolve();
+          script.onerror = () => reject(new Error("Failed to load Google Identity Services script"));
+          document.body.appendChild(script);
+        });
+
+        const client = window.google.accounts.oauth2.initTokenClient({
+          client_id: CLIENT_ID,
+          scope: SCOPES,
+          ux_mode: "popup",
+          callback: (resp) => {
+            if (resp.error) {
+              toast.error(`Google authentication failed: ${resp.error}`, {
+                position: "top-right",
+                autoClose: 5000,
+              });
+            } else {
+              gapi.client.setToken(resp);
+              setGisLoaded(true);
+            }
+          },
+        });
+
+        setTokenClient(client);
+        setGisLoaded(true);
+      } catch (err) {
+        console.error("GAPI initialization error:", err);
+        toast.error(`Failed to initialize Google API: ${err.message}`, {
+          position: "top-right",
+          autoClose: 5000,
+        });
+        setError("Google API initialization failed. Please try refreshing the page.");
+      } finally {
+        setGoogleApiLoading(false);
+      }
+    };
+
+    if (CLIENT_ID && API_KEY) {
+      initGoogleApi();
+    } else {
+      setError("Google API credentials are missing. Please contact support.");
+      toast.error("Google API credentials are missing.", { autoClose: 5000 });
+      setGoogleApiLoading(false);
+    }
+  }, [CLIENT_ID, API_KEY]);
+
+  // Fetch candidate data
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch course data
         const courseResponse = await fetchSectionData({
           dbName: "internph",
           collectionName: "course",
@@ -41,12 +142,11 @@ const InternshipCandidates = () => {
         );
         setCourseMap(map);
 
-        // Fetch jobpost applicants
         const jobPostResponse = await fetchSectionData({
           dbName: "internph",
           collectionName: "jobpost",
           query: { _id: id },
-          projection: { "sectionData.jobpost": 1 },
+          projection: { sectionData: 1 },
         });
 
         if (jobPostResponse.length === 0) {
@@ -55,6 +155,7 @@ const InternshipCandidates = () => {
           return;
         }
 
+        setJobPostData(jobPostResponse[0].sectionData.jobpost || {});
         const applicants = jobPostResponse[0].sectionData.jobpost.applicants || [];
         const userIds = applicants.map((app) => app.text).filter(Boolean);
 
@@ -64,7 +165,6 @@ const InternshipCandidates = () => {
           return;
         }
 
-        // Fetch user details
         const users = await fetchSectionData({
           dbName: "internph",
           collectionName: "appuser",
@@ -77,9 +177,8 @@ const InternshipCandidates = () => {
           return map;
         }, {});
 
-        // Format candidates
         const formattedCandidates = applicants.map((app) => ({
-          userId: app.text,
+          text: app.text,
           name: app.name || userMap[app.text]?.legalname || "Unknown",
           email: app.email || userMap[app.text]?.email || "N/A",
           mobile: userMap[app.text]?.mobile || "N/A",
@@ -90,13 +189,16 @@ const InternshipCandidates = () => {
           specialization: userMap[app.text]?.coursespecialization || "N/A",
           resume: userMap[app.text]?.resume || "",
           status: app.status || "Applied",
-          feedback: app.feedback || "",
         }));
 
         setCandidates(formattedCandidates);
       } catch (err) {
         console.error("Error fetching candidates:", err);
         setError("Failed to load candidates. Please try again.");
+        toast.error("Failed to load candidates.", {
+          position: "top-right",
+          autoClose: 3000,
+        });
       } finally {
         setLoading(false);
       }
@@ -105,16 +207,170 @@ const InternshipCandidates = () => {
     fetchData();
   }, [id, navigate]);
 
-  const updateStatus = async (userId, newStatus, feedback = "") => {
+  const replacePlaceholders = (body, data) => {
+    let updatedBody = body;
+    Object.keys(data).forEach((key) => {
+      const regex = new RegExp(`\\{data.${key}\\}`, "g");
+      updatedBody = updatedBody.replace(regex, data[key] || "");
+    });
+    return updatedBody;
+  };
+
+  const sendShortlistEmail = async (candidate, dynamicData) => {
+    const emailData = {
+      CandidateName: candidate.name || "Unknown",
+      InternshipTitle: jobPostData.title || "Internship",
+      CompanyName: jobPostData.company || jobPostData.organizationName || "Unknown Company",
+      Date: dynamicData.date || "Not specified",
+      Time: dynamicData.time || "Not specified",
+      GoogleMeetLink: dynamicData.googleMeetLink || "Not specified",
+      support_email: "support@inturnsph.com",
+      your_portal_url: "https://inturnshp.com/ph/",
+      Year: new Date().getFullYear().toString(),
+      "Your Portal Name": "Inturnshp",
+      "Social Media Links":
+        '<a href="https://twitter.com/inturnsph">Twitter</a> | <a href="https://linkedin.com/company/inturnsph">LinkedIn</a> | <a href="https://facebook.com/inturnsph">Facebook</a>',
+    };
+
+    const fallbackTemplate = {
+      subject: "Congratulations! You've Been Shortlisted for {data.InternshipTitle}",
+      body: `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Congratulations! You've Been Shortlisted</title>
+    <style>
+        body { margin: 0; padding: 0; font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5; color: #333333; }
+        .container { max-width: 600px; margin: 20px auto; background-color: #ffffff; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); }
+        .header { background: linear-gradient(135deg, #007bff, #00c4b4); color: #ffffff; padding: 30px 20px; text-align: center; }
+        .header h1 { margin: 0; font-size: 26px; font-weight: 700; }
+        .header p { margin: 5px 0 0; font-size: 16px; opacity: 0.9; }
+        .content { padding: 25px; }
+        .content p { font-size: 16px; line-height: 1.6; margin: 10px 0; }
+        .content h2 { font-size: 20px; color: #007bff; margin: 20px 0 10px; font-weight: 600; }
+        .card { background-color: #f9f9f9; border-radius: 8px; padding: 20px; margin: 15px 0; border: 1px solid #e0e0e0; }
+        table { width: 100%; border-collapse: collapse; font-size: 15px; }
+        table td { padding: 12px; border-bottom: 1px solid #e0e0e0; }
+        table td:first-child { font-weight: 600; width: 35%; color: #333333; background-color: #f1f1f1; }
+        .cta-button { display: inline-block; padding: 12px 24px; background-color: #007bff; color: #ffffff; text-decoration: none; border-radius: 25px; font-size: 16px; font-weight: 600; margin: 15px 0; text-align: center; }
+        .cta-button:hover { background-color: #0056b3; }
+        .footer { background-color: #f5f5f5; padding: 20px; text-align: center; font-size: 14px; color: #666666; }
+        .footer a { color: #007bff; text-decoration: none; }
+        @media screen and (max-width: 600px) {
+            .container { width: 100%; margin: 0; border-radius: 0; }
+            .header h1 { font-size: 22px; }
+            .header p { font-size: 14px; }
+            .content { padding: 15px; }
+            .content h2 { font-size: 18px; }
+            table td { display: block; width: 100%; box-sizing: border-box; text-align: left; }
+            table td:first-child { width: 100%; background-color: #e8e8e8; border-bottom: none; }
+            .cta-button { display: block; width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Congratulations! You've Been Shortlisted</h1>
+            <p>For the {data.InternshipTitle} at {data.CompanyName}</p>
+        </div>
+        <div class="content">
+            <p>Hello {data.CandidateName},</p>
+            <p>We’re excited to inform you that you've been shortlisted for the <strong>{data.InternshipTitle}</strong> position at <strong>{data.CompanyName}</strong>.</p>
+            <div class="card">
+                <h2>Interview Details</h2>
+                <table>
+                    <tr>
+                        <td><strong>Date</strong></td>
+                        <td>{data.Date}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Time</strong></td>
+                        <td>{data.Time}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Google Meet Link</strong></td>
+                        <td><a href="{data.GoogleMeetLink}">{data.GoogleMeetLink}</a></td>
+                    </tr>
+                </table>
+            </div>
+            <p>Please join the meeting at the scheduled time. If you have any questions, contact us at <a href="mailto:{data.support_email}">{data.support_email}</a>.</p>
+            <p>Best regards,<br>The {data.CompanyName} Team</p>
+            <a href="{data.your_portal_url}/dashboard" class="cta-button">View Your Dashboard</a>
+        </div>
+        <div class="footer">
+            <p>Follow us on {data.Social Media Links}</p>
+            <p>© {data.Year} {data.Your Portal Name}. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>`,
+    };
+
+    try {
+      console.log("Sending shortlist email to:", candidate.email);
+      const emailResponse = await sendEmailTemplate(
+        {
+          appName: "app8657281202648",
+          email: candidate.email,
+          templateId: "1757496454652",
+          smtpId: "1750933648545",
+          data: emailData,
+          category: "primary",
+          subject: `Congratulations! You've Been Shortlisted for ${emailData.InternshipTitle}`,
+        },
+        toast
+      );
+      console.log("Shortlist email sent successfully:", emailResponse);
+      toast.success("Shortlist email sent.", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+    } catch (emailError) {
+      console.error("Failed to send shortlist email:", emailError);
+      const emailBody = replacePlaceholders(fallbackTemplate.body, emailData);
+      try {
+        const fallbackResponse = await sendRawEmail(
+          {
+            appName: "app8657281202648",
+            smtpId: "1750933648545",
+            to: candidate.email,
+            subject: fallbackTemplate.subject.replace("{data.InternshipTitle}", emailData.InternshipTitle),
+            html: emailBody,
+          },
+          toast
+        );
+        console.log("Fallback email sent successfully:", fallbackResponse);
+        toast.success("Shortlist email sent via fallback.", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      } catch (fallbackError) {
+        console.error("Failed to send fallback email:", fallbackError);
+        toast.error(`Failed to send email: ${fallbackError.message}`, {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      }
+    }
+  };
+
+  const updateStatus = async (userId, newStatus, dynamicData = {}) => {
+    const candidate = candidates.find((c) => c.text === userId);
     try {
       await mUpdate({
-        appName: 'app8657281202648',
-        collectionName: 'jobpost',
+        appName: "app8657281202648",
+        collectionName: "jobpost",
         query: { _id: id },
         update: {
           $set: {
             "sectionData.jobpost.applicants.$[elem].status": newStatus,
-            "sectionData.jobpost.applicants.$[elem].feedback": feedback,
+            "sectionData.jobpost.applicants.$[elem].name": candidate.name,
+            "sectionData.jobpost.applicants.$[elem].interviewDate": dynamicData.date,
+            "sectionData.jobpost.applicants.$[elem].interviewTime": dynamicData.time,
+            "sectionData.jobpost.applicants.$[elem].googleMeetLink": dynamicData.googleMeetLink,
           },
         },
         options: {
@@ -123,32 +379,43 @@ const InternshipCandidates = () => {
         },
       });
 
-      // Update local state
       setCandidates((prev) =>
         prev.map((candidate) =>
-          candidate.userId === userId
-            ? { ...candidate, status: newStatus, feedback }
+          candidate.text === userId
+            ? { ...candidate, status: newStatus, ...dynamicData }
             : candidate
         )
       );
+
+      if (newStatus === "Shortlisted") {
+        await sendShortlistEmail(candidate, dynamicData);
+      }
+
+      toast.success(`Status updated to ${newStatus}!`, {
+        position: "top-right",
+        autoClose: 3000,
+      });
     } catch (err) {
-      console.error("Status Update Error:", err);
-      setError("Failed to update status. Please try again.");
+      console.error("Status update error:", err);
+      toast.error(`Failed to update status: ${err.message}`, {
+        position: "top-right",
+        autoClose: 3000,
+      });
     }
   };
 
   const handleUpdate = (userId) => {
-    const candidate = candidates.find((c) => c.userId === userId);
+    const candidate = candidates.find((c) => c.text === userId);
     const newStatus = pendingStatuses[userId] || candidate.status;
-    let feedback = candidate.feedback;
 
-    if (newStatus === "Rejected") {
-      feedback = window.prompt("Enter rejection feedback (optional):", feedback) || "";
+    if (newStatus === "Shortlisted") {
+      setModalCandidateId(userId);
+      setModalData({ date: "", time: "", googleMeetLink: "" });
+      setIsModalOpen(true);
+    } else {
+      updateStatus(userId, newStatus);
     }
 
-    updateStatus(userId, newStatus, feedback);
-
-    // Clear pending status
     setPendingStatuses((prev) => {
       const newPending = { ...prev };
       delete newPending[userId];
@@ -156,16 +423,112 @@ const InternshipCandidates = () => {
     });
   };
 
+  const generateMeetLink = async (candidate) => {
+    if (!modalData.date || !modalData.time) {
+      toast.error("Please enter date and time first.", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+      return;
+    }
+
+    if (!gapiInited || !tokenClient || !gisLoaded || googleApiLoading) {
+      toast.error("Google API is still initializing. Please wait a moment and retry.", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+      return;
+    }
+
+    try {
+      if (!gapi.client.getToken()) {
+        await new Promise((resolve, reject) => {
+          tokenClient.callback = (resp) => {
+            if (resp.error) {
+              reject(new Error(`Authorization failed: ${resp.error}`));
+            } else {
+              gapi.client.setToken(resp);
+              resolve();
+            }
+          };
+          tokenClient.requestAccessToken({ ux_mode: "popup" });
+        });
+      }
+
+      const startDateTime = new Date(`${modalData.date}T${modalData.time}:00`).toISOString();
+      const endDateTime = new Date(new Date(startDateTime).getTime() + 60 * 60 * 1000).toISOString();
+
+      const event = {
+        summary: `Interview for ${jobPostData.title || "Internship"} with ${candidate.name}`,
+        description: "Shortlist interview for internship position.",
+        start: { dateTime: startDateTime, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone },
+        end: { dateTime: endDateTime, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone },
+        attendees: [{ email: candidate.email }, { email: user.email }],
+        conferenceData: {
+          createRequest: {
+            requestId: `meet-${Date.now()}`,
+            conferenceSolutionKey: { type: "hangoutsMeet" },
+          },
+        },
+      };
+
+      const request = await gapi.client.calendar.events.insert({
+        calendarId: "primary",
+        conferenceDataVersion: 1,
+        sendUpdates: "all",
+        resource: event,
+      });
+
+      const meetLink = request.result.conferenceData.entryPoints?.find(
+        (entry) => entry.entryPointType === "video"
+      )?.uri;
+
+      if (!meetLink) throw new Error("No Meet link returned");
+
+      setModalData((prev) => ({ ...prev, googleMeetLink: meetLink }));
+      toast.success("Google Meet link generated!", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+    } catch (err) {
+      console.error("Error generating Meet link:", err);
+      toast.error(`Failed to generate Meet link: ${err.message}`, {
+        position: "top-right",
+        autoClose: 5000,
+      });
+    }
+  };
+
+  const handleModalSubmit = async () => {
+    if (!modalData.date || !modalData.time) {
+      toast.error("Date and time are required.", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+      return;
+    }
+
+    const candidate = candidates.find((c) => c.text === modalCandidateId);
+    if (!modalData.googleMeetLink) {
+      await generateMeetLink(candidate);
+      return;
+    }
+
+    await updateStatus(modalCandidateId, "Shortlisted", modalData);
+    setIsModalOpen(false);
+    setModalData({ date: "", time: "", googleMeetLink: "" });
+  };
+
   const filteredCandidates = candidates.filter((candidate) =>
     filters.status === "All" ? true : candidate.status === filters.status
   );
 
-  if (loading) return <div className="mx-12 py-4">Loading...</div>;
   if (error) return <div className="mx-12 py-4 text-red-600">{error}</div>;
+  if (loading) return <div className="mx-12 py-4">Loading...</div>;
 
   return (
     <div className="min-h-screen bg-[#fafafa]">
-      {/* Hero Section */}
+      <ToastContainer />
       <div
         className="relative bg-cover bg-center h-96 flex items-center justify-center"
         style={{
@@ -188,28 +551,23 @@ const InternshipCandidates = () => {
         </div>
       </div>
 
-      {/* Candidates List */}
       <div className="px-4 md:px-12 py-8">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-2xl md:text-3xl font-bold text-[#050748] mb-6">
             Applied Candidates
           </h2>
           <div className="mb-6">
-            <label className="text-sm font-medium mr-2">
-              Filter by Status:
-            </label>
+            <label className="text-sm font-medium mr-2">Filter by Status:</label>
             <select
               value={filters.status}
-              onChange={(e) =>
-                setFilters({ ...filters, status: e.target.value })
-              }
+              onChange={(e) => setFilters({ ...filters, status: e.target.value })}
               className="p-2 border rounded-md"
             >
               <option value="All">All</option>
               <option value="Applied">Applied</option>
               <option value="Shortlisted">Shortlisted</option>
+              <option value="Selected">Selected</option>
               <option value="Rejected">Rejected</option>
-              <option value="Interview">Interview</option>
             </select>
           </div>
           {filteredCandidates.length === 0 ? (
@@ -220,7 +578,7 @@ const InternshipCandidates = () => {
             <div className="space-y-4">
               {filteredCandidates.map((candidate) => (
                 <div
-                  key={candidate.userId}
+                  key={candidate.text}
                   className="bg-white rounded-lg shadow-md p-4 border border-gray-200"
                 >
                   <div className="flex justify-between items-start">
@@ -254,31 +612,33 @@ const InternshipCandidates = () => {
                           View Resume
                         </a>
                       )}
-                      {candidate.feedback && (
-                        <p className="text-sm text-gray-600 mt-2">
-                          <span className="font-medium">Feedback:</span>{" "}
-                          {candidate.feedback}
-                        </p>
-                      )}
                     </div>
                     <div className="flex flex-col gap-2">
                       <select
-                        value={pendingStatuses[candidate.userId] || candidate.status}
+                        value={pendingStatuses[candidate.text] || candidate.status}
                         onChange={(e) =>
                           setPendingStatuses({
                             ...pendingStatuses,
-                            [candidate.userId]: e.target.value,
+                            [candidate.text]: e.target.value,
                           })
                         }
                         className="p-2 border rounded-md"
                       >
-                        <option value="Applied">Applied</option>
-                        <option value="Shortlisted">Shortlisted</option>
-                        <option value="Rejected">Rejected</option>
-                        <option value="Interview">Interview</option>
+                        <option value="Applied" disabled={candidate.status !== "Applied"}>
+                          Applied
+                        </option>
+                        <option value="Shortlisted" disabled={candidate.status === "Rejected" || candidate.status === "Selected"}>
+                          Shortlisted
+                        </option>
+                        <option value="Selected" disabled={candidate.status === "Rejected" || candidate.status !== "Shortlisted"}>
+                          Selected
+                        </option>
+                        <option value="Rejected">
+                          Rejected
+                        </option>
                       </select>
                       <button
-                        onClick={() => handleUpdate(candidate.userId)}
+                        onClick={() => handleUpdate(candidate.text)}
                         className="bg-blue-500 text-white py-1 px-3 rounded-md text-sm"
                       >
                         Update
@@ -291,6 +651,72 @@ const InternshipCandidates = () => {
           )}
         </div>
       </div>
+
+      <Modal
+        isOpen={isModalOpen}
+        onRequestClose={() => setIsModalOpen(false)}
+        className="bg-white p-6 rounded-lg max-w-md mx-auto mt-20"
+        overlayClassName="fixed inset-0 bg-black bg-opacity-50"
+      >
+        <h2 className="text-xl font-bold mb-4">Enter Interview Details</h2>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium">Interview Date</label>
+            <input
+              type="date"
+              value={modalData.date}
+              onChange={(e) => setModalData({ ...modalData, date: e.target.value })}
+              className="w-full p-2 border rounded-md"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium">Interview Time</label>
+            <input
+              type="time"
+              value={modalData.time}
+              onChange={(e) => setModalData({ ...modalData, time: e.target.value })}
+              className="w-full p-2 border rounded-md"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium">Google Meet Link</label>
+            <input
+              type="url"
+              value={modalData.googleMeetLink}
+              onChange={(e) => setModalData({ ...modalData, googleMeetLink: e.target.value })}
+              className="w-full p-2 border rounded-md"
+              placeholder="Click Generate Meet Link or enter manually"
+            />
+          </div>
+          <button
+            onClick={() => {
+              const candidate = candidates.find((c) => c.text === modalCandidateId);
+              generateMeetLink(candidate);
+            }}
+            className="bg-green-500 text-white py-2 px-4 rounded-md disabled:bg-gray-400"
+            disabled={!modalData.date || !modalData.time || googleApiLoading}
+          >
+            {googleApiLoading ? "Loading..." : "Generate Meet Link"}
+          </button>
+          <div className="flex gap-4">
+            <button
+              onClick={handleModalSubmit}
+              className="bg-blue-500 text-white py-2 px-4 rounded-md disabled:bg-gray-400"
+              disabled={!modalData.date || !modalData.time || !modalData.googleMeetLink}
+            >
+              Submit
+            </button>
+            <button
+              onClick={() => setIsModalOpen(false)}
+              className="border border-gray-400 text-gray-700 py-2 px-4 rounded-md"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };
