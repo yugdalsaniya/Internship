@@ -41,7 +41,7 @@ const CompanyDetails = ({ userData, updateCompletionStatus, onBack }) => {
         boxShadow: "0 0 0 2px rgba(59, 130, 246, 0.5)",
       },
     }),
-   option: (provided, state) => ({
+    option: (provided, state) => ({
       ...provided,
       backgroundColor: state.isSelected
         ? "#dbeafe"
@@ -63,7 +63,7 @@ const CompanyDetails = ({ userData, updateCompletionStatus, onBack }) => {
     }),
   };
 
-  // Fetch user data, institute options, and post options when component mounts
+  // Fetch user data, institute options, post options, and company designation when component mounts
   useEffect(() => {
     const fetchUserDataAndOptions = async () => {
       try {
@@ -98,15 +98,15 @@ const CompanyDetails = ({ userData, updateCompletionStatus, onBack }) => {
           return;
         }
 
-        // Fetch user data
-        const response = await fetchSectionData({
+        // Fetch user data from appuser collection
+        const userResponse = await fetchSectionData({
           dbName: "internph",
           collectionName: "appuser",
           query: { _id: userId },
           projection: { "sectionData.appuser": 1, _id: 0 },
         });
 
-        if (!response || (Array.isArray(response) && response.length === 0)) {
+        if (!userResponse || (Array.isArray(userResponse) && userResponse.length === 0)) {
           setError("User data not found. Please contact support.");
           toast.error("User data not found. Please contact support.", {
             position: "top-right",
@@ -116,14 +116,29 @@ const CompanyDetails = ({ userData, updateCompletionStatus, onBack }) => {
           return;
         }
 
-        const appuser = Array.isArray(response)
-          ? response[0]?.sectionData?.appuser || {}
-          : response.sectionData?.appuser || {};
+        const appuser = Array.isArray(userResponse)
+          ? userResponse[0]?.sectionData?.appuser || {}
+          : userResponse.sectionData?.appuser || {};
+
+        // Fetch designation from Company collection
+        let designation = "";
+        if (roleId === "1747903042943") {
+          const companyResponse = await fetchSectionData({
+            dbName: "internph",
+            collectionName: "Company",
+            query: { createdBy: userId },
+            projection: { "sectionData.Company.designation": 1, _id: 0 },
+          });
+
+          if (companyResponse && Array.isArray(companyResponse) && companyResponse.length > 0) {
+            designation = companyResponse[0]?.sectionData?.Company?.designation || "";
+          }
+        }
 
         const newData = {
           name: appuser.legalname || "",
           email: appuser.email || "",
-          cdesignation: appuser.cdesignation || "",
+          cdesignation: designation || appuser.cdesignation || "",
           mobile: appuser.mobile ? appuser.mobile.replace("+63", "") : "",
           organisationcollege: appuser.organisationcollege || "",
           post: appuser.post || "",
@@ -287,6 +302,7 @@ const CompanyDetails = ({ userData, updateCompletionStatus, onBack }) => {
         throw new Error("Invalid user data. Please log in again.");
       }
 
+      // Validate user existence in appuser collection
       const existingUser = await fetchSectionData({
         dbName: "internph",
         collectionName: "appuser",
@@ -314,11 +330,11 @@ const CompanyDetails = ({ userData, updateCompletionStatus, onBack }) => {
         return;
       }
 
-      const updateData = {
+      // Update appuser collection
+      const appuserUpdateData = {
         $set: {
           "sectionData.appuser.legalname": formData.name.trim(),
           "sectionData.appuser.email": formData.email,
-          "sectionData.appuser.cdesignation": formData.cdesignation,
           "sectionData.appuser.mobile": `+63${formData.mobile}`,
           "sectionData.appuser.organisationcollege":
             userRoleId === "1747903042943" ? formData.organisationcollege : "",
@@ -328,42 +344,73 @@ const CompanyDetails = ({ userData, updateCompletionStatus, onBack }) => {
         },
       };
 
-      const response = await mUpdate({
+      const appuserResponse = await mUpdate({
         appName: "app8657281202648",
         collectionName: "appuser",
         query: { _id: userId },
-        update: updateData,
+        update: appuserUpdateData,
         options: { upsert: false, writeConcern: { w: "majority" } },
       });
 
       if (
-        response &&
-        (response.success ||
-          response.modifiedCount > 0 ||
-          response.matchedCount > 0)
+        !appuserResponse ||
+        (!appuserResponse.success &&
+          appuserResponse.modifiedCount === 0 &&
+          appuserResponse.matchedCount === 0)
       ) {
-        if (response.matchedCount === 0) {
-          throw new Error("Failed to update profile: User not found.");
+        throw new Error("Failed to update appuser profile: User not found.");
+      }
+
+      if (appuserResponse.upsertedId) {
+        throw new Error(
+          "Unexpected error: New user created instead of updating. Please contact support."
+        );
+      }
+
+      // Update Company collection for designation if userRoleId is "1747903042943"
+      if (userRoleId === "1747903042943") {
+        const companyUpdateData = {
+          $set: {
+            "sectionData.Company.designation": formData.cdesignation.trim(),
+            "sectionData.Company.lastUpdated": new Date().toISOString(),
+          },
+        };
+
+        const companyResponse = await mUpdate({
+          appName: "app8657281202648",
+          collectionName: "Company",
+          query: { createdBy: userId },
+          update: companyUpdateData,
+          options: { upsert: false, writeConcern: { w: "majority" } },
+        });
+
+        if (
+          !companyResponse ||
+          (!companyResponse.success &&
+            companyResponse.modifiedCount === 0 &&
+            companyResponse.matchedCount === 0)
+        ) {
+          throw new Error("Failed to update company designation: Company not found.");
         }
-        if (response.upsertedId) {
+
+        if (companyResponse.upsertedId) {
           throw new Error(
-            "Unexpected error: New user created instead of updating. Please contact support."
+            "Unexpected error: New company created instead of updating. Please contact support."
           );
         }
-        toast.success("Profile updated successfully!", {
-          position: "top-right",
-          autoClose: 3000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-        });
-        setIsCompleted(true);
-        if (updateCompletionStatus) {
-          updateCompletionStatus("Personal Details", true);
-        }
-      } else {
-        throw new Error("Failed to update profile in database.");
+      }
+
+      toast.success("Profile updated successfully!", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+      setIsCompleted(true);
+      if (updateCompletionStatus) {
+        updateCompletionStatus("Personal Details", true);
       }
     } catch (err) {
       let errorMessage = err.message;
@@ -492,7 +539,7 @@ const CompanyDetails = ({ userData, updateCompletionStatus, onBack }) => {
                   .map((option) => ({ value: option._id, label: option.name }))}
                 onChange={handleInstituteChange}
                 styles={customSelectStyles}
-                isDisabled={isProcessing }
+                isDisabled={isProcessing}
                 placeholder="Search for your organisation/college..."
                 isClearable
                 isSearchable

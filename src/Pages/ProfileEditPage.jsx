@@ -502,7 +502,7 @@ const ProfileEditPage = () => {
                 <Route
                   path="*"
                   element={
-                    <Navigate to="/ph/editprofile/company-details" replace />
+                    <Navigate to="/editprofile/company-details" replace />
                   }
                 />
               </>
