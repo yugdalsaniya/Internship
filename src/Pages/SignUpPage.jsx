@@ -10,8 +10,8 @@ import mentor from "../assets/SignUp/mentor.png";
 import wallpaper1 from "../assets/SignUp/wallpaper1.png";
 import wallpaper2 from "../assets/SignUp/wallpaper2.png";
 import wallpaper3 from "../assets/SignUp/wallpaper3.jpg";
-import wallpaper4 from "../assets/SignUp/wallpaper4.jpg";
-import wallpaper5 from "../assets/SignUp/wallpaper5.jpg";
+import wallpaper4 from "../assets/SignUp/wallpaper4.png";
+import wallpaper5 from "../assets/SignUp/wallpaper5.png";
 import logo from "../assets/Navbar/logo.png";
 import { signup, signupCompany, login, sendOtp } from "../Utils/api";
 
@@ -68,7 +68,7 @@ const SignUpPage = () => {
   const roleDescriptions = {
     student: [
       "Find internships, OJTs, and entry-level jobs",
-      "Apply directly with a smart Inturshp profile",
+      "Apply directly with a smart Inturnshp profile",
       "Learn with free workshops and short courses",
       "Get career-ready through real-world experiences",
     ],
