@@ -87,7 +87,6 @@ export default function App({ userData }) {
       try {
         setIsLoading(true);
         setError("");
-        console.log("Fetching data with lookup for userId:", userId);
 
         const response = await fetchSectionData({
           dbName: "internph",
@@ -209,7 +208,6 @@ export default function App({ userData }) {
           ],
         });
 
-        console.log("fetchSectionData response with lookup:", response);
 
         const user = response?.[0];
         if (!user || !user.sectionData?.appuser) {

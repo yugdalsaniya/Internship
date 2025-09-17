@@ -139,7 +139,6 @@ const PostInternship = () => {
 
       // Retry logic for transient errors
       if (retryCount < maxRetries && err.message.includes('Company record not found in database')) {
-        console.log(`Retrying fetchCompanyApproval (${retryCount + 1}/${maxRetries})...`);
         setTimeout(() => {
           fetchCompanyApproval(isButtonTriggered, retryCount + 1, maxRetries);
         }, 1000 * (retryCount + 1)); // Exponential backoff: 1s, 2s

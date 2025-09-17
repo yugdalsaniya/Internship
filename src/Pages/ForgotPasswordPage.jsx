@@ -80,7 +80,6 @@ const ForgotPassword = () => {
         otp: otpCode,
       };
       const response = await verifyOtp(otpPayload);
-      console.log('verifyOtp response:', response); // Debug log
 
       if (response.success) {
         const tokenValue = response.token || response.accessToken || response.resetToken || response.data?.token;

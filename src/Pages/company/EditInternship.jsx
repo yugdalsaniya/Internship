@@ -108,7 +108,6 @@ const EditInternship = () => {
   // Initialize Autocomplete after script and input are ready
   const initializeAutocomplete = useCallback(() => {
     if (!locationInputRef.current || !window.google?.maps?.places || !mapsScriptLoaded) {
-      console.log("Waiting for Google Maps or input to be ready");
       return false;
     }
 
@@ -133,14 +132,11 @@ const EditInternship = () => {
         if (place.geometry) {
           newLocation = place.formatted_address || place.name || formData.location;
         } else {
-          console.log("No geometry available for input: ", place.name);
           newLocation = locationInputRef.current.value.trim();
         }
-        console.log("Place selected:", place, "Setting location:", newLocation);
         setFormData((prev) => ({ ...prev, location: newLocation }));
       });
 
-      console.log("Google Maps Autocomplete initialized successfully");
       return true;
     } catch (err) {
       console.error("Error initializing Google Maps Autocomplete:", err);
@@ -161,7 +157,6 @@ const EditInternship = () => {
         setError("");
 
         // 1. Fetch internship data with full projection
-        console.log("Fetching internship with ID:", id, "for company:", user.companyId);
         const internshipResponse = await fetchSectionData({
           dbName: "internph",
           collectionName: "jobpost",
@@ -172,14 +167,12 @@ const EditInternship = () => {
           projection: {}, // Fetch all fields
         });
 
-        console.log("Internship Response:", internshipResponse);
         if (!internshipResponse || internshipResponse.length === 0) {
           throw new Error("Internship not found or access denied");
         }
 
         const internship = internshipResponse[0];
         const jobpost = internship.sectionData?.jobpost || {};
-        console.log("Jobpost data:", jobpost);
 
         // Process skillsrequired safely
         let skillsArray = [];
@@ -243,7 +236,6 @@ const EditInternship = () => {
         }
 
         // 3. Fetch categories
-        console.log("Fetching categories...");
         const categoryResponse = await fetchSectionData({
           dbName: "internph",
           collectionName: "category",
@@ -254,7 +246,6 @@ const EditInternship = () => {
           },
         });
 
-        console.log("Category Response:", categoryResponse);
         if (Array.isArray(categoryResponse) && categoryResponse.length > 0) {
           const categories = categoryResponse
             .map((item) => ({
@@ -264,7 +255,6 @@ const EditInternship = () => {
             .filter(cat => cat.titleofinternship.trim())
             .sort((a, b) => a.titleofinternship.localeCompare(b.titleofinternship));
           setCategoryData(categories);
-          console.log("Categories loaded:", categories.length, categories);
 
           // Validate subtype
           if (initialFormData.subtype && !categories.some(cat => cat._id === initialFormData.subtype)) {
@@ -277,7 +267,6 @@ const EditInternship = () => {
         }
 
         // 4. Fetch skills
-        console.log("Fetching skills...");
         const skillsResponse = await fetchSectionData({
           dbName: "internph",
           collectionName: "skills",
@@ -286,7 +275,6 @@ const EditInternship = () => {
           limit: 100,
         });
 
-        console.log("Skills Response:", skillsResponse);
         if (Array.isArray(skillsResponse) && skillsResponse.length > 0) {
           const skillsOptions = skillsResponse
             .map((item) => ({
@@ -295,7 +283,6 @@ const EditInternship = () => {
             }))
             .filter(skill => skill.label);
           setSkillsData(skillsOptions);
-          console.log("Skills loaded:", skillsOptions.length, skillsOptions.slice(0, 5));
 
           const updatedSkills = skillsArray.map(skill => {
             const matchedSkill = skillsOptions.find(option => option.label.toLowerCase() === skill.label.toLowerCase());
@@ -307,7 +294,6 @@ const EditInternship = () => {
           setSkillsData([]);
         }
 
-        console.log("All data loaded successfully");
       } catch (err) {
         setError("Error fetching data: " + err.message);
         console.error("EditInternship Fetch Error:", err);
@@ -387,7 +373,6 @@ const EditInternship = () => {
         }
         if (!durationRegex.test(value)) return;
       }
-      console.log(`Updating ${name}:`, value);
       setFormData((prev) => ({ ...prev, [name]: value }));
     }
   };
@@ -396,7 +381,6 @@ const EditInternship = () => {
     if (locationInputRef.current) {
       const currentValue = locationInputRef.current.value.trim();
       if (currentValue !== formData.location) {
-        console.log("Location blur, setting:", currentValue);
         setFormData((prev) => ({ ...prev, location: currentValue }));
       }
     }
@@ -443,7 +427,6 @@ const EditInternship = () => {
       return null;
     }
     const trimmed = location.trim();
-    console.log("Validating location:", trimmed, "Length:", trimmed.length);
     if (trimmed.length < 2) {
       console.warn("Location too short:", trimmed);
       return null;
@@ -546,9 +529,7 @@ const EditInternship = () => {
         },
       };
 
-      console.log("Updating with data:", JSON.stringify(jobpostData, null, 2));
-      console.log("Location before save:", jobpostData.sectionData.jobpost.location);
-      console.log("Published status:", jobpostData.sectionData.jobpost.published);
+     
 
       const response = await mUpdate({
         appName: "app8657281202648",
@@ -558,7 +539,6 @@ const EditInternship = () => {
         options: { upsert: false },
       });
 
-      console.log("Update Response:", response);
       if (response.success) {
         toast.success("Internship updated successfully!", {
           position: "top-right",

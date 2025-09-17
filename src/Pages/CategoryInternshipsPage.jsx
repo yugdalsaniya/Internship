@@ -26,7 +26,6 @@ export default function CategoryInternshipsPage() {
           query: { '_id': id },
           limit: 1,
         });
-        console.log('Category Data:', categoryData);
 
         if (categoryData.length === 0) {
           setError('Category not found');
@@ -54,7 +53,6 @@ export default function CategoryInternshipsPage() {
           order: -1,
           sortedBy: 'createdAt',
         });
-        console.log('Internships Data:', data);
         setInternships(data);
       } catch (err) {
         setError(err.message || 'Failed to fetch internships. Please try again.');
@@ -78,7 +76,6 @@ export default function CategoryInternshipsPage() {
         const isInternship = job.sectionData?.jobpost?.type === 'Internship';
         const matchesCategory = job.sectionData?.jobpost?.subtype === id;
         if (!isInternship || !matchesCategory) {
-          console.log('Filtered out job:', job._id, { isInternship, matchesCategory });
         }
         return isInternship && matchesCategory;
       })

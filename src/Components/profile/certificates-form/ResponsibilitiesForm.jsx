@@ -36,12 +36,7 @@ const ResponsibilitiesForm = ({
   const today = new Date().toISOString().split("T")[0];
 
   useEffect(() => {
-    console.log(
-      "ResponsibilitiesForm useEffect: isEditing=",
-      isEditing,
-      "existingResponsibility=",
-      existingResponsibility
-    );
+    
     // Populate form data if editing an existing responsibility
     if (isEditing && existingResponsibility) {
       setFormData({
@@ -81,7 +76,6 @@ const ResponsibilitiesForm = ({
       try {
         const user = JSON.parse(userString);
         setUserId(user.userid);
-        console.log("User ID set:", user.userid);
       } catch (parseError) {
         console.error("Error parsing user data:", parseError);
         toast.error("Invalid user data. Please log in again.", {
@@ -235,7 +229,6 @@ const ResponsibilitiesForm = ({
       errors.push("End date cannot be in the future.");
 
     if (errors.length > 0) {
-      console.log("Validation errors:", errors);
       toast.error(errors.join(" "), {
         position: "top-right",
         autoClose: 5000,
@@ -246,7 +239,6 @@ const ResponsibilitiesForm = ({
   };
 
   const handleSave = async () => {
-    console.log("handleSave called with formData:", formData);
     try {
       setIsLoading(true);
 
@@ -285,7 +277,6 @@ const ResponsibilitiesForm = ({
         updatedAt: new Date().toISOString(),
       };
 
-      console.log("Responsibility data to save:", responsibilityData);
 
       const existingUserData = await fetchSectionData({
         collectionName: "appuser",
@@ -324,7 +315,6 @@ const ResponsibilitiesForm = ({
         options: { upsert: false },
       });
 
-      console.log("Responsibility saved successfully");
       toast.success(
         isEditing
           ? "Responsibility updated successfully!"

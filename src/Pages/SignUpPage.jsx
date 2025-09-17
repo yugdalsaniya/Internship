@@ -420,7 +420,6 @@ const SignUpPage = () => {
           password: formData.password,
           type: "Company",
         };
-        console.log("Company Signup Payload:", payload);
         response = await signupCompany(payload);
 
         if (response.success) {
@@ -450,7 +449,6 @@ const SignUpPage = () => {
           });
 
           if (loginResponse.success) {
-            console.log("API Login Response User:", loginResponse.user);
 
             const roleId = loginResponse.user.role?.role || "";
             const roleName = roleNames[roleId];
@@ -534,7 +532,6 @@ const SignUpPage = () => {
         if (role === "academy") {
           payload.academyName = formData.academyName.trim();
         }
-        console.log("Signup Payload:", payload);
         response = await signup(payload);
 
         if (response.success) {

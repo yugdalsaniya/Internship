@@ -169,7 +169,6 @@ const ProfileEditPage = () => {
   };
 
   useEffect(() => {
-    console.log("userData in ProfileEditPage:", userData);
   }, [userData]);
 
   const pathToSection = {
@@ -207,7 +206,6 @@ const ProfileEditPage = () => {
   const updateCompletionStatus = useCallback((section, status) => {
     setCompletionStatus((prev) => {
       const newStatus = { ...prev, [section]: status };
-      console.log(`Updated completionStatus in ProfileEditPage:`, newStatus);
       return newStatus;
     });
   }, []);
@@ -318,10 +316,7 @@ const ProfileEditPage = () => {
           organizationData = companyResponse[0]?.sectionData?.Company || {};
         }
 
-        console.log(
-          "fetchSectionData response in ProfileEditPage:",
-          JSON.stringify({ userResponse, organizationData }, null, 2)
-        );
+       
         const apiData = userResponse[0]?.sectionData?.appuser || {};
 
         const newCompletionStatus = {
@@ -380,7 +375,6 @@ const ProfileEditPage = () => {
         }
 
         setCompletionStatus(newCompletionStatus);
-        console.log("Set completionStatus:", newCompletionStatus);
       } catch (err) {
         console.error(
           "Error fetching completion statuses:",
@@ -520,10 +514,7 @@ const ProfileEditPage = () => {
 
       <div className="flex flex-col md:flex-row flex-1">
         <div
-          className={`w-full md:w-[320px] border-r bg-white fixed top-16 left-0 h-screen flex flex-col z-10 transition-transform duration-300 ${
-            isSidebarOpen ? "translate-x-0" : "-translate-x-full"
-          } md:translate-x-0 md:block`}
-        >
+className={`w-full md:w-[320px] border-r bg-white fixed top-16 left-0 h-[calc(100vh-4rem)] flex flex-col z-10 transition-transform duration-300 ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0 md:block overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden`}        >
           <div className="p-4 md:hidden">
             <button
               className="w-8 h-8 flex items-center justify-center rounded-full bg-blue-100 hover:bg-blue-200 transition-colors duration-200"
@@ -578,7 +569,7 @@ const ProfileEditPage = () => {
           <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-2">
             {sections.map((section) => (
               <Link
-                to={`/ph/editprofile/${section.path}`}
+                to={`/editprofile/${section.path}`}
                 key={section.label}
                 onClick={() => {
                   setActiveSection(section.label);
@@ -606,7 +597,7 @@ const ProfileEditPage = () => {
           <div className="top-20 left-80 right-0 bg-white border-b shadow-sm z-20 h-16">
             <div className="flex items-center justify-between p-4">
               <div className="flex items-center gap-3">
-                <Link to="/ph/">
+                <Link to="/">
                   <button className="w-8 h-8 flex items-center justify-center rounded-full bg-blue-100 hover:bg-blue-200 transition-colors">
                     <FaChevronLeft className="text-gray-600 text-sm" />
                   </button>

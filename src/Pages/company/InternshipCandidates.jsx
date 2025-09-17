@@ -202,8 +202,7 @@ const InternshipCandidates = () => {
   // Function to fetch academy representative data by organisation college ID with post lookup
   const fetchAcademyRepData = async (organisationCollegeId) => {
     try {
-      console.log("=== FETCHING ACADEMY REP DATA ===");
-      console.log("Organisation College ID:", organisationCollegeId);
+     
       
       if (!organisationCollegeId || organisationCollegeId === "Unknown") {
         console.warn("Invalid organisation college ID provided:", organisationCollegeId);
@@ -214,7 +213,6 @@ const InternshipCandidates = () => {
       }
 
       // First, let's try to find all users for this organisation college
-      console.log("Step 1: Finding all users for organisation college...");
       const allUsersResponse = await fetchSectionData({
         dbName: "internph",
         collectionName: "appuser",
@@ -224,7 +222,6 @@ const InternshipCandidates = () => {
         projection: { sectionData: 1 },
       });
 
-      console.log("All users found for org college:", allUsersResponse);
 
       if (allUsersResponse.length === 0) {
         console.warn("No users found for organisation college:", organisationCollegeId);
@@ -244,7 +241,6 @@ const InternshipCandidates = () => {
         );
       });
 
-      console.log("Academy users found:", academyUsers);
 
       if (academyUsers.length === 0) {
         console.warn("No academy users found for organisation college:", organisationCollegeId);
@@ -258,12 +254,10 @@ const InternshipCandidates = () => {
       const academyUser = academyUsers[0];
       const repData = academyUser.sectionData?.appuser || {};
       
-      console.log("Selected academy user data:", repData);
-      console.log("Post ID from academy user:", repData.post);
+  
 
       // Now fetch the post data separately
       if (repData.post) {
-        console.log("Step 2: Fetching post data for post ID:", repData.post);
         
         const postResponse = await fetchSectionData({
           dbName: "internph",
@@ -272,13 +266,11 @@ const InternshipCandidates = () => {
           projection: { sectionData: 1 },
         });
 
-        console.log("Post response:", postResponse);
 
         if (postResponse.length > 0) {
           const postData = postResponse[0];
           const postName = postData.sectionData?.post?.name;
           
-          console.log("Post name found:", postName);
           
           return {
             legalname: repData.legalname || repData.name || "School Representative",
@@ -336,7 +328,6 @@ const InternshipCandidates = () => {
         });
 
         if (jobPostResponse.length === 0) {
-          console.log("No job post found for ID:", id);
           setCandidates([]);
           setLoading(false);
           return;
@@ -349,7 +340,6 @@ const InternshipCandidates = () => {
         const userIds = applicants.map((app) => app.text).filter(Boolean);
 
         if (userIds.length === 0) {
-          console.log("No applicants found for job post:", id);
           setCandidates([]);
           setLoading(false);
           return;
@@ -365,10 +355,7 @@ const InternshipCandidates = () => {
 
         if (companyResponse.length > 0) {
           setCompanyData(companyResponse[0].sectionData.Company || {});
-          console.log(
-            "Company data fetched:",
-            companyResponse[0].sectionData.Company
-          );
+         
         } else {
           setError("Company data not found.");
           toast.error("Company data not found.", { autoClose: 3000 });
@@ -389,7 +376,6 @@ const InternshipCandidates = () => {
         if (companyRepResponse.length > 0) {
           const repData = companyRepResponse[0].sectionData.appuser || {};
           setCompanyRepData(repData);
-          console.log("Company representative data fetched:", repData);
         } else {
           console.warn("No company representative data found for companyId:", createdBy);
           setCompanyRepData({
@@ -416,7 +402,6 @@ const InternshipCandidates = () => {
           ],
         });
 
-        console.log("Users response with institute lookup:", usersResponse);
         const userMap = usersResponse.reduce((map, user) => {
           const appuserData = user.sectionData.appuser || {};
           const institute = user.instituteData?.[0] || {};
@@ -440,7 +425,6 @@ const InternshipCandidates = () => {
           return map;
         }, {});
 
-        console.log("User map:", userMap);
 
         const formattedCandidates = applicants.map((app) => {
           const candidateData = {
@@ -464,7 +448,6 @@ const InternshipCandidates = () => {
             enddate: app.enddate || "",
             totalHours: app.totalHours || 0,
           };
-          console.log(`Candidate ${app.text} formatted:`, candidateData);
           return candidateData;
         });
         
@@ -472,19 +455,15 @@ const InternshipCandidates = () => {
 
         // Pre-fetch academy representative data for all unique organisation colleges
         const uniqueOrgColleges = [...new Set(formattedCandidates.map(c => c.organisationcollege))].filter(id => id && id !== "Unknown");
-        console.log("=== PROCESSING UNIQUE ORG COLLEGES ===");
-        console.log("Unique organisation colleges:", uniqueOrgColleges);
+        
         
         const academyDataMap = {};
         for (const orgCollegeId of uniqueOrgColleges) {
-          console.log(`\n--- Processing org college: ${orgCollegeId} ---`);
           const academyData = await fetchAcademyRepData(orgCollegeId);
           academyDataMap[orgCollegeId] = academyData;
-          console.log(`Academy data result for ${orgCollegeId}:`, academyData);
         }
         
-        console.log("=== FINAL ACADEMY DATA MAP ===");
-        console.log("Academy data map:", academyDataMap);
+       
         setAcademyRepDataMap(academyDataMap);
         
       } catch (err) {
@@ -606,7 +585,6 @@ const InternshipCandidates = () => {
     };
 
     try {
-      console.log("Sending shortlist email to:", candidate.email);
       const emailResponse = await sendEmailTemplate(
         {
           appName: "app8657281202648",
@@ -619,7 +597,6 @@ const InternshipCandidates = () => {
         },
         toast
       );
-      console.log("Shortlist email sent successfully:", emailResponse);
       toast.success("Shortlist email sent.", {
         position: "top-right",
         autoClose: 3000,
@@ -641,7 +618,6 @@ const InternshipCandidates = () => {
           },
           toast
         );
-        console.log("Fallback email sent successfully:", fallbackResponse);
         toast.success("Shortlist email sent via fallback.", {
           position: "top-right",
           autoClose: 3000,
@@ -1093,7 +1069,6 @@ const InternshipCandidates = () => {
       signingPlace: "Place of Signing",
     };
 
-    console.log("MOA Data for rendering:", moaData);
 
     return (
       <div style={{}}>

@@ -116,6 +116,7 @@ function BasicDetails({ userData }) {
   const [designationOptions, setDesignationOptions] = useState([]);
   const [courseOptions, setCourseOptions] = useState([]);
   const [specializationOptions, setSpecializationOptions] = useState([]);
+  const [allSpecializationOptions, setAllSpecializationOptions] = useState([]); // Store all specializations
   const [instituteOptions, setInstituteOptions] = useState([]);
   const [roleOptions, setRoleOptions] = useState([]);
   const [isLoadingOptions, setIsLoadingOptions] = useState(false);
@@ -144,6 +145,29 @@ function BasicDetails({ userData }) {
      
     }
   }, [userData]);
+
+  // Filter specializations based on selected course
+  useEffect(() => {
+    if (course && allSpecializationOptions.length > 0) {
+      const filteredSpecializations = allSpecializationOptions.filter(
+        (spec) => spec.courseId === course
+      );
+      setSpecializationOptions(filteredSpecializations);
+      
+      // Reset specialization if current selection doesn't match the new course
+      if (specialization) {
+        const isCurrentSpecializationValid = filteredSpecializations.some(
+          (spec) => spec._id === specialization
+        );
+        if (!isCurrentSpecializationValid) {
+          setSpecialization("");
+        }
+      }
+    } else {
+      setSpecializationOptions([]);
+      setSpecialization("");
+    }
+  }, [course, allSpecializationOptions, specialization]);
 
   // Fetch user data and dropdown options
 useEffect(() => {
@@ -316,8 +340,9 @@ useEffect(() => {
       const specializations = specializationData.map((item) => ({
         _id: item._id,
         name: item.sectionData.coursespecialization.name,
+        courseId: item.sectionData.coursespecialization.course, // Store the course reference
       }));
-      setSpecializationOptions(specializations);
+      setAllSpecializationOptions(specializations); // Store all specializations
 
       const instituteData = await fetchSectionData({
         dbName: "internph",
@@ -507,6 +532,13 @@ useEffect(() => {
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const handleCourseChange = (e) => {
+    const selectedCourse = e.target.value;
+    setCourse(selectedCourse);
+    // Reset specialization when course changes
+    setSpecialization("");
   };
 
   const validateForm = () => {
@@ -1192,7 +1224,7 @@ useEffect(() => {
               <select
                 className="w-full border border-gray-300 rounded-lg p-2 h-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={course}
-                onChange={(e) => setCourse(e.target.value)}
+                onChange={handleCourseChange}
                 disabled={isProcessing || isLoadingOptions}
               >
                 <option value="">Select Course</option>
@@ -1215,9 +1247,11 @@ useEffect(() => {
                 className="w-full border border-gray-300 rounded-lg p-2 h-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={specialization}
                 onChange={(e) => setSpecialization(e.target.value)}
-                disabled={isProcessing || isLoadingOptions}
+                disabled={isProcessing || isLoadingOptions || !course}
               >
-                <option value="">Select Specialization</option>
+                <option value="">
+                  {!course ? "Select Course First" : "Select Specialization"}
+                </option>
                 {specializationOptions.map((option) => (
                   <option key={option._id} value={option._id}>
                     {option.name}
@@ -1229,36 +1263,60 @@ useEffect(() => {
                   Loading specializations...
                 </p>
               )}
+              {course && specializationOptions.length === 0 && !isLoadingOptions && (
+                <p className="text-sm text-gray-500 mt-1">
+                  No specializations available for selected course.
+                </p>
+              )}
             </div>
 
-            <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium block mb-1 text-gray-700">
-                  Start Year
-                </label>
-                <input
-                  type="text"
-                  placeholder="Start Year"
-                  className="w-full border border-gray-300 rounded-lg p-2 h-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={startYear}
-                  onChange={(e) => setStartYear(e.target.value)}
-                  disabled={isProcessing}
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium block mb-1 text-gray-700">
-                  End Year
-                </label>
-                <input
-                  type="text"
-                  placeholder="End Year"
-                  className="w-full border border-gray-300 rounded-lg p-2 h-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={endYear}
-                  onChange={(e) => setEndYear(e.target.value)}
-                  disabled={isProcessing}
-                />
-              </div>
-            </div>
+          <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+  <div>
+    <label className="text-sm font-medium block mb-1 text-gray-700">
+      Start Year
+    </label>
+    <select
+      className="w-full border border-gray-300 rounded-lg p-2 h-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      value={startYear}
+      onChange={(e) => setStartYear(e.target.value)}
+      disabled={
+        isProcessing ||
+        (userType === "Professional" && isCurrentlyWorking)
+      }
+    >
+      <option value="">Select Start Year</option>
+      {Array.from({ length: 50 }, (_, i) => {
+        const year = new Date().getFullYear() - i;
+        return (
+          <option key={year} value={year}>
+            {year}
+          </option>
+        );
+      })}
+    </select>
+  </div>
+  <div>
+    <label className="text-sm font-medium block mb-1 text-gray-700">
+      End Year
+    </label>
+    <select
+      className="w-full border border-gray-300 rounded-lg p-2 h-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      value={endYear}
+      onChange={(e) => setEndYear(e.target.value)}
+      disabled={isCurrentlyWorking || isProcessing}
+    >
+      <option value="">Select End Year</option>
+      {Array.from({ length: 60 }, (_, i) => {
+        const year = new Date().getFullYear() + 10 - i;
+        return (
+          <option key={year} value={year}>
+            {year}
+          </option>
+        );
+      })}
+    </select>
+  </div>
+</div>
 
             <div className="mb-4">
               <label className="text-sm font-medium block mb-1 text-gray-700">

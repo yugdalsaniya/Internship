@@ -87,6 +87,16 @@ function SocialLinks({ userData, updateCompletionStatus }) {
     }
   }, [isCompleted, updateCompletionStatus]);
 
+  const isValidUrl = (url) => {
+    if (!url.trim()) return true; // Allow empty strings
+    try {
+      new URL(url);
+      return url.match(/^(https?:\/\/)/) !== null;
+    } catch {
+      return false;
+    }
+  };
+
   const handleInputChange = (platform, value) => {
     setError('');
     setLinks((prevLinks) => ({
@@ -101,6 +111,22 @@ function SocialLinks({ userData, updateCompletionStatus }) {
       if (!userId) {
         setError('Please log in to save details.');
         toast.error('Please log in to save details.', {
+          position: "top-right",
+          autoClose: 5000,
+        });
+        return;
+      }
+
+      // Validate all non-empty links
+      const invalidLinks = Object.entries(links).filter(
+        ([platform, link]) => link.trim() !== '' && !isValidUrl(link)
+      );
+
+      if (invalidLinks.length > 0) {
+        const invalidPlatforms = invalidLinks.map(([platform]) => platform).join(', ');
+        const errorMessage = `Please enter valid URLs for: ${invalidPlatforms}`;
+        setError(errorMessage);
+        toast.error(errorMessage, {
           position: "top-right",
           autoClose: 5000,
         });
@@ -175,11 +201,7 @@ function SocialLinks({ userData, updateCompletionStatus }) {
   return (
     <div className="bg-white rounded-xl shadow-md">
       <ToastContainer />
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative m-4" role="alert">
-          <span>{error}</span>
-        </div>
-      )}
+      
 
       <div className="sticky top-0 bg-white z-10 px-4 py-4 shadow-sm flex justify-between items-center border-b border-gray-200">
         <div className="flex items-center gap-2 text-gray-700 text-lg font-medium">

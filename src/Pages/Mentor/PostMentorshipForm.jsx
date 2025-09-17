@@ -187,7 +187,6 @@ const PostMentorshipForm = () => {
     };
 
     // Log payload for debugging
-    console.log('Submitting payload:', mentorshipData);
 
     try {
       let response;

@@ -85,7 +85,6 @@ const InternshipPage = () => {
     const search = params.get("search")?.trim() || "";
     const loc = params.get("location")?.trim() || "";
     const cat = params.get("category")?.trim() || "";
-    console.log("URL Query Parameters:", { search, loc, cat });
     setSearchQuery(search);
     setLocationQuery(loc);
     setAppliedCategories(cat ? [cat] : []);
@@ -131,7 +130,6 @@ const InternshipPage = () => {
           order: -1,
           sortedBy: "createdDate",
         });
-        console.log("Fetched internships:", data.length);
         setInternships(data);
       } catch (err) {
         setError("Error fetching internships");
@@ -373,11 +371,7 @@ const InternshipPage = () => {
         }
       });
 
-    console.log("Filtered internships:", filtered.length, {
-      searchQuery,
-      locationQuery,
-      appliedCategories,
-    });
+    
     return filtered;
   }, [
     internships,

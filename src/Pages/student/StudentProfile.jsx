@@ -50,7 +50,6 @@ const SharedProfilePage = () => {
       setLoading(true);
       setError(null);
       
-      console.log('Fetching student profile for ID:', studentId);
       
       const response = await fetchSectionData({
         appName: "app8657281202648",
@@ -439,7 +438,6 @@ const SharedProfilePage = () => {
         ]
       });
 
-      console.log('API Response:', response);
 
       if (response && response.length > 0 && response[0].sectionData?.appuser) {
         setStudentData(response[0]);

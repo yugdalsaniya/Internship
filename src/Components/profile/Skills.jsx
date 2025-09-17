@@ -21,7 +21,6 @@ function Skills({ userData, updateCompletionStatus }) {
   const navigate = useNavigate();
 
   useEffect(() => {
-    console.log('Skills useEffect triggered for fetching skills');
     const fetchSkills = async () => {
       try {
         setLoading(true);
@@ -64,7 +63,6 @@ function Skills({ userData, updateCompletionStatus }) {
       return;
     }
 
-    console.log('Skills useEffect triggered for fetching user skills with userId:', userData.userid);
     const fetchUserSkills = async () => {
       try {
         setLoading(true);
@@ -94,7 +92,6 @@ function Skills({ userData, updateCompletionStatus }) {
           })
         );
 
-        console.log('fetchSectionData response for Skills:', JSON.stringify(response, null, 2));
         const apiData = response[0];
         if (!apiData) {
           console.warn('No user data returned from API, setting default skills state');
@@ -111,7 +108,6 @@ function Skills({ userData, updateCompletionStatus }) {
         setIsCompleted(!!existingSkills.length);
         if (updateCompletionStatus) {
           updateCompletionStatus('Skills', !!existingSkills.length);
-          console.log('Updated completion status for Skills:', !!existingSkills.length);
         }
         setLoading(false);
       } catch (err) {
@@ -176,7 +172,6 @@ function Skills({ userData, updateCompletionStatus }) {
   };
 
   const handleSkillClick = (skillId, skillName) => {
-    console.log('handleSkillClick:', { skillId, skillName, selectedSkillIds });
     if (selectedSkillIds.includes(skillId)) {
       setSelectedSkillIds(selectedSkillIds.filter(id => id !== skillId));
       const availableSkills = allSkills.filter(skill => !selectedSkillIds.includes(skill.id) || skill.id === skillId);
@@ -201,7 +196,6 @@ function Skills({ userData, updateCompletionStatus }) {
 
   const handleTextChange = (e) => {
     const newText = e.target.value;
-    console.log('handleTextChange:', { oldText: skillsText, newText });
     setSkillsText(newText);
   };
 
@@ -213,7 +207,12 @@ function Skills({ userData, updateCompletionStatus }) {
     }
 
     if (selectedSkillIds.length === 0) {
-      toast.error('Please select at least one skill.', { autoClose: 5000 });
+      toast.error('Please select at least one skill from suggestions or dropdown.', { autoClose: 5000 });
+      return;
+    }
+
+    if (skillsText.trim() && !selectedSkillIds.includes(allSearchableSkills.find(skill => skill.name.toLowerCase() === skillsText.toLowerCase().trim())?.id)) {
+      toast.error('Please choose valid skills from suggestions or dropdown.', { autoClose: 5000 });
       return;
     }
 
@@ -233,7 +232,6 @@ function Skills({ userData, updateCompletionStatus }) {
         options: { upsert: false, writeConcern: { w: 'majority' } },
       });
 
-      console.log('mUpdate response for skills:', updateResponse);
 
       if (
         updateResponse &&
@@ -254,7 +252,6 @@ function Skills({ userData, updateCompletionStatus }) {
         setIsCompleted(true);
         if (updateCompletionStatus) {
           updateCompletionStatus('Skills', true);
-          console.log('Updated completion status for Skills: true');
         }
       } else {
         throw new Error('Failed to save skills to database.');
@@ -281,7 +278,6 @@ function Skills({ userData, updateCompletionStatus }) {
     }
   };
 
-  console.log('Rendering Skills:', { isCompleted, selectedSkillIds, skillsText });
 
   return (
     <div className="bg-white rounded-xl shadow-md">

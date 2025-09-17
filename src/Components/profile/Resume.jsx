@@ -13,6 +13,7 @@ function Resume({ userData, updateCompletionStatus }) {
   const [selectedFile, setSelectedFile] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [resumeUrl, setResumeUrl] = useState('');
+  const [resumeFileName, setResumeFileName] = useState(''); // New state for original filename
   const [isCompleted, setIsCompleted] = useState(false);
   const [isViewingResume, setIsViewingResume] = useState(false);
   const navigate = useNavigate();
@@ -59,15 +60,15 @@ function Resume({ userData, updateCompletionStatus }) {
           fetchSectionData({
             collectionName: 'appuser',
             query: { _id: userId },
-            projection: { 'sectionData.appuser.resume': 1 },
+            projection: { 'sectionData.appuser.resume': 1, 'sectionData.appuser.resumeFileName': 1 },
           })
         );
 
-        console.log('fetchSectionData response for Resume:', JSON.stringify(response, null, 2));
         const apiData = response[0];
         if (!apiData) {
           console.warn('No user data returned from API, setting default resume state');
           setResumeUrl('');
+          setResumeFileName('');
           setIsCompleted(false);
           if (updateCompletionStatus) {
             updateCompletionStatus('Resume', false);
@@ -76,11 +77,12 @@ function Resume({ userData, updateCompletionStatus }) {
         }
 
         const existingResume = apiData?.sectionData?.appuser?.resume || '';
+        const existingResumeFileName = apiData?.sectionData?.appuser?.resumeFileName || '';
         setResumeUrl(existingResume);
+        setResumeFileName(existingResumeFileName);
         setIsCompleted(!!existingResume);
         if (updateCompletionStatus) {
           updateCompletionStatus('Resume', !!existingResume);
-          console.log('Updated completion status for Resume:', !!existingResume);
         }
       } catch (err) {
         console.error('Error fetching resume:', err.message, err.stack);
@@ -137,6 +139,7 @@ function Resume({ userData, updateCompletionStatus }) {
         moduleName: 'appuser',
         file,
         userId,
+        originalFileName: file.name, // Pass original filename to API
       });
 
       const uploadedFilePath = uploadResponse?.filePath || uploadResponse?.fileUrl || uploadResponse?.data?.fileUrl;
@@ -151,6 +154,7 @@ function Resume({ userData, updateCompletionStatus }) {
         update: {
           $set: {
             'sectionData.appuser.resume': uploadedFilePath,
+            'sectionData.appuser.resumeFileName': file.name, // Store original filename
           },
         },
         options: { upsert: false, writeConcern: { w: 'majority' } },
@@ -173,6 +177,7 @@ function Resume({ userData, updateCompletionStatus }) {
           autoClose: 3000,
         });
         setResumeUrl(uploadedFilePath);
+        setResumeFileName(file.name); // Set original filename
         setIsCompleted(true);
         if (updateCompletionStatus) {
           updateCompletionStatus('Resume', true);
@@ -220,6 +225,7 @@ function Resume({ userData, updateCompletionStatus }) {
         update: {
           $set: {
             'sectionData.appuser.resume': '',
+            'sectionData.appuser.resumeFileName': '', // Clear filename
           },
         },
         options: { upsert: false, writeConcern: { w: 'majority' } },
@@ -242,6 +248,7 @@ function Resume({ userData, updateCompletionStatus }) {
           autoClose: 3000,
         });
         setResumeUrl('');
+        setResumeFileName('');
         setIsCompleted(false);
         setIsViewingResume(false);
         if (updateCompletionStatus) {
@@ -289,12 +296,12 @@ function Resume({ userData, updateCompletionStatus }) {
       </div>
       <div className="p-6">
         <div className="mb-4">
-          <p className="text-sm font-medium text-gray-700 mb-1">
+          {/* <p className="text-sm font-medium text-gray-700 mb-1">
             Resume<span className="text-red-500 ml-1">*</span>
             <a href="#" className="text-blue-600 text-sm float-right hover:underline">
               Create
             </a>
-          </p>
+          </p> */}
           <p className="text-gray-500 text-sm mb-4">
             Remember that one-pager that highlights how amazing you are? Time to let employers notice your potential through it.
           </p>
@@ -304,7 +311,7 @@ function Resume({ userData, updateCompletionStatus }) {
             <div className="flex items-center">
               <AiFillFilePdf className="text-red-500 text-2xl mr-3" />
               <span className="text-gray-700">
-                {selectedFile?.name || resumeUrl.split('/').pop() || 'Resume'}
+                {resumeFileName || selectedFile?.name || resumeUrl.split('/').pop() || 'Resume'}
               </span>
             </div>
             <div className="flex items-center gap-3">

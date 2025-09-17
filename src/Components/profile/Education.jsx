@@ -106,9 +106,7 @@ const Education = ({ userData, updateCompletionStatus }) => {
     const fetchDropdownOptions = async () => {
       try {
         setIsProcessing(true);
-        console.log(
-          "Fetching courses, specializations, colleges, and skills from database..."
-        );
+        
 
         // Fetch courses
         const courseResponse = await fetchSectionData({
@@ -118,7 +116,6 @@ const Education = ({ userData, updateCompletionStatus }) => {
           projection: { _id: 1, "sectionData.course.name": 1 },
         });
 
-        console.log("fetchCourses raw response:", courseResponse);
 
         if (!courseResponse || !Array.isArray(courseResponse)) {
           console.error(
@@ -161,7 +158,6 @@ const Education = ({ userData, updateCompletionStatus }) => {
           })
           .filter(Boolean);
 
-        console.log("Processed courses:", courses);
 
         if (courses.length === 0) {
           toast.error("No valid courses found in the database.", {
@@ -181,10 +177,7 @@ const Education = ({ userData, updateCompletionStatus }) => {
           projection: { _id: 1, "sectionData.coursespecialization": 1 },
         });
 
-        console.log(
-          "fetchSpecializations raw response:",
-          specializationResponse
-        );
+       
 
         if (!specializationResponse || !Array.isArray(specializationResponse)) {
           console.error(
@@ -233,7 +226,6 @@ const Education = ({ userData, updateCompletionStatus }) => {
           })
           .filter(Boolean);
 
-        console.log("Processed specializations:", specializations);
 
         if (specializations.length === 0) {
           toast.error("No valid specializations found in the database.", {
@@ -253,7 +245,6 @@ const Education = ({ userData, updateCompletionStatus }) => {
           projection: { _id: 1, "sectionData.institute.institutionname": 1 },
         });
 
-        console.log("fetchColleges raw response:", collegeResponse);
 
         if (!collegeResponse || !Array.isArray(collegeResponse)) {
           console.error(
@@ -296,7 +287,6 @@ const Education = ({ userData, updateCompletionStatus }) => {
           })
           .filter(Boolean);
 
-        console.log("Processed colleges:", colleges);
 
         if (colleges.length === 0) {
           toast.error("No valid colleges found in the database.", {
@@ -317,7 +307,6 @@ const Education = ({ userData, updateCompletionStatus }) => {
           projection: { _id: 1, "sectionData.skills.name": 1 },
         });
 
-        console.log("fetchSkills raw response:", skillResponse);
 
         if (!skillResponse || !Array.isArray(skillResponse)) {
           console.error("Skill response is not an array or is null:", skillResponse);
@@ -357,7 +346,6 @@ const Education = ({ userData, updateCompletionStatus }) => {
           })
           .filter(Boolean);
 
-        console.log("Processed skills:", skills);
 
         if (skills.length === 0) {
           toast.error("No valid skills found in the database.", {
@@ -399,7 +387,6 @@ const Education = ({ userData, updateCompletionStatus }) => {
           },
         });
 
-        console.log("Fetched education data:", response);
 
         const fetchedEducation =
           response && response[0] && response[0].sectionData?.appuser?.education
@@ -434,7 +421,6 @@ const Education = ({ userData, updateCompletionStatus }) => {
         setIsFirstSaveSuccessful(isCompleted);
         if (updateCompletionStatus) {
           updateCompletionStatus("Education", isCompleted);
-          console.log("Updated completion status for Education:", isCompleted);
         }
       } catch (err) {
         console.error("Failed to load education data:", err);
@@ -567,7 +553,6 @@ const Education = ({ userData, updateCompletionStatus }) => {
       return;
     }
 
-    console.log("formData before saving:", formData);
 
     const requiredFields = ["qualification", "college", "startYear", "endYear"];
     const isIntermediate = formData.qualification === "Senior High School (SHS)";
@@ -711,7 +696,6 @@ const Education = ({ userData, updateCompletionStatus }) => {
           files1: fileUrl,
         };
 
-        console.log("educationData:", educationData);
 
         if (editingIndex !== null) {
           updatePayload = {
@@ -739,7 +723,6 @@ const Education = ({ userData, updateCompletionStatus }) => {
         options: { upsert: false, writeConcern: { w: "majority" } },
       });
 
-      console.log("mUpdate response for education:", response);
 
       if (
         response &&
@@ -790,7 +773,6 @@ const Education = ({ userData, updateCompletionStatus }) => {
         setIsFirstSaveSuccessful(true);
         if (updateCompletionStatus) {
           updateCompletionStatus("Education", true);
-          console.log("Updated completion status for Education: true");
         }
       } else {
         throw new Error("Failed to save education data to database.");
@@ -962,7 +944,6 @@ const Education = ({ userData, updateCompletionStatus }) => {
         options: { upsert: false, writeConcern: { w: "majority" } },
       });
 
-      console.log("mUpdate response for remove education:", response);
 
       if (
         response &&
@@ -1013,9 +994,7 @@ const Education = ({ userData, updateCompletionStatus }) => {
         setIsFirstSaveSuccessful(!isAllEmpty);
         if (updateCompletionStatus) {
           updateCompletionStatus("Education", !isAllEmpty);
-          console.log(
-            `Updated completion status for Education: ${!isAllEmpty}`
-          );
+          
         }
       } else {
         throw new Error("Failed to remove education entry from database.");
@@ -1095,7 +1074,6 @@ const Education = ({ userData, updateCompletionStatus }) => {
         options: { upsert: false, writeConcern: { w: "majority" } },
       });
 
-      console.log("mUpdate response for delete file:", response);
 
       if (
         response &&
@@ -1622,7 +1600,7 @@ const Education = ({ userData, updateCompletionStatus }) => {
 
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Attachments
+                Attachments (attach Image or PDF file only)
               </label>
               {formData.fileUrl || selectedFile ? (
                 <div className="flex items-center justify-between border border-gray-300 rounded-md p-2 mb-2">

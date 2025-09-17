@@ -150,7 +150,6 @@ const OtpVerification = () => {
             });
 
             if (loginResponse.success) {
-              console.log("API Login Response User:", loginResponse.user);
 
               const roleId = loginResponse.user.role?.role || "";
               const roleName = roleNames[roleId];

@@ -9,6 +9,7 @@ import {
   uploadAndStoreFile,
 } from "../../../Utils/api";
 import { toast } from "react-toastify";
+import 'react-toastify/dist/ReactToastify.css';
 
 const CertificatesForm = ({ onBack, existingCertificate, isEditing }) => {
   const [formData, setFormData] = useState({
@@ -29,14 +30,11 @@ const CertificatesForm = ({ onBack, existingCertificate, isEditing }) => {
 
   // Get today's date for validation (YYYY-MM-DD format)
   const today = new Date().toISOString().split("T")[0];
+  // Set minimum date as January 1, 1900
+  const minDate = "1900-01-01";
 
   useEffect(() => {
-    console.log(
-      "CertificatesForm useEffect: isEditing=",
-      isEditing,
-      "existingCertificate=",
-      existingCertificate
-    );
+   
     // Populate form data if editing an existing certificate
     if (isEditing && existingCertificate) {
       setFormData({
@@ -71,7 +69,6 @@ const CertificatesForm = ({ onBack, existingCertificate, isEditing }) => {
       try {
         const user = JSON.parse(userString);
         setUserId(user.userid);
-        console.log("User ID set:", user.userid);
       } catch (parseError) {
         console.error("Error parsing user data:", parseError);
         toast.error("Invalid user data. Please log in again.", {
@@ -88,6 +85,41 @@ const CertificatesForm = ({ onBack, existingCertificate, isEditing }) => {
     }
   }, [isEditing, existingCertificate]);
 
+  const isValidDate = (dateStr) => {
+    if (!dateStr) return true; // Allow empty dates for initial state
+    const date = new Date(dateStr);
+    const minYear = 1900;
+    const todayDate = new Date(today);
+
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+      return false;
+    }
+
+    // Extract year, month, day
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1; // getMonth() is 0-based
+    const day = date.getDate();
+
+    // Check year (not before 1900, not in future)
+    if (year < minYear || date > todayDate) {
+      return false;
+    }
+
+    // Check month (1-12)
+    if (month < 1 || month > 12) {
+      return false;
+    }
+
+    // Check day based on month
+    const daysInMonth = new Date(year, month, 0).getDate();
+    if (day < 1 || day > daysInMonth) {
+      return false;
+    }
+
+    return true;
+  };
+
   const handleChange = (field, value) => {
     setFormData((prev) => ({
       ...prev,
@@ -96,6 +128,30 @@ const CertificatesForm = ({ onBack, existingCertificate, isEditing }) => {
   };
 
   const handleDateChange = (field, value) => {
+    if (value && !isValidDate(value)) {
+      toast.error(
+        field === "certificatestartdate"
+          ? "Please enter a valid start date (1900 or later, not in the future)."
+          : "Please enter a valid end date (after start date, not in the future).",
+        {
+          position: "top-right",
+          autoClose: 3000,
+        }
+      );
+      return;
+    }
+
+    // Additional validation for end date to ensure it's after start date
+    if (field === "certificateenddate" && value && formData.certificatestartdate) {
+      if (value <= formData.certificatestartdate) {
+        toast.error("End date must be after start date.", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+        return;
+      }
+    }
+
     setFormData((prev) => {
       const newData = { ...prev, [field]: value };
       // Reset end date if start date changes to a later date
@@ -106,6 +162,10 @@ const CertificatesForm = ({ onBack, existingCertificate, isEditing }) => {
         newData.certificateenddate <= value
       ) {
         newData.certificateenddate = "";
+        toast.info("End date reset as it was earlier than the new start date.", {
+          position: "top-right",
+          autoClose: 3000,
+        });
       }
       return newData;
     });
@@ -203,27 +263,42 @@ const CertificatesForm = ({ onBack, existingCertificate, isEditing }) => {
       errors.push("Certificate title is required.");
     if (!formData.issuingorganization.trim())
       errors.push("Issuing organization is required.");
-    if (!formData.certificatestartdate) errors.push("Start date is required.");
-    else if (formData.certificatestartdate > today)
+    if (!formData.certificatestartdate) {
+      errors.push("Start date is required.");
+    } else if (!isValidDate(formData.certificatestartdate)) {
+      errors.push("Invalid start date. Must be a valid date from 1900 to today.");
+    } else if (formData.certificatestartdate > today) {
       errors.push("Start date cannot be in the future.");
-    if (formData.hasexpirydate && !formData.certificateenddate)
+    }
+    if (formData.hasexpirydate && !formData.certificateenddate) {
       errors.push("End date is required when expiry date is selected.");
-    else if (
+    } else if (
+      formData.hasexpirydate &&
+      formData.certificateenddate &&
+      !isValidDate(formData.certificateenddate)
+    ) {
+      errors.push("Invalid end date. Must be a valid date.");
+    } else if (
       formData.hasexpirydate &&
       formData.certificateenddate &&
       formData.certificateenddate <= formData.certificatestartdate
-    )
+    ) {
       errors.push("End date must be after start date.");
-    else if (formData.hasexpirydate && formData.certificateenddate > today)
+    } else if (
+      formData.hasexpirydate &&
+      formData.certificateenddate &&
+      formData.certificateenddate > today
+    ) {
       errors.push("End date cannot be in the future.");
+    }
     if (
       formData.certificatelink &&
       !/^https?:\/\/[^\s/$.?#].[^\s]*$/.test(formData.certificatelink)
-    )
+    ) {
       errors.push("Invalid URL format for certificate link.");
+    }
 
     if (errors.length > 0) {
-      console.log("Validation errors:", errors);
       toast.error(errors.join(" "), {
         position: "top-right",
         autoClose: 5000,
@@ -234,7 +309,6 @@ const CertificatesForm = ({ onBack, existingCertificate, isEditing }) => {
   };
 
   const handleSave = async () => {
-    console.log("handleSave called with formData:", formData);
     try {
       setIsLoading(true);
 
@@ -270,7 +344,6 @@ const CertificatesForm = ({ onBack, existingCertificate, isEditing }) => {
         updatedAt: new Date().toISOString(),
       };
 
-      console.log("Certificate data to save:", certificateData);
 
       const existingUserData = await fetchSectionData({
         collectionName: "appuser",
@@ -304,7 +377,6 @@ const CertificatesForm = ({ onBack, existingCertificate, isEditing }) => {
         options: { upsert: false },
       });
 
-      console.log("Certificate saved successfully");
       toast.success(
         isEditing
           ? "Certificate updated successfully!"
@@ -354,7 +426,6 @@ const CertificatesForm = ({ onBack, existingCertificate, isEditing }) => {
 
   return (
     <div className="bg-white rounded-xl shadow-md">
-      {/* Fixed Header */}
       <div className="sticky top-0 bg-white z-10 px-4 py-4 shadow-sm flex justify-between items-center border-b border-gray-200">
         <div className="flex items-center gap-2 text-gray-700 text-lg font-medium">
           <BiTime className="text-xl" />
@@ -362,15 +433,12 @@ const CertificatesForm = ({ onBack, existingCertificate, isEditing }) => {
         </div>
       </div>
 
-      {/* Scrollable Content */}
       <div className="p-6 space-y-6">
-        {/* Add/Edit Certificate Form */}
         <div className="border rounded-lg p-6 space-y-4">
           <h3 className="text-lg font-semibold text-gray-800">
             {isEditing ? "Edit Certificate" : "Add New Certificate"}
           </h3>
 
-          {/* Title */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Title Of Certificate<span className="text-red-500">*</span>
@@ -387,7 +455,6 @@ const CertificatesForm = ({ onBack, existingCertificate, isEditing }) => {
             />
           </div>
 
-          {/* Issuing Organization */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Issuing Organization<span className="text-red-500">*</span>
@@ -404,7 +471,6 @@ const CertificatesForm = ({ onBack, existingCertificate, isEditing }) => {
             />
           </div>
 
-          {/* Duration */}
           <div>
             <div className="flex justify-between">
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -427,6 +493,7 @@ const CertificatesForm = ({ onBack, existingCertificate, isEditing }) => {
                 onChange={(e) =>
                   handleDateChange("certificatestartdate", e.target.value)
                 }
+                min={minDate}
                 max={today}
                 className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring focus:ring-blue-200 w-1/2"
                 disabled={isLoading || uploading}
@@ -438,7 +505,7 @@ const CertificatesForm = ({ onBack, existingCertificate, isEditing }) => {
                   handleDateChange("certificateenddate", e.target.value)
                 }
                 disabled={!formData.hasexpirydate || isLoading || uploading}
-                min={formData.certificatestartdate || undefined}
+                min={formData.certificatestartdate || minDate}
                 max={today}
                 className={`border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring focus:ring-blue-200 w-1/2 ${
                   !formData.hasexpirydate
@@ -449,7 +516,6 @@ const CertificatesForm = ({ onBack, existingCertificate, isEditing }) => {
             </div>
           </div>
 
-          {/* Link Certificate */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Link this Certificate
@@ -464,7 +530,6 @@ const CertificatesForm = ({ onBack, existingCertificate, isEditing }) => {
             />
           </div>
 
-          {/* Skills */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Skill
@@ -479,7 +544,6 @@ const CertificatesForm = ({ onBack, existingCertificate, isEditing }) => {
             />
           </div>
 
-          {/* Description */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Description
@@ -496,7 +560,6 @@ const CertificatesForm = ({ onBack, existingCertificate, isEditing }) => {
             />
           </div>
 
-          {/* Attachments */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Attachments
@@ -520,7 +583,6 @@ const CertificatesForm = ({ onBack, existingCertificate, isEditing }) => {
                 />
               </label>
             </div>
-            {/* Display uploaded attachments */}
             {formData.certificateattachment.length > 0 && (
               <div className="mt-2 space-y-2">
                 {formData.certificateattachment.map((fileUrl, index) => (
@@ -549,9 +611,7 @@ const CertificatesForm = ({ onBack, existingCertificate, isEditing }) => {
             )}
           </div>
 
-          {/* Form Actions */}
           <div className="flex justify-between mt-4">
-            {/* Discard/Cancel Button */}
             <div className="flex items-center gap-2 border border-gray-300 rounded-3xl px-4 py-2 cursor-pointer hover:bg-gray-100 transition">
               <RxCross2 className="text-gray-600" />
               <button
@@ -563,20 +623,22 @@ const CertificatesForm = ({ onBack, existingCertificate, isEditing }) => {
               </button>
             </div>
 
-            {/* Save Button */}
             <div
-              className={`flex items-center gap-2 bg-sky-500 rounded-3xl px-4 py-2 cursor-pointer hover:bg-sky-600 transition ${
-                isLoading || uploading ? "opacity-50 cursor-not-allowed" : ""
+              className={`flex items-center gap-2 bg-sky-500 rounded-3xl px-4 py-2 transition ${
+                isLoading || uploading
+                  ? "opacity-50 cursor-not-allowed"
+                  : "cursor-pointer hover:bg-sky-600"
               }`}
+              onClick={() => {
+                if (!isLoading && !uploading) {
+                  handleSave();
+                }
+              }}
             >
               <IoCheckmark className="text-white" />
-              <button
-                onClick={handleSave}
-                disabled={isLoading || uploading}
-                className="text-white font-medium"
-              >
+              <span className="text-white font-medium">
                 {isLoading ? "Saving..." : isEditing ? "Update" : "Save"}
-              </button>
+              </span>
             </div>
           </div>
         </div>
