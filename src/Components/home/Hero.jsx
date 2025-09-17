@@ -155,7 +155,6 @@ const Hero = ({
     const loadGoogleMapsScript = () => {
       return new Promise((resolve, reject) => {
         if (window.google && window.google.maps && window.google.maps.places) {
-          console.log("Google Maps API already loaded");
           resolve();
           return;
         }
@@ -168,7 +167,6 @@ const Hero = ({
           script.async = true;
           script.defer = true;
           script.onload = () => {
-            console.log("Google Maps API script loaded successfully");
             resolve();
           };
           script.onerror = () => {
@@ -192,7 +190,6 @@ const Hero = ({
         if (!window.google?.maps?.places) {
           throw new Error("Google Maps Places library not loaded");
         }
-        console.log("Google Maps Places library loaded");
         setIsGoogleMapsLoaded(true);
       })
       .catch((err) => {
@@ -211,7 +208,6 @@ const Hero = ({
 
     return () => {
       if (autocompleteRef.current && window.google?.maps?.event) {
-        console.log("Cleaning up Google Maps Autocomplete listeners");
         window.google.maps.event.clearInstanceListeners(
           autocompleteRef.current
         );
@@ -236,10 +232,8 @@ const Hero = ({
             componentRestrictions: { country: "ph" },
           }
         );
-        console.log("Google Maps Autocomplete initialized");
         autocompleteRef.current.addListener("place_changed", () => {
           const place = autocompleteRef.current.getPlace();
-          console.log("Place changed:", place);
           if (place.formatted_address || place.name) {
             setLocation(place.formatted_address || place.name);
             setError("");
@@ -386,7 +380,6 @@ const Hero = ({
   };
 
   const handleSearch = async () => {
-    console.log("Search triggered with:", { searchQuery, location, category });
 
     // Check if all fields are empty
     if (
@@ -394,7 +387,6 @@ const Hero = ({
       !location.trim() &&
       (!category || category === "Select Category")
     ) {
-      console.log("All search fields are empty, preventing navigation");
       toast.error("Please fill in at least one search field.", {
         ...toastConfig,
         toastId: `empty-search-${Date.now()}`,
@@ -432,16 +424,12 @@ const Hero = ({
             job.company
           );
           const maxSimilarity = Math.max(titleSimilarity, companySimilarity);
-          console.log(
-            `Checking match for "${searchQuery}": Title="${job.title}" (${titleSimilarity}), Company="${job.company}" (${companySimilarity})`
-          );
+         
           return maxSimilarity >= 0.4; // 40% match threshold
         });
 
         if (!hasMatch) {
-          console.log(
-            "No 40% match found for searchQuery, preventing navigation"
-          );
+          
           toast.error(
             "No internships or companies match your search. Try a different term.",
             {

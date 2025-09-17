@@ -371,26 +371,25 @@ export default function App({ userData }) {
         {/* MAIN CONTENT */}
         <div className="bg-white px-8 py-8 space-y-8">
           {/* PERSONAL PROFILE (Dynamic from DB) */}
-          <section className="border-b-[3px] border-gray-500 pb-10">
-            <h2 className="text-lg font-bold tracking-wide pb-1 flex items-center gap-2">
-              <User className="w-5 h-5" /> PERSONAL PROFILE
-            </h2>
-            {isLoading ? (
-              <div className="animate-pulse">
-                <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
-                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-              </div>
-            ) : error ? (
-              <p className="text-sm mt-3 leading-relaxed text-red-500">
-                {error}
-              </p>
-            ) : (
-              <p className="text-sm mt-3 leading-relaxed">
-                {about ||
-                  "No personal profile provided. Please update your profile."}
-              </p>
-            )}
-          </section>
+          <section className="border-b-[3px] border-gray-500 pb-6 sm:pb-10 w-full">
+  <h2 className="text-base sm:text-lg font-bold tracking-wide pb-1 flex items-center gap-2">
+    <User className="w-4 h-4 sm:w-5 sm:h-5" /> PERSONAL PROFILE
+  </h2>
+  {isLoading ? (
+    <div className="animate-pulse">
+      <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
+      <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+    </div>
+  ) : error ? (
+    <p className="text-sm mt-3 leading-relaxed text-red-500">
+      {error}
+    </p>
+  ) : (
+    <p className="text-xs sm:text-sm mt-3 leading-relaxed whitespace-normal break-words">
+      {about || "No personal profile provided. Please update your profile."}
+    </p>
+  )}
+</section>
 
           {/* WORK EXPERIENCE (Dynamic from DB) */}
           <section className="border-b-[3px] border-gray-500 pb-10">

@@ -10,7 +10,6 @@ const Footer = () => {
 
   // Handle navigation based on user role
   const handleNavigation = (link) => {
-    console.log("Navigating to:", link, "User role:", user.role); // Debug log
     if (link === "contact") {
       navigate("/contact"); // Align with AppRoutes
     } else if (link === "about") {

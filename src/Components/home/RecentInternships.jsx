@@ -27,7 +27,6 @@ export default function RecentInternship() {
           order: -1,
           sortedBy: "createdDate",
         });
-        console.log("RecentInternship - Fetched data:", data); // Debug log
         setRecentInternships(data);
       } catch (err) {
         setError("Error fetching recent internships");
@@ -55,19 +54,12 @@ export default function RecentInternship() {
   }, []); // Empty dependency array to run only on mount
 
   const processedInternships = useMemo(() => {
-    console.log(
-      "RecentInternship - Processing internships:",
-      recentInternships
-    ); // Debug log
+
     return recentInternships
       .filter((job) => {
         const isInternship = job.sectionData?.jobpost?.type === "Internship";
         const isPublished = job.sectionData?.jobpost?.published !== false; // Only show published internships
-        console.log("RecentInternship - Job:", job._id, {
-          isInternship,
-          isPublished,
-          published: job.sectionData?.jobpost?.published,
-        }); // Debug log
+        
         return isInternship && isPublished;
       })
       .map((job) => {

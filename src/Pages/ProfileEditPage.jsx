@@ -538,7 +538,7 @@ const ProfileEditPage = () => {
               userData.roleId !== mentorRoleId && (
                 <>
                   <div className="flex items-center justify-center">
-                    <Link to="/ph/editprofile/create-resume">
+                    <Link to="/editprofile/create-resume">
                       <button className="bg-[#0073e6] text-white font-semibold px-14 py-2 rounded flex items-center gap-2 hover:bg-[#005bb5] transition-colors">
                         <FaFileMedical className="text-white text-lg" />
                         Create your Resume

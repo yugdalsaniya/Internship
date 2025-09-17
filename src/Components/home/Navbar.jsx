@@ -174,14 +174,14 @@ const Navbar = () => {
               </button>
               {userDropdownOpen && (
                 <div className="absolute right-0 mt-2 w-44 sm:w-48 bg-white border rounded-md shadow-lg py-2 z-10">
-                  <div className="px-4 py-2">
-                    <p className="text-xs sm:text-sm font-medium text-gray-800">
-                      {user.legalname}
-                    </p>
-                    <p className="text-[10px] sm:text-xs text-gray-500">
-                      {user.email}
-                    </p>
-                  </div>
+                 <div className="px-4 py-2 max-w-full">
+  <p className="text-xs sm:text-sm font-medium text-gray-800 truncate">
+    {user.legalname}
+  </p>
+  <p className="text-[10px] sm:text-xs text-gray-500 truncate">
+    {user.email}
+  </p>
+</div>
                   <Link
                     to="/editprofile"
                     onClick={() => setUserDropdownOpen(false)}

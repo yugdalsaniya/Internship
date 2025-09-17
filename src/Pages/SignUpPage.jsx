@@ -212,7 +212,7 @@ const SignUpPage = () => {
       }));
       setTimeout(() => {
         setErrors((prev) => ({ ...prev, email: "" }));
-      }, 5000);
+      }, 25000);
       return;
     }
 
@@ -231,7 +231,7 @@ const SignUpPage = () => {
         }));
         setTimeout(() => {
           setErrors((prev) => ({ ...prev, general: "" }));
-        }, 5000);
+        }, 25000);
       }
     } catch (error) {
       setErrors((prev) => ({
@@ -240,7 +240,7 @@ const SignUpPage = () => {
       }));
       setTimeout(() => {
         setErrors((prev) => ({ ...prev, general: "" }));
-      }, 5000);
+      }, 25000);
     } finally {
       setIsVerifying(false);
     }
@@ -254,7 +254,7 @@ const SignUpPage = () => {
       }));
       setTimeout(() => {
         setErrors((prev) => ({ ...prev, email: "" }));
-      }, 5000);
+      }, 25000);
       return;
     }
 
@@ -280,7 +280,7 @@ const SignUpPage = () => {
         }));
         setTimeout(() => {
           setErrors((prev) => ({ ...prev, general: "" }));
-        }, 5000);
+        }, 25000);
       }
     } catch (error) {
       setErrors((prev) => ({
@@ -304,7 +304,7 @@ const SignUpPage = () => {
       }));
       setTimeout(() => {
         setErrors((prev) => ({ ...prev, otp: "" }));
-      }, 5000);
+      }, 25000);
       return;
     }
 
@@ -315,7 +315,7 @@ const SignUpPage = () => {
       }));
       setTimeout(() => {
         setErrors((prev) => ({ ...prev, otp: "" }));
-      }, 5000);
+      }, 25000);
       setShowOtpField(false);
       return;
     }
@@ -341,7 +341,7 @@ const SignUpPage = () => {
       }));
       setTimeout(() => {
         setErrors((prev) => ({ ...prev, otp: "" }));
-      }, 5000);
+      }, 25000);
     }
   };
 
@@ -349,11 +349,13 @@ const SignUpPage = () => {
     e.preventDefault();
     const newErrors = {};
 
-    if (!formData.name.trim()) {
-      newErrors.name = "Name is required.";
-    } else if (formData.name.trim().length > 100) {
-      newErrors.name = "Name must be 100 characters or less.";
-    }
+   if (!formData.name.trim()) {
+  newErrors.name = "Name is required.";
+} else if (formData.name.trim().length > 100) {
+  newErrors.name = "Name must be 100 characters or less.";
+} else if (!/^[A-Za-z\s]+$/.test(formData.name.trim())) {
+  newErrors.name = "Name must contain only letters and spaces.";
+}
     if (!validateEmail(formData.email)) {
       newErrors.email = "Please enter a valid email address.";
     } else if (formData.email.trim().length > 100) {
@@ -395,7 +397,7 @@ const SignUpPage = () => {
       setIsLoading(false);
       setTimeout(() => {
         setErrors({});
-      }, 5000);
+      }, 50000);
       return;
     }
 

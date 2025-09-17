@@ -22,7 +22,6 @@ const Category = () => {
   useEffect(() => {
     const fetchCategoriesAndCounts = async () => {
       if (isFetching) {
-        console.log('Fetch skipped: already fetching');
         return;
       }
       setIsFetching(true);
@@ -33,7 +32,6 @@ const Category = () => {
           limit: 8,
           cacheBust: new Date().getTime(),
         });
-        console.log('Category API Response:', categoryData);
         setCategories(categoryData || []);
 
         // Fetch only missing counts
@@ -42,7 +40,6 @@ const Category = () => {
           .map(category => category._id);
 
         if (missingCategoryIds.length > 0) {
-          console.log('Fetching counts for categories:', missingCategoryIds);
           const countPromises = missingCategoryIds.map(categoryId =>
             fetchSectionData({
               collectionName: 'jobpost',
@@ -69,7 +66,6 @@ const Category = () => {
             console.error('Failed to cache counts:', err);
           }
         } else {
-          console.log('Using cached counts:', cachedCounts);
           setInternshipCounts(cachedCounts);
         }
       } catch (err) {
@@ -91,12 +87,7 @@ const Category = () => {
         const title = category.sectionData?.category?.titleofinternship;
         const showInHomepage = category.sectionData?.category?.showinhomepage === true;
         const isUnique = title && !seenTitles.has(title.toLowerCase());
-        console.log('Category Filter:', {
-          id: category._id,
-          title,
-          showInHomepage,
-          isUnique,
-        });
+       
         return title && isUnique && showInHomepage && (seenTitles.add(title.toLowerCase()), true);
       })
       .map(category => ({
@@ -108,7 +99,6 @@ const Category = () => {
           ? category.sectionData.category.logo
           : '/assets/placeholder-logo.png',
       }));
-    console.log('Filtered Categories:', filtered);
     return filtered;
   }, [categories, internshipCounts]);
 

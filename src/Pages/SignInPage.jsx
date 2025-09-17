@@ -155,8 +155,9 @@ const SignIn = () => {
         } else if (roleName === 'company' || roleName === 'academy') {
           userData.companyId = response.user.companyId || '';
           userData.userid = response.user._id || '';
-        }else(roleName === 'mentor')
-        {userData.userid = response.user._id;}
+        } else if (roleName === 'mentor') {
+          userData.userid = response.user._id;
+        }
 
         localStorage.setItem('user', JSON.stringify(userData));
         localStorage.setItem('accessToken', response.accessToken);
@@ -168,26 +169,47 @@ const SignIn = () => {
 
         navigate(from, { replace: true });
       } else {
-        setErrors({ general: response.message || 'Login failed. Please check your credentials.' });
+        // Handle API response with specific error message
+        let errorMessage = 'Invalid email or password.';
+        if (response.message) {
+          if (response.message.toLowerCase().includes('email not found')) {
+            errorMessage = 'Email is incorrect.';
+          } else if (response.message.toLowerCase().includes('password')) {
+            errorMessage = 'Password is incorrect.';
+          }
+        }
+        setErrors({
+          general: errorMessage,
+          email: errorMessage.includes('Email') ? ' ' : '',
+          password: errorMessage.includes('Password') ? ' ' : '',
+        });
         setLoading(false);
       }
     } catch (err) {
-      let errorMessage = 'Invalid email or password. Please try again.';
+      let errorMessage = 'Invalid email or password.';
       
       if (err.response) {
         if (err.response.data && err.response.data.message) {
-          errorMessage = err.response.data.message;
+          if (err.response.data.message.toLowerCase().includes('email not found')) {
+            errorMessage = 'Email is incorrect.';
+          } else if (err.response.data.message.toLowerCase().includes('password')) {
+            errorMessage = 'Password is incorrect.';
+          }
         } else if (err.response.status === 401) {
-          errorMessage = 'Invalid credentials. Please check your email and password.';
+          errorMessage = 'Invalid email or password.';
         }
       } else if (err.message) {
-        errorMessage = err.message;
+        if (err.message.toLowerCase().includes('email not found')) {
+          errorMessage = 'Email is incorrect.';
+        } else if (err.message.toLowerCase().includes('password')) {
+          errorMessage = 'Password is incorrect.';
+        }
       }
 
       setErrors({ 
         general: errorMessage,
-        email: ' ',
-        password: ' '
+        email: errorMessage.includes('Email') ? ' ' : '',
+        password: errorMessage.includes('Password') ? ' ' : '',
       });
       setLoading(false);
     }
