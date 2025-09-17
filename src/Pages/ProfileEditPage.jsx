@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Routes, Route, Link, useLocation, Navigate } from "react-router-dom";
-import { FaChevronLeft, FaFileMedical, FaBars, FaTimes } from "react-icons/fa";
+import { FaChevronLeft, FaFileMedical, FaBars, FaTimes, FaShare, FaCopy } from "react-icons/fa";
 import SidebarItem from "../Components/profile/SidebarItem";
 import BasicDetails from "../Components/profile/BasicDetails";
 import Resume from "../Components/profile/Resume";
@@ -25,6 +25,8 @@ const ProfileEditPage = () => {
   const [activeSection, setActiveSection] = useState("Personal Details");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [completionStatus, setCompletionStatus] = useState({});
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [studentName, setStudentName] = useState('');
   const location = useLocation();
   const user = JSON.parse(localStorage.getItem("user")) || {};
   const pendingUser = JSON.parse(localStorage.getItem("pendingUser")) || {};
@@ -41,6 +43,129 @@ const ProfileEditPage = () => {
     roleId: user.roleId || pendingUser.roleId || "",
     companyId: user.companyId || "",
     academyname: pendingUser.academyname || "",
+  };
+
+  // Generate share URL with actual student name
+  const generateShareUrl = () => {
+    const name = studentName || 
+                 userData.legalname || 
+                 userData.fullname || 
+                 userData.name || 
+                 `${userData.firstname || ''} ${userData.lastname || ''}`.trim() ||
+                 userData.email?.split('@')[0] ||
+                 "Student";
+    
+    const formattedName = name.replace(/\s+/g, '-').replace(/[^a-zA-Z0-9-]/g, '');
+    const basePath = '/ph';
+    return `${window.location.origin}${basePath}/profile/share?student=${formattedName}&id=${userData.userid}`;
+  };
+
+  // Copy URL to clipboard
+  const copyToClipboard = async (text) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success("Profile URL copied to clipboard!", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+    } catch (err) {
+      // Fallback for older browsers
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+      textArea.style.position = "fixed";
+      textArea.style.left = "-999999px";
+      textArea.style.top = "-999999px";
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        toast.success("Profile URL copied to clipboard!", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      } catch (fallbackErr) {
+        toast.error("Failed to copy URL", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      }
+      document.body.removeChild(textArea);
+    }
+  };
+
+  // Share Profile Modal Component
+  const ShareProfileModal = () => {
+    const shareUrl = generateShareUrl();
+
+    const handleNativeShare = async () => {
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: `${studentName || 'Student'}'s Profile`,
+            text: `Check out ${studentName || 'this'} professional profile`,
+            url: shareUrl,
+          });
+        } catch (err) {
+          if (err.name !== 'AbortError') {
+            copyToClipboard(shareUrl);
+          }
+        }
+      } else {
+        copyToClipboard(shareUrl);
+      }
+    };
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-lg max-w-md w-full p-6 shadow-xl">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">Share Your Profile</h3>
+            <button
+              onClick={() => setShowShareModal(false)}
+              className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100"
+            >
+              <FaTimes size={16} />
+            </button>
+          </div>
+          
+          <p className="text-gray-600 mb-4">
+            Share your profile with potential employers, mentors, or collaborators.
+          </p>
+          
+          <div className="bg-gray-50 p-3 rounded-lg mb-4 border">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-700 truncate flex-1 mr-2 font-mono">
+                {shareUrl}
+              </span>
+              <button
+                onClick={() => copyToClipboard(shareUrl)}
+                className="flex items-center gap-2 px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors flex-shrink-0"
+              >
+                <FaCopy size={12} />
+                Copy
+              </button>
+            </div>
+          </div>
+          
+          <div className="flex gap-3">
+            <button
+              onClick={() => setShowShareModal(false)}
+              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              Close
+            </button>
+            <button
+              onClick={handleNativeShare}
+              className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+            >
+              <FaShare size={12} />
+              Share
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   useEffect(() => {
@@ -115,6 +240,11 @@ const ProfileEditPage = () => {
             collectionName: "appuser",
             query: { _id: userId },
             projection: {
+              "sectionData.appuser.legalname": 1,
+              "sectionData.appuser.fullname": 1,
+              "sectionData.appuser.firstname": 1,
+              "sectionData.appuser.lastname": 1,
+              "sectionData.appuser.name": 1,
               "sectionData.appuser.resume": 1,
               "sectionData.appuser.about": 1,
               "sectionData.appuser.skills": 1,
@@ -142,7 +272,6 @@ const ProfileEditPage = () => {
               "sectionData.appuser.education": 1,
               "sectionData.appuser.intermediateeducation": 1,
               "sectionData.appuser.highschooleducation": 1,
-              "sectionData.appuser.legalname": 1,
               "sectionData.appuser.email": 1,
               "sectionData.appuser.mobile": 1,
               "sectionData.appuser.organisationcollege": 1,
@@ -158,6 +287,18 @@ const ProfileEditPage = () => {
             },
           })
         );
+
+        // Extract and set student name
+        if (userResponse && userResponse.length > 0) {
+          const appuser = userResponse[0].sectionData.appuser;
+          const name = appuser.legalname || 
+                       appuser.fullname || 
+                       appuser.name || 
+                       `${appuser.firstname || ''} ${appuser.lastname || ''}`.trim() ||
+                       userData.email?.split('@')[0] ||
+                       "Student";
+          setStudentName(name);
+        }
 
         let organizationData = {};
         if (allowedRoles.includes(userData.role) && companyId) {
@@ -256,7 +397,7 @@ const ProfileEditPage = () => {
     if (userData.userid) {
       fetchCompletionStatuses();
     }
-  }, [userData.userid, userData.companyId, userData.role, userData.roleId]);
+  }, [userData.userid, userData.companyId, userData.role, userData.roleId, userData.email]);
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
@@ -395,14 +536,27 @@ const ProfileEditPage = () => {
           <div className="p-4 space-y-4">
             {!allowedRoles.includes(userData.role) &&
               userData.roleId !== mentorRoleId && (
-                <div className="flex items-center justify-center">
-                  <Link to="/editprofile/create-resume">
-                    <button className="bg-[#0073e6] text-white font-semibold px-14 py-2 rounded flex items-center gap-2">
-                      <FaFileMedical className="text-white text-lg" />
-                      Create your Resume
+                <>
+                  <div className="flex items-center justify-center">
+                    <Link to="/ph/editprofile/create-resume">
+                      <button className="bg-[#0073e6] text-white font-semibold px-14 py-2 rounded flex items-center gap-2 hover:bg-[#005bb5] transition-colors">
+                        <FaFileMedical className="text-white text-lg" />
+                        Create your Resume
+                      </button>
+                    </Link>
+                  </div>
+                  
+                  {/* Share Profile Button */}
+                  <div className="flex items-center justify-center">
+                    <button 
+                      onClick={() => setShowShareModal(true)}
+                      className="bg-green-600 text-white font-semibold px-14 py-2 rounded flex items-center gap-2 hover:bg-green-700 transition-colors w-full justify-center"
+                    >
+                      <FaShare className="text-white text-lg" />
+                      Share Profile
                     </button>
-                  </Link>
-                </div>
+                  </div>
+                </>
               )}
             <div className="bg-gray-100 p-4 rounded-lg">
               <h3 className="font-semibold text-sm">Enhance your Profile</h3>
@@ -424,7 +578,7 @@ const ProfileEditPage = () => {
           <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-2">
             {sections.map((section) => (
               <Link
-                to={`/editprofile/${section.path}`}
+                to={`/ph/editprofile/${section.path}`}
                 key={section.label}
                 onClick={() => {
                   setActiveSection(section.label);
@@ -452,8 +606,8 @@ const ProfileEditPage = () => {
           <div className="top-20 left-80 right-0 bg-white border-b shadow-sm z-20 h-16">
             <div className="flex items-center justify-between p-4">
               <div className="flex items-center gap-3">
-                <Link to="/">
-                  <button className="w-8 h-8 flex items-center justify-center rounded-full bg-blue-100">
+                <Link to="/ph/">
+                  <button className="w-8 h-8 flex items-center justify-center rounded-full bg-blue-100 hover:bg-blue-200 transition-colors">
                     <FaChevronLeft className="text-gray-600 text-sm" />
                   </button>
                 </Link>
@@ -502,7 +656,7 @@ const ProfileEditPage = () => {
                 <Route
                   path="*"
                   element={
-                    <Navigate to="/editprofile/company-details" replace />
+                    <Navigate to="/ph/editprofile/company-details" replace />
                   }
                 />
               </>
@@ -650,6 +804,9 @@ const ProfileEditPage = () => {
           aria-hidden="true"
         ></div>
       )}
+
+      {/* Share Profile Modal */}
+      {showShareModal && <ShareProfileModal />}
     </div>
   );
 };
