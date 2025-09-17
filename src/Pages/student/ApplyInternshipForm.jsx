@@ -204,7 +204,6 @@ const ApplyInternshipForm = () => {
         setIsResumeUploaded(!!userData.resume);
       } else {
         // If no user data found, allow manual entry with empty form
-        console.log('No user data found, allowing manual entry');
         setFormData({
           email: '',
           mobile: '',
@@ -397,7 +396,6 @@ const ApplyInternshipForm = () => {
     setUploading(true);
 
     try {
-      console.log('Uploading resume for userId:', userId);
       const uploadResponse = await uploadAndStoreFile({
         appName: 'app8657281202648',
         moduleName: 'appuser',
@@ -405,7 +403,6 @@ const ApplyInternshipForm = () => {
         userId,
       });
       
-      console.log('Upload response:', uploadResponse);
       const resumeUrl = uploadResponse.filePath || '';
       
       if (!resumeUrl) {
@@ -434,7 +431,6 @@ const ApplyInternshipForm = () => {
         options: { upsert: true },
       });
 
-      console.log('Resume stored in database:', resumeUrl);
       
       toast.success('Resume uploaded successfully!', {
         position: 'top-right',
@@ -508,7 +504,6 @@ const ApplyInternshipForm = () => {
     try {
       setLoading(true);
 
-      console.log('Resume URL to be saved:', formData.resume);
 
       // Calculate start year based on course duration and passout year
       const calculateStartYear = () => {
@@ -564,7 +559,6 @@ const ApplyInternshipForm = () => {
         },
       };
 
-      console.log('Updating appuser with mapped field data:', JSON.stringify(updateData, null, 2));
 
       // Update user profile with all form fields properly mapped
       const updateResponse = await mUpdate({
@@ -574,7 +568,6 @@ const ApplyInternshipForm = () => {
         update: { $set: updateData },
         options: { upsert: true }, // Allow creation if user doesn't exist
       });
-      console.log('User profile update response:', updateResponse);
 
       // Record application with comprehensive details
       const applicationResponse = await mUpdate({
@@ -603,8 +596,6 @@ const ApplyInternshipForm = () => {
         },
         options: { upsert: true },
       });
-      console.log('Application recorded with mapped fields:', applicationResponse);
-
       // Update job post with applicant information
       const jobPostUpdateResponse = await mUpdate({
         appName: 'app8657281202648',
@@ -629,7 +620,6 @@ const ApplyInternshipForm = () => {
         },
         options: { upsert: false },
       });
-      console.log('Job post applicants updated with complete details:', jobPostUpdateResponse);
 
       // Prepare data object for email placeholders
       const emailData = {
@@ -651,14 +641,12 @@ const ApplyInternshipForm = () => {
         'Company Contact': companyContact,
       };
 
-      console.log('Email data prepared:', JSON.stringify(emailData, null, 2));
 
       // Send emails silently (no individual toasts for each email)
       let emailsSent = false;
 
       // Send student email
       try {
-        console.log('Attempting to send student email to:', formData.email);
         await sendEmailTemplate(
           {
             appName: 'app8657281202648',
@@ -672,7 +660,6 @@ const ApplyInternshipForm = () => {
           // Pass empty toast function to avoid individual toasts
           { success: () => {}, error: () => {} }
         );
-        console.log('Student email sent successfully:', formData.email);
         emailsSent = true;
       } catch (emailError) {
         console.error('Failed to send student email via template:', emailError);
@@ -690,7 +677,6 @@ const ApplyInternshipForm = () => {
             // Pass empty toast function to avoid individual toasts
             { success: () => {}, error: () => {} }
           );
-          console.log('Student email sent via fallback:', formData.email);
           emailsSent = true;
         } catch (fallbackError) {
           console.error('Failed to send student email via fallback:', fallbackError);
@@ -700,7 +686,6 @@ const ApplyInternshipForm = () => {
       // Send company email
       if (companyEmail) {
         try {
-          console.log('Attempting to send company email to:', companyEmail);
           await sendEmailTemplate(
             {
               appName: 'app8657281202648',
@@ -714,7 +699,6 @@ const ApplyInternshipForm = () => {
             // Pass empty toast function to avoid individual toasts
             { success: () => {}, error: () => {} }
           );
-          console.log('Company email sent successfully:', companyEmail);
         } catch (emailError) {
           console.error('Failed to send company email via template:', emailError);
           // Fallback to sending raw HTML
@@ -731,7 +715,6 @@ const ApplyInternshipForm = () => {
               // Pass empty toast function to avoid individual toasts
               { success: () => {}, error: () => {} }
             );
-            console.log('Company email sent via fallback:', companyEmail);
           } catch (fallbackError) {
             console.error('Failed to send company email via fallback:', fallbackError);
           }

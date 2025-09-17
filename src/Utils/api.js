@@ -86,7 +86,6 @@ export const addGeneralData = async ({ dbName, collectionName, data }) => {
       }
     );
 
-    console.log("addGeneralData API Response:", response.data);
     return response.data;
   } catch (error) {
     console.error("Error while calling the adddata API:", {
@@ -115,7 +114,6 @@ export const uploadAndStoreFile = async ({
     formData.append("user_id", userId);
     formData.append("folderName", moduleName);
 
-    console.log("Uploading File:", file.name);
 
     const token = localStorage.getItem("accessToken");
     if (!token) {
@@ -134,7 +132,6 @@ export const uploadAndStoreFile = async ({
       }
     );
 
-    console.log("Upload Response (Raw):", response.data);
     return response.data;
   } catch (error) {
     console.error("Error uploading file:", {
@@ -173,11 +170,9 @@ export const sendEmailTemplate = async (formData, toast) => {
       Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
     };
 
-    console.log("Sending email with payload:", JSON.stringify(payload, null, 2));
 
     const response = await axios.post(url, payload, { headers });
 
-    console.log("Email sent successfully with response:", JSON.stringify(response.data, null, 2));
     if (response.data.success) {
       toast.success("Email sent successfully");
     } else {
@@ -215,11 +210,9 @@ export const sendRawEmail = async (formData, toast) => {
       Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
     };
 
-    console.log("Sending raw email with payload:", JSON.stringify(payload, null, 2));
 
     const response = await axios.post(url, payload, { headers });
 
-    console.log("Raw email sent successfully with response:", JSON.stringify(response.data, null, 2));
     if (response.data.success) {
       toast.success("Raw email sent successfully");
     } else {
@@ -252,7 +245,6 @@ export const signup = async (userData) => {
         },
       }
     );
-    console.log("Signup API response:", response.data);
     return response.data;
   } catch (error) {
     console.error("Error during signup:", {
@@ -279,7 +271,6 @@ export const signupCompany = async (userData) => {
         },
       }
     );
-    console.log("Company Signup API response:", response.data);
     return response.data;
   } catch (error) {
     console.error("Error during company signup:", {
@@ -312,7 +303,6 @@ export const verifyOtp = async (otpData) => {
         },
       }
     );
-    console.log("Verify OTP API response:", response.data);
     return response.data;
   } catch (error) {
     console.error("Error verifying OTP:", {
@@ -361,7 +351,6 @@ export const login = async (credentials) => {
       user: normalizedUser,
     };
 
-    console.log("Login API response:", normalizedResponse);
     return normalizedResponse;
   } catch (error) {
     console.error("Error during login:", {
@@ -449,13 +438,7 @@ export const mUpdate = async ({
     if (!accessToken) {
       throw new Error("Authorization token is missing. Please log in again.");
     }
-    console.log("mUpdate request:", {
-      appName,
-      collectionName,
-      query,
-      update,
-      options,
-    });
+    
     const response = await axios.post(
       `${API_URL}/v1/dynamic/mupdate`,
       {
@@ -473,12 +456,7 @@ export const mUpdate = async ({
         },
       }
     );
-    console.log("mUpdate response:", {
-      data: response.data,
-      matchedCount: response.data.matchedCount,
-      modifiedCount: response.data.modifiedCount,
-      upsertedId: response.data.upsertedId,
-    });
+   
     return response.data;
   } catch (error) {
     console.error("Error in mUpdate:", {
@@ -506,11 +484,7 @@ export const updateSectionData = async ({ dbName, collectionName, id, updateData
       options: { upsert: false },
     });
 
-    console.log("updateSectionData response:", {
-      id,
-      updateData,
-      response: response,
-    });
+  
 
     return response;
   } catch (error) {
@@ -547,7 +521,6 @@ export const sendOtp = async (email) => {
       }
     );
 
-    console.log("Send OTP API response:", response.data);
     return { success: true, message: "OTP sent to your email.", otp: otpValue };
   } catch (error) {
     console.error("Error sending OTP:", {
