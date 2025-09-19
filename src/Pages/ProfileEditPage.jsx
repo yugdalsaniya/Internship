@@ -20,6 +20,7 @@ import CreateResume from "./CreateResume.jsx";
 import { fetchSectionData } from "../Utils/api";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import Preference from "../Components/profile/Preference.jsx";
 
 const ProfileEditPage = () => {
   const [activeSection, setActiveSection] = useState("Personal Details");
@@ -31,7 +32,33 @@ const ProfileEditPage = () => {
   const user = JSON.parse(localStorage.getItem("user")) || {};
   const pendingUser = JSON.parse(localStorage.getItem("pendingUser")) || {};
   const allowedRoles = ["company", "academy"];
-  const mentorRoleId = "1747902955524";
+  const mentorRoleId = "1747902955524";  
+
+  const [preferredRegion, setPreferredRegion] = useState('');
+  const [locationjson, setLocation] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+
+
+// Custom select styles
+  const customSelectStyles = {
+    control: (provided) => ({
+      ...provided,
+      minHeight: '40px',
+      border: '1px solid #d1d5db',
+      borderRadius: '8px',
+      '&:hover': {
+        border: '1px solid #3b82f6'
+      }
+    }),
+    option: (provided, state) => ({
+      ...provided,
+      backgroundColor: state.isFocused ? '#e3f2fd' : 'white',
+      color: '#333',
+      '&:hover': {
+        backgroundColor: '#e3f2fd'
+      }
+    })
+  };
 
   const userData = {
     ...pendingUser,
@@ -187,6 +214,7 @@ const ProfileEditPage = () => {
     "organization-details": "Organization Details",
     "mentor-professional-details": "Professional Details",
     "mentor-availability": "Availability",
+    preference: "Preference",
   };
 
   useEffect(() => {
@@ -504,6 +532,11 @@ const ProfileEditPage = () => {
         path: "social-links",
         completed: completionStatus["Social Links"] || false,
         required: false,
+      },{
+        label: "Preference",
+        path: "preference",
+        completed: completionStatus["Preference"] || false,
+        required: false,
       },
     ];
   }
@@ -526,7 +559,7 @@ className={`w-full md:w-[320px] border-r bg-white fixed top-16 left-0 h-[calc(10
           </div>
           <div className="p-4 space-y-4">
             {!allowedRoles.includes(userData.role) &&
-              userData.roleId !== mentorRoleId && (
+              userData.roleId !== mentorRoleId && (  
                 <>
                   <div className="flex items-center justify-center">
                     <Link to="/editprofile/create-resume">
@@ -647,7 +680,7 @@ className={`w-full md:w-[320px] border-r bg-white fixed top-16 left-0 h-[calc(10
                 <Route
                   path="*"
                   element={
-                    <Navigate to="/ph/editprofile/company-details" replace />
+                    <Navigate to="/editprofile/company-details" replace />
                   }
                 />
               </>
@@ -778,10 +811,27 @@ className={`w-full md:w-[320px] border-r bg-white fixed top-16 left-0 h-[calc(10
                     />
                   }
                 />
+<Route
+  path="preference"
+  element={
+    <Preference
+      userData={userData}
+      updateCompletionStatus={updateCompletionStatus}
+      preferredRegion={preferredRegion}
+        setPreferredRegion={setPreferredRegion}
+        locationjson={locationjson}
+        setLocation={setLocation}
+        isProcessing={isProcessing}
+        customSelectStyles={customSelectStyles}
+    />
+  }
+/>
+
                 <Route
                   path="*"
                   element={<BasicDetails userData={userData} />}
                 />
+                
               </>
             )}
           </Routes>
