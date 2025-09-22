@@ -2,7 +2,8 @@ import React, { useEffect, useState, useMemo } from 'react';
 import Select from 'react-select';
 import { FaCheckCircle } from "react-icons/fa";
 import { BiTime } from "react-icons/bi";
-import { toast } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import { fetchSectionData, mUpdate } from "../../Utils/api";
 import philippineRegionsData from '../../data/philippine-regions-data.json';
 
@@ -28,13 +29,15 @@ const philippineRegions = [
   { value: 'NIR - Negros Island Region', label: 'NIR - Negros Island Region' },
 ];
 
-const Preference = ({ 
-  preferredRegion = '', 
-  setPreferredRegion, 
+const Preference = ({
+  userData,
+  preferredRegion = '',
+  setPreferredRegion,
   locationjson = '',
-  setLocation, 
-  isProcessing = false, 
-  customSelectStyles = {} 
+  setLocation,
+  isProcessing = false,
+  customSelectStyles = {},
+  updateCompletionStatus
 }) => {
   const [filteredLocations, setFilteredLocations] = useState([]);
   const [error, setError] = useState("");
@@ -42,7 +45,7 @@ const Preference = ({
   const [isFirstSaveSuccessful, setIsFirstSaveSuccessful] = useState(false);
   const [locationInput, setLocationInput] = useState("");
 
-  // Memoize filtered locations to prevent unnecessary re-renders
+  // Memoize location options
   const locationOptions = useMemo(() => {
     if (preferredRegion && philippineRegionsData.regions[preferredRegion]) {
       const regionData = philippineRegionsData.regions[preferredRegion];
@@ -55,26 +58,20 @@ const Preference = ({
         const province = cityProvinceMap[city] || (provinces.length > 0 ? provinces[0] : 'Metro Manila');
         return {
           value: `${city}, ${province}, Philippines`,
-          label: `${city}, ${province}, Philippines`,
-          display: city
+          label: `${city}, ${province}, Philippines`
         };
       });
-      
+
       // Create options with Province, Country structure for provinces
       const provinceOptions = provinces.map(province => ({
-        value: `${province}, Philippines`, 
-        label: `${province}, Philippines`,
-        display: province
+        value: `${province}, Philippines`,
+        label: `${province}, Philippines`
       }));
-      
+
       // Combine and sort all locations
-      const allLocations = [...cityOptions, ...provinceOptions]
-        .sort((a, b) => a.display.localeCompare(b.display));
-      
-      return allLocations;
-    } else {
-      return [];
+      return [...cityOptions, ...provinceOptions].sort((a, b) => a.label.localeCompare(b.label));
     }
+    return [];
   }, [preferredRegion]);
 
   // Filter locations based on input
@@ -85,12 +82,26 @@ const Preference = ({
     );
   }, [locationOptions, locationInput]);
 
-  // Update state when memoized options change
+  // Update filtered locations when options change
   useEffect(() => {
     setFilteredLocations(locationOptions);
   }, [locationOptions]);
 
-  // Fetch existing user data to populate preferences and check if saved
+  // Check if preferences are already saved
+  useEffect(() => {
+    if (userData?.sectionData?.appuser) {
+      const appuser = userData.sectionData.appuser;
+      const preferencesComplete = appuser.preferredregion && appuser.preferredlocation;
+      if (preferencesComplete) {
+        setIsFirstSaveSuccessful(true);
+        if (typeof updateCompletionStatus === 'function') {
+          updateCompletionStatus("Preference", true);
+        }
+      }
+    }
+  }, [userData, updateCompletionStatus]);
+
+  // Fetch existing user data
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -153,16 +164,20 @@ const Preference = ({
           ? userDataResponse.find((item) => item._id === userId)?.sectionData?.appuser || {}
           : userDataResponse.sectionData?.appuser || {};
 
-        // Update state with fetched data
         if (userData.preferredregion && typeof setPreferredRegion === 'function') {
           setPreferredRegion(userData.preferredregion);
         }
         if (userData.preferredlocation && typeof setLocation === 'function') {
           setLocation(userData.preferredlocation);
-          setLocationInput(userData.preferredlocation.split(', ')[0] || '');
+          setLocationInput(userData.preferredlocation);
         }
-        if (userData.preferredregion || userData.preferredlocation) {
+
+        const preferencesComplete = userData.preferredregion && userData.preferredlocation;
+        if (preferencesComplete) {
           setIsFirstSaveSuccessful(true);
+          if (typeof updateCompletionStatus === 'function') {
+            updateCompletionStatus("Preference", true);
+          }
         }
       } catch (err) {
         console.error("Error fetching user data:", err.message);
@@ -176,13 +191,12 @@ const Preference = ({
     };
 
     fetchUserData();
-  }, [setPreferredRegion, setLocation]);
+  }, [setPreferredRegion, setLocation, updateCompletionStatus]);
 
   // Handle region change
   const handleRegionChange = (selected) => {
     if (typeof setPreferredRegion === 'function') {
       setPreferredRegion(selected ? selected.value : '');
-      // Clear location and input when region changes
       if (typeof setLocation === 'function') {
         setLocation('');
         setLocationInput('');
@@ -195,7 +209,7 @@ const Preference = ({
     if (typeof setLocation === 'function') {
       const newValue = selected ? selected.value : '';
       setLocation(newValue);
-      setLocationInput(selected ? selected.display : '');
+      setLocationInput(selected ? selected.label : '');
     }
   };
 
@@ -225,6 +239,10 @@ const Preference = ({
       toast.error(validationError, {
         position: "top-right",
         autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
       });
       setTimeout(() => setError(""), 5000);
       return;
@@ -345,7 +363,7 @@ const Preference = ({
           setTimeout(() => setError(""), 5000);
           return;
         }
-        setSuccess("Preferences updated successfully!");
+
         toast.success("Preferences updated successfully!", {
           position: "top-right",
           autoClose: 3000,
@@ -353,8 +371,25 @@ const Preference = ({
           closeOnClick: true,
           pauseOnHover: true,
           draggable: true,
+          theme: "light",
         });
+
+        setSuccess("Preferences updated successfully!");
         setIsFirstSaveSuccessful(true);
+
+        if (typeof updateCompletionStatus === 'function') {
+          updateCompletionStatus("Preference", true);
+        }
+
+        try {
+          const completionStatusString = localStorage.getItem("completionStatus");
+          const completionStatus = completionStatusString ? JSON.parse(completionStatusString) : {};
+          completionStatus["Preference"] = true;
+          localStorage.setItem("completionStatus", JSON.stringify(completionStatus));
+        } catch (storageError) {
+          console.error("Error storing completion status:", storageError);
+        }
+
         setTimeout(() => setSuccess(""), 3000);
       } else {
         throw new Error("Failed to update preferences in database.");
@@ -378,15 +413,12 @@ const Preference = ({
     }
   };
 
-  // Memoize the current value to ensure reference stability
+  // Memoize current location value
   const currentLocationValue = useMemo(() => {
     if (!locationjson || filteredLocations.length === 0) {
       return null;
     }
-    
-    const found = filteredLocations.find(opt => opt.value === locationjson);
-    
-    return found || null;
+    return filteredLocations.find(opt => opt.value === locationjson) || null;
   }, [locationjson, filteredLocations]);
 
   // Memoize region value
@@ -396,6 +428,19 @@ const Preference = ({
 
   return (
     <div className="bg-white rounded-xl shadow-md">
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
+
       <div className="sticky top-0 z-10 bg-white border-b px-6 py-4 flex justify-between items-center">
         <div className="flex items-center gap-2 text-gray-800 font-semibold text-lg">
           {isFirstSaveSuccessful ? (
@@ -428,7 +473,6 @@ const Preference = ({
         <label className="block font-medium mb-2 mt-4 text-sm text-gray-700">
           Specific Location <span className="text-red-500">*</span>
         </label>
-        
         <div className="relative">
           <Select
             key={`location-select-${locationjson}-${filteredLocations.length}`}
@@ -440,16 +484,16 @@ const Preference = ({
             styles={customSelectStyles}
             isDisabled={isProcessing || !preferredRegion}
             placeholder={
-              preferredRegion 
-                ? "Type or select a city or province..." 
+              preferredRegion
+                ? "Type or select a city or province..."
                 : "Please select a region first"
             }
             isClearable
             isSearchable
             menuPortalTarget={document.body}
-            noOptionsMessage={() => 
-              preferredRegion 
-                ? "No locations found" 
+            noOptionsMessage={() =>
+              preferredRegion
+                ? "No locations found"
                 : "Please select a region first"
             }
             closeMenuOnSelect={true}
@@ -463,7 +507,6 @@ const Preference = ({
         {error && <p className="text-red-500 text-sm text-center">{error}</p>}
       </div>
 
-      {/* Save Button */}
       <div className="sticky bottom-0 bg-white border-t p-4">
         <div className="flex justify-end">
           <button

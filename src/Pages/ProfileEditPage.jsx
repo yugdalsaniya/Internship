@@ -390,6 +390,7 @@ const ProfileEditPage = () => {
             !!apiData.projectdetails?.length ||
             !!apiData.achievementsdetails?.length ||
             !!apiData.responsibilitydetails?.length,
+             "Preference": !!apiData.preferredregion && !!apiData.preferredlocation,
         };
 
         if (userData.roleId === mentorRoleId) {

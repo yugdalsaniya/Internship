@@ -323,69 +323,65 @@ export default function App({ userData }) {
       {/* Resume Content to Print */}
       <div ref={resumeRef} className="shadow-lg print:shadow-none">
         {/* HEADER */}
-        <div className="bg-white flex flex-col sm:flex-row items-center border-[3px] border-gray-500 px-8 py-6">
-          {/* LEFT SIDE: Name + Contact */}
-          <div className="flex flex-col sm:flex-row items-center justify-between w-full sm:w-9/12">
-          <div className="text-center sm:text-left">
-  {userDetails.name && (
-    <h1 className="text-4xl font-bold uppercase tracking-wide leading-tight">
-      {userDetails.name.toUpperCase()}
-    </h1>
-  )}
-  {/* {(designationName || User.sectionData?.appuser?.designation) ? (
-    <p className="text-base tracking-wide text-gray-500">
-      {designationName || User.sectionData.appuser.designation}
-    </p>
-  ) : (
-    <p className="text-base tracking-wide text-gray-400 italic">
-      No Designation
-    </p>
-  )} */}
-</div>
-
-            {/* Contact Info */}
-            {(userDetails.mobile ||
-              userDetails.email ||
-              userDetails.location) && (
-              <div className="flex flex-col items-center sm:items-start mt-4 sm:mt-0">
-                <div className="w-[3px] h-8 bg-gray-500 hidden sm:block"></div>
-                <div className="flex flex-col gap-2 mt-2 mb-2">
-                  {userDetails.mobile && (
-                    <div className="flex items-center gap-2 text-gray-600 hover:text-blue-600">
-                      <Phone className="w-5 h-5" />
-                      <span>{userDetails.mobile}</span>
-                    </div>
-                  )}
-                  {userDetails.email && (
-                    <div className="flex items-center gap-2 text-gray-600 hover:text-blue-600">
-                      <Mail className="w-5 h-5" />
-                      <span>{userDetails.email}</span>
-                    </div>
-                  )}
-                  {userDetails.location && (
-                    <div className="flex items-center gap-2 text-gray-600 hover:text-blue-600">
-                      <MapPin className="w-5 h-5" />
-                      <span>{userDetails.location}</span>
-                    </div>
-                  )}
+        <div className="bg-white border-[3px] border-gray-500 px-8 py-6">
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-start">
+            {/* LEFT SIDE: Name */}
+            <div className="sm:col-span-5 text-center sm:text-left">
+              {userDetails.name && (
+                <h1 className="text-4xl font-bold uppercase tracking-wide break-words">
+                  {userDetails.name.toUpperCase()}
+                </h1>
+              )}
+              {designationName && (
+                <p className="text-base tracking-wide text-gray-500 mt-1">
+                  {designationName}
+                </p>
+              )}
+            </div>
+            
+            {/* MIDDLE: Contact Info */}
+            <div className="sm:col-span-4 flex flex-col items-center sm:items-start">
+              {(userDetails.mobile || userDetails.email || userDetails.location) && (
+                <div className="flex flex-col items-center sm:items-start w-full">
+                  <div className="w-[3px] h-8 bg-gray-500 hidden sm:block"></div>
+                  <div className="flex flex-col gap-2 mt-2 mb-2 w-full">
+                    {userDetails.mobile && (
+                      <div className="flex items-center gap-2 text-gray-600 hover:text-blue-600">
+                        <Phone className="w-5 h-5 flex-shrink-0" />
+                        <span className="break-all">{userDetails.mobile}</span>
+                      </div>
+                    )}
+                    {userDetails.email && (
+                      <div className="flex items-center gap-2 text-gray-600 hover:text-blue-600">
+                        <Mail className="w-5 h-5 flex-shrink-0" />
+                        <span className="break-all">{userDetails.email}</span>
+                      </div>
+                    )}
+                    {userDetails.location && (
+                      <div className="flex items-center gap-2 text-gray-600 hover:text-blue-600">
+                        <MapPin className="w-5 h-5 flex-shrink-0" />
+                        <span className="break-all">{userDetails.location}</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="w-[3px] h-8 bg-gray-500 hidden sm:block"></div>
                 </div>
-                <div className="w-[3px] h-8 bg-gray-500 hidden sm:block"></div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
 
-          {/* RIGHT SIDE: IMAGE */}
-          <div className="w-full sm:w-3/12 flex justify-center mt-4 sm:mt-0">
-            <img
-              src={userDetails.profile || alex}
-              alt="Profile"
-              className="w-32 h-32 object-cover rounded-full overflow-hidden"
-              onError={(e) => {
-                // fallback to default if image fails to load
-                e.target.onerror = null;
-                e.target.src = alex;
-              }}
-            />
+            {/* RIGHT SIDE: IMAGE */}
+            <div className="sm:col-span-3 flex justify-center">
+              <img
+                src={userDetails.profile || alex}
+                alt="Profile"
+                className="w-32 h-32 object-cover rounded-full overflow-hidden"
+                onError={(e) => {
+                  // fallback to default if image fails to load
+                  e.target.onerror = null;
+                  e.target.src = alex;
+                }}
+              />
+            </div>
           </div>
         </div>
 

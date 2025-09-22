@@ -588,6 +588,49 @@ const Education = ({ userData, updateCompletionStatus }) => {
       }
     }
 
+    // Additional validations
+    const currentYear = new Date().getFullYear();
+
+    // Validate startYear
+    const startYearNum = parseInt(formData.startYear, 10);
+    if (isNaN(startYearNum) || formData.startYear.length !== 4 || startYearNum < 1900 || startYearNum > currentYear + 5) {
+      toast.error("Invalid Start Year. Must be a 4-digit number between 1900 and " + (currentYear + 5) + ".", {
+        position: "top-right",
+        autoClose: 5000,
+      });
+      return;
+    }
+
+    // Validate endYear
+    const endYearNum = parseInt(formData.endYear, 10);
+    if (isNaN(endYearNum) || formData.endYear.length !== 4 || endYearNum < 1900 || endYearNum > currentYear + 5) {
+      toast.error("Invalid End Year. Must be a 4-digit number between 1900 and " + (currentYear + 5) + ".", {
+        position: "top-right",
+        autoClose: 5000,
+      });
+      return;
+    }
+
+    if (endYearNum < startYearNum) {
+      toast.error("End Year must be greater than or equal to Start Year.", {
+        position: "top-right",
+        autoClose: 5000,
+      });
+      return;
+    }
+
+    // Validate percentage if provided
+    if (formData.percentage) {
+      const perc = parseFloat(formData.percentage);
+      if (isNaN(perc) || perc < 0 || perc > 100) {
+        toast.error("Invalid Percentage. Must be a number between 0 and 100.", {
+          position: "top-right",
+          autoClose: 5000,
+        });
+        return;
+      }
+    }
+
     try {
       setIsProcessing(true);
       let fileUrl = formData.fileUrl;
