@@ -153,8 +153,8 @@ function BasicDetails({ userData }) {
         (spec) => spec.courseId === course
       );
       setSpecializationOptions(filteredSpecializations);
-      
-      // Reset specialization if current selection doesn't match the new course
+
+      // Only reset specialization if the current specialization is not valid for the new course
       if (specialization) {
         const isCurrentSpecializationValid = filteredSpecializations.some(
           (spec) => spec._id === specialization
@@ -165,76 +165,119 @@ function BasicDetails({ userData }) {
       }
     } else {
       setSpecializationOptions([]);
-      setSpecialization("");
+      if (!specialization) {
+        setSpecialization("");
+      }
     }
   }, [course, allSpecializationOptions, specialization]);
 
   // Fetch user data and dropdown options
-useEffect(() => {
-  const fetchUserDataAndDropdownOptions = async () => {
-    setIsLoadingOptions(true);
-    try {
-      const userString = localStorage.getItem("user");
-      if (!userString) {
-        setError("Please log in to view your details. Using local data.");
-        toast.error("Please log in to view your details.", {
-          position: "top-right",
-          autoClose: 5000,
-        });
-        setTimeout(() => setError(""), 5000);
-        return;
-      }
-
-      let userId;
-      let localUserData;
+  useEffect(() => {
+    const fetchUserDataAndDropdownOptions = async () => {
+      setIsLoadingOptions(true);
       try {
-        const user = JSON.parse(userString);
-        userId = user.userid;
-        localUserData = user;
-        
-      } catch (parseError) {
-        console.error("Parse error:", parseError);
-        setError("Invalid user data. Using local data.");
-        toast.error("Invalid user data. Using local data.", {
-          position: "top-right",
-          autoClose: 5000,
-        });
-        setTimeout(() => setError(""), 5000);
-        return;
-      }
-
-      // Fallback to localStorage data if userId is empty
-      if (!userId) {
-        setName(localUserData.legalname || "");
-        setEmail(localUserData.email || "");
-        if (localUserData.mobile) {
-          if (localUserData.mobile.startsWith("+63")) {
-            setCountryCode("+63");
-            setMobile(localUserData.mobile.slice(3));
-          } else {
-            setMobile(localUserData.mobile);
-            setCountryCode("+63");
-          }
-        }
-        setSchoolName(localUserData.organisationcollege || "");
-      } else {
-        // Fetch from server if userId exists
-        const userDataResponse = await fetchSectionData({
-          dbName: "internph",
-          collectionName: "appuser",
-          query: { _id: userId },
-        });
-
-        if (
-          !userDataResponse ||
-          (Array.isArray(userDataResponse) && userDataResponse.length === 0)
-        ) {
-          setError("User data not found. Using local data.");
-          toast.error("User data not found. Using local data.", {
+        const userString = localStorage.getItem("user");
+        if (!userString) {
+          setError("Please log in to view your details. Using local data.");
+          toast.error("Please log in to view your details.", {
             position: "top-right",
             autoClose: 5000,
           });
           setTimeout(() => setError(""), 5000);
+          return;
+        }
+
+        let userId;
+        let localUserData;
+        try {
+          const user = JSON.parse(userString);
+          userId = user.userid;
+          localUserData = user;
+          
+        } catch (parseError) {
+          console.error("Parse error:", parseError);
+          setError("Invalid user data. Using local data.");
+          toast.error("Invalid user data. Using local data.", {
+            position: "top-right",
+            autoClose: 5000,
+          });
+          setTimeout(() => setError(""), 5000);
+          return;
+        }
+
+        // Fetch dropdown options first
+        const [designationData, courseData, specializationData, instituteData, roleData] =
+          await Promise.all([
+            fetchSectionData({
+              dbName: "internph",
+              collectionName: "designation",
+              query: {},
+            }),
+            fetchSectionData({
+              dbName: "internph",
+              collectionName: "course",
+              query: {},
+            }),
+            fetchSectionData({
+              dbName: "internph",
+              collectionName: "coursespecialization",
+              query: {},
+            }),
+            fetchSectionData({
+              dbName: "internph",
+              collectionName: "institute",
+              query: {},
+            }),
+            fetchSectionData({
+              dbName: "internph",
+              collectionName: "role",
+              query: {},
+            }),
+          ]);
+
+        const designations = designationData
+          .map((item) => ({
+            _id: item._id,
+            name: item.sectionData.designation.name,
+          }))
+          .sort((a, b) => a.name.localeCompare(b.name));
+        setDesignationOptions(designations);
+
+        const courses = courseData.map((item) => ({
+          _id: item._id,
+          name: item.sectionData.course.name,
+        }));
+        setCourseOptions(courses);
+
+        const specializations = specializationData.map((item) => ({
+          _id: item._id,
+          name: item.sectionData.coursespecialization.name,
+          courseId: item.sectionData.coursespecialization.course,
+        }));
+        setAllSpecializationOptions(specializations);
+
+        const institutes = instituteData
+          .map((item) => {
+            if (!item.sectionData?.institute?.institutionname) {
+              console.warn("Missing institutionname in item:", item);
+              return null;
+            }
+            return {
+              _id: item._id,
+              name: item.sectionData.institute.institutionname,
+            };
+          })
+          .filter((item) => item !== null);
+        setInstituteOptions(institutes);
+
+        const roles = roleData.map((item) => ({
+          _id: item._id,
+          name: item.sectionData.role.name.trim(),
+        }));
+        setRoleOptions(roles);
+
+        // Fallback to localStorage data if userId is empty
+        if (!userId) {
           setName(localUserData.legalname || "");
           setEmail(localUserData.email || "");
           if (localUserData.mobile) {
@@ -247,170 +290,150 @@ useEffect(() => {
             }
           }
           setSchoolName(localUserData.organisationcollege || "");
-          return;
-        }
+        } else {
+          // Fetch from server if userId exists
+          const userDataResponse = await fetchSectionData({
+            dbName: "internph",
+            collectionName: "appuser",
+            query: { _id: userId },
+          });
 
-        const userData = Array.isArray(userDataResponse)
-          ? userDataResponse.find((item) => item._id === userId)?.sectionData
-              ?.appuser || {}
-          : userDataResponse.sectionData?.appuser || {};
-
-        setName(userData.legalname || localUserData.legalname || "");
-        setEmail(userData.email || localUserData.email || "");
-        if (userData.mobile || localUserData.mobile) {
-          const mobileToUse = userData.mobile || localUserData.mobile;
-          if (mobileToUse.startsWith("+63")) {
-            setCountryCode("+63");
-            setMobile(mobileToUse.slice(3));
-          } else {
-            setMobile(mobileToUse);
-            setCountryCode("+63");
+          if (
+            !userDataResponse ||
+            (Array.isArray(userDataResponse) && userDataResponse.length === 0)
+          ) {
+            setError("User data not found. Using local data.");
+            toast.error("User data not found. Using local data.", {
+              position: "top-right",
+              autoClose: 5000,
+            });
+            setTimeout(() => setError(""), 5000);
+            setName(localUserData.legalname || "");
+            setEmail(localUserData.email || "");
+            if (localUserData.mobile) {
+              if (localUserData.mobile.startsWith("+63")) {
+                setCountryCode("+63");
+                setMobile(localUserData.mobile.slice(3));
+              } else {
+                setMobile(localUserData.mobile);
+                setCountryCode("+63");
+              }
+            }
+            setSchoolName(localUserData.organisationcollege || "");
+            return;
           }
-        }
-        setGender(userData.Gender || "");
-        setUserType(userData.usertype || "");
-        setLocation(userData.location || "");
-        setCourse(userData.course || "");
-        setSpecialization(userData.coursespecialization || "");
-        setCollege(userData.organisationcollege || "");
-        setStartYear(userData.startyear || "");
-        setEndYear(userData.endyear || "");
-        setSelectedPurpose(userData.purpose || []);
-        setCareerGoal(
-          userData.growinmycurrentcareer
-            ? "current"
-            : userData.transitioninnewcareer
-            ? "new"
-            : ""
-        );
-        setDesignation(userData.designation || "");
-        setWorkExperienceType(userData.workexperience || "");
-        setIsCurrentlyWorking(userData.currentlyworkinginthisrole || false);
-        setSchoolName(userData.organisationcollege || "");
-        setStream(userData.stream || "");
-        setNewCareerRole(userData.role1 || []);
-        setProfilePicture(userData.profile || "");
 
-        if (
-          userData.legalname ||
-          userData.email ||
-          userData.mobile ||
-          userData.Gender ||
-          userData.usertype ||
-          userData.location ||
-          userData.purpose?.length ||
-          userData.profile
-        ) {
-          setIsFirstSaveSuccessful(true);
-         
-        }
-     
-      }
+          const userData = Array.isArray(userDataResponse)
+            ? userDataResponse.find((item) => item._id === userId)?.sectionData
+                ?.appuser || {}
+            : userDataResponse.sectionData?.appuser || {};
 
-      // Fetch dropdown options
-      const designationData = await fetchSectionData({
-        dbName: "internph",
-        collectionName: "designation",
-        query: {},
-      });
-      const designations = designationData
-        .map((item) => ({
-          _id: item._id,
-          name: item.sectionData.designation.name,
-        }))
-        .sort((a, b) => a.name.localeCompare(b.name));
-      setDesignationOptions(designations);
-
-      const courseData = await fetchSectionData({
-        dbName: "internph",
-        collectionName: "course",
-        query: {},
-      });
-      const courses = courseData.map((item) => ({
-        _id: item._id,
-        name: item.sectionData.course.name,
-      }));
-      setCourseOptions(courses);
-
-      const specializationData = await fetchSectionData({
-        dbName: "internph",
-        collectionName: "coursespecialization",
-        query: {},
-      });
-      const specializations = specializationData.map((item) => ({
-        _id: item._id,
-        name: item.sectionData.coursespecialization.name,
-        courseId: item.sectionData.coursespecialization.course, // Store the course reference
-      }));
-      setAllSpecializationOptions(specializations); // Store all specializations
-
-      const instituteData = await fetchSectionData({
-        dbName: "internph",
-        collectionName: "institute",
-        query: {},
-      });
-      if (!Array.isArray(instituteData)) {
-        throw new Error("Institute data is not an array");
-      }
-      const institutes = instituteData
-        .map((item) => {
-          if (!item.sectionData?.institute?.institutionname) {
-            console.warn("Missing institutionname in item:", item);
-            return null;
-          }
-          return {
-            _id: item._id,
-            name: item.sectionData.institute.institutionname,
-          };
-        })
-        .filter((item) => item !== null);
-      setInstituteOptions(institutes);
-
-      const roleData = await fetchSectionData({
-        dbName: "internph",
-        collectionName: "role",
-        query: {},
-      });
-      const roles = roleData.map((item) => ({
-        _id: item._id,
-        name: item.sectionData.role.name.trim(),
-      }));
-      setRoleOptions(roles);
-    } catch (err) {
-      console.error("Error fetching data:", err.message, err.stack);
-      setError("Failed to load server data. Using local data.");
-      toast.error("Failed to load server data. Using local data.", {
-        position: "top-right",
-        autoClose: 5000,
-      });
-      setTimeout(() => setError(""), 5000);
-      const userString = localStorage.getItem("user");
-      if (userString) {
-        try {
-          const user = JSON.parse(userString);
-          setName(user.legalname || "");
-          setEmail(user.email || "");
-          if (user.mobile) {
-            if (user.mobile.startsWith("+63")) {
+          // Set user data
+          setName(userData.legalname || localUserData.legalname || "");
+          setEmail(userData.email || localUserData.email || "");
+          if (userData.mobile || localUserData.mobile) {
+            const mobileToUse = userData.mobile || localUserData.mobile;
+            if (mobileToUse.startsWith("+63")) {
               setCountryCode("+63");
-              setMobile(user.mobile.slice(3));
+              setMobile(mobileToUse.slice(3));
             } else {
-              setMobile(user.mobile);
+              setMobile(mobileToUse);
               setCountryCode("+63");
             }
           }
-          setSchoolName(user.organisationcollege || "");
-        } catch (parseError) {
-          console.error("Parse error on fallback:", parseError);
-        }
-      }
-    } finally {
-      setIsLoadingOptions(false);
-    }
-  };
+          setGender(userData.Gender || "");
+          setUserType(userData.usertype || "");
+          setLocation(userData.location || "");
+          setCourse(userData.course || "");
+          setCollege(userData.organisationcollege || "");
+          setStartYear(userData.startyear || "");
+          setEndYear(userData.endyear || "");
+          setSelectedPurpose(userData.purpose || []);
+          setCareerGoal(
+            userData.growinmycurrentcareer
+              ? "current"
+              : userData.transitioninnewcareer
+              ? "new"
+              : ""
+          );
+          setDesignation(userData.designation || "");
+          setWorkExperienceType(userData.workexperience || "");
+          setIsCurrentlyWorking(userData.currentlyworkinginthisrole || false);
+          setSchoolName(userData.organisationcollege || "");
+          setStream(userData.stream || "");
+          setNewCareerRole(userData.role1 || []);
+          setProfilePicture(userData.profile || "");
 
-  fetchUserDataAndDropdownOptions();
-}, []);
+          // Set specialization after course and specialization options are available
+          if (userData.course && userData.coursespecialization) {
+            const filteredSpecializations = specializations.filter(
+              (spec) => spec.courseId === userData.course
+            );
+            const isValidSpecialization = filteredSpecializations.some(
+              (spec) => spec._id === userData.coursespecialization
+            );
+            if (isValidSpecialization) {
+              setSpecialization(userData.coursespecialization);
+            } else {
+              console.warn(
+                `Fetched specialization ${userData.coursespecialization} is not valid for course ${userData.course}`
+              );
+              setSpecialization("");
+            }
+          } else {
+            setSpecialization("");
+          }
+
+          if (
+            userData.legalname ||
+            userData.email ||
+            userData.mobile ||
+            userData.Gender ||
+            userData.usertype ||
+            userData.location ||
+            userData.purpose?.length ||
+            userData.profile
+          ) {
+            setIsFirstSaveSuccessful(true);
+           
+          }
+       
+        }
+      } catch (err) {
+        console.error("Error fetching data:", err.message, err.stack);
+        setError("Failed to load server data. Using local data.");
+        toast.error("Failed to load server data. Using local data.", {
+          position: "top-right",
+          autoClose: 5000,
+        });
+        setTimeout(() => setError(""), 5000);
+        const userString = localStorage.getItem("user");
+        if (userString) {
+          try {
+            const user = JSON.parse(userString);
+            setName(user.legalname || "");
+            setEmail(user.email || "");
+            if (user.mobile) {
+              if (user.mobile.startsWith("+63")) {
+                setCountryCode("+63");
+                setMobile(user.mobile.slice(3));
+              } else {
+                setMobile(user.mobile);
+                setCountryCode("+63");
+              }
+            }
+            setSchoolName(user.organisationcollege || "");
+          } catch (parseError) {
+            console.error("Parse error on fallback:", parseError);
+          }
+        }
+      } finally {
+        setIsLoadingOptions(false);
+      }
+    };
+
+    fetchUserDataAndDropdownOptions();
+  }, []);
 
   // Google Maps Autocomplete
   useEffect(() => {

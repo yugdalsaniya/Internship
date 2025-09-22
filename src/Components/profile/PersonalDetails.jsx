@@ -471,20 +471,30 @@ const PersonalDetails = ({ userData, updateCompletionStatus }) => {
   const handleSave = async () => {
     try {
       setIsLoading(true);
+
+      // Clear the error state at the beginning of save
+      setError('');
+
       if (!userId) {
-        setError('Please log in to save details.');
-        toast.error('Please log in to save details.', {
+        const msg = 'Please log in to save details.';
+        setError(msg);
+        toast.error(msg, {
           position: 'top-right',
           autoClose: 3000,
         });
+        setIsLoading(false);
         return;
       }
 
       if (!validateForm()) {
-        toast.error(error, {
-          position: 'top-right',
-          autoClose: 3000,
-        });
+        // Use setTimeout to ensure toast is triggered after setError updates state
+        setTimeout(() => {
+          toast.error(error || 'Please fill all required fields!', {
+            position: 'top-right',
+            autoClose: 3000,
+          });
+        }, 10);
+        setIsLoading(false);
         return;
       }
 
@@ -514,7 +524,6 @@ const PersonalDetails = ({ userData, updateCompletionStatus }) => {
         options: { upsert: false, writeConcern: { w: 'majority' } },
       });
 
-
       if (
         response &&
         (response.success ||
@@ -538,9 +547,16 @@ const PersonalDetails = ({ userData, updateCompletionStatus }) => {
       } else {
         throw new Error('Failed to save personal details to database.');
       }
-    } catch (error) {
-      console.error('Error updating data:', error);
-      const errorMessage = error.message || 'Failed to update personal details. Please try again.';
+    } catch (err) {
+      // Unified error handling
+      let errorMessage = '';
+      if (typeof err === 'string') {
+        errorMessage = err;
+      } else if (err && err.message) {
+        errorMessage = err.message;
+      } else {
+        errorMessage = 'Failed to update personal details. Please try again.';
+      }
       setError(errorMessage);
       toast.error(errorMessage, {
         position: 'top-right',
@@ -644,7 +660,6 @@ const PersonalDetails = ({ userData, updateCompletionStatus }) => {
       </div>
     </div>
   );
-
 
   return (
     <div className="bg-white rounded-xl shadow-md">

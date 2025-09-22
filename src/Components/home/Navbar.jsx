@@ -1,16 +1,19 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import logo from "../../assets/Navbar/logo.png";
+import { FaBook, FaChalkboardTeacher, FaCertificate, FaCalendarAlt, FaBlog, FaChevronDown } from "react-icons/fa";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [internshipDropdownOpen, setInternshipDropdownOpen] = useState(false);
+  const [learningDropdownOpen, setLearningDropdownOpen] = useState(false);
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user")) || {};
   const role = user.role || "";
   const userDropdownRef = useRef(null);
   const internshipDropdownRef = useRef(null);
+  const learningDropdownRef = useRef(null);
 
   const toggleMenu = () => {
     setIsOpen(!isOpen);
@@ -22,6 +25,10 @@ const Navbar = () => {
 
   const toggleInternshipDropdown = () => {
     setInternshipDropdownOpen(!internshipDropdownOpen);
+  };
+
+  const toggleLearningDropdown = () => {
+    setLearningDropdownOpen(!learningDropdownOpen);
   };
 
   const handleLogout = () => {
@@ -50,6 +57,13 @@ const Navbar = () => {
         ) {
           setInternshipDropdownOpen(false);
         }
+        if (
+          learningDropdownOpen &&
+          learningDropdownRef.current &&
+          !learningDropdownRef.current.contains(event.target)
+        ) {
+          setLearningDropdownOpen(false);
+        }
       }
     };
 
@@ -57,16 +71,27 @@ const Navbar = () => {
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [userDropdownOpen, internshipDropdownOpen]);
+  }, [userDropdownOpen, internshipDropdownOpen, learningDropdownOpen]);
 
   // Define navigation links based on role
   const navLinks = {
     student: [
       { to: "/", label: "Home" },
       { to: "/internship", label: "Internships" },
-      { to: "/allmentorships", label: "Mentorships" }, // ✅ only for students
+     
+      { to: "/allmentorships", label: "Mentorships" },
       { to: "/about", label: "About Us" },
-      { to: "/contact", label: "Contact Us" },
+      { to: "/contact", label: "Contact Us" }, {
+        label: "Learning",
+        isDropdown: true,
+        dropdownItems: [
+          { to: "/courses", label: "Courses", icon: <FaBook className="mr-2" /> },
+          { to: "/workshops", label: "Workshops", icon: <FaChalkboardTeacher className="mr-2" /> },
+          { to: "/training-certification", label: "Training Certification", icon: <FaCertificate className="mr-2" /> },
+          { to: "/events", label: "Events", icon: <FaCalendarAlt className="mr-2" /> },
+          { to: "/news-and-blog", label: "Blog", icon: <FaBlog className="mr-2" /> },
+        ],
+      }
     ],
     company: [
       { to: "/", label: "Home" },
@@ -128,23 +153,31 @@ const Navbar = () => {
               {link.isDropdown ? (
                 <>
                   <div
-                    onClick={toggleInternshipDropdown}
-                    className="text-gray-800 hover:text-blue-600 text-sm font-medium cursor-pointer leading-5"
+                    onClick={link.label === "Learning" ? toggleLearningDropdown : toggleInternshipDropdown}
+                    className="text-gray-800 hover:text-blue-600 text-sm font-medium cursor-pointer leading-5 flex items-center"
                   >
                     {link.label}
+                    {link.label === "Learning" && (
+                      <FaChevronDown className="ml-1 text-xs transform transition-transform duration-200" style={{ rotate: learningDropdownOpen ? "180deg" : "0deg" }} />
+                    )}
                   </div>
-                  {internshipDropdownOpen && (
+                  {(link.label === "Learning" ? learningDropdownOpen : internshipDropdownOpen) && (
                     <div
-                      ref={internshipDropdownRef}
-                      className="absolute left-0 top-full w-44 bg-white border rounded-md shadow-lg py-2 z-10"
+                      ref={link.label === "Learning" ? learningDropdownRef : internshipDropdownRef}
+                      className="absolute left-0 top-full w-44 bg-white border rounded-md shadow-lg py-2 z-10 transform transition-all duration-300 ease-in-out origin-top scale-y-0 data-[open=true]:scale-y-100"
+                      data-open={link.label === "Learning" ? learningDropdownOpen : internshipDropdownOpen}
                     >
                       {link.dropdownItems.map((item) => (
                         <Link
                           key={item.to}
                           to={item.to}
-                          className="block px-4 py-2 text-sm text-gray-800 hover:bg-gray-100"
-                          onClick={() => setInternshipDropdownOpen(false)}
+                          className="flex items-center px-4 py-2 text-sm text-gray-800 hover:bg-gray-100 transition-colors duration-200"
+                          onClick={() => {
+                            if (link.label === "Learning") setLearningDropdownOpen(false);
+                            else setInternshipDropdownOpen(false);
+                          }}
                         >
+                          {item.icon}
                           {item.label}
                         </Link>
                       ))}
@@ -174,14 +207,14 @@ const Navbar = () => {
               </button>
               {userDropdownOpen && (
                 <div className="absolute right-0 mt-2 w-44 sm:w-48 bg-white border rounded-md shadow-lg py-2 z-10">
-                 <div className="px-4 py-2 max-w-full">
-  <p className="text-xs sm:text-sm font-medium text-gray-800 truncate">
-    {user.legalname}
-  </p>
-  <p className="text-[10px] sm:text-xs text-gray-500 truncate">
-    {user.email}
-  </p>
-</div>
+                  <div className="px-4 py-2 max-w-full">
+                    <p className="text-xs sm:text-sm font-medium text-gray-800 truncate">
+                      {user.legalname}
+                    </p>
+                    <p className="text-[10px] sm:text-xs text-gray-500 truncate">
+                      {user.email}
+                    </p>
+                  </div>
                   <Link
                     to="/editprofile"
                     onClick={() => setUserDropdownOpen(false)}
@@ -261,23 +294,28 @@ const Navbar = () => {
               {link.isDropdown ? (
                 <>
                   <div
-                    onClick={toggleInternshipDropdown}
-                    className="text-gray-800 hover:text-blue-600 text-sm font-medium w-full text-center py-2 cursor-pointer leading-5"
+                    onClick={link.label === "Learning" ? toggleLearningDropdown : toggleInternshipDropdown}
+                    className="text-gray-800 hover:text-blue-600 text-sm font-medium w-full text-center py-2 cursor-pointer leading-5 flex items-center justify-center"
                   >
                     {link.label}
+                    {link.label === "Learning" && (
+                      <FaChevronDown className="ml-1 text-xs transform transition-transform duration-200" style={{ rotate: learningDropdownOpen ? "180deg" : "0deg" }} />
+                    )}
                   </div>
-                  {internshipDropdownOpen && (
+                  {(link.label === "Learning" ? learningDropdownOpen : internshipDropdownOpen) && (
                     <div className="w-full flex flex-col">
                       {link.dropdownItems.map((item) => (
                         <Link
                           key={item.to}
                           to={item.to}
-                          className="text-gray-800 hover:text-blue-600 text-sm font-medium py-2 text-center leading-5"
+                          className="flex items-center text-gray-800 hover:text-blue-600 text-sm font-medium py-2 text-center leading-5"
                           onClick={() => {
                             setIsOpen(false);
-                            setInternshipDropdownOpen(false);
+                            if (link.label === "Learning") setLearningDropdownOpen(false);
+                            else setInternshipDropdownOpen(false);
                           }}
                         >
+                          {item.icon}
                           {item.label}
                         </Link>
                       ))}
