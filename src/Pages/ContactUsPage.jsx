@@ -125,7 +125,7 @@ export default function ContactUsPage() {
         SocialMediaLinks: '<a href="https://twitter.com/inturnsph">Twitter</a> | <a href="https://linkedin.com/company/inturnsph">LinkedIn</a> | <a href="https://facebook.com/inturnsph">Facebook</a>',
         Year: new Date().getFullYear().toString(),
         YourPortalName: 'Inturnshp'
-      };
+      };  
 
       // Send email using template
       await sendEmailTemplate(

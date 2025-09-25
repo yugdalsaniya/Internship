@@ -132,8 +132,20 @@ const Navbar = () => {
   const defaultLinks = [
     { to: "/", label: "Home" },
     { to: "/internship", label: "Internships" },
+    { to: "/allmentorships", label: "Mentorships" },
     { to: "/about", label: "About Us" },
     { to: "/contact", label: "Contact Us" },
+     {
+        label: "Learning",
+        isDropdown: true,
+        dropdownItems: [
+          { to: "/courses", label: "Courses", icon: <FaBook className="mr-2" /> },
+          { to: "/workshops", label: "Workshops", icon: <FaChalkboardTeacher className="mr-2" /> },
+          { to: "/training-certification", label: "Training Certification", icon: <FaCertificate className="mr-2" /> },
+          { to: "/events", label: "Events", icon: <FaCalendarAlt className="mr-2" /> },
+          { to: "/news-and-blog", label: "Blog", icon: <FaBlog className="mr-2" /> },
+        ],
+      } 
   ];
 
   const links = navLinks[role] || defaultLinks;
