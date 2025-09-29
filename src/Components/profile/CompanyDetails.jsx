@@ -336,6 +336,7 @@ const CompanyDetails = ({ userData, updateCompletionStatus, onBack }) => {
           "sectionData.appuser.legalname": formData.name.trim(),
           "sectionData.appuser.email": formData.email,
           "sectionData.appuser.mobile": `+63${formData.mobile}`,
+          "sectionData.appuser.cdesignation": formData.cdesignation.trim(),
           "sectionData.appuser.organisationcollege":
             userRoleId === "1747903042943" ? formData.organisationcollege : "",
           "sectionData.appuser.post":
@@ -367,8 +368,8 @@ const CompanyDetails = ({ userData, updateCompletionStatus, onBack }) => {
         );
       }
 
-      // Update Company collection for designation if userRoleId is "1747903042943"
-      if (userRoleId === "1747903042943") {
+      // Update Company collection for designation if userRoleId is "1747723485001" (company)
+      if (userRoleId === "1747723485001") {
         const companyUpdateData = {
           $set: {
             "sectionData.Company.designation": formData.cdesignation.trim(),
@@ -523,53 +524,7 @@ const CompanyDetails = ({ userData, updateCompletionStatus, onBack }) => {
           </div>
         </div>
 
-        {userRoleId === "1747903042943" && (
-          <>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Institute Name <span className="text-red-500">*</span>
-              </label>
-              <Select
-                options={instituteOptions.map((option) => ({
-                  value: option._id,
-                  label: option.name,
-                }))}
-                value={instituteOptions
-                  .filter((option) => option._id === formData.organisationcollege)
-                  .map((option) => ({ value: option._id, label: option.name }))}
-                onChange={handleInstituteChange}
-                styles={customSelectStyles}
-                isDisabled={isProcessing}
-                placeholder="Search for your organisation/college..."
-                isClearable
-                isSearchable
-                menuPortalTarget={document.body}
-              />
-            </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Post <span className="text-red-500">*</span>
-              </label>
-              <Select
-                options={postOptions.map((option) => ({
-                  value: option._id,
-                  label: option.name,
-                }))}
-                value={postOptions
-                  .filter((option) => option._id === formData.post)
-                  .map((option) => ({ value: option._id, label: option.name }))}
-                onChange={handlePostChange}
-                styles={customSelectStyles}
-                isDisabled={isProcessing || isLoadingOptions}
-                placeholder="Search for your post..."
-                isClearable
-                isSearchable
-                menuPortalTarget={document.body}
-              />
-            </div>
-          </>
-        )}
 
         {error && <p className="text-red-500 text-sm text-center">{error}</p>}
       </div>

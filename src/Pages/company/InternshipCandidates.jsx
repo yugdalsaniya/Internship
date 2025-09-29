@@ -5,12 +5,16 @@ import {
   mUpdate,
   sendEmailTemplate,
   sendRawEmail,
+  addGeneralData,
+  uploadAndStoreFile,
 } from "../../Utils/api";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Modal from "react-modal";
 import { gapi } from "gapi-script";
 import { loadGapiInsideDOM } from "gapi-script";
+import SignatureCanvas from "react-signature-canvas";
+import "../../Components/signature.css";
 import logo from "../../assets/Navbar/logo.png";
 import backgroundImg from "../../assets/Hero/banner.jpg";
 
@@ -48,6 +52,8 @@ const InternshipCandidates = () => {
   
   const [isMOAModalOpen, setIsMOAModalOpen] = useState(false);
   const [moaCandidateId, setMoaCandidateId] = useState(null);
+  const [isSignModalOpen, setIsSignModalOpen] = useState(false);
+  const [signCandidateId, setSignCandidateId] = useState(null);
   const [gapiInited, setGapiInited] = useState(false);
   const [tokenClient, setTokenClient] = useState(null);
   const [gisLoaded, setGisLoaded] = useState(false);
@@ -55,6 +61,7 @@ const InternshipCandidates = () => {
   const user = JSON.parse(localStorage.getItem("user")) || {};
   const initAttempted = useRef(false);
   const moaPrintRef = useRef(null);
+  const sigCanvas = useRef(null);
 
   // Google API Credentials
   const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
@@ -375,7 +382,24 @@ const InternshipCandidates = () => {
 
         if (companyRepResponse.length > 0) {
           const repData = companyRepResponse[0].sectionData.appuser || {};
-          setCompanyRepData(repData);
+          
+          // Also fetch designation from Company collection
+          const companyDesignationResponse = await fetchSectionData({
+            dbName: "internph",
+            collectionName: "Company",
+            query: { createdBy: createdBy },
+            projection: { "sectionData.Company.designation": 1 },
+          });
+          
+          let designation = repData.cdesignation || "Representative";
+          if (companyDesignationResponse.length > 0) {
+            designation = companyDesignationResponse[0]?.sectionData?.Company?.designation || designation;
+          }
+          
+          setCompanyRepData({
+            ...repData,
+            cdesignation: designation
+          });
         } else {
           console.warn("No company representative data found for companyId:", createdBy);
           setCompanyRepData({
@@ -447,6 +471,12 @@ const InternshipCandidates = () => {
             startdate: app.startdate || "",
             enddate: app.enddate || "",
             totalHours: app.totalHours || 0,
+            companySigned: app.companySigned || false,
+            academySigned: app.academySigned || false,
+            companySignature: app.companySignature || "",
+            academySignature: app.academySignature || "",
+            companySignedDate: app.companySignedDate || "",
+            academySignedDate: app.academySignedDate || "",
           };
           return candidateData;
         });
@@ -466,6 +496,9 @@ const InternshipCandidates = () => {
        
         setAcademyRepDataMap(academyDataMap);
         
+        // Check for fully signed MOAs that don't have documents yet
+        await checkAndCreateExistingCompanyMOAs(formattedCandidates);
+        
       } catch (err) {
         console.error("Error fetching data:", err);
         setError("Failed to load data. Please try again.");
@@ -480,6 +513,33 @@ const InternshipCandidates = () => {
 
     fetchData();
   }, [id, navigate]);
+
+  const checkAndCreateExistingCompanyMOAs = async (candidates) => {
+    try {
+      const fullySignedCandidates = candidates.filter(candidate => 
+        candidate.companySigned && candidate.academySigned
+      );
+      
+      for (const candidate of fullySignedCandidates) {
+        // Check if MOA document already exists
+        const existingMOA = await fetchSectionData({
+          dbName: "internph",
+          collectionName: "moa",
+          query: {
+            "sectionData.contactus.studentname": candidate.name,
+            "sectionData.contactus.companyname": companyData.organizationName
+          }
+        });
+
+        if (existingMOA.length === 0) {
+          // Create MOA document for existing signed agreement
+          await createCompanyMOADocument(candidate, candidate.companySignature, candidate.companySignedDate);
+        }
+      }
+    } catch (err) {
+      console.error("Error checking existing company MOAs:", err);
+    }
+  };
 
   const replacePlaceholders = (body, data) => {
     let updatedBody = body;
@@ -898,6 +958,131 @@ const InternshipCandidates = () => {
     setIsMOAModalOpen(true);
   };
 
+  const handleSignMOA = (userId) => {
+    setSignCandidateId(userId);
+    setIsSignModalOpen(true);
+  };
+
+  const clearSignature = () => {
+    sigCanvas.current.clear();
+  };
+
+  const saveCompanySignature = async () => {
+    if (sigCanvas.current.isEmpty()) {
+      toast.error("Please provide a signature", { autoClose: 3000 });
+      return;
+    }
+
+    try {
+      const signatureDataURL = sigCanvas.current.toDataURL();
+      const currentDate = new Date().toISOString();
+      const candidate = candidates.find(c => c.text === signCandidateId);
+
+      // Update the job post with company signature
+      await mUpdate({
+        appName: "app8657281202648",
+        collectionName: "jobpost",
+        query: { _id: id },
+        update: {
+          $set: {
+            "sectionData.jobpost.applicants.$[elem].companySigned": true,
+            "sectionData.jobpost.applicants.$[elem].companySignature": signatureDataURL,
+            "sectionData.jobpost.applicants.$[elem].companySignedDate": currentDate,
+          },
+        },
+        options: {
+          arrayFilters: [{ "elem.text": signCandidateId }],
+          upsert: false,
+        },
+      });
+
+      // If academy already signed, create MOA document
+      if (candidate?.academySigned) {
+        await createCompanyMOADocument(candidate, signatureDataURL, currentDate);
+      }
+
+      // Update local state
+      setCandidates(prev => 
+        prev.map(candidate => 
+          candidate.text === signCandidateId 
+            ? { 
+                ...candidate, 
+                companySigned: true, 
+                companySignature: signatureDataURL,
+                companySignedDate: currentDate
+              }
+            : candidate
+        )
+      );
+
+      toast.success("MOA signed successfully!", { autoClose: 3000 });
+      setIsSignModalOpen(false);
+      setSignCandidateId(null);
+    } catch (err) {
+      console.error("Error signing MOA:", err);
+      toast.error("Failed to sign MOA", { autoClose: 3000 });
+    }
+  };
+
+  const createCompanyMOADocument = async (candidate, companySignature, companySignedDate) => {
+    try {
+      // Check if MOA already exists
+      const existingMOA = await fetchSectionData({
+        dbName: "internph",
+        collectionName: "moa",
+        query: {
+          "sectionData.contactus.studentname": candidate.name,
+          "sectionData.contactus.companyname": companyData.organizationName
+        }
+      });
+
+      if (existingMOA.length > 0) {
+        toast.info("MOA document already exists", { autoClose: 3000 });
+        return;
+      }
+
+      const finalSignedDate = new Date().toLocaleDateString("en-GB");
+      const fileUrl = `MOA_${candidate.name}_${companyData.organizationName}_${finalSignedDate}.pdf`;
+
+      const moaData = {
+        studentname: candidate.name,
+        companyname: companyData.organizationName || "Company",
+        academyname: candidate.schoolName,
+        internshipTitle: jobPostData.title,
+        startDate: candidate.startdate,
+        endDate: candidate.enddate,
+        totalHours: candidate.totalHours,
+        companySignature: companySignature,
+        academySignature: candidate.academySignature,
+        companySignedDate: companySignedDate,
+        academySignedDate: candidate.academySignedDate,
+        fullySignedDate: finalSignedDate,
+        file: fileUrl
+      };
+
+      // Create MOA record using addGeneralData
+      await addGeneralData({
+        dbName: "internph",
+        collectionName: "moa",
+        data: {
+          sectionData: {
+            contactus: moaData
+          },
+          createdBy: user.id || user._id,
+          companyId: user.companyId || "",
+          createdDate: new Date().toLocaleDateString("en-GB") + ", " + new Date().toLocaleTimeString("en-GB")
+        }
+      });
+
+      toast.success("MOA document created successfully!", { autoClose: 3000 });
+    } catch (err) {
+      console.error("Error creating MOA document:", err);
+      toast.error("Failed to create MOA document", { autoClose: 3000 });
+    }
+  };
+
+
+
   // Function to print MOA document
   const handlePrintMOA = () => {
     const printContent = moaPrintRef.current;
@@ -1057,7 +1242,7 @@ const InternshipCandidates = () => {
       companyName: companyData.organizationName || "Unknown Company",
       companyAddress: companyData.organizationcity || "Unknown Address",
       companyRep: companyRepData.legalname || user.legalname || "Company Representative",
-      companyRepPosition: companyRepData.cdesignation || "Representative",
+      companyRepPosition: companyRepData.cdesignation ? companyRepData.cdesignation.replace(/&amp;quot;/g, '"').replace(/&quot;/g, '"').replace(/&amp;/g, '&') : "Representative",
       schoolName: candidate.schoolName || "Unknown",
       schoolAddress: candidate.schoolAddress || "Unknown Address",
       schoolRep: academyData.legalname || "School Representative",
@@ -1216,14 +1401,34 @@ const InternshipCandidates = () => {
                 <div>
                   <p style={{ fontWeight: '600', marginBottom: '0.5rem' }}>{moaData.companyName}</p>
                   <p style={{ marginBottom: '0.5rem' }}>By:</p>
-                  <div style={{ borderBottom: '1px solid #000000', width: '100%', height: '1.5625rem', marginBottom: '0.3125rem' }}></div>
+                  {(() => {
+                    const candidate = candidates.find(c => c.text === moaCandidateId);
+                    return candidate?.companySignature ? (
+                      <div style={{ marginBottom: '0.3125rem' }}>
+                        <img src={candidate.companySignature} alt="Company Signature" style={{ maxHeight: '50px', border: '1px solid #ccc' }} />
+                        <p style={{ fontSize: '0.75rem', color: '#666', marginTop: '0.25rem' }}>Digitally signed on {new Date(candidate.companySignedDate).toLocaleDateString()}</p>
+                      </div>
+                    ) : (
+                      <div style={{ borderBottom: '1px solid #000000', width: '100%', height: '1.5625rem', marginBottom: '0.3125rem' }}></div>
+                    );
+                  })()}
                   <p style={{ marginTop: '0.25rem' }}>{moaData.companyRep}, {moaData.companyRepPosition}</p>
                 </div>
                 
                 <div>
                   <p style={{ fontWeight: '600', marginBottom: '0.5rem' }}>{moaData.schoolName}</p>
                   <p style={{ marginBottom: '0.5rem' }}>By:</p>
-                  <div style={{ borderBottom: '1px solid #000000', width: '100%', height: '1.5625rem', marginBottom: '0.3125rem' }}></div>
+                  {(() => {
+                    const candidate = candidates.find(c => c.text === moaCandidateId);
+                    return candidate?.academySignature ? (
+                      <div style={{ marginBottom: '0.3125rem' }}>
+                        <img src={candidate.academySignature} alt="Academy Signature" style={{ maxHeight: '50px', border: '1px solid #ccc' }} />
+                        <p style={{ fontSize: '0.75rem', color: '#666', marginTop: '0.25rem' }}>Digitally signed on {new Date(candidate.academySignedDate).toLocaleDateString()}</p>
+                      </div>
+                    ) : (
+                      <div style={{ borderBottom: '1px solid #000000', width: '100%', height: '1.5625rem', marginBottom: '0.3125rem' }}></div>
+                    );
+                  })()}
                   <p style={{ marginTop: '0.25rem' }}>{moaData.schoolRep}, {moaData.schoolRepPosition}</p>
                 </div>
               </div>
@@ -1351,6 +1556,23 @@ const InternshipCandidates = () => {
                         <span className="font-medium">School:</span>{" "}
                         {candidate.schoolName}
                       </p>
+                      {candidate.status === "Selected" && (
+                        <div className="mt-2">
+                          <span className="font-medium text-sm">MOA Status:</span>
+                          <div className="flex gap-2 mt-1">
+                            <span className={`px-2 py-1 rounded-full text-xs ${
+                              candidate.companySigned ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-600"
+                            }`}>
+                              Company: {candidate.companySigned ? "Signed" : "Pending"}
+                            </span>
+                            <span className={`px-2 py-1 rounded-full text-xs ${
+                              candidate.academySigned ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-600"
+                            }`}>
+                              Academy: {candidate.academySigned ? "Signed" : "Pending"}
+                            </span>
+                          </div>
+                        </div>
+                      )}
                       {candidate.resume && (
                         <a
                           href={candidate.resume}
@@ -1408,12 +1630,22 @@ const InternshipCandidates = () => {
                         Update
                       </button>
                       {candidate.status === "Selected" && (
-                        <button
-                          onClick={() => handleViewMOA(candidate.text)}
-                          className="bg-green-500 text-white py-1 px-3 rounded-md text-sm hover:bg-green-600 transition-all"
-                        >
-                          View MOA
-                        </button>
+                        <>
+                          <button
+                            onClick={() => handleViewMOA(candidate.text)}
+                            className="bg-green-500 text-white py-1 px-3 rounded-md text-sm hover:bg-green-600 transition-all"
+                          >
+                            View MOA
+                          </button>
+                          {!candidate.companySigned && (
+                            <button
+                              onClick={() => handleSignMOA(candidate.text)}
+                              className="bg-blue-500 text-white py-1 px-3 rounded-md text-sm hover:bg-blue-600 transition-all"
+                            >
+                              Sign MOA
+                            </button>
+                          )}
+                        </>
                       )}
                     </div>
                   </div>
@@ -1632,6 +1864,72 @@ const InternshipCandidates = () => {
             candidate={candidates.find((c) => c.text === moaCandidateId)}
           />
         )}
+      </Modal>
+
+      {/* Company Signature Modal */}
+      <Modal
+        isOpen={isSignModalOpen}
+        onRequestClose={() => setIsSignModalOpen(false)}
+        className="bg-white p-6 rounded-lg max-w-2xl mx-auto mt-20"
+        overlayClassName="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
+      >
+        <h2 className="text-2xl font-bold mb-4 text-gray-800">
+          Sign MOA Agreement
+        </h2>
+        {signCandidateId && (
+          <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+            {(() => {
+              const candidate = candidates.find(c => c.text === signCandidateId);
+              return (
+                <>
+                  <p><strong>Student:</strong> {candidate?.name}</p>
+                  <p><strong>Company:</strong> {companyData.organizationName}</p>
+                  <p><strong>Internship:</strong> {jobPostData.title}</p>
+                </>
+              );
+            })()}
+          </div>
+        )}
+        
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Company Representative Signature
+          </label>
+          <div className="border-2 border-gray-300 rounded-lg">
+            <SignatureCanvas
+              ref={sigCanvas}
+              canvasProps={{
+                width: 500,
+                height: 200,
+                className: 'signature-canvas'
+              }}
+            />
+          </div>
+          <p className="text-xs text-gray-500 mt-1">
+            Please sign above to approve this MOA agreement
+          </p>
+        </div>
+
+        <div className="flex gap-4">
+          <button
+            onClick={clearSignature}
+            className="bg-gray-500 text-white py-2 px-4 rounded-md hover:bg-gray-600 transition-all"
+          >
+            Clear
+          </button>
+          <button
+            onClick={saveCompanySignature}
+            className="bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition-all"
+          >
+            Sign & Save
+          </button>
+          <button
+            onClick={() => setIsSignModalOpen(false)}
+            className="border border-gray-400 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-100 transition-all"
+          >
+            Cancel
+          </button>
+        </div>
       </Modal>
     </div>
   );

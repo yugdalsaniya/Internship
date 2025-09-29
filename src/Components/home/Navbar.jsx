@@ -252,6 +252,15 @@ const Navbar = () => {
                       </Link>
                     </>
                   )}
+                  {role === "academy" && (
+                    <Link
+                      to="/academy-moa"
+                      onClick={() => setUserDropdownOpen(false)}
+                      className="block px-4 py-2 text-xs sm:text-sm text-gray-800 hover:bg-gray-100"
+                    >
+                      MOA Agreements
+                    </Link>
+                  )}
                   <button
                     onClick={handleLogout}
                     className="w-full text-left px-4 py-2 text-xs sm:text-sm text-gray-800 hover:bg-gray-100"
