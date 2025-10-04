@@ -1,9 +1,78 @@
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Hero from "../Components/home/Hero";
-import backgroundImg from "../assets/Hero/banner.jpg";
+import bannerImage from "../assets/Hero/banner4.png";
 import { FaPhoneAlt, FaEnvelope, FaClock, FaMapMarkerAlt } from "react-icons/fa";
 
-export default function InternshipPage() {
+export default function ContactUsPage() {
+  const [mapCenter, setMapCenter] = useState(null);
+  const [address, setAddress] = useState("iSquare Building, 15 Meralco Ave, Ortigas Center, Pasig, 1600 Metro Manila, Philippines");
+  const mapRef = useRef(null);
+  const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "AIzaSyCu9YGSvrE22iUL4Xhe3ISk-B0r8FTW9jI"; // Replace with your actual API key or use env variable
+
+  // Load Google Maps script and geocode the address
+  useEffect(() => {
+    const loadGoogleMapsScript = () => {
+      return new Promise((resolve, reject) => {
+        if (window.google && window.google.maps) {
+          resolve();
+          return;
+        }
+        const existingScript = document.querySelector(
+          'script[src*="maps.googleapis.com/maps/api/js"]'
+        );
+        if (existingScript) {
+          existingScript.addEventListener("load", resolve);
+          return;
+        }
+        const script = document.createElement("script");
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places`;
+        script.async = true;
+        script.defer = true;
+        script.onload = () => resolve();
+        script.onerror = () =>
+          reject(new Error("Failed to load Google Maps API"));
+        document.head.appendChild(script);
+      });
+    };
+
+    const geocodeAddress = (address) => {
+      if (!window.google || !window.google.maps) return;
+      const geocoder = new window.google.maps.Geocoder();
+      geocoder.geocode({ address }, (results, status) => {
+        if (status === "OK" && results[0]) {
+          const location = results[0].geometry.location;
+          setMapCenter({ lat: location.lat(), lng: location.lng() });
+        } else {
+          console.error("Geocode failed: ", status);
+        }
+      });
+    };
+
+    loadGoogleMapsScript()
+      .then(() => {
+        geocodeAddress(address);
+      })
+      .catch((err) => {
+        console.error("Error loading Google Maps:", err);
+      });
+  }, [address]);
+
+  // Initialize the map when mapCenter changes
+  useEffect(() => {
+    if (mapCenter && mapRef.current && window.google && window.google.maps) {
+      const map = new window.google.maps.Map(mapRef.current, {
+        center: mapCenter,
+        zoom: 15,
+        mapTypeId: "roadmap",
+      });
+      new window.google.maps.Marker({
+        position: mapCenter,
+        map,
+        title: "Office Location",
+      });
+    }
+  }, [mapCenter]);
+
   return (
     <div className="bg-white text-[#0B0B0B]">
       {/* Hero Section */}
@@ -12,7 +81,7 @@ export default function InternshipPage() {
         subtitle="Reach Out Anytime: Let’s Turn Your Vision into Reality!"
         searchFields={[]}
         stats={[]}
-        backgroundImage={backgroundImg}
+        backgroundImage={bannerImage}
         gradient="linear-gradient(to right, rgba(249, 220, 223, 0.8), rgba(181, 217, 211, 0.8))"
       />
 
@@ -25,8 +94,7 @@ export default function InternshipPage() {
             Succeed. We Promise That
           </h2>
           <p className="text-sm text-gray-500 mb-8 max-w-md">
-            Pellentesque arcu facilisis nunc mi proin. Dignissim mattis in lectus tincidunt tincidunt
-            ultrices. Diam convallis morbi pellentesque adipiscing
+            Reach out to unlock your potential with expert guidance.
           </p>
 
           {/* Contact Grid */}
@@ -37,7 +105,7 @@ export default function InternshipPage() {
               </div>
               <div>
                 <p className="font-semibold text-sm text-[#0B0B0B]">Call for inquiry</p>
-                <p className="text-[#6A6A8E]">+91 9876543210</p>
+                <p className="text-[#6A6A8E]">+63 906 568 7199</p>
               </div>
             </div>
             <div className="flex gap-3 items-start">
@@ -46,7 +114,7 @@ export default function InternshipPage() {
               </div>
               <div>
                 <p className="font-semibold text-sm text-[#0B0B0B]">Send us email</p>
-                <p className="text-[#6A6A8E]">hana4intern@gmail.com</p>
+                <p className="text-[#6A6A8E]">info@inturnshp.com</p>
               </div>
             </div>
             <div className="flex gap-3 items-start">
@@ -64,7 +132,7 @@ export default function InternshipPage() {
               </div>
               <div>
                 <p className="font-semibold text-sm text-[#0B0B0B]">Office</p>
-                <p className="text-[#6A6A8E]">Work24 Near, Gulbai tekra BRTS</p>
+                <p className="text-[#6A6A8E]">{address}</p>
               </div>
             </div>
           </div>
@@ -118,18 +186,14 @@ export default function InternshipPage() {
         </div>
       </section>
 
-      {/* Embedded Map: Work24, Gulbai Tekra BRTS */}
+      {/* Dynamic Map */}
       <section className="px-4 pb-12">
         <div className="max-w-6xl mx-auto rounded-xl overflow-hidden shadow">
-          <iframe
-            title="Work24 Gulbai Tekra Map"
-            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3672.076826390422!2d72.54853157548116!3d23.020457679167142!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x395e84f4bde53d13%3A0xe2b1a3d60d54759d!2sWork24%20-%20Coworking%20Space%20%26%20Offices!5e0!3m2!1sen!2sin!4v1717088324366!5m2!1sen!2sin"
-            width="100%"
-            height="350"
-            allowFullScreen=""
-            loading="lazy"
-            referrerPolicy="no-referrer-when-downgrade"
-          ></iframe>
+          <div
+            ref={mapRef}
+            style={{ width: "100%", height: "350px" }}
+            className="rounded-xl"
+          ></div>
         </div>
       </section>
     </div>

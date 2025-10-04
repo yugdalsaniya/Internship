@@ -136,7 +136,6 @@ const PersonalDetails = ({ userData, updateCompletionStatus }) => {
           setIsCompleted(isFormComplete);
           if (updateCompletionStatus) {
             updateCompletionStatus('Personal Details', isFormComplete);
-            console.log('Updated completion status for Personal Details:', isFormComplete);
           }
         } else {
           // Fetch hobbies even if user data is not found
@@ -159,8 +158,9 @@ const PersonalDetails = ({ userData, updateCompletionStatus }) => {
         }
       } catch (error) {
         console.error('Error fetching user data or hobbies:', error);
-        setError('Failed to load data. Please try again.');
-        toast.error('Failed to load data. Please try again.', {
+        const errorMessage = 'Failed to load data. Please try again.';
+        setError(errorMessage);
+        toast.error(errorMessage, {
           position: 'top-right',
           autoClose: 3000,
         });
@@ -173,7 +173,7 @@ const PersonalDetails = ({ userData, updateCompletionStatus }) => {
     fetchUserData();
   }, [userData?.userid, updateCompletionStatus, navigate]);
 
-  // Google Maps Autocomplete (unchanged)
+  // Google Maps Autocomplete
   useEffect(() => {
     const loadGoogleMapsScript = () => {
       return new Promise((resolve, reject) => {
@@ -203,6 +203,13 @@ const PersonalDetails = ({ userData, updateCompletionStatus }) => {
       .then(() => {
         if (!window.google?.maps?.places) {
           console.error("Google Maps places library not loaded");
+          const errorMessage = "Google Maps API failed to load. Location suggestions unavailable.";
+          setError(errorMessage);
+          toast.error(errorMessage, {
+            position: "top-right",
+            autoClose: 5000,
+          });
+          setTimeout(() => setError(""), 5000);
           return;
         }
         currentAutocompleteRef.current = new window.google.maps.places.Autocomplete(
@@ -215,13 +222,25 @@ const PersonalDetails = ({ userData, updateCompletionStatus }) => {
         );
         currentAutocompleteRef.current.addListener("place_changed", () => {
           const place = currentAutocompleteRef.current.getPlace();
-          setFormData((prev) => ({
-            ...prev,
-            currentAddress: {
-              ...prev.currentAddress,
-              location: place.formatted_address || place.name || "",
-            },
-          }));
+          if (place && (place.formatted_address || place.name)) {
+            setFormData((prev) => ({
+              ...prev,
+              currentAddress: {
+                ...prev.currentAddress,
+                location: place.formatted_address || place.name || "",
+              },
+            }));
+          } else {
+            console.warn("No valid place selected for current address");
+            // Optionally, set an error or clear the location
+            setFormData((prev) => ({
+              ...prev,
+              currentAddress: {
+                ...prev.currentAddress,
+                location: "",
+              },
+            }));
+          }
         });
 
         if (!formData.copyAddress) {
@@ -235,28 +254,35 @@ const PersonalDetails = ({ userData, updateCompletionStatus }) => {
           );
           permanentAutocompleteRef.current.addListener("place_changed", () => {
             const place = permanentAutocompleteRef.current.getPlace();
-            setFormData((prev) => ({
-              ...prev,
-              permanentAddress: {
-                ...prev.permanentAddress,
-                location: place.formatted_address || place.name || "",
-              },
-            }));
+            if (place && (place.formatted_address || place.name)) {
+              setFormData((prev) => ({
+                ...prev,
+                permanentAddress: {
+                  ...prev.permanentAddress,
+                  location: place.formatted_address || place.name || "",
+                },
+              }));
+            } else {
+              console.warn("No valid place selected for permanent address");
+              setFormData((prev) => ({
+                ...prev,
+                permanentAddress: {
+                  ...prev.permanentAddress,
+                  location: "",
+                },
+              }));
+            }
           });
         }
       })
       .catch((err) => {
         console.error("Error loading Google Maps:", err);
-        setError(
-          "Google Maps API failed to load. Location suggestions unavailable."
-        );
-        toast.error(
-          "Google Maps API failed to load. Location suggestions unavailable.",
-          {
-            position: "top-right",
-            autoClose: 5000,
-          }
-        );
+        const errorMessage = "Google Maps API failed to load. Location suggestions unavailable.";
+        setError(errorMessage);
+        toast.error(errorMessage, {
+          position: "top-right",
+          autoClose: 5000,
+        });
         setTimeout(() => setError(""), 5000);
       });
 
@@ -338,8 +364,52 @@ const PersonalDetails = ({ userData, updateCompletionStatus }) => {
     });
   };
 
+  const isValidDate = (dateStr) => {
+    if (!dateStr) return true; // Allow empty DOB as it's not required
+    const date = new Date(dateStr);
+    const today = new Date();
+    const minYear = 1900;
+
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+      return false;
+    }
+
+    // Extract year, month, day
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1; // getMonth() is 0-based
+    const day = date.getDate();
+
+    // Check year (not before 1900, not in future)
+    if (year < minYear || date > today) {
+      return false;
+    }
+
+    // Check month (1-12)
+    if (month < 1 || month > 12) {
+      return false;
+    }
+
+    // Check day based on month
+    const daysInMonth = new Date(year, month, 0).getDate();
+    if (day < 1 || day > daysInMonth) {
+      return false;
+    }
+
+    return true;
+  };
+
   const handleChange = (field, value, isPermanent = false) => {
     setError('');
+    if (field === 'dob' && value) {
+      if (!isValidDate(value)) {
+        toast.error('Please enter a valid date of birth (1900 or later, not in the future).', {
+          position: 'top-right',
+          autoClose: 3000,
+        });
+        return;
+      }
+    }
     if (field in formData) {
       setFormData({ ...formData, [field]: value });
     } else {
@@ -391,6 +461,10 @@ const PersonalDetails = ({ userData, updateCompletionStatus }) => {
       );
       return false;
     }
+    if (formData.dob && !isValidDate(formData.dob)) {
+      setError('Please enter a valid date of birth (1900 or later, not in the future).');
+      return false;
+    }
     return true;
   };
 
@@ -440,7 +514,6 @@ const PersonalDetails = ({ userData, updateCompletionStatus }) => {
         options: { upsert: false, writeConcern: { w: 'majority' } },
       });
 
-      console.log('mUpdate response for PersonalDetails:', response);
 
       if (
         response &&
@@ -467,8 +540,9 @@ const PersonalDetails = ({ userData, updateCompletionStatus }) => {
       }
     } catch (error) {
       console.error('Error updating data:', error);
-      setError(error.message || 'Failed to update personal details. Please try again.');
-      toast.error(error.message || 'Failed to update personal details. Please try again.', {
+      const errorMessage = error.message || 'Failed to update personal details. Please try again.';
+      setError(errorMessage);
+      toast.error(errorMessage, {
         position: 'top-right',
         autoClose: 3000,
       });
@@ -508,6 +582,7 @@ const PersonalDetails = ({ userData, updateCompletionStatus }) => {
             handleChange(field, e.target.value, section === 'permanentAddress')
           }
           ref={inputRef}
+          max={type === 'date' ? getCurrentDate() : undefined}
           className="w-full border rounded-lg p-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10"
           disabled={isLoading || (section === 'permanentAddress' && formData.copyAddress)}
         />
@@ -570,7 +645,6 @@ const PersonalDetails = ({ userData, updateCompletionStatus }) => {
     </div>
   );
 
-  console.log('Rendering PersonalDetails:', { isCompleted, formData });
 
   return (
     <div className="bg-white rounded-xl shadow-md">

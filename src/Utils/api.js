@@ -5,10 +5,7 @@ const API_URL = "https://crmapi.conscor.com/api";
 const DB_NAME = "internph";
 const API_KEY = "LHCHoE0IlCOuESA4VQuJ";
 
-
-
-
-// Role ID to name mapping (for normalizing login response)
+// Role ID to name mapping
 const roleNames = {
   1747825619417: "student",
   1747723485001: "company",
@@ -21,6 +18,7 @@ export const fetchSectionData = async (params) => {
   const {
     collectionName,
     query = {},
+    lookups = [],
     projection = {},
     limit = 0,
     skip = 0,
@@ -40,6 +38,7 @@ export const fetchSectionData = async (params) => {
         dbName: DB_NAME,
         collectionName,
         query,
+        lookups,
         projection,
         limit,
         skip,
@@ -87,7 +86,6 @@ export const addGeneralData = async ({ dbName, collectionName, data }) => {
       }
     );
 
-    console.log("addGeneralData API Response:", response.data);
     return response.data;
   } catch (error) {
     console.error("Error while calling the adddata API:", {
@@ -116,7 +114,6 @@ export const uploadAndStoreFile = async ({
     formData.append("user_id", userId);
     formData.append("folderName", moduleName);
 
-    console.log("Uploading File:", file.name);
 
     const token = localStorage.getItem("accessToken");
     if (!token) {
@@ -135,7 +132,6 @@ export const uploadAndStoreFile = async ({
       }
     );
 
-    console.log("Upload Response (Raw):", response.data);
     return response.data;
   } catch (error) {
     console.error("Error uploading file:", {
@@ -152,6 +148,91 @@ export const uploadAndStoreFile = async ({
   }
 };
 
+export const sendEmailTemplate = async (formData, toast) => {
+  try {
+    const url = `${API_URL}/v1/dynamic/email/send-email`;
+    const payload = {
+      appName: "app8657281202648",
+      username: formData.email,
+      smtpId: formData.smtpId || "1750933648545",
+      templateId: formData.templateId,
+      data: formData.data || {},
+      category: formData.category || "primary",
+    };
+
+    if (formData.subject) {
+      payload.subject = formData.subject;
+    }
+
+    const headers = {
+      "Content-Type": "application/json",
+      "x-api-key": API_KEY,
+      Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+    };
+
+
+    const response = await axios.post(url, payload, { headers });
+
+    if (response.data.success) {
+      toast.success("Email sent successfully");
+    } else {
+      console.warn("Email sent but success flag is false:", response.data);
+      toast.warn("Email sent but may not have processed correctly.");
+    }
+    return response.data;
+  } catch (error) {
+    console.error("Error sending email:", {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status,
+      headers: error.response?.headers,
+      requestData: formData,
+    });
+    toast.error(`Error sending email: ${error.response?.data?.message || error.message || "Unknown error"}`);
+    throw error.response?.data || { message: "Failed to send email" };
+  }
+};
+
+export const sendRawEmail = async (formData, toast) => {
+  try {
+    const url = `${API_URL}/v1/dynamic/email/sendmail`;
+    const payload = {
+      appName: formData.appName || "app8657281202648",
+      smtpId: formData.smtpId || "1750933648545",
+      to: formData.to,
+      subject: formData.subject,
+      html: formData.html,
+    };
+
+    const headers = {
+      "Content-Type": "application/json",
+      "x-api-key": API_KEY,
+      Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+    };
+
+
+    const response = await axios.post(url, payload, { headers });
+
+    if (response.data.success) {
+      toast.success("Raw email sent successfully");
+    } else {
+      console.warn("Raw email sent but success flag is false:", response.data);
+      toast.warn("Raw email sent but may not have processed correctly.");
+    }
+    return response.data;
+  } catch (error) {
+    console.error("Error sending raw email:", {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status,
+      headers: error.response?.headers,
+      requestData: formData,
+    });
+    toast.error(`Error sending raw email: ${error.response?.data?.message || error.message || "Unknown error"}`);
+    throw error.response?.data || { message: "Failed to send raw email" };
+  }
+};
+
 export const signup = async (userData) => {
   try {
     const response = await axios.post(
@@ -164,7 +245,6 @@ export const signup = async (userData) => {
         },
       }
     );
-    console.log("Signup API response:", response.data);
     return response.data;
   } catch (error) {
     console.error("Error during signup:", {
@@ -182,7 +262,7 @@ export const signupCompany = async (userData) => {
   try {
     const accessToken = localStorage.getItem(`${userData.appName}_accessToken`);
     const response = await axios.post(
-      "https://crmapi.conscor.com/api/v1/auth/hana/signup",
+      `${API_URL}/v1/auth/hana/signup`,
       userData,
       {
         headers: {
@@ -191,7 +271,6 @@ export const signupCompany = async (userData) => {
         },
       }
     );
-    console.log("Company Signup API response:", response.data);
     return response.data;
   } catch (error) {
     console.error("Error during company signup:", {
@@ -224,7 +303,6 @@ export const verifyOtp = async (otpData) => {
         },
       }
     );
-    console.log("Verify OTP API response:", response.data);
     return response.data;
   } catch (error) {
     console.error("Error verifying OTP:", {
@@ -273,7 +351,6 @@ export const login = async (credentials) => {
       user: normalizedUser,
     };
 
-    console.log("Login API response:", normalizedResponse);
     return normalizedResponse;
   } catch (error) {
     console.error("Error during login:", {
@@ -361,13 +438,7 @@ export const mUpdate = async ({
     if (!accessToken) {
       throw new Error("Authorization token is missing. Please log in again.");
     }
-    console.log("mUpdate request:", {
-      appName,
-      collectionName,
-      query,
-      update,
-      options,
-    });
+    
     const response = await axios.post(
       `${API_URL}/v1/dynamic/mupdate`,
       {
@@ -385,12 +456,7 @@ export const mUpdate = async ({
         },
       }
     );
-    console.log("mUpdate response:", {
-      data: response.data,
-      matchedCount: response.data.matchedCount,
-      modifiedCount: response.data.modifiedCount,
-      upsertedId: response.data.upsertedId,
-    });
+   
     return response.data;
   } catch (error) {
     console.error("Error in mUpdate:", {
@@ -402,16 +468,44 @@ export const mUpdate = async ({
     throw error.response?.data || { message: "Failed to update data" };
   }
 };
-window.mUpdate = mUpdate;
+
+export const updateSectionData = async ({ dbName, collectionName, id, updateData }) => {
+  try {
+    const accessToken = localStorage.getItem("accessToken");
+    if (!accessToken) {
+      throw new Error("Authorization token is missing. Please log in again.");
+    }
+
+    const response = await mUpdate({
+      appName: "app8657281202648",
+      collectionName,
+      query: { _id: id },
+      update: { $set: updateData },
+      options: { upsert: false },
+    });
+
+  
+
+    return response;
+  } catch (error) {
+    console.error("Error in updateSectionData:", {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status,
+      headers: error.response?.headers,
+    });
+    throw error.response?.data || { message: "Failed to update internship status" };
+  }
+};
 
 const generateOtp = () => {
-  return Math.floor(1000 + Math.random() * 9000); // Generate 4-digit OTP
+  return Math.floor(1000 + Math.random() * 9000);
 };
 
 export const sendOtp = async (email) => {
   try {
     const otpValue = generateOtp();
-    localStorage.setItem("generatedOtp", otpValue); // Save OTP in local storage
+    localStorage.setItem("generatedOtp", otpValue);
 
     const response = await axios.post(
       `${API_URL}/v1/dynamic/email/send-otp`,
@@ -427,7 +521,6 @@ export const sendOtp = async (email) => {
       }
     );
 
-    console.log("Send OTP API response:", response.data);
     return { success: true, message: "OTP sent to your email.", otp: otpValue };
   } catch (error) {
     console.error("Error sending OTP:", {

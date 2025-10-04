@@ -1,20 +1,19 @@
-import React from 'react'
-import Navbar from '../Components/home/Navbar'
-import { Outlet } from 'react-router-dom';
-import Footer from '../Components/home/Footer';
-
+import React from "react";
+import { Outlet, useLocation } from "react-router-dom";
+import Navbar from "../Components/home/Navbar";
+import Footer from "../Components/home/Footer";
 
 export default function MainLayout() {
+  const location = useLocation();
+  const hideFooter = location.pathname.startsWith("/editprofile");
+
   return (
     <>
-      
-<Navbar />
-     <main>
+      <Navbar />
+      <main>
         <Outlet />
-     </main>
-    <Footer />
-
-
+      </main>
+      {!hideFooter && <Footer />}
     </>
-  )
+  );
 }

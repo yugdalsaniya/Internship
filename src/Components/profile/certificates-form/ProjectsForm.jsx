@@ -31,12 +31,7 @@ const ProjectsForm = ({ onBack, existingProject, isEditing }) => {
   const today = new Date().toISOString().split("T")[0];
 
   useEffect(() => {
-    console.log(
-      "ProjectsForm useEffect: isEditing=",
-      isEditing,
-      "existingProject=",
-      existingProject
-    );
+  
     // Populate form data if editing an existing project
     if (isEditing && existingProject) {
       setFormData({
@@ -67,7 +62,6 @@ const ProjectsForm = ({ onBack, existingProject, isEditing }) => {
       try {
         const user = JSON.parse(userString);
         setUserId(user.userid);
-        console.log("User ID set:", user.userid);
       } catch (parseError) {
         console.error("Error parsing user data:", parseError);
         toast.error("Invalid user data. Please log in again.", {
@@ -212,7 +206,6 @@ const ProjectsForm = ({ onBack, existingProject, isEditing }) => {
       errors.push("End date cannot be in the future.");
 
     if (errors.length > 0) {
-      console.log("Validation errors:", errors);
       toast.error(errors.join(" "), {
         position: "top-right",
         autoClose: 5000,
@@ -223,7 +216,6 @@ const ProjectsForm = ({ onBack, existingProject, isEditing }) => {
   };
 
   const handleSave = async () => {
-    console.log("handleSave called with formData:", formData);
     try {
       setIsLoading(true);
 
@@ -256,7 +248,6 @@ const ProjectsForm = ({ onBack, existingProject, isEditing }) => {
         updatedAt: new Date().toISOString(),
       };
 
-      console.log("Project data to save:", projectData);
 
       const existingUserData = await fetchSectionData({
         collectionName: "appuser",
@@ -290,7 +281,6 @@ const ProjectsForm = ({ onBack, existingProject, isEditing }) => {
         options: { upsert: false },
       });
 
-      console.log("Project saved successfully");
       toast.success(
         isEditing
           ? "Project updated successfully!"

@@ -1,21 +1,27 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import Hero from "../assets/Hero/banner.jpg";
 import {
   FaMapMarkerAlt,
   FaRegClock,
-  FaRupeeSign,
   FaUser,
   FaGraduationCap,
   FaTags,
   FaFacebookF,
   FaLinkedinIn,
+  FaMoneyBillWave,
 } from "react-icons/fa";
 import { MdWork, MdDateRange } from "react-icons/md";
 import { PiTwitterLogoFill } from "react-icons/pi";
 import { fetchSectionData } from "../Utils/api";
 import { formatDistanceToNow, parse, format } from "date-fns";
 import { generateInternshipSlug } from "../Utils/slugify";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+
+// Google Maps API key from environment
+const GOOGLE_MAPS_API_KEY =
+  import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "YOUR_API_KEY_HERE";
 
 const InternshipDetailPage = () => {
   const { id: urlId } = useParams();
@@ -27,31 +33,84 @@ const InternshipDetailPage = () => {
   const [hasApplied, setHasApplied] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [mapCoordinates, setMapCoordinates] = useState({
+    lat: null,
+    lng: null,
+  });
 
-  const actualId = urlId.split('-').pop();
+  const mapRef = useRef(null); // Reference for map container
+  const actualId = urlId.split("-").pop();
   const user = JSON.parse(localStorage.getItem("user")) || {};
   const userId = user.userid;
 
+  // Load Google Maps API script
+  const loadGoogleMapsScript = () => {
+    return new Promise((resolve, reject) => {
+      if (window.google && window.google.maps) {
+        resolve();
+        return;
+      }
+      const existingScript = document.querySelector(
+        'script[src*="maps.googleapis.com/maps/api/js"]'
+      );
+      if (existingScript) {
+        existingScript.addEventListener("load", resolve);
+        return;
+      }
+      const script = document.createElement("script");
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places`;
+      script.async = true;
+      script.defer = true;
+      script.onload = () => resolve();
+      script.onerror = () =>
+        reject(new Error("Failed to load Google Maps API"));
+      document.head.appendChild(script);
+    });
+  };
+
+  // Geocode location string to coordinates
+  const geocodeLocation = async (locationString) => {
+    if (!locationString || !window.google?.maps) return null;
+    const geocoder = new window.google.maps.Geocoder();
+    return new Promise((resolve, reject) => {
+      geocoder.geocode(
+        { address: locationString, componentRestrictions: { country: "ph" } },
+        (results, status) => {
+          if (status === "OK" && results[0]) {
+            const { lat, lng } = results[0].geometry.location;
+            resolve({ lat: lat(), lng: lng() });
+          } else {
+            reject(new Error(`Geocoding failed: ${status}`));
+          }
+        }
+      );
+    });
+  };
+
+  // Fetch internship data and geocode location
   useEffect(() => {
     const fetchCategoriesAndInternship = async () => {
       try {
+        // Fetch categories
         const categoriesData = await fetchSectionData({
           collectionName: "category",
           query: {},
         });
-
-        const categoryMapping = categoriesData.reduce((map, category) => {
-          const categoryId = category._id;
-          const categoryName = category.sectionData?.category?.titleofinternship || "Unknown Category";
-          map[categoryId] = categoryName;
-          map[categoryName.toUpperCase()] = categoryName;
-          return map;
-        }, {
-          "Education": "Education",
-          "Tourism": "Tourism",
-        });
+        const categoryMapping = categoriesData.reduce(
+          (map, category) => {
+            const categoryId = category._id;
+            const categoryName =
+              category.sectionData?.category?.titleofinternship ||
+              "Unknown Category";
+            map[categoryId] = categoryName;
+            map[categoryName.toUpperCase()] = categoryName;
+            return map;
+          },
+          { Education: "Education", Tourism: "Tourism" }
+        );
         setCategoryMap(categoryMapping);
 
+        // Fetch internship data
         const internshipData = await fetchSectionData({
           collectionName: "jobpost",
           query: { _id: actualId },
@@ -60,6 +119,7 @@ const InternshipDetailPage = () => {
         if (internshipData && internshipData.length > 0) {
           setInternship(internshipData[0]);
 
+          // Check if user has applied
           if (userId && user.role === "student") {
             const applicationData = await fetchSectionData({
               collectionName: "applications",
@@ -68,16 +128,16 @@ const InternshipDetailPage = () => {
             setHasApplied(applicationData.length > 0);
           }
 
-          const currentSubtype = internshipData[0]?.sectionData?.jobpost?.subtype;
+          // Fetch related internships
+          const currentSubtype =
+            internshipData[0]?.sectionData?.jobpost?.subtype;
           const relatedQuery = {
             "sectionData.jobpost.type": "Internship",
             _id: { $ne: actualId },
           };
-
           if (currentSubtype) {
             relatedQuery["sectionData.jobpost.subtype"] = currentSubtype;
           }
-
           const relatedData = await fetchSectionData({
             collectionName: "jobpost",
             limit: 3,
@@ -85,21 +145,69 @@ const InternshipDetailPage = () => {
             order: -1,
             sortedBy: "createdDate",
           });
-
           setRelatedInternships(relatedData);
+
+          // Geocode internship location
+          const locationString =
+            internshipData[0]?.sectionData?.jobpost?.location;
+          if (locationString) {
+            try {
+              const coords = await geocodeLocation(locationString);
+              setMapCoordinates(coords);
+            } catch (err) {
+              console.error("Geocoding error:", err);
+              setMapCoordinates({ lat: 14.5995, lng: 120.9842 }); // Fallback to Manila
+            }
+          } else {
+            setMapCoordinates({ lat: 14.5995, lng: 120.9842 }); // Fallback to Manila
+          }
         } else {
           setError("Internship not found.");
         }
       } catch (err) {
         setError("Error fetching internship details.");
-        console.error("InternshipDetailPage API Error:", err);
+        console.error("InternshipDetailPage API Error:", {
+          message: err.message,
+          response: err.response?.data,
+          status: err.response?.status,
+        });
       } finally {
         setLoading(false);
       }
     };
 
-    fetchCategoriesAndInternship();
+    // Load Google Maps and fetch data
+    loadGoogleMapsScript()
+      .then(() => fetchCategoriesAndInternship())
+      .catch((err) => {
+        console.error("Error loading Google Maps:", err);
+        setError("Failed to load map. Please try again later.");
+        fetchCategoriesAndInternship();
+      });
   }, [actualId, userId]);
+
+  // Initialize Google Map
+  useEffect(() => {
+    if (
+      mapCoordinates.lat &&
+      mapCoordinates.lng &&
+      window.google?.maps &&
+      mapRef.current
+    ) {
+      const map = new window.google.maps.Map(mapRef.current, {
+        center: { lat: mapCoordinates.lat, lng: mapCoordinates.lng },
+        zoom: 12,
+        mapTypeId: "roadmap",
+      });
+
+      new window.google.maps.Marker({
+        position: { lat: mapCoordinates.lat, lng: mapCoordinates.lng },
+        map,
+        title:
+          internship?.sectionData?.jobpost?.location || "Internship Location",
+      });
+    }
+  }, [mapCoordinates, internship]);
 
   const getRelativeTime = (dateString) => {
     try {
@@ -114,11 +222,11 @@ const InternshipDetailPage = () => {
     }
   };
 
-  const formatDeadline = (deadline) => {
+  const formatDate = (dateString) => {
     try {
-      return format(new Date(deadline), "MMM dd, yyyy");
+      return format(new Date(dateString), "MMM dd, yyyy");
     } catch (err) {
-      console.error("Error formatting deadline:", err);
+      console.error("Error formatting date:", err);
       return "Not specified";
     }
   };
@@ -131,104 +239,107 @@ const InternshipDetailPage = () => {
     }
   };
 
-  if (error) return <div className="mx-4 py-4 text-sm sm:mx-12 sm:text-base">{error}</div>;
+  const cleanMarkdown = (markdown) => {
+    if (!markdown || typeof markdown !== "string") {
+      return "No content available.";
+    }
+    return markdown
+      .replace(/\\+/g, "")
+      .replace(/\n{2,}/g, "\n\n")
+      .replace(/^\s*-\s*$/gm, "")
+      .replace(/^\s*-\s*\[\s*\]\s*$/gm, "")
+      .replace(/^\s*-\s*\[x\]\s*$/gm, "");
+  };
+
+  if (error) {
+    return (
+      <div className="mx-4 py-4 text-sm md:text-base text-red-600">{error}</div>
+    );
+  }
 
   if (loading) {
     return (
       <div className="min-h-screen bg-white">
-        {/* Hero Section Skeleton */}
-        <div className="w-full h-[200px] sm:h-[300px] bg-gray-200 animate-pulse relative flex items-center justify-center">
-          <div className="relative max-w-[90%] sm:max-w-7xl mx-auto z-10 flex flex-col items-center text-center">
-            <div className="w-3/4 h-8 sm:h-10 bg-gray-300 rounded-md mb-3"></div>
-            <div className="w-1/2 h-4 sm:h-6 bg-gray-300 rounded-md"></div>
+        <div className="w-full h-48 sm:h-64 md:h-80 bg-gray-200 animate-pulse relative flex items-center justify-center">
+          <div className="relative max-w-[95%] md:max-w-7xl mx-auto z-10 flex flex-col items-center text-center">
+            <div className="w-3/4 h-6 sm:h-8 md:h-10 bg-gray-300 rounded-md mb-2 sm:mb-3"></div>
+            <div className="w-1/2 h-4 sm:h-5 md:h-6 bg-gray-300 rounded-md"></div>
           </div>
         </div>
-        {/* Content Skeleton */}
-        <div className="max-w-[95%] mx-auto px-3 py-6 sm:max-w-7xl sm:px-4 sm:py-10">
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-6 sm:mb-10 gap-4">
-            <div className="w-full sm:w-3/4">
-              <div className="w-1/4 h-3 bg-gray-200 rounded-md mb-2 animate-pulse"></div>
-              <div className="w-3/4 h-6 sm:h-8 bg-gray-200 rounded-md mb-2 animate-pulse"></div>
-              <div className="w-1/2 h-4 sm:h-5 bg-gray-200 rounded-md mb-3 animate-pulse"></div>
-              <div className="flex flex-wrap gap-3 sm:gap-5">
-                <div className="w-20 h-4 bg-gray-200 rounded-md animate-pulse"></div>
-                <div className="w-20 h-4 bg-gray-200 rounded-md animate-pulse"></div>
-                <div className="w-20 h-4 bg-gray-200 rounded-md animate-pulse"></div>
-                <div className="w-20 h-4 bg-gray-200 rounded-md animate-pulse"></div>
+        <div className="max-w-[95%] mx-auto px-2 sm:px-4 py-4 sm:py-6 md:py-8">
+          <div className="flex flex-col md:flex-row md:justify-between md:data controls: md:items-start mb-4 sm:mb-6 md:mb-8 gap-3 sm:gap-4">
+            <div className="w-full">
+              <div className="w-1/3 h-3 bg-gray-200 rounded-md mb-2 animate-pulse"></div>
+              <div className="w-3/4 h-6 sm:h-7 md:h-8 bg-gray-200 rounded-md mb-2 animate-pulse"></div>
+              <div className="w-1/2 h-4 sm:h-5 bg-gray-200 rounded-md mb-2 animate-pulse"></div>
+              <div className="flex flex-wrap gap-2 sm:gap-3">
+                <div className="w-16 sm:w-20 h-4 bg-gray-200 rounded-md animate-pulse"></div>
+                <div className="w-16 sm:w-20 h-4 bg-gray-200 rounded-md animate-pulse"></div>
+                <div className="w-16 sm:w-20 h-4 bg-gray-200 rounded-md animate-pulse"></div>
+                <div className="w-16 sm:w-20 h-4 bg-gray-200 rounded-md animate-pulse"></div>
               </div>
             </div>
-            <div className="w-full sm:w-32 h-10 bg-gray-200 rounded-md animate-pulse"></div>
+            <div className="w-full md w-32 h-8 sm:h-9 md:h-10 bg-gray-200 rounded-md animate-pulse"></div>
           </div>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-10">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
             <div className="lg:col-span-2">
-              {/* Description Skeleton */}
-              <div className="mb-6 sm:mb-8">
-                <div className="w-1/3 h-5 sm:h-6 bg-gray-200 rounded-md mb-3 animate-pulse"></div>
-                <div className="w-full h-4 bg-gray-200 rounded-md mb-2 animate-pulse"></div>
-                <div className="w-full h-4 bg-gray-200 rounded-md mb-2 animate-pulse"></div>
-                <div className="w-3/4 h-4 bg-gray-200 rounded-md animate-pulse"></div>
+              <div className="mb-4 sm:mb-6">
+                <div className="w-1/3 h-5 sm:h-6 bg-gray-200 rounded-md mb-2 animate-pulse"></div>
+                <div className="w-full h-4 sm:h-5 bg-gray-200 rounded-md mb-2 animate-pulse"></div>
+                <div className="w-full h-4 sm:h-5 bg-gray-200 rounded-md mb-2 animate-pulse"></div>
+                <div className="w-3/4 h-4 sm:h-5 bg-gray-200 rounded-md animate-pulse"></div>
               </div>
-              {/* Responsibilities Skeleton */}
-              <div className="mb-6 sm:mb-8">
-                <div className="w-1/3 h-5 sm:h-6 bg-gray-200 rounded-md mb-3 animate-pulse"></div>
-                <div className="w-full h-4 bg-gray-200 rounded-md mb-2 animate-pulse"></div>
-                <div className="w-5/6 h-4 bg-gray-200 rounded-md mb-2 animate-pulse"></div>
-                <div className="w-4/5 h-4 bg-gray-200 rounded-md animate-pulse"></div>
+              <div className="mb-4 sm:mb-6">
+                <div className="w-1/3 h-5 sm:h-6 bg-gray-200 rounded-md mb-2 animate-pulse"></div>
+                <div className="w-full h-4 sm:h-5 bg-gray-200 rounded-md mb-2 animate-pulse"></div>
+                <div className="w-5/6 h-4 sm:h-5 bg-gray-200 rounded-md mb-2 animate-pulse"></div>
+                <div className="w-4/5 h-4 sm:h-5 bg-gray-200 rounded-md animate-pulse"></div>
               </div>
-              {/* Tags Skeleton */}
-              <div className="mb-6 sm:mb-10">
-                <div className="w-1/4 h-5 sm:h-6 bg-gray-200 rounded-md mb-3 animate-pulse"></div>
-                <div className="flex flex-wrap gap-2 mb-4">
+              <div className="mb-4 sm:mb-6">
+                <div className="w-1/4 h-5 sm:h-6 bg-gray-200 rounded-md mb-2 animate-pulse"></div>
+                <div className="flex flex-wrap gap-2 mb-3">
                   <div className="w-16 h-6 bg-gray-200 rounded-md animate-pulse"></div>
                   <div className="w-16 h-6 bg-gray-200 rounded-md animate-pulse"></div>
                   <div className="w-16 h-6 bg-gray-200 rounded-md animate-pulse"></div>
                 </div>
               </div>
-              {/* Related Internships Skeleton */}
               <div>
-                <div className="w-1/2 h-6 sm:h-7 bg-gray-200 rounded-md mb-4 animate-pulse"></div>
+                <div className="w-1/2 h-6 sm:h-7 bg-gray-200 rounded-md mb-3 animate-pulse"></div>
                 {[1, 2, 3].map((_, idx) => (
                   <div
                     key={idx}
-                    className="border p-3 sm:p-4 rounded-lg mb-3 sm:mb-4 bg-gray-100 flex flex-col sm:flex-row sm:justify-between sm:items-center animate-pulse"
+                    className="border p-2 sm:p-3 rounded-lg mb-3 sm:mb-4 bg-gray-100 flex flex-col sm:flex-row sm:justify-between sm:items-center animate-pulse"
                   >
-                    <div className="w-full sm:pr-3">
-                      <div className="w-1/4 h-3 bg-gray-200 rounded-md mb-2"></div>
-                      <div className="w-3/4 h-5 bg-gray-200 rounded-md mb-2"></div>
-                      <div className="w-1/2 h-4 bg-gray-200 rounded-md mb-2"></div>
-                      <div className="flex flex-wrap gap-3">
-                        <div className="w-20 h-4 bg-gray-200 rounded-md"></div>
-                        <div className="w-20 h-4 bg-gray-200 rounded-md"></div>
-                        <div className="w-20 h-4 bg-gray-200 rounded-md"></div>
-                      </div>
+                    <div className="w-full sm:pr-2">
+                      <div className="w-1/3 h-3 bg-gray-200 rounded-md mb-1"></div>
+                      <div className="w-3/4 h-5 sm:h-6 bg-gray-200 rounded-md mb-1"></div>
+                      <div className="w-1/2 h-4 sm:h-5 bg-gray-200 rounded-md mb-1"></div>
                     </div>
-                    <div className="w-full sm:w-32 h-8 bg-gray-200 rounded-md mt-3 sm:mt-0"></div>
+                    <div className="w-full sm:w-32 h-8 sm:h-9 bg-gray-200 rounded-md mt-2 sm:mt-0"></div>
                   </div>
                 ))}
               </div>
             </div>
-            <div className="space-y-4 sm:space-y-6">
-              {/* Overview Skeleton */}
-              <div className="bg-gray-100 p-4 sm:p-5 rounded-2xl animate-pulse">
-                <div className="w-1/3 h-5 sm:h-6 bg-gray-200 rounded-md mb-3"></div>
-                <div className="space-y-2 sm:space-y-3">
-                  <div className="w-full h-4 bg-gray-200 rounded-md"></div>
-                  <div className="w-full h-4 bg-gray-200 rounded-md"></div>
-                  <div className="w-full h-4 bg-gray-200 rounded-md"></div>
-                  <div className="w-full h-4 bg-gray-200 rounded-md"></div>
-                  <div className="w-full h-4 bg-gray-200 rounded-md"></div>
+            <div className="space-y-3 sm:space-y-4">
+              <div className="bg-gray-100 p-3 sm:p-4 rounded-2xl animate-pulse">
+                <div className="w-1/3 h-5 sm:h-6 bg-gray-200 rounded-md mb-2"></div>
+                <div className="space-y-1 sm:space-y-2">
+                  <div className="w-full h-4 sm:h-5 bg-gray-200 rounded-md"></div>
+                  <div className="w-full h-4 sm:h-5 bg-gray-200 rounded-md"></div>
+                  <div className="w-full h-4实用性:5 bg-gray-200 rounded-md"></div>
+                  <div className="w-full h-4 sm:h-5 bg-gray-200 rounded-md"></div>
+                  <div className="w-full h-4 sm:h-5 bg-gray-200 rounded-md"></div>
                 </div>
-                <div className="w-full h-32 bg-gray-200 rounded-lg mt-4"></div>
+                <div className="w-full h-20 sm:h-24 md:h-32 bg-gray-200 rounded-lg mt-2"></div>
               </div>
-              {/* Contact Form Skeleton */}
-              <div className="bg-gray-100 p-4 sm:p-5 rounded-2xl animate-pulse">
-                <div className="w-1/3 h-5 sm:h-6 bg-gray-200 rounded-md mb-3"></div>
-                <div className="space-y-2 sm:space-y-3">
-                  <div className="w-full h-8 bg-gray-200 rounded-md"></div>
-                  <div className="w-full h-8 bg-gray-200 rounded-md"></div>
-                  <div className="w-full h-8 bg-gray-200 rounded-md"></div>
-                  <div className="w-full h-16 bg-gray-200 rounded-md"></div>
-                  <div className="w-full h-8 bg-gray-200 rounded-md"></div>
+              <div className="bg-gray-100 p-3 sm:p-4 rounded-2xl animate-pulse">
+                <div className="w-1/3 h-5 sm:h-6 bg-gray-200 rounded-md mb-2"></div>
+                <div className="space-y-1 sm:space-y-2">
+                  <div className="w-full h-7 sm:h-8 bg-gray-200 rounded-md"></div>
+                  <div className="w-full h-7 sm:h-8 bg-gray-200 rounded-md"></div>
+                  <div className="w-full h-7 sm:h-8 bg-gray-200 rounded-md"></div>
+                  <div className="w-full h-10 sm:h-12 bg-gray-200 rounded-md"></div>
+                  <div className="w-full h-7 sm:h-8 bg-gray-200 rounded-md"></div>
                 </div>
               </div>
             </div>
@@ -239,10 +350,19 @@ const InternshipDetailPage = () => {
   }
 
   const jobpost = internship?.sectionData?.jobpost;
-  const relativeTime = internship?.createdDate ? getRelativeTime(internship.createdDate) : "Just now";
-  const categoryName = categoryMap[jobpost?.subtype] || jobpost?.subtype || "Unknown Category";
-  const applicationDeadline = jobpost?.applicationdeadline ? formatDeadline(jobpost.applicationdeadline) : "Not specified";
-  const degreesList = jobpost?.degree?.length > 0 ? jobpost.degree.join(", ") : "Not specified";
+  const relativeTime = internship?.createdDate
+    ? getRelativeTime(internship.createdDate)
+    : "Just now";
+  const categoryName =
+    categoryMap[jobpost?.subtype] || jobpost?.subtype || "Unknown Category";
+  const applicationDeadline = jobpost?.applicationdeadline
+    ? formatDate(jobpost.applicationdeadline)
+    : "Not specified";
+  const degreesList =
+    jobpost?.degree?.length > 0 ? jobpost.degree.join(", ") : "Not specified";
+  const postedDate = internship?.createdDate
+    ? formatDate(internship.createdDate)
+    : "Not specified";
 
   const formattedRelatedInternships = relatedInternships.map((job) => {
     const slug = generateInternshipSlug(
@@ -260,106 +380,169 @@ const InternshipDetailPage = () => {
         ? `${job.sectionData.jobpost.salary}`
         : "Not specified",
       location: job.sectionData?.jobpost?.location || "Unknown",
-      relativeTime: job.createdDate ? getRelativeTime(job.createdDate) : "Just now",
+      relativeTime: job.createdDate
+        ? getRelativeTime(job.createdDate)
+        : "Just now",
+      createdDate: job.createdDate
+        ? formatDate(job.createdDate)
+        : "Not specified",
       slug: slug,
     };
   });
 
-  const showApplyButton = user.role !== "company" || (user.role === "company" && user.companyId !== internship?.companyId);
+  const showApplyButton =
+    user.role !== "company" ||
+    (user.role === "company" && user.companyId !== internship?.companyId);
 
   return (
-    <div>
+    <div className="min-h-screen bg-white">
+      {/* Hero Section */}
       <div
-        className="w-full h-[200px] sm:h-[300px] bg-cover bg-center relative flex items-center justify-center text-center"
+        className="w-full h-48 sm:h-64 md:h-80 lg:h-96 bg-cover bg-center relative flex items-center justify-center text-center"
         style={{
           backgroundImage: `linear-gradient(to right, rgba(249, 220, 223, 0.8), rgba(181, 217, 211, 0.8)), url(${Hero})`,
           backgroundSize: "cover",
           backgroundPosition: "center",
         }}
       >
-        <div className="relative flex flex-col items-center text-center max-w-[90%] sm:max-w-7xl mx-auto z-10">
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#050748] mb-2 sm:mb-3">
+        <div className="relative flex flex-col items-center text-center max-w-[95%] mx-auto px-2 sm:px-4 md:px-6 z-10">
+          <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-[#050748] mb-2 sm:mb-3 line-clamp-2">
             {jobpost?.title || "Unknown Role"}
           </h1>
-          <p className="text-sm sm:text-base md:text-lg text-[#45457D] mb-4 sm:mb-6 max-w-xl sm:max-w-3xl">
+          <p className="text-sm sm:text-base md:text-lg text-[#45457D] mb-2 sm:mb-3 max-w-xs sm:max-w-md md:max-w-xl">
             {jobpost?.company || "Unknown Company"}
           </p>
+          <div className="flex flex-wrap justify-center gap-1 sm:gap-2 text-xs sm:text-sm md:text-base text-[#45457D]">
+            <span>{jobpost?.time || "Unknown Subtype"}</span>
+            <span className="hidden sm:inline">|</span>
+            <span>{jobpost?.location || "Unknown Location"}</span>
+            <span className="hidden sm:inline">|</span>
+            <span>
+              {categoryMap[jobpost?.subtype] ||
+                jobpost?.subtype ||
+                "Unknown Category"}
+            </span>
+            <span className="hidden sm:inline">|</span>
+            <span>{jobpost?.salary || "Unknown Salary"}</span>
+          </div>
         </div>
       </div>
-      <div className="max-w-[95%] mx-auto px-3 py-6 sm:max-w-7xl sm:px-4 sm:py-10">
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-6 sm:mb-10 gap-4">
-          <div>
-            <div className="text-xs text-gray-400 mb-1">{relativeTime}</div>
-            <h1 className="text-xl sm:text-3xl font-bold mb-1">{jobpost?.title || "Unknown Role"}</h1>
-            <p className="text-sm sm:text-base text-gray-500">{jobpost?.company || "Unknown Company"}</p>
-            <div className="flex flex-wrap gap-3 sm:gap-5 text-xs sm:text-sm text-gray-500 mt-2 sm:mt-3">
-              <div className="flex items-center gap-1">
-                <MdWork />
-                {jobpost?.time || "Unknown"}
+      {/* Main Content */}
+      <div className="max-w-[95%] mx-auto px-2 sm:px-4 md:px-6 py-4 sm:py-6 md:py-8">
+        <style>
+          {`
+            .markdown-content {
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+              line-height: 1.8;
+              color: #374151;
+              word-break: break-word;
+            }
+            .markdown-content p { margin: 1rem 0; }
+            .markdown-content ul { list-style-type: disc; padding-left: 1.5rem; margin: 1rem 0; }
+            .markdown-content ol { list-style-type: decimal; padding-left: 1.5rem; margin: 1rem 0; }
+            .markdown-content ul li, .markdown-content ol li { margin: 0.5rem 0; }
+            .markdown-content ul li.task-list-item { list-style-type: none; position: relative; padding-left: 1.5rem; }
+            .markdown-content ul li.task-list-item::before { content: '☐'; position: absolute; left: 0; color: #374151; }
+            .markdown-content ul li.task-list-item.checked::before { content: '☑'; color: #374151; }
+            .markdown-content h1, .markdown-content h2, .markdown-content h3 { font-weight: 600; margin: 1rem 0; }
+            .markdown-content h1 { font-size: 1.5rem; }
+            .markdown-content h2 { font-size: 1.25rem; }
+            .markdown-content h3 { font-size: 1.125rem; }
+            .markdown-content strong { font-weight: 700; }
+            .markdown-content em { font-style: italic; }
+            .markdown-content a { color: #2563eb; text-decoration: underline; }
+            .markdown-content code { background-color: #f3f4f6; padding: 0.1rem 0.3rem; border-radius: 3px; font-family: 'Courier New', Courier, monospace; }
+            .markdown-content pre { background-color: #f3f4f6; padding: 0.75rem; border-radius: 5px; overflow-x: auto; word-wrap: break-word; }
+          `}
+        </style>
+        <div className="flex flex-col md:flex-row md:justify-between md:items-start mb-4 sm:mb-6 md:mb-8 gap-3 sm:gap-4">
+          <div className="w-full">
+            <div className="text-xs sm:text-sm text-gray-400 mb-1">
+              {relativeTime}
+            </div>
+            <div className="text-xs sm:text-sm md:text-base text-gray-500">
+              <div className="flex items-center gap-1 mb-1">
+                <MdDateRange className="text-sm sm:text-base" />
+                <span>Posted on: {postedDate}</span>
               </div>
               <div className="flex items-center gap-1">
-                <FaRupeeSign />
-                {jobpost?.salary ? `${jobpost.salary}` : "Not specified"}
-              </div>
-              <div className="flex items-center gap-1">
-                <FaMapMarkerAlt />
-                {jobpost?.location || "Unknown"}
-              </div>
-              <div className="flex items-center gap-1">
-                <MdDateRange />
-                Deadline: {applicationDeadline}
+                <MdDateRange className="text-sm sm:text-base" />
+                <span>Deadline: {applicationDeadline}</span>
               </div>
             </div>
           </div>
-          {showApplyButton && (
-            hasApplied ? (
+          {showApplyButton &&
+            (hasApplied ? (
               <button
-                className="bg-green-500 text-white px-4 py-2 rounded-md text-sm cursor-not-allowed w-full sm:w-auto"
+                className="bg-green-500 text-white px-4 py-2 rounded-md text-sm cursor-not-allowed w-full md:w-auto mt-3 md:mt-0 whitespace-nowrap"
                 disabled
               >
                 You Have Applied
               </button>
             ) : (
               <button
-                className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-4 py-2 rounded-md text-sm w-full sm:w-auto"
+                className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-4 py-2 rounded-md text-sm w-full md:w-auto mt-3 md:mt-0 whitespace-nowrap"
                 onClick={handleApplyClick}
               >
                 Apply Internship
-              </button>  
-            )
-          )}
+              </button>
+            ))}
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-10">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
           <div className="lg:col-span-2">
-            <section className="mb-6 sm:mb-8">
-              <h2 className="text-lg sm:text-xl font-semibold mb-2">Internship Description</h2>
-              <p className="text-sm sm:text-base text-gray-700">
-                {jobpost?.description || "No description available."}
-              </p>
+            <section className="mb-4 sm:mb-6">
+              <h2 className="text-lg sm:text-xl font-semibold mb-2">
+                Internship Description
+              </h2>
+              <div className="text-sm sm:text-base text-gray-700 markdown-content">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {cleanMarkdown(jobpost?.description) ||
+                    "No description available."}
+                </ReactMarkdown>
+              </div>
             </section>
-            {jobpost?.keyResponsibilities && jobpost.keyResponsibilities.length > 0 && (
-              <section className="mb-6 sm:mb-8">
-                <h2 className="text-lg sm:text-xl font-semibold mb-2">Key Responsibilities</h2>
-                <ul className="list-disc ml-4 sm:ml-5 text-gray-700 space-y-1 text-sm sm:text-base">
-                  {jobpost.keyResponsibilities.map((responsibility, index) => (
-                    <li key={index}>{responsibility.text}</li>
-                  ))}
-                </ul>
+            {jobpost?.keyResponsibilities && (
+              <section className="mb-4 sm:mb-6">
+                <h2 className="text-lg sm:text-xl font-semibold mb-2">
+                  Key Responsibilities
+                </h2>
+                <div className="text-sm sm:text-base text-gray-700 markdown-content">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {cleanMarkdown(jobpost.keyResponsibilities) ||
+                      "No responsibilities provided."}
+                  </ReactMarkdown>
+                </div>
               </section>
             )}
-            {jobpost?.professionalSkills && jobpost.professionalSkills.length > 0 && (
-              <section className="mb-6 sm:mb-8">
-                <h2 className="text-lg sm:text-xl font-semibold mb-2">Professional Skills</h2>
-                <ul className="list-disc ml-4 sm:ml-5 text-gray-700 space-y-1 text-sm sm:text-base">
-                  {jobpost.professionalSkills.map((skill, index) => (
-                    <li key={index}>{skill.text}</li>
-                  ))}
-                </ul>
+            {jobpost?.professionalSkills && (
+              <section className="mb-4 sm:mb-6">
+                <h2 className="text-lg sm:text-xl font-semibold mb-2">
+                  Professional Skills
+                </h2>
+                <div className="text-sm sm:text-base text-gray-700 markdown-content">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {cleanMarkdown(jobpost.professionalSkills) ||
+                      "No skills provided."}
+                  </ReactMarkdown>
+                </div>
               </section>
             )}
-            <section className="mb-6 sm:mb-10">
-              <h2 className="text-lg sm:text-xl font-semibold mb-2">Tags:</h2>
-              <div className="flex flex-wrap gap-2 mb-3 sm:mb-4">
+            {jobpost?.applicationinstructions && (
+              <section className="mb-4 sm:mb-6">
+                <h2 className="text-lg sm:text-xl font-semibold mb-2">
+                  Application Instructions
+                </h2>
+                <div className="text-sm sm:text-base text-gray-700 markdown-content">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {cleanMarkdown(jobpost.applicationinstructions) ||
+                      "No instructions provided."}
+                  </ReactMarkdown>
+                </div>
+              </section>
+            )}
+            <section className="mb-4 sm:mb-6">
+              <h2 className="text-lg sm:text-xl font-semibold mb-2">Tags</h2>
+              <div className="flex flex-wrap gap-2 mb-3">
                 {[
                   jobpost?.time || "Full Time",
                   categoryName,
@@ -373,42 +556,63 @@ const InternshipDetailPage = () => {
                   </span>
                 ))}
               </div>
-              <div className="flex items-center gap-3 sm:gap-4">
-                <p className="text-xs sm:text-sm font-medium">Share Internship:</p>
-                <FaFacebookF className="text-[#4267B2] text-base sm:text-lg cursor-pointer" title="Facebook" />
-                <PiTwitterLogoFill className="text-black text-base sm:text-lg cursor-pointer" title="X" />
-                <FaLinkedinIn className="text-[#0077b5] text-base sm:text-lg cursor-pointer" title="LinkedIn" />
+              <div className="flex items-center gap-2 sm:gap-3">
+                <p className="text-xs sm:text-sm font-medium">
+                  Share Internship:
+                </p>
+                <FaFacebookF
+                  className="text-[#4267B2] text-base sm:text-lg cursor-pointer"
+                  title="Facebook"
+                />
+                <PiTwitterLogoFill
+                  className="text-black text-base sm:text-lg cursor-pointer"
+                  title="X"
+                />
+                <FaLinkedinIn
+                  className="text-[#0077b5] text-base sm:text-lg cursor-pointer"
+                  title="LinkedIn"
+                />
               </div>
             </section>
             {formattedRelatedInternships.length > 0 && (
               <section>
-                <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-5">Related Internships</h2>
+                <h2 className="text-lg sm:text-xl md:text-2xl font-bold mb-3 sm:mb-4">
+                  Related Internships
+                </h2>
                 {formattedRelatedInternships.map((item) => (
                   <div
                     key={item.id}
-                    className="border p-3 sm:p-4 rounded-lg shadow-sm flex flex-col sm:flex-row sm:justify-between sm:items-center mb-3 sm:mb-4 bg-white min-h-[100px] sm:min-h-[120px]"
+                    className="border p-2 sm:p-3 md:p-4 rounded-lg shadow-sm flex flex-col sm:flex-row sm:justify-between sm:items-center mb-3 sm:mb-4 bg-white"
                   >
-                    <div className="flex flex-col justify-between h-full w-full sm:pr-3">
+                    <div className="flex flex-col justify-between w-full sm:pr-3">
                       <div>
-                        <div className="text-xs text-gray-600 mb-1">{item.relativeTime}</div>
-                        <h3 className="text-base sm:text-lg font-semibold line-clamp-1">{item.title}</h3>
-                        <div className="text-gray-500 text-xs sm:text-sm line-clamp-1">{item.company}</div>
-                        <div className="flex flex-wrap gap-3 sm:gap-4 text-xs sm:text-sm text-gray-500 mt-1 sm:mt-2">
+                        <div className="text-xs sm:text-sm text-gray-600 mb-1">
+                          {item.relativeTime} (Posted on: {item.createdDate})
+                        </div>
+                        <h3 className="text-base sm:text-lg font-semibold line-clamp-1">
+                          {item.title}
+                        </h3>
+                        <div className="text-gray-500 text-xs sm:text-sm line-clamp-1">
+                          {item.company}
+                        </div>
+                        <div className="flex flex-wrap gap-1 sm:gap-2 text-xs sm:text-sm md:text-base text-gray-500 mt-1 sm:mt-2">
                           <div className="flex items-center gap-1">
-                            <MdWork /> {item.time}
+                            <MdWork className="text-sm sm:text-base" />{" "}
+                            {item.time}
                           </div>
                           <div className="flex items-center gap-1">
-                            <FaRupeeSign /> {item.salary}
+                            <span>₱</span> {item.salary}
                           </div>
                           <div className="flex items-center gap-1">
-                            <FaMapMarkerAlt /> {item.location}
+                            <FaMapMarkerAlt className="text-sm sm:text-base" />{" "}
+                            {item.location}
                           </div>
                         </div>
                       </div>
                     </div>
                     <button
                       onClick={() => navigate(`/internshipdetail/${item.slug}`)}
-                      className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm whitespace-nowrap mt-3 sm:mt-0 w-full sm:w-auto"
+                      className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-2 sm:px-3 md:px-4 py-1 sm:py-2 rounded-md text-xs sm:text-sm md:text-base whitespace-nowrap mt-2 sm:mt-0 w-full sm:w-auto"
                     >
                       Internship Details
                     </button>
@@ -417,80 +621,98 @@ const InternshipDetailPage = () => {
               </section>
             )}
           </div>
-          <div className="space-y-4 sm:space-y-6">
-            <div className="bg-gradient-to-br from-[#fff7f9] to-[#f4f9fd] p-4 sm:p-5 rounded-2xl shadow-md">
-              <h3 className="font-semibold text-base sm:text-lg mb-2 sm:mb-3">Internship Overview</h3>
-              <div className="space-y-2 sm:space-y-3 text-xs sm:text-sm text-[#333]">
+          <div className="space-y-3 sm:space-y-4">
+            <div className="bg-gradient-to-br from-[#fff7f9] to-[#f4f9fd] p-3 sm:p-4 md:p-5 rounded-2xl shadow-md">
+              <h3 className="font-semibold text-base sm:text-lg mb-2 sm:mb-3">
+                Internship Overview
+              </h3>
+              <div className="space-y-1 sm:space-y-2 text-xs sm:text-sm md:text-base text-[#333]">
                 <div className="flex items-center gap-2">
-                  <FaUser className="text-blue-500" />
-                  <span>Internship Title: {jobpost?.title || "Unknown Role"}</span>
+                  <FaUser className="text-blue-500 text-sm sm:text-base" />
+                  <span>
+                    Internship Title: {jobpost?.title || "Unknown Role"}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <MdWork className="text-blue-500" />
+                  <MdWork className="text-blue-500 text-sm sm:text-base" />
                   <span>Internship Type: {jobpost?.time || "Unknown"}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <FaTags className="text-blue-500" />
+                  <FaTags className="text-blue-500 text-sm sm:text-base" />
                   <span>Category: {categoryName}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <FaRegClock className="text-blue-500" />
-                  <span>Experience: {jobpost?.experiencelevel || "Not specified"}</span>
+                  <FaRegClock className="text-blue-500 text-sm sm:text-base" />
+                  <span>
+                    Experience: {jobpost?.experiencelevel || "Not specified"}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <FaGraduationCap className="text-blue-500" />
+                  <FaGraduationCap className="text-blue-500 text-sm sm:text-base" />
                   <span>Degrees: {degreesList}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <FaRupeeSign className="text-blue-500" />
-                  <span>Offered Salary: {jobpost?.salary ? `${jobpost.salary}` : "Not specified"}</span>
+                  <span className="text-blue-500 text-sm sm:text-base pl-1">
+                    ₱
+                  </span>
+                  <span className="pl-1">
+                    Offered Salary:{" "}
+                    {jobpost?.salary ? `${jobpost.salary}` : "Not specified"}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <FaMapMarkerAlt className="text-blue-500" />
+                  <FaMapMarkerAlt className="text-blue-500 text-sm sm:text-base" />
                   <span>Location: {jobpost?.location || "Unknown"}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <MdDateRange className="text-blue-500" />
+                  <MdDateRange className="text-blue-500 text-sm sm:text-base" />
+                  <span>Posted on: {postedDate}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <MdDateRange className="text-blue-500 text-sm sm:text-base" />
                   <span>Application Deadline: {applicationDeadline}</span>
                 </div>
               </div>
-              <div className="mt-3 sm:mt-4">
-                <iframe
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3670.005659035671!2d72.57136231578908!3d23.022505984951904!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x395e84f8f2a83b8f%3A0xc4bb2c3cccf0f0f!2sAhmedabad%2C%20Gujarat!5e0!3m2!1sen!2sin!4v1625215052287!5m2!1sen!2sin"
-                  width="100%"
-                  height="150"
-                  style={{ border: 0 }}
-                  allowFullScreen=""
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                  className="w-full rounded-lg"
-                ></iframe>
+              <div className="mt-2 sm:mt-3">
+                {mapCoordinates.lat && mapCoordinates.lng ? (
+                  <div
+                    ref={mapRef}
+                    className="w-full rounded-lg"
+                    style={{ height: "200px", minHeight: "180px" }}
+                  ></div>
+                ) : (
+                  <div className="w-full h-[120px] bg-gray-200 rounded-lg flex items-center justify-center text-sm text-gray-600">
+                    Loading map...
+                  </div>
+                )}
               </div>
             </div>
-            <div className="bg-gradient-to-br from-[#fff7f9] to-[#f4f9fd] p-4 sm:p-5 rounded-2xl shadow-md">
-              <h3 className="font-semibold text-base sm:text-lg mb-3 sm:mb-4">Send Us Message</h3>
-              <div className="space-y-2 sm:space-y-3 text-xs sm:text-sm">
+            <div className="bg-gradient-to-br from-[#fff7f9] to-[#f4f9fd] p-3 sm:p-4 md:p-5 rounded-2xl shadow-md">
+              <h3 className="font-semibold text-base sm:text-lg mb-2 sm:mb-3">
+                Send Us Message
+              </h3>
+              <div className="space-y-1 sm:space-y-2 text-xs sm:text-sm md:text-base">
                 <input
                   type="text"
                   placeholder="Full name"
-                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none"
+                  className="w-full p-2 sm:p-3 border border-gray-300 rounded-md focus:outline-none"
                 />
                 <input
                   type="email"
                   placeholder="Email Address"
-                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none"
+                  className="w-full p-2 sm:p-3 border border-gray-300 rounded-md focus:outline-none"
                 />
                 <input
                   type="tel"
                   placeholder="Phone Number"
-                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none"
+                  className="w-full p-2 sm:p-3 border border-gray-300 rounded-md focus:outline-none"
                 />
                 <textarea
                   placeholder="Your Message"
-                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none"
+                  className="w-full p-2 sm:p-3 border border-gray-300 rounded-md focus:outline-none"
                   rows={3}
                 ></textarea>
-                <button className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white w-full py-2 rounded-md text-xs sm:text-sm font-medium">
+                <button className="bg-indigo-500 text-white w-full py-2 sm:py-3 rounded-md text-xs sm:text-sm md:text-base font-medium">
                   Send Message
                 </button>
               </div>

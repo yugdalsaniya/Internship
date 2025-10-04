@@ -4,7 +4,7 @@ import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 import { MdVisibility, MdVisibilityOff } from 'react-icons/md';
 import logo from '../assets/Navbar/logo.png';
-import rightImage from '../assets/SignUp/wallpaper.jpg';
+import rightImage from '../assets/SignUp/wallpaper1.png';
 import { forgotPassword, verifyOtp, resetPassword } from '../Utils/api';
 
 const MySwal = withReactContent(Swal);
@@ -80,7 +80,6 @@ const ForgotPassword = () => {
         otp: otpCode,
       };
       const response = await verifyOtp(otpPayload);
-      console.log('verifyOtp response:', response); // Debug log
 
       if (response.success) {
         const tokenValue = response.token || response.accessToken || response.resetToken || response.data?.token;
@@ -233,7 +232,7 @@ const ForgotPassword = () => {
                       <img
                         src={logo}
                         alt="Internship-OJT Logo"
-                        className="h-16 w-auto mr-2"
+                        className="h-20 w-auto mr-2"
                       />
                     </div>
       </div>

@@ -1,7 +1,31 @@
-import React from 'react';
-import logo from '../../assets/Navbar/logo.png'; // Adjust the path as necessary
+import React from "react";
+import { useNavigate } from "react-router-dom";
+import logo from "../../assets/Navbar/logo.png"; // Adjust the path as necessary
 
 const Footer = () => {
+  const navigate = useNavigate();
+  const user = JSON.parse(localStorage.getItem("user")) || {};
+  const isStudent = user.role === "student";
+  const isCompany = user.role === "company";
+
+  // Handle navigation based on user role
+  const handleNavigation = (link) => {
+    if (link === "contact") {
+      navigate("/contact"); // Align with AppRoutes
+    } else if (link === "about") {
+      navigate("/about"); // Align with AppRoutes
+    } else if (link === "internships") {
+      if (isStudent) {
+        navigate("/internship"); // Align with AppRoutes
+      } else if (isCompany) {
+        navigate("/manage-internships"); // Align with AppRoutes
+      } else {
+        // Fallback for unauthenticated users
+        navigate("/internship");
+      }
+    }
+  };
+
   return (
     <footer className="bg-white text-gray-800 py-4 px-4 sm:px-12">
       <div className="flex flex-col">
@@ -12,7 +36,7 @@ const Footer = () => {
               <img
                 src={logo}
                 alt="Internship-OJT Logo"
-                className="h-16 w-auto mr-2"
+                className="h-20 w-auto mr-2"
               />
             </div>
             <div className="text-xs sm:text-sm space-y-1">
@@ -25,61 +49,93 @@ const Footer = () => {
 
           {/* Column 2: Company Links */}
           <div>
-            <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Company</h3>
+            <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">
+              Company
+            </h3>
             <ul className="space-y-1 sm:space-y-2 text-xs sm:text-sm">
               <li>
-                <a href="#" className="hover:underline">
+                <button
+                  onClick={() => handleNavigation("contact")}
+                  className="hover:underline bg-transparent border-none p-0 text-left"
+                >
                   Contact Us
-                </a>
+                </button>
               </li>
               <li>
-                <a href="#" className="hover:underline">
+                <button
+                  onClick={() => handleNavigation("internships")}
+                  className="hover:underline bg-transparent border-none p-0 text-left"
+                >
                   Internships
-                </a>
+                </button>
               </li>
               <li>
-                <a href="#" className="hover:underline">
+                <button
+                  onClick={() => handleNavigation("about")}
+                  className="hover:underline bg-transparent border-none p-0 text-left"
+                >
                   About Us
-                </a>
+                </button>
               </li>
             </ul>
           </div>
 
           {/* Column 3: Internship Categories */}
           <div>
-            <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Internship Categories</h3>
+            <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">
+              Internship Categories
+            </h3>
             <ul className="space-y-1 sm:space-y-2 text-xs sm:text-sm">
               <li>
-                <a href="#" className="hover:underline">
+                <button
+                  onClick={() => navigate("/internship?category=fresher")}
+                  className="hover:underline bg-transparent border-none p-0 text-left"
+                >
                   Fresher Internships
-                </a>
+                </button>
               </li>
               <li>
-                <a href="#" className="hover:underline">
+                <button
+                  onClick={() => navigate("/internship?category=marketing")}
+                  className="hover:underline bg-transparent border-none p-0 text-left"
+                >
                   Marketing Internships
-                </a>
+                </button>
               </li>
               <li>
-                <a href="#" className="hover:underline">
+                <button
+                  onClick={() => navigate("/internship?category=finance")}
+                  className="hover:underline bg-transparent border-none p-0 text-left"
+                >
                   Finance Internships
-                </a>
+                </button>
               </li>
               <li>
-                <a href="#" className="hover:underline">
+                <button
+                  onClick={() => navigate("/internship?category=hr")}
+                  className="hover:underline bg-transparent border-none p-0 text-left"
+                >
                   HR Internships
-                </a>
+                </button>
               </li>
               <li>
-                <a href="#" className="hover:underline">
+                <button
+                  onClick={() =>
+                    navigate("/internship?category=graphic-designer")
+                  }
+                  className="hover:underline bg-transparent border-none p-0 text-left"
+                >
                   Graphic Designer
-                </a>
+                </button>
               </li>
             </ul>
           </div>
 
           {/* Column 4: Newsletter */}
           <div>
-            <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Newsletter</h3>
+            <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">
+              Newsletter
+            </h3>
             <p className="text-xs sm:text-sm mb-3 sm:mb-4">
               Stay Updated. Subscribe for the Latest News & Insights.
             </p>
@@ -98,12 +154,15 @@ const Footer = () => {
 
         {/* Bottom Links */}
         <div className="mt-6 sm:mt-8 flex justify-end space-x-3 sm:space-x-4 text-xs sm:text-sm px-2 sm:px-4">
-          <a href="#" className="hover:underline">
+          <button
+            onClick={() => navigate("/privacy-policy")}
+            className="hover:underline bg-transparent border-none p-0 text-left"
+          >
             Privacy Policy
-          </a>
-          <a href="#" className="hover:underline">
+          </button>
+          <button className="hover:underline bg-transparent border-none p-0 text-left">
             Terms & Conditions
-          </a>
+          </button>
         </div>
       </div>
     </footer>

@@ -1,10 +1,15 @@
 import React, { useEffect, useState, useMemo, useCallback } from "react";
-import { BsBookmarkPlus, BsBookmarkFill, BsSearch, BsGeoAlt } from "react-icons/bs";
+import {
+  BsBookmarkPlus,
+  BsBookmarkFill,
+  BsSearch,
+  BsGeoAlt,
+} from "react-icons/bs";
 import { useNavigate, useLocation } from "react-router-dom";
 import { fetchSectionData } from "../Utils/api";
 import { formatDistanceToNow, parse, sub } from "date-fns";
 import Hero from "../Components/home/Hero";
-import backgroundImg from "../assets/Hero/banner.jpg";
+import bannerImage from "../assets/Hero/banner1.jpg";
 import { generateInternshipSlug } from "../Utils/slugify";
 
 const InternshipPage = () => {
@@ -34,7 +39,7 @@ const InternshipPage = () => {
   // Preload background image to prevent rendering delay
   useEffect(() => {
     const preloadImage = new Image();
-    preloadImage.src = backgroundImg;
+    preloadImage.src = bannerImage;
   }, []);
 
   // Fetch categories and create categoryMap
@@ -45,16 +50,20 @@ const InternshipPage = () => {
           collectionName: "category",
           query: {},
         });
-        const categoryMapping = response.reduce((map, category) => {
-          const categoryId = category._id;
-          const categoryName = category.sectionData?.category?.titleofinternship || "Unknown";
-          map[categoryId] = categoryName;
-          map[categoryName.toUpperCase()] = categoryName;
-          return map;
-        }, {
-          Education: "Education",
-          Tourism: "Tourism",
-        });
+        const categoryMapping = response.reduce(
+          (map, category) => {
+            const categoryId = category._id;
+            const categoryName =
+              category.sectionData?.category?.titleofinternship || "Unknown";
+            map[categoryId] = categoryName;
+            map[categoryName.toUpperCase()] = categoryName;
+            return map;
+          },
+          {
+            Education: "Education",
+            Tourism: "Tourism",
+          }
+        );
         setCategoryMap(categoryMapping);
         setCategories([...new Set(Object.values(categoryMapping))]);
       } catch (err) {
@@ -73,10 +82,9 @@ const InternshipPage = () => {
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
-    const search = params.get('search')?.trim() || '';
-    const loc = params.get('location')?.trim() || '';
-    const cat = params.get('category')?.trim() || '';
-    console.log('URL Query Parameters:', { search, loc, cat });
+    const search = params.get("search")?.trim() || "";
+    const loc = params.get("location")?.trim() || "";
+    const cat = params.get("category")?.trim() || "";
     setSearchQuery(search);
     setLocationQuery(loc);
     setAppliedCategories(cat ? [cat] : []);
@@ -122,7 +130,6 @@ const InternshipPage = () => {
           order: -1,
           sortedBy: "createdDate",
         });
-        console.log('Fetched internships:', data.length);
         setInternships(data);
       } catch (err) {
         setError("Error fetching internships");
@@ -193,7 +200,7 @@ const InternshipPage = () => {
     setAppliedExperienceLevels([]);
     setAppliedDatePosted("All");
     setCurrentPage(1);
-    navigate('/internship');
+    navigate("/internship");
     window.scrollTo(0, 0);
   };
 
@@ -201,7 +208,8 @@ const InternshipPage = () => {
     const filtered = internships
       .filter((job) => {
         const isInternship = job.sectionData?.jobpost?.type === "Internship";
-        if (!isInternship) return false;
+        const isPublished = job.sectionData?.jobpost?.published !== false; // Only show published internships
+        if (!isInternship || !isPublished) return false;
 
         const jobCategory = (
           categoryMap[job.sectionData?.jobpost?.subtype] ||
@@ -257,13 +265,19 @@ const InternshipPage = () => {
         const searchLower = searchQuery.toLowerCase().trim();
         const matchesSearch =
           searchQuery === "" ||
-          (job.sectionData?.jobpost?.title || "").toLowerCase().includes(searchLower) ||
-          (job.sectionData?.jobpost?.company || "").toLowerCase().includes(searchLower);
+          (job.sectionData?.jobpost?.title || "")
+            .toLowerCase()
+            .includes(searchLower) ||
+          (job.sectionData?.jobpost?.company || "")
+            .toLowerCase()
+            .includes(searchLower);
 
         const locationLower = locationQuery.toLowerCase().trim();
         const matchesLocation =
           locationQuery === "" ||
-          (job.sectionData?.jobpost?.location || "").toLowerCase().includes(locationLower);
+          (job.sectionData?.jobpost?.location || "")
+            .toLowerCase()
+            .includes(locationLower);
 
         const jobSalary = parseFloat(job.sectionData?.jobpost?.salary) || 0;
         const matchesSalary = jobSalary <= maxSalary;
@@ -357,7 +371,7 @@ const InternshipPage = () => {
         }
       });
 
-    console.log('Filtered internships:', filtered.length, { searchQuery, locationQuery, appliedCategories });
+    
     return filtered;
   }, [
     internships,
@@ -434,7 +448,7 @@ const InternshipPage = () => {
           subtitle="Empower Your Future: Unleash Limitless Career Possibilities!"
           searchFields={[]}
           stats={[]}
-          backgroundImage={backgroundImg}
+          backgroundImage={bannerImage}
           gradient="linear-gradient(to right, rgba(249, 220, 223, 0.8), rgba(181, 217, 211, 0.8))"
           showPostButton={true}
         />
@@ -467,7 +481,8 @@ const InternshipPage = () => {
         subtitle="Empower Your Future: Unleash Limitless Career Possibilities!"
         searchFields={[]}
         stats={[]}
-        backgroundImage={backgroundImg}
+        backgroundImage={bannerImage}
+        backgroundPosition="10% 20%"
         gradient="linear-gradient(to right, rgba(249, 220, 223, 0.8), rgba(181, 217, 211, 0.8))"
         showPostButton={true}
       />
@@ -526,9 +541,7 @@ const InternshipPage = () => {
                 {category}
               </label>
             ))}
-            <button
-              className="w-full bg-gradient-to-r from-[#6146B6] to-[#1F93EA] text-white py-2 rounded-lg mt-2 text-sm font-semibold"
-            >
+            <button className="w-full bg-gradient-to-r from-[#6146B6] to-[#1F93EA] text-white py-2 rounded-lg mt-2 text-sm font-semibold">
               Show More
             </button>
           </div>
@@ -641,116 +654,124 @@ const InternshipPage = () => {
                   className="p-2 border text-sm rounded-lg"
                 >
                   <option value="latest">Sort by latest</option>
-                  <option value="salary-desc">Sort by salary (high to low)</option>
-                  <option value="salary-asc">Sort by salary (low to high)</option>
+                  <option value="salary-desc">
+                    Sort by salary (high to low)
+                  </option>
+                  <option value="salary-asc">
+                    Sort by salary (low to high)
+                  </option>
                   <option value="title-asc">Sort by title (A-Z)</option>
                 </select>
               </div>
-              <div className="space-y-4">
-                {paginatedInternships.map((internship) => (
-                  <div
-                    key={internship.id}
-                    className="flex flex-col bg-white rounded-lg shadow-md p-4"
-                  >
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="inline-block bg-gray-200 text-gray-800 text-xs font-medium px-2 py-0.5 rounded-full">
-                        {internship.time}
-                      </span>
-                      <button
-                        onClick={() => toggleBookmark(internship.id)}
-                        className="text-gray-600 hover:text-blue-600"
-                        aria-label={bookmarked[internship.id] ? "Remove bookmark" : "Add bookmark"}
-                      >
-                        {bookmarked[internship.id] ? (
-                          <BsBookmarkFill className="h-6 w-6" />
-                        ) : (
-                          <BsBookmarkPlus className="h-6 w-6" />
-                        )}
-                      </button>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-4">
-                          <img
-                            src={internship.logo}
-                            alt={`${internship.company} Logo`}
-                            className="w-10 h-10 rounded-full object-contain"
-                          />
-                          <div>
-                            <h3 className="text-lg font-bold text-black">
-                              {internship.role}
-                            </h3>
-                            <p className="text-sm text-gray-600">
-                              {internship.company}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex flex-wrap items-center space-x-2 mt-2 text-sm text-gray-600">
-                          <span className="flex items-center gap-1">
-                            <svg
-                              className="w-4 h-4"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                              xmlns="http://www.w3.org/2000/svg"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                              />
-                            </svg>
-                            {internship.type}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <svg
-                              className="w-4 h-4"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                              xmlns="http://www.w3.org/2000/svg"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M12 5v14M9 8h3a2 2 0 010 4H9a2 2 0 000 4h3"
-                              />
-                            </svg>
-                            {internship.salary}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <svg
-                              className="w-4 h-4"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                              xmlns="http://www.w3.org/2000/svg"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                              />
-                            </svg>
-                            {internship.location}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex items-end">
-                        <button
-                          onClick={() => handleViewDetails(internship)}
-                          className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-medium py-2 px-4 rounded-full hover:from-blue-600 hover:to-purple-700"
-                        >
-                          Internship Details
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <div className="space-y-3 md:space-y-4">
+  {paginatedInternships.map((internship) => (
+    <div
+      key={internship.id}
+      className="flex flex-col bg-white rounded-lg shadow-sm md:shadow-md p-4"
+    >
+      <div className="flex justify-between items-center mb-2">
+        <span className="inline-block bg-gray-100 md:bg-gray-200 text-gray-700 md:text-gray-800 text-xs font-medium px-2 py-1 md:py-0.5 rounded-full">
+          {internship.time}
+        </span>
+        <button
+          onClick={() => toggleBookmark(internship.id)}
+          className="text-gray-600 hover:text-blue-600"
+          aria-label={
+                          bookmarked[internship.id]
+                            ? "Remove bookmark"
+                            : "Add bookmark"
+                        }
+        >
+          {bookmarked[internship.id] ? (
+            <BsBookmarkFill className="h-5 md:h-6 w-5 md:w-6" />
+          ) : (
+            <BsBookmarkPlus className="h-5 md:h-6 w-5 md:w-6" />
+          )}
+        </button>
+      </div>
+      <div className="flex flex-col md:flex-row gap-2 md:gap-0 md:items-center">
+        <div className="flex-1">
+          <div className="flex items-center space-x-3 md:space-x-4">
+            <img
+              src={internship.logo}
+              alt={`${internship.company} Logo`}
+              className="w-10 h-10 rounded-full object-contain"
+            />
+            <div>
+              <h3 className="text-base md:text-lg font-semibold md:font-bold text-gray-900 md:text-black line-clamp-2 md:line-clamp-1">
+                {internship.role}
+              </h3>
+              <p className="text-xs md:text-sm text-gray-600 line-clamp-1">
+                {internship.company}
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 md:space-x-2 mt-2 text-xs md:text-sm text-gray-600">
+            <span className="flex items-center gap-1">
+              <svg
+                className="w-3.5 md:w-4 h-3.5 md:h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                />
+              </svg>
+              {internship.type}
+            </span>
+            <span className="flex items-center gap-1">
+              <svg
+                className="w-3.5 md:w-4 h-3.5 md:h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.657 0 3 .895 3 2s-1.343 2-3 2m0 0c-1.657 0-3 .895-3 2s1.343 2 3 2m-6 0V6m12 12V6"
+                />
+              </svg>
+              {internship.salary}
+            </span>
+            <span className="flex items-center gap-1">
+              <svg
+                className="w-3.5 md:w-4 h-3.5 md:h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                />
+              </svg>
+              {internship.location}
+            </span>
+          </div>
+        </div>
+        <div className="flex items-end mt-3 md:mt-0">
+          <button
+            onClick={() => handleViewDetails(internship)}
+            className="w-full md:w-auto bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-medium py-2 md:py-2 px-4 rounded-full hover:from-blue-600 hover:to-purple-700"
+          >
+            Internship Details
+          </button>
+        </div>
+      </div>
+    </div>
+  ))}
+</div>
               {totalPages > 1 && (
                 <div className="flex justify-between items-center mt-6">
                   <div>

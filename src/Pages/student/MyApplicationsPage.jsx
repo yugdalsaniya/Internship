@@ -39,7 +39,7 @@ const MyApplicationsPage = () => {
           dbName: 'internph',
           collectionName: "jobpost",
           query: { _id: { $in: jobIds } },
-          projection: { sectionData: 1 },
+          projection: { "sectionData.jobpost": 1, _id: 1 },
         });
 
         // Map job posts
@@ -48,12 +48,10 @@ const MyApplicationsPage = () => {
           return map;
         }, {});
 
-        // Load statuses from localStorage
-        const storedStatuses = JSON.parse(localStorage.getItem('applicationStatuses') || '{}');
-
         // Combine data
         const formattedApplications = applicationData.map((app) => {
           const job = jobPostMap[app.jobId] || {};
+          const applicant = job.applicants?.find((a) => a.text === userId) || {};
           return {
             id: app.jobId,
             applicationId: app._id,
@@ -72,8 +70,8 @@ const MyApplicationsPage = () => {
               ? format(new Date(app.appliedAt), "MMM dd, yyyy, hh:mm a")
               : "Unknown",
             by: userEmail,
-            status: storedStatuses[app._id]?.status || "Applied",
-            feedback: storedStatuses[app._id]?.feedback || "",
+            status: applicant.status || "Applied",
+            feedback: applicant.feedback || "",
           };
         });
 

@@ -1,14 +1,14 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import logo from '../../assets/Navbar/logo.png';
+import React, { useState, useEffect, useRef } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import logo from "../../assets/Navbar/logo.png";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [internshipDropdownOpen, setInternshipDropdownOpen] = useState(false);
   const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem('user')) || {};
-  const role = user.role || '';
+  const user = JSON.parse(localStorage.getItem("user")) || {};
+  const role = user.role || "";
   const userDropdownRef = useRef(null);
   const internshipDropdownRef = useRef(null);
 
@@ -25,95 +25,100 @@ const Navbar = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('user');
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
+    localStorage.removeItem("user");
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
     setUserDropdownOpen(false);
     setIsOpen(false);
-    navigate('/');
+    navigate("/");
   };
 
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (window.innerWidth >= 640) {
-        if (userDropdownOpen && userDropdownRef.current && !userDropdownRef.current.contains(event.target)) {
+        if (
+          userDropdownOpen &&
+          userDropdownRef.current &&
+          !userDropdownRef.current.contains(event.target)
+        ) {
           setUserDropdownOpen(false);
         }
-        if (internshipDropdownOpen && internshipDropdownRef.current && !internshipDropdownRef.current.contains(event.target)) {
+        if (
+          internshipDropdownOpen &&
+          internshipDropdownRef.current &&
+          !internshipDropdownRef.current.contains(event.target)
+        ) {
           setInternshipDropdownOpen(false);
         }
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [userDropdownOpen, internshipDropdownOpen]);
 
   // Define navigation links based on role
   const navLinks = {
     student: [
-      { to: '/', label: 'Home' },
-      { to: '/internship', label: 'Internships' },
-      { to: '/about', label: 'About Us' },
-      { to: '/contact', label: 'Contact Us' },
+      { to: "/", label: "Home" },
+      { to: "/internship", label: "Internships" },
+      { to: "/allmentorships", label: "Mentorships" }, // ✅ only for students
+      { to: "/about", label: "About Us" },
+      { to: "/contact", label: "Contact Us" },
     ],
     company: [
-      { to: '/', label: 'Home' },
+      { to: "/", label: "Home" },
       {
-        label: 'Internships',
+        label: "Internships",
         isDropdown: true,
         dropdownItems: [
-          { to: '/post-internship', label: 'Post Internship' },
-          { to: '/manage-internships', label: 'Manage Internships' },
+          { to: "/post-internship", label: "Post Internship" },
+          { to: "/manage-internships", label: "Manage Internships" },
         ],
       },
-      { to: '/interns', label: 'Interns' },
-      { to: '/about', label: 'About Us' },
-      { to: '/contact', label: 'Contact Us' },
+      { to: "/interns", label: "Interns" },
+      { to: "/about", label: "About Us" },
+      { to: "/contact", label: "Contact Us" },
     ],
     academy: [
-      { to: '/', label: 'Home' },
-      { to: '/courses', label: 'Courses' },
-      { to: '/about', label: 'About Us' },
-      { to: '/contact', label: 'Contact Us' },
+      { to: "/", label: "Home" },
+      { to: "/courses", label: "Courses" },
+      { to: "/about", label: "About Us" },
+      { to: "/contact", label: "Contact Us" },
     ],
     recruiter: [
-      { to: '/', label: 'Home' },
-      { to: '/internship-listings', label: 'Internship Listings' },
-      { to: '/candidates', label: 'Candidates' },
-      { to: '/about', label: 'About Us' },
-      { to: '/contact', label: 'Contact Us' },
+      { to: "/", label: "Home" },
+      { to: "/internship-listings", label: "Internship Listings" },
+      { to: "/candidates", label: "Candidates" },
+      { to: "/about", label: "About Us" },
+      { to: "/contact", label: "Contact Us" },
     ],
     mentor: [
-      { to: '/', label: 'Home' },
-      { to: '/mentorship-programs', label: 'Mentorship Programs' },
-      { to: '/about', label: 'About Us' },
-      { to: '/contact', label: 'Contact Us' },
+      { to: "/", label: "Home" },
+      { to: "/mentorship-programs", label: "Mentorship Programs" },
+      { to: "/about", label: "About Us" },
+      { to: "/contact", label: "Contact Us" },
     ],
   };
 
   // Fallback links for unauthenticated users or unknown roles
   const defaultLinks = [
-    { to: '/', label: 'Home' },
-    { to: '/internship', label: 'Internships' },
-    { to: '/about', label: 'About Us' },
-    { to: '/contact', label: 'Contact Us' },
+    { to: "/", label: "Home" },
+    { to: "/internship", label: "Internships" },
+    { to: "/about", label: "About Us" },
+    { to: "/contact", label: "Contact Us" },
   ];
 
   const links = navLinks[role] || defaultLinks;
 
   return (
-    <nav className="bg-white shadow-md py-2 px-5 sm:px-12">
+    <nav className="bg-white shadow-md py-2 px-5 sm:px-12 sticky top-0 z-50">
       <div className="flex items-center justify-between mx-auto h-12">
         <div className="flex items-center ml-0 sm:ml-4">
           <Link to="/">
-            <img
-              src={logo}
-              alt="Internship-OJT Logo"
-              className="h-16 w-auto"
-            />
+            <img src={logo} alt="Internship-OJT Logo" className="h-20 w-auto" />
           </Link>
         </div>
 
@@ -165,14 +170,18 @@ const Navbar = () => {
                 onClick={toggleUserDropdown}
                 className="w-9 sm:w-10 h-9 sm:h-10 rounded-full bg-blue-500 text-white flex items-center justify-center text-sm font-medium"
               >
-                {user.legalname?.[0]?.toUpperCase() || 'U'}
+                {user.legalname?.[0]?.toUpperCase() || "U"}
               </button>
               {userDropdownOpen && (
                 <div className="absolute right-0 mt-2 w-44 sm:w-48 bg-white border rounded-md shadow-lg py-2 z-10">
-                  <div className="px-4 py-2">
-                    <p className="text-xs sm:text-sm font-medium text-gray-800">{user.legalname}</p>
-                    <p className="text-[10px] sm:text-xs text-gray-500">{user.email}</p>
-                  </div>
+                 <div className="px-4 py-2 max-w-full">
+  <p className="text-xs sm:text-sm font-medium text-gray-800 truncate">
+    {user.legalname}
+  </p>
+  <p className="text-[10px] sm:text-xs text-gray-500 truncate">
+    {user.email}
+  </p>
+</div>
                   <Link
                     to="/editprofile"
                     onClick={() => setUserDropdownOpen(false)}
@@ -180,7 +189,7 @@ const Navbar = () => {
                   >
                     Edit Profile
                   </Link>
-                  {role === 'student' && (
+                  {role === "student" && (
                     <>
                       <Link
                         to="/my-applications"

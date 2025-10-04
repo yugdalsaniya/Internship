@@ -10,8 +10,8 @@ import mentor from "../assets/SignUp/mentor.png";
 import wallpaper1 from "../assets/SignUp/wallpaper1.png";
 import wallpaper2 from "../assets/SignUp/wallpaper2.png";
 import wallpaper3 from "../assets/SignUp/wallpaper3.jpg";
-import wallpaper4 from "../assets/SignUp/wallpaper4.jpg";
-import wallpaper5 from "../assets/SignUp/wallpaper5.jpg";
+import wallpaper4 from "../assets/SignUp/wallpaper4.png";
+import wallpaper5 from "../assets/SignUp/wallpaper5.png";
 import logo from "../assets/Navbar/logo.png";
 import { signup, signupCompany, login, sendOtp } from "../Utils/api";
 
@@ -63,6 +63,40 @@ const SignUpPage = () => {
     academy: wallpaper3,
     mentor: wallpaper4,
     recruiter: wallpaper5,
+  };
+
+  const roleDescriptions = {
+    student: [
+      "Find internships, OJTs, and entry-level jobs",
+      "Apply directly with a smart Inturnshp profile",
+      "Learn with free workshops and short courses",
+      "Get career-ready through real-world experiences",
+    ],
+    company: [
+      "Post internships and job openings",
+      "Search from a pool of pre-screened candidates",
+      "Build your employer brand on campus",
+      "Manage hiring with simple, effective tools",
+    ],
+    academy: [
+      "Track internship activity & student growth",
+      "Connect with verified industry partners",
+      "Monitor performance and placement metrics",
+      "Enable smooth campus-to-industry transition",
+    ],
+    recruiter: [
+      "Post internships and job openings",
+      "Search from a pool of pre-screened candidates",
+      "Build your employer brand on campus",
+      "Manage hiring with simple, effective tools",
+    ],
+    mentor: [
+      "Offer 1-on-1 mentorship or group sessions",
+      "Share insights via talks, webinars, or Q&As",
+      "Help students build their career roadmap",
+      "Boost your professional visibility and impact",
+      "Find Mentorship / Apprenticeship Opportunities"
+    ],
   };
 
   useEffect(() => {
@@ -178,7 +212,7 @@ const SignUpPage = () => {
       }));
       setTimeout(() => {
         setErrors((prev) => ({ ...prev, email: "" }));
-      }, 5000);
+      }, 25000);
       return;
     }
 
@@ -197,7 +231,7 @@ const SignUpPage = () => {
         }));
         setTimeout(() => {
           setErrors((prev) => ({ ...prev, general: "" }));
-        }, 5000);
+        }, 25000);
       }
     } catch (error) {
       setErrors((prev) => ({
@@ -206,7 +240,7 @@ const SignUpPage = () => {
       }));
       setTimeout(() => {
         setErrors((prev) => ({ ...prev, general: "" }));
-      }, 5000);
+      }, 25000);
     } finally {
       setIsVerifying(false);
     }
@@ -220,7 +254,7 @@ const SignUpPage = () => {
       }));
       setTimeout(() => {
         setErrors((prev) => ({ ...prev, email: "" }));
-      }, 5000);
+      }, 25000);
       return;
     }
 
@@ -246,7 +280,7 @@ const SignUpPage = () => {
         }));
         setTimeout(() => {
           setErrors((prev) => ({ ...prev, general: "" }));
-        }, 5000);
+        }, 25000);
       }
     } catch (error) {
       setErrors((prev) => ({
@@ -270,7 +304,7 @@ const SignUpPage = () => {
       }));
       setTimeout(() => {
         setErrors((prev) => ({ ...prev, otp: "" }));
-      }, 5000);
+      }, 25000);
       return;
     }
 
@@ -278,11 +312,10 @@ const SignUpPage = () => {
       setErrors((prev) => ({
         ...prev,
         otp: "OTP has expired or is invalid. Please request a new one.",
-ertino
       }));
       setTimeout(() => {
         setErrors((prev) => ({ ...prev, otp: "" }));
-      }, 5000);
+      }, 25000);
       setShowOtpField(false);
       return;
     }
@@ -297,7 +330,6 @@ ertino
       setErrors((prev) => ({
         ...prev,
         otp: "",
-      
       }));
       setTimeout(() => {
         setErrors((prev) => ({ ...prev, general: "" }));
@@ -309,7 +341,7 @@ ertino
       }));
       setTimeout(() => {
         setErrors((prev) => ({ ...prev, otp: "" }));
-      }, 5000);
+      }, 25000);
     }
   };
 
@@ -317,11 +349,13 @@ ertino
     e.preventDefault();
     const newErrors = {};
 
-    if (!formData.name.trim()) {
-      newErrors.name = "Name is required.";
-    } else if (formData.name.trim().length > 100) {
-      newErrors.name = "Name must be 100 characters or less.";
-    }
+   if (!formData.name.trim()) {
+  newErrors.name = "Name is required.";
+} else if (formData.name.trim().length > 100) {
+  newErrors.name = "Name must be 100 characters or less.";
+} else if (!/^[A-Za-z\s]+$/.test(formData.name.trim())) {
+  newErrors.name = "Name must contain only letters and spaces.";
+}
     if (!validateEmail(formData.email)) {
       newErrors.email = "Please enter a valid email address.";
     } else if (formData.email.trim().length > 100) {
@@ -363,7 +397,7 @@ ertino
       setIsLoading(false);
       setTimeout(() => {
         setErrors({});
-      }, 5000);
+      }, 50000);
       return;
     }
 
@@ -386,7 +420,6 @@ ertino
           password: formData.password,
           type: "Company",
         };
-        console.log("Company Signup Payload:", payload);
         response = await signupCompany(payload);
 
         if (response.success) {
@@ -416,7 +449,6 @@ ertino
           });
 
           if (loginResponse.success) {
-            console.log("API Login Response User:", loginResponse.user);
 
             const roleId = loginResponse.user.role?.role || "";
             const roleName = roleNames[roleId];
@@ -455,6 +487,7 @@ ertino
               email: loginResponse.user.email,
               role: roleName,
               roleId: roleId,
+              mobile: fullMobileNumber,
             };
 
             if (roleName === "company" || roleName === "academy") {
@@ -499,7 +532,6 @@ ertino
         if (role === "academy") {
           payload.academyName = formData.academyName.trim();
         }
-        console.log("Signup Payload:", payload);
         response = await signup(payload);
 
         if (response.success) {
@@ -547,6 +579,7 @@ ertino
     } catch (err) {
       const errorMessage =
         err.response?.data?.message ||
+        err.response?.data?.error ||
         err.message ||
         "An error occurred during signup";
       console.error("Signup Error Response:", err.response?.data);
@@ -561,9 +594,22 @@ ertino
         setTimeout(() => {
           setErrors((prev) => ({ ...prev, email: "" }));
         }, 5000);
+      } else if (
+        errorMessage.includes("User with this mobile number already exists") ||
+        (errorMessage.includes("duplicate key error") &&
+          errorMessage.includes("mobile"))
+      ) {
+        setErrors({
+          mobile:
+            "This mobile number is already registered. Please use a different mobile number or sign in.",
+        });
+        setTimeout(() => {
+          setErrors((prev) => ({ ...prev, mobile: "" }));
+        }, 5000);
       } else {
         setErrors({
-          general: `${errorMessage}. Please try again or contact support@conscor.com.`,
+          general:
+            "This mobile number is already registered. Please use a different mobile number or sign in.",
         });
         setTimeout(() => {
           setErrors((prev) => ({ ...prev, general: "" }));
@@ -790,7 +836,7 @@ ertino
               <img
                 src={logo}
                 alt="Internship-OJT Logo"
-                className="h-16 w-auto mr-2"
+                className="h-20 w-auto mr-2"
               />
             </div>
             <div className="flex justify-center gap-2 xs:gap-3 sm:gap-4 mb-3">
@@ -888,89 +934,89 @@ ertino
                         />
                       </div>
                     ) : field.isEmail ? (
-    <>
-      <div className="relative flex items-center">
-        <input
-          type={field.type}
-          name={field.name}
-          placeholder={field.placeholder}
-          className={`w-full px-3 py-2 xs:px-4 xs:py-2.5 border rounded-md outline-none text-xs xs:text-sm sm:text-base focus:ring-2 focus:ring-[#3D7EFF] ${
-            errors[field.name] ? "border-red-500" : ""
-          }`}
-          value={formData[field.name]}
-          onChange={handleChange}
-          required={field.required}
-          maxLength={field.maxLength}
-          disabled={isLoading || isEmailVerified || (role === "company" && showOtpField)}
-          aria-describedby={errors[field.name] ? `error-${field.name}` : undefined}
-        />
-        {isEmailVerified ? (
-          <MdCheckCircle
-            className="absolute top-1/2 right-2 xs:right-3 transform -translate-y-1/2 text-green-500 text-base xs:text-lg"
-          />
-        ) : role === "company" && (timeLeft === null || timeLeft === 0) ? (
-          <button
-            type="button"
-            onClick={handleVerifyEmail}
-            className={`absolute top-1/2 right-2 xs:right-3 transform -translate-y-1/2 text-xs xs:text-sm text-[#3D7EFF] font-semibold hover:underline ${
-              isVerifying || isLoading ? "opacity-75 cursor-not-allowed" : ""
-            }`}
-            disabled={isVerifying || isLoading}
-          >
-            {isVerifying ? "Verifying..." : "Verify"}
-          </button>
-        ) : null}
-      </div>
-      {showOtpField && role === "company" && (
-        <div className="flex flex-col mt-2">
-          <div className="flex items-center gap-2">
-            <input
-              type="text"
-              name="otp"
-              placeholder="Enter OTP"
-              className={`w-full px-3 py-2 xs:px-4 xs:py-2.5 border rounded-md outline-none text-xs xs:text-sm sm:text-base focus:ring-2 focus:ring-[#3D7EFF] ${
-                errors.otp ? "border-red-500" : ""
-              }`}
-              value={formData.otp}
-              onChange={handleChange}
-              maxLength={4}
-              disabled={isLoading || timeLeft === 0}
-              aria-describedby={errors.otp ? "error-otp" : undefined}
-            />
-            <button
-              type="button"
-              onClick={handleVerifyOtp}
-              className={`px-3 py-2 xs:px-4 xs:py-2.5 bg-[#3D7EFF] text-white rounded-md text-xs xs:text-sm font-semibold hover:bg-[#2b66cc] transition-colors ${
-                isLoading || timeLeft === 0 ? "opacity-75 cursor-not-allowed" : ""
-              }`}
-              disabled={isLoading || timeLeft === 0}
-            >
-              Verify OTP
-            </button>
-          </div>
-          <div className="flex justify-between items-center mt-1">
-            {timeLeft !== null && timeLeft > 0 && (
-              <p className="text-xs xs:text-sm text-gray-500">
-                Time left: {Math.floor(timeLeft / 60)}:
-                {(timeLeft % 60).toString().padStart(2, "0")}
-              </p>
-            )}
-            {timeLeft === 0 && (
-              <button
-                type="button"
-                onClick={handleResendOtp}
-                className={`text-xs xs:text-sm text-[#3D7EFF] font-semibold hover:underline ${
-                  isVerifying || isLoading ? "opacity-75 cursor-not-allowed" : ""
-                }`}
-                disabled={isVerifying || isLoading}
-              >
-                {isVerifying ? "Resending..." : "Resend OTP"}
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-    </>
+                      <>
+                        <div className="relative flex items-center">
+                          <input
+                            type={field.type}
+                            name={field.name}
+                            placeholder={field.placeholder}
+                            className={`w-full px-3 py-2 xs:px-4 xs:py-2.5 border rounded-md outline-none text-xs xs:text-sm sm:text-base focus:ring-2 focus:ring-[#3D7EFF] ${
+                              errors[field.name] ? "border-red-500" : ""
+                            }`}
+                            value={formData[field.name]}
+                            onChange={handleChange}
+                            required={field.required}
+                            maxLength={field.maxLength}
+                            disabled={isLoading || isEmailVerified || (role === "company" && showOtpField)}
+                            aria-describedby={errors[field.name] ? `error-${field.name}` : undefined}
+                          />
+                          {isEmailVerified ? (
+                            <MdCheckCircle
+                              className="absolute top-1/2 right-2 xs:right-3 transform -translate-y-1/2 text-green-500 text-base xs:text-lg"
+                            />
+                          ) : role === "company" && (timeLeft === null || timeLeft === 0) ? (
+                            <button
+                              type="button"
+                              onClick={handleVerifyEmail}
+                              className={`absolute top-1/2 right-2 xs:right-3 transform -translate-y-1/2 text-xs xs:text-sm text-[#3D7EFF] font-semibold hover:underline ${
+                                isVerifying || isLoading ? "opacity-75 cursor-not-allowed" : ""
+                              }`}
+                              disabled={isVerifying || isLoading}
+                            >
+                              {isVerifying ? "Verifying..." : "Verify"}
+                            </button>
+                          ) : null}
+                        </div>
+                        {showOtpField && role === "company" && (
+                          <div className="flex flex-col mt-2">
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="text"
+                                name="otp"
+                                placeholder="Enter OTP"
+                                className={`w-full px-3 py-2 xs:px-4 xs:py-2.5 border rounded-md outline-none text-xs xs:text-sm sm:text-base focus:ring-2 focus:ring-[#3D7EFF] ${
+                                  errors.otp ? "border-red-500" : ""
+                                }`}
+                                value={formData.otp}
+                                onChange={handleChange}
+                                maxLength={4}
+                                disabled={isLoading || timeLeft === 0}
+                                aria-describedby={errors.otp ? "error-otp" : undefined}
+                              />
+                              <button
+                                type="button"
+                                onClick={handleVerifyOtp}
+                                className={`px-3 py-2 xs:px-4 xs:py-2.5 bg-[#3D7EFF] text-white rounded-md text-xs xs:text-sm font-semibold hover:bg-[#2b66cc] transition-colors ${
+                                  isLoading || timeLeft === 0 ? "opacity-75 cursor-not-allowed" : ""
+                                }`}
+                                disabled={isLoading || timeLeft === 0}
+                              >
+                                Verify OTP
+                              </button>
+                            </div>
+                            <div className="flex justify-between items-center mt-1">
+                              {timeLeft !== null && timeLeft > 0 && (
+                                <p className="text-xs xs:text-sm text-gray-500">
+                                  Time left: {Math.floor(timeLeft / 60)}:
+                                  {(timeLeft % 60).toString().padStart(2, "0")}
+                                </p>
+                              )}
+                              {timeLeft === 0 && (
+                                <button
+                                  type="button"
+                                  onClick={handleResendOtp}
+                                  className={`text-xs xs:text-sm text-[#3D7EFF] font-semibold hover:underline ${
+                                    isVerifying || isLoading ? "opacity-75 cursor-not-allowed" : ""
+                                  }`}
+                                  disabled={isVerifying || isLoading}
+                                >
+                                  {isVerifying ? "Resending..." : "Resend OTP"}
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </>
                     ) : (
                       <div className="relative flex items-center">
                         <input
@@ -1127,7 +1173,7 @@ ertino
           )}
         </div>
       </div>
-      <div className="hidden lg:flex w-1/2 p-2">
+      <div className="hidden lg:flex w-1/2 p-2 relative">
         <div
           className="w-full h-full bg-contain bg-center rounded-3xl opacity-50"
           style={{
@@ -1135,10 +1181,21 @@ ertino
               roleImages[role] || wallpaper1
             })`,
             backgroundBlendMode: "multiply",
-            backgroundSize: "cover",
+            backgroundSize: "100% 100%",
             backgroundRepeat: "no-repeat",
           }}
         ></div>
+        {role && (
+          <div className="absolute inset-0 flex items-center justify-between p-20">
+            <ul className="text-[#050748] text-lg font-semibold list-disc pl-6">
+              {roleDescriptions[role].map((description, index) => (
+                <li key={index} className="mb-2">
+                  {description}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
     </div>
   );

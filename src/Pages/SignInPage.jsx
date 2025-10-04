@@ -6,8 +6,8 @@ import logo from '../assets/Navbar/logo.png';
 import wallpaper1 from '../assets/SignUp/wallpaper1.png';
 import wallpaper2 from '../assets/SignUp/wallpaper2.png';
 import wallpaper3 from '../assets/SignUp/wallpaper3.jpg';
-import wallpaper4 from '../assets/SignUp/wallpaper4.jpg';
-import wallpaper5 from '../assets/SignUp/wallpaper5.jpg';
+import wallpaper4 from '../assets/SignUp/wallpaper4.png';
+import wallpaper5 from '../assets/SignUp/wallpaper5.png';
 import facebook from '../assets/SignUp/facebook.png';
 import linkedin from '../assets/SignUp/linkedin.png';
 import { login } from '../Utils/api';
@@ -24,11 +24,46 @@ const SignIn = () => {
 
   const images = [wallpaper1, wallpaper2, wallpaper3, wallpaper4, wallpaper5];
 
+  const roleDescriptions = {
+    student: [
+      "Find internships, OJTs, and entry-level jobs",
+      "Apply directly with a smart Inturnshp profile",
+      "Learn with free workshops and short courses",
+      "Get career-ready through real-world experiences",
+    ],
+    company: [
+      "Post internships and job openings",
+      "Search from a pool of pre-screened candidates",
+      "Build your employer brand on campus",
+      "Manage hiring with simple, effective tools",
+    ],
+    academy: [
+      "Track internship activity & student growth",
+      "Connect with verified industry partners",
+      "Monitor performance and placement metrics",
+      "Enable smooth campus-to-industry transition",
+    ],
+    mentor: [
+      "Offer 1-on-1 mentorship or group sessions",
+      "Share insights via talks, webinars, or Q&As",
+      "Help students build their career roadmap",
+      "Boost your professional visibility and impact",
+    ],
+    recruiter: [
+      "Post internships and job openings",
+      "Search from a pool of pre-screened candidates",
+      "Build your employer brand on campus",
+      "Manage hiring with simple, effective tools",
+    ],
+  };
+
+  const roleOrder = ['student', 'company', 'academy', 'mentor', 'recruiter'];
+
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentImageIndex((prevIndex) => (prevIndex + 1) % images.length);
-    }, 3000); // Change image every 3 seconds
-    return () => clearInterval(interval); // Cleanup on unmount
+    }, 3000);
+    return () => clearInterval(interval);
   }, []);
 
   const roleNames = {
@@ -78,6 +113,7 @@ const SignIn = () => {
     }
 
     setLoading(true);
+    setErrors({}); // Clear previous errors
 
     try {
       const response = await login({
@@ -87,13 +123,12 @@ const SignIn = () => {
       });
 
       if (response.success) {
-        console.log('API Response User:', response.user);
-
         const roleId = response.user.role?.role || '';
         const roleName = roleNames[roleId];
 
         if (!roleName) {
           setErrors({ general: 'Invalid or unrecognized role. Please contact support@conscor.com.' });
+          setLoading(false);
           return;
         }
 
@@ -104,6 +139,7 @@ const SignIn = () => {
             jwtRoleId: decodedToken.roleId,
           });
           setErrors({ general: 'Role verification failed. Please contact support@conscor.com.' });
+          setLoading(false);
           return;
         }
 
@@ -119,6 +155,8 @@ const SignIn = () => {
         } else if (roleName === 'company' || roleName === 'academy') {
           userData.companyId = response.user.companyId || '';
           userData.userid = response.user._id || '';
+        } else if (roleName === 'mentor') {
+          userData.userid = response.user._id;
         }
 
         localStorage.setItem('user', JSON.stringify(userData));
@@ -131,27 +169,48 @@ const SignIn = () => {
 
         navigate(from, { replace: true });
       } else {
-        setErrors({ general: response.message || 'Login failed' });
+        // Handle API response with specific error message
+        let errorMessage = 'Invalid email or password.';
+        if (response.message) {
+          if (response.message.toLowerCase().includes('email not found')) {
+            errorMessage = 'Email is incorrect.';
+          } else if (response.message.toLowerCase().includes('password')) {
+            errorMessage = 'Password is incorrect.';
+          }
+        }
+        setErrors({
+          general: errorMessage,
+          email: errorMessage.includes('Email') ? ' ' : '',
+          password: errorMessage.includes('Password') ? ' ' : '',
+        });
+        setLoading(false);
       }
     } catch (err) {
-      const errorMessage = err.response?.data?.message || err.message || 'Invalid email or password';
-      console.error('Login Error:', err.response?.data);
-      if (errorMessage.includes('OTP not verified')) {
-        setErrors({ general: 'Please verify your email with OTP before logging in.' });
-      } else if (errorMessage.includes('Invalid credentials')) {
-        setErrors({
-          email: 'Invalid email address. Please check and try again.',
-          password: 'Incorrect password. Please try again.',
-        });
-      } else if (err.response?.status === 401) {
-        setErrors({
-          email: 'Unauthorized access. Please check your email.',
-          password: 'Unauthorized access. Please check your password.',
-        });
-      } else {
-        setErrors({ general: `${errorMessage}. Please try again or contact support@conscor.com.` });
+      let errorMessage = 'Invalid email or password.';
+      
+      if (err.response) {
+        if (err.response.data && err.response.data.message) {
+          if (err.response.data.message.toLowerCase().includes('email not found')) {
+            errorMessage = 'Email is incorrect.';
+          } else if (err.response.data.message.toLowerCase().includes('password')) {
+            errorMessage = 'Password is incorrect.';
+          }
+        } else if (err.response.status === 401) {
+          errorMessage = 'Invalid email or password.';
+        }
+      } else if (err.message) {
+        if (err.message.toLowerCase().includes('email not found')) {
+          errorMessage = 'Email is incorrect.';
+        } else if (err.message.toLowerCase().includes('password')) {
+          errorMessage = 'Password is incorrect.';
+        }
       }
-    } finally {
+
+      setErrors({ 
+        general: errorMessage,
+        email: errorMessage.includes('Email') ? ' ' : '',
+        password: errorMessage.includes('Password') ? ' ' : '',
+      });
       setLoading(false);
     }
   };
@@ -162,13 +221,17 @@ const SignIn = () => {
         <div className="max-w-[20rem] xs:max-w-[24rem] sm:max-w-[28rem] mx-auto w-full">
           <div className="mb-3 flex flex-col items-center">
             <div className="flex items-center mb-3">
-              <img src={logo} alt="Internship-OJT Logo" className="h-16 w-auto mr-2" />
+              <img src={logo} alt="Internship-OJT Logo" className="h-20 w-auto mr-2" />
             </div>
           </div>
           <div className="w-full">
             <h2 className="text-base xs:text-lg sm:text-xl font-bold mb-1 text-black">Sign in</h2>
             <p className="text-xs xs:text-sm text-gray-500 mb-2">Please login to continue to your account.</p>
-            {errors.general && <p className="text-red-500 text-xs xs:text-sm mb-2" aria-live="polite">{errors.general}</p>}
+            {errors.general && (
+              <p className="text-red-500 text-xs xs:text-sm mb-2" aria-live="polite">
+                {errors.general}
+              </p>
+            )}
             <form className="space-y-2" onSubmit={handleSubmit} aria-busy={loading}>
               <div className="relative flex flex-col">
                 <input
@@ -176,7 +239,7 @@ const SignIn = () => {
                   name="email"
                   placeholder="Email"
                   className={`w-full px-3 py-2 xs:px-4 xs:py-2.5 border rounded-md outline-none text-xs xs:text-sm sm:text-base focus:ring-2 focus:ring-[#3D7EFF] ${
-                    errors.email ? 'border-red-500' : ''
+                    errors.email ? 'border-red-500' : 'border-gray-300'
                   }`}
                   value={formData.email}
                   onChange={handleChange}
@@ -184,7 +247,7 @@ const SignIn = () => {
                   maxLength={100}
                   aria-describedby={errors.email ? 'error-email' : undefined}
                 />
-                {errors.email && (
+                {errors.email && errors.email.trim() !== ' ' && (
                   <p id="error-email" className="text-red-500 text-xs xs:text-sm mt-1">
                     {errors.email}
                   </p>
@@ -197,7 +260,7 @@ const SignIn = () => {
                     name="password"
                     placeholder="Password"
                     className={`w-full px-3 py-2 xs:px-4 xs:py-2.5 border rounded-md outline-none text-xs xs:text-sm sm:text-base focus:ring-2 focus:ring-[#3D7EFF] ${
-                      errors.password ? 'border-red-500' : ''
+                      errors.password ? 'border-red-500' : 'border-gray-300'
                     }`}
                     value={formData.password}
                     onChange={handleChange}
@@ -217,7 +280,7 @@ const SignIn = () => {
                     />
                   )}
                 </div>
-                {errors.password && (
+                {errors.password && errors.password.trim() !== ' ' && (
                   <p id="error-password" className="text-red-500 text-xs xs:text-sm mt-1">
                     {errors.password}
                   </p>
@@ -260,7 +323,7 @@ const SignIn = () => {
           </div>
         </div>
       </div>
-      <div className="hidden lg:flex w-1/2 p-2">
+      <div className="hidden lg:flex w-1/2 p-2 relative">
         <div className="w-full h-full overflow-hidden rounded-3xl">
           <div
             className="flex h-full transition-transform duration-1000 ease-in-out"
@@ -273,12 +336,21 @@ const SignIn = () => {
                 style={{
                   backgroundImage: `linear-gradient(to right, #F9DCDF, #B5D9D3), url(${image})`,
                   backgroundBlendMode: 'multiply',
-                  backgroundSize: 'cover',
+                  backgroundSize: '100% 100%',
                   backgroundPosition: 'center'
                 }}
               ></div>
             ))}
           </div>
+        </div>
+        <div className="absolute inset-0 flex items-center justify-between p-20">
+          <ul className="text-[#050748] text-lg font-semibold list-disc pl-6">
+            {roleDescriptions[roleOrder[currentImageIndex]].map((description, index) => (
+              <li key={index} className="mb-2">
+                {description}
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
     </div>

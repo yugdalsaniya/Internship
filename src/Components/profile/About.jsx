@@ -14,7 +14,6 @@ function About({ userData, updateCompletionStatus }) {
   const maxLength = 1000;
 
   useEffect(() => {
-    console.log('About useEffect triggered with userData.userid:', userData.userid);
     const fetchUserAbout = async () => {
       try {
         const userId = userData.userid;
@@ -59,7 +58,6 @@ function About({ userData, updateCompletionStatus }) {
           })
         );
 
-        console.log('fetchSectionData response for About:', JSON.stringify(response, null, 2));
         const apiData = response[0];
         if (!apiData) {
           console.warn('No user data returned from API, keeping current aboutText');
@@ -73,12 +71,10 @@ function About({ userData, updateCompletionStatus }) {
         const existingAbout = apiData?.sectionData?.appuser?.about || '';
         if (!aboutText) {
           setAboutText(existingAbout);
-          console.log('Set aboutText from API:', existingAbout);
         }
         setIsCompleted(!!existingAbout.trim());
         if (updateCompletionStatus) {
           updateCompletionStatus('About', !!existingAbout.trim());
-          console.log('Updated completion status for About:', !!existingAbout.trim());
         }
       } catch (err) {
         console.error('Error fetching about text:', err.message, err.stack);
@@ -105,7 +101,6 @@ function About({ userData, updateCompletionStatus }) {
 
   const handleTextChange = (e) => {
     const newText = e.target.value;
-    console.log('handleTextChange:', { oldText: aboutText, newText });
     setAboutText(newText);
   };
 
@@ -151,7 +146,6 @@ function About({ userData, updateCompletionStatus }) {
         options: { upsert: false, writeConcern: { w: 'majority' } },
       });
 
-      console.log('mUpdate response for about:', updateResponse);
 
       if (
         updateResponse &&
@@ -172,7 +166,6 @@ function About({ userData, updateCompletionStatus }) {
         setIsCompleted(true);
         if (updateCompletionStatus) {
           updateCompletionStatus('About', true);
-          console.log('Updated completion status for About: true');
         }
       } else {
         throw new Error('Failed to save about text to database.');
@@ -199,7 +192,6 @@ function About({ userData, updateCompletionStatus }) {
     }
   };
 
-  console.log('Rendering About:', { isCompleted, aboutText });
 
   return (
     <div className="bg-white rounded-xl shadow-md">

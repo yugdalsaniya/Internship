@@ -51,6 +51,7 @@ const WorkExperience = ({ userData, updateCompletionStatus }) => {
   const dropdownRef = useRef(null);
 
   const today = new Date().toISOString().split("T")[0];
+  const minDate = "1900-01-01";
 
   useEffect(() => {
     setInstituteInput(formData.organisation4);
@@ -90,7 +91,6 @@ const WorkExperience = ({ userData, updateCompletionStatus }) => {
         setIsFirstSaveSuccessful(isCompleted);
         if (updateCompletionStatus) {
           updateCompletionStatus("Work Experience", isCompleted);
-          console.log("Updated completion status for Work Experience:", isCompleted);
         }
       } catch (err) {
         console.error("Failed to load work experience data:", err);
@@ -261,7 +261,6 @@ const WorkExperience = ({ userData, updateCompletionStatus }) => {
           setTimeout(() => setError(""), 5000);
           return;
         }
-
         autocompleteRef.current = new window.google.maps.places.Autocomplete(
           locationInputRef.current,
           {
@@ -272,24 +271,28 @@ const WorkExperience = ({ userData, updateCompletionStatus }) => {
         );
         autocompleteRef.current.addListener("place_changed", () => {
           const place = autocompleteRef.current.getPlace();
-          if (!place.formatted_address && !place.name) {
-            console.warn("No valid place selected:", place);
-            return;
+          if (place && (place.formatted_address || place.name)) {
+            setFormData((prev) => ({
+              ...prev,
+              location4: place.formatted_address || place.name || "",
+            }));
+          } else {
+            console.warn("No valid place selected");
+            setFormData((prev) => ({
+              ...prev,
+              location4: "",
+            }));
           }
-          const location = place.formatted_address || place.name || "";
-          console.log("Place selected:", location);
-          setFormData((prev) => ({ ...prev, location4: location }));
         });
       })
       .catch((err) => {
         console.error("Error loading Google Maps:", err);
-        toast.error(
-          "Location suggestions unavailable: Failed to load Google Maps API.",
-          { autoClose: 5000 }
-        );
-        setError(
-          "Location suggestions unavailable: Failed to load Google Maps API."
-        );
+        const errorMessage = "Google Maps API failed to load. Location suggestions unavailable.";
+        setError(errorMessage);
+        toast.error(errorMessage, {
+          position: "top-right",
+          autoClose: 5000,
+        });
         setTimeout(() => setError(""), 5000);
       });
 
@@ -300,7 +303,7 @@ const WorkExperience = ({ userData, updateCompletionStatus }) => {
         );
       }
     };
-  }, [showForm, GOOGLE_MAPS_API_KEY]);
+  }, [showForm]);
 
   const debounce = (func, delay) => {
     let timeoutId;
@@ -310,301 +313,247 @@ const WorkExperience = ({ userData, updateCompletionStatus }) => {
     };
   };
 
-  const fetchFilteredSkills = useCallback(
-    debounce((query) => {
-      if (!query.trim()) {
-        setFilteredSkills([]);
-        setIsSkillsDropdownOpen(false);
-        return;
-      }
-      const filtered = allSkills.filter(
-        (skill) =>
-          skill.name.toLowerCase().includes(query.toLowerCase()) &&
-          !formData.skills4.some((s) => s.id === skill.id)
-      );
-      setFilteredSkills(filtered);
-      setIsSkillsDropdownOpen(filtered.length > 0);
-    }, 500),
-    [allSkills, formData.skills4]
-  );
+  const fetchFilteredSkills = debounce((query) => {
+    if (!query.trim()) {
+      setFilteredSkills([]);
+      setIsSkillsDropdownOpen(false);
+      return;
+    }
+    const filtered = allSkills.filter(
+      (skill) =>
+        skill.name.toLowerCase().includes(query.toLowerCase()) &&
+        !formData.skills4.includes(skill.id)
+    );
+    setFilteredSkills(filtered);
+    setIsSkillsDropdownOpen(filtered.length > 0);
+  }, 500);
 
-  const fetchFilteredInstitutes = useCallback(
-    debounce((query) => {
-      if (!query.trim()) {
-        setFilteredNames([]);
-        setIsInstitutesDropdownOpen(false);
-        return;
-      }
-      const filtered = institutes.filter((institute) =>
-        institute.toLowerCase().includes(query.toLowerCase())
-      );
-      setFilteredNames(filtered);
-      setIsInstitutesDropdownOpen(filtered.length > 0);
-    }, 500),
-    [institutes]
-  );
+  const fetchFilteredNames = debounce((query) => {
+    if (!query.trim()) {
+      setFilteredNames([]);
+      setIsInstitutesDropdownOpen(false);
+      return;
+    }
+    const filtered = institutes.filter((name) =>
+      name.toLowerCase().includes(query.toLowerCase())
+    );
+    setFilteredNames(filtered);
+    setIsInstitutesDropdownOpen(filtered.length > 0);
+  }, 500);
+
+  const handleInstituteInputChange = (value) => {
+    setInstituteInput(value);
+    fetchFilteredNames(value);
+    setFormData((prev) => ({ ...prev, organisation4: value }));
+  };
+
+  const handleInstituteSelect = (name) => {
+    setInstituteInput(name);
+    setFormData((prev) => ({ ...prev, organisation4: name }));
+    setIsInstitutesDropdownOpen(false);
+  };
 
   const handleSkillInputChange = (value) => {
     setSkillInput(value);
     fetchFilteredSkills(value);
   };
 
-  const handleInstituteInputChange = (value) => {
-    setInstituteInput(value);
-    fetchFilteredInstitutes(value);
-  };
-
   const handleSkillSelect = (skill) => {
-    setFormData({
-      ...formData,
-      skills4: [...formData.skills4, { id: skill.id, name: skill.name }],
-    });
+    setFormData((prev) => ({
+      ...prev,
+      skills4: [...prev.skills4, skill.id],
+    }));
     setSkillInput("");
     setIsSkillsDropdownOpen(false);
   };
 
-  const handleInstituteSelect = (institute) => {
-    setFormData({ ...formData, organisation4: institute });
-    setInstituteInput(institute);
-    setIsInstitutesDropdownOpen(false);
-  };
-
   const handleSkillRemove = (skillId) => {
-    setFormData({
-      ...formData,
-      skills4: formData.skills4.filter((s) => s.id !== skillId),
-    });
+    setFormData((prev) => ({
+      ...prev,
+      skills4: prev.skills4.filter((id) => id !== skillId),
+    }));
   };
 
-  const handleDesignationSelect = (designation) => {
-    setFormData({
-      ...formData,
-      designation4: { id: designation.id, name: designation.name },
-    });
+  const isValidDate = (dateStr) => {
+    if (!dateStr) return false; // Required, so false if empty
+    const date = new Date(dateStr);
+    const todayDate = new Date(today);
+    const minYear = 1900;
+
+    if (isNaN(date.getTime())) {
+      return false;
+    }
+
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+
+    if (year < minYear || date > todayDate) {
+      return false;
+    }
+
+    if (month < 1 || month > 12) {
+      return false;
+    }
+
+    const daysInMonth = new Date(year, month, 0).getDate();
+    if (day < 1 || day > daysInMonth) {
+      return false;
+    }
+
+    return true;
   };
 
   const handleChange = (field, value) => {
-    if (field === "remote4" && value) {
-      setFormData({ ...formData, [field]: value, location4: "" });
-    } else if (field === "startdate4" && value) {
-      setFormData((prev) => ({
-        ...prev,
-        [field]: value,
-        enddate4: prev.enddate4 && prev.enddate4 < value ? "" : prev.enddate4,
-      }));
+    setError("");
+    if (field === "startdate4" || field === "enddate4") {
+      if (value && !isValidDate(value)) {
+        toast.error(
+          field === "startdate4"
+            ? "Please enter a valid start date (1900 or later, not in the future)."
+            : "Please enter a valid end date (after start date, not in the future).",
+          {
+            position: "top-right",
+            autoClose: 3000,
+          }
+        );
+        return;
+      }
+      if (field === "enddate4" && value && formData.startdate4) {
+        if (value <= formData.startdate4) {
+          toast.error("End date must be after start date.", {
+            position: "top-right",
+            autoClose: 3000,
+          });
+          return;
+        }
+      }
+      if (field === "startdate4" && formData.enddate4 && value > formData.enddate4) {
+        toast.info("End date reset as it was earlier than the new start date.", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+        setFormData((prev) => ({ ...prev, enddate4: "" }));
+      }
+    }
+    if (field === "designation4") {
+      setFormData((prev) => ({ ...prev, designation4: value }));
     } else {
-      setFormData({ ...formData, [field]: value });
+      setFormData((prev) => ({ ...prev, [field]: value }));
     }
   };
 
-  const handleFileUpload = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    setSelectedFile(file);
-    setFormData({ ...formData, files4: "" });
+  const handleCheckboxChange = (field) => {
+    setFormData((prev) => {
+      const updated = { ...prev, [field]: !prev[field] };
+      if (field === "currentlyworking4" && updated.currentlyworking4) {
+        updated.enddate4 = "";
+      }
+      return updated;
+    });
   };
 
-  const handleRemoveFileFromForm = () => {
-    setSelectedFile(null);
-    setFormData({ ...formData, files4: "" });
+  const validateForm = () => {
+    const errors = [];
+    if (!formData.designation4.id) errors.push("Designation is required.");
+    if (!formData.organisation4.trim()) errors.push("Organisation is required.");
+    if (!formData.employmenttype4) errors.push("Employment type is required.");
+    if (!formData.startdate4) errors.push("Start date is required.");
+    else if (!isValidDate(formData.startdate4)) errors.push("Invalid start date. Must be a valid date from 1900 to today.");
+    else if (formData.startdate4 > today) errors.push("Start date cannot be in the future.");
+    if (!formData.currentlyworking4 && !formData.enddate4) errors.push("End date is required if not currently working.");
+    else if (!formData.currentlyworking4 && formData.enddate4 && !isValidDate(formData.enddate4)) errors.push("Invalid end date. Must be a valid date.");
+    else if (!formData.currentlyworking4 && formData.enddate4 && formData.enddate4 <= formData.startdate4) errors.push("End date must be after start date.");
+    else if (!formData.currentlyworking4 && formData.enddate4 && formData.enddate4 > today) errors.push("End date cannot be in the future.");
+    if (!formData.location4.trim()) errors.push("Location is required.");
+
+    if (errors.length > 0) {
+      toast.error("Please fill all required fields.", {
+        position: "top-right",
+        autoClose: 5000,
+      });
+      return false;
+    }
+    return true;
   };
 
   const handleSave = async () => {
-    if (isProcessing) return;
-
-    const trimmedFormData = {
-      ...formData,
-      organisation4: formData.organisation4.trim(),
-      employmenttype4: formData.employmenttype4.trim(),
-    };
-
-    const errors = [];
-    if (!trimmedFormData.designation4.id)
-      errors.push("Designation is required.");
-    if (!trimmedFormData.organisation4)
-      errors.push("Organisation is required.");
-    if (!trimmedFormData.employmenttype4)
-      errors.push("Employment Type is required.");
-    if (!formData.startdate4) errors.push("Start Date is required.");
-    if (formData.startdate4 > today)
-      errors.push("Start Date cannot be in the future.");
-    if (!formData.remote4 && !formData.location4.trim())
-      errors.push("Location is required or mark as remote.");
-    if (!formData.currentlyworking4 && !formData.enddate4)
-      errors.push("End Date is required or mark as currently working.");
-    if (formData.enddate4 && formData.enddate4 > today)
-      errors.push("End Date cannot be in the future.");
-    if (
-      !formData.currentlyworking4 &&
-      formData.enddate4 &&
-      formData.startdate4 &&
-      formData.enddate4 <= formData.startdate4
-    ) {
-      errors.push("End Date must be after Start Date.");
-    }
-
-    if (errors.length > 0) {
-      const errorMessage = errors.join(" ");
-      setError(errorErrorMessage);
-      toast.error(errorMessage, { autoClose: 5000 });
-      setTimeout(() => setError(""), 5000);
+    if (!validateForm()) {
       return;
     }
 
-    setIsProcessing(true);
-    setError("");
-
     try {
+      setIsProcessing(true);
       const userString = localStorage.getItem("user");
-      const accessToken = localStorage.getItem("accessToken");
-
-      if (!userString || !accessToken) {
-        throw new Error("Please log in to save your work experience.");
+      if (!userString) {
+        throw new Error("Please log in to save work experience.");
       }
+      const user = JSON.parse(userString);
+      const userId = user.userid;
 
-      let userId;
-      try {
-        const user = JSON.parse(userString);
-        userId = user.userid;
-      } catch (parseError) {
-        throw new Error("Invalid user data. Please log in again.");
-      }
-
-      const existingUser = await fetchSectionData({
-        dbName: "internph",
-        collectionName: "appuser",
-        query: { _id: userId },
-      });
-
-      if (
-        !existingUser ||
-        (Array.isArray(existingUser) && existingUser.length === 0)
-      ) {
-        throw new Error(
-          "User not found in database. Please sign up or contact support."
-        );
-      }
-
-      let fileUrl = formData.files4;
-      if (selectedFile) {
-        const uploadResponse = await uploadAndStoreFile({
-          appName: "app8657281202648",
-          moduleName: "appuser",
-          file: selectedFile,
-          userId,
-        });
-
-        fileUrl =
-          uploadResponse?.filePath ||
-          uploadResponse?.fileUrl ||
-          uploadResponse?.data?.fileUrl;
-        if (!fileUrl) {
-          throw new Error(
-            "Failed to upload file: No file path returned in response."
-          );
-        }
-      }
-
-      const workExperienceEntry = {
-        designation4: trimmedFormData.designation4.id,
-        organisation4: trimmedFormData.organisation4,
-        employmenttype4: trimmedFormData.employmenttype4,
-        currentlyworking4: formData.currentlyworking4,
-        startdate4: formData.startdate4,
-        enddate4: formData.currentlyworking4 ? "" : formData.enddate4,
-        remote4: formData.remote4,
-        location4: formData.remote4 ? "" : formData.location4,
-        skills4: formData.skills4.map((s) => s.id),
-        description4: formData.description4,
+      const newWorkExperience = {
+        designation4: formData.designation4.id,
+        organisation4: formData.organisation4,
+        employmenttype4: formData.employmenttype4,
         gotFromInternph4: formData.gotFromInternph4,
-        files4: fileUrl,
+        startdate4: formData.startdate4,
+        enddate4: formData.currentlyworking4 ? null : formData.enddate4,
+        currentlyworking4: formData.currentlyworking4,
+        location4: formData.location4,
+        remote4: formData.remote4,
+        skills4: formData.skills4,
+        description4: formData.description4,
+        files4: formData.files4,
+        createdAt: editingIndex !== null && workExperienceList[editingIndex] ? workExperienceList[editingIndex].createdAt : new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       };
 
-      let updatePayload;
+      let updatedWorkExperienceList;
       if (editingIndex !== null) {
-        updatePayload = {
-          $set: {
-            [`sectionData.appuser.workexperience2.${editingIndex}`]:
-              workExperienceEntry,
-            "sectionData.appuser.lastUpdated": new Date().toISOString(),
-          },
-        };
-        const updatedList = [...workExperienceList];
-        updatedList[editingIndex] = workExperienceEntry;
-        setWorkExperienceList(updatedList);
+        updatedWorkExperienceList = workExperienceList.map((item, idx) =>
+          idx === editingIndex ? newWorkExperience : item
+        );
       } else {
-        updatePayload = {
-          $push: { "sectionData.appuser.workexperience2": workExperienceEntry },
-          $set: { "sectionData.appuser.lastUpdated": new Date().toISOString() },
-        };
-        setWorkExperienceList([...workExperienceList, workExperienceEntry]);
+        updatedWorkExperienceList = [
+          ...workExperienceList,
+          newWorkExperience,
+        ];
       }
 
-      const response = await mUpdate({
+      await mUpdate({
         appName: "app8657281202648",
-        dbName: "internph",
         collectionName: "appuser",
         query: { _id: userId },
-        update: updatePayload,
+        update: {
+          $set: {
+            "sectionData.appuser.workexperience2": updatedWorkExperienceList,
+            editedAt: new Date().toISOString(),
+          },
+        },
         options: { upsert: false },
       });
 
-      if (
-        response &&
-        (response.success ||
-          response.modifiedCount > 0 ||
-          response.matchedCount > 0)
-      ) {
-        if (response.matchedCount === 0) {
-          throw new Error("Failed to update work experience: User not found.");
-        }
-        if (response.upsertedId) {
-          throw new Error("Unexpected error: New user created instead of updating.");
-        }
-        toast.success(
-          editingIndex !== null
-            ? "Work experience updated successfully!"
-            : "Work experience saved successfully!",
-          { position: "top-right", autoClose: 3000 }
-        );
-        setFormData({
-          designation4: { id: "", name: "" },
-          organisation4: "",
-          employmenttype4: "",
-          gotFromInternph4: false,
-          startdate4: "",
-          enddate4: "",
-          currentlyworking4: false,
-          location4: "",
-          remote4: false,
-          skills4: [],
-          description4: "",
-          files4: "",
-        });
-        setInstituteInput("");
-        setSkillInput("");
-        setSelectedFile(null);
-        setEditingIndex(null);
-        setShowForm(false);
-        setIsFirstSaveSuccessful(true);
-        if (updateCompletionStatus) {
-          updateCompletionStatus("Work Experience", true);
-          console.log("Updated completion status for Work Experience: true");
-        }
-      } else {
-        throw new Error("Failed to update work experience in database.");
+      setWorkExperienceList(updatedWorkExperienceList);
+      resetForm();
+      setShowForm(false);
+      setEditingIndex(null);
+      const isCompleted = updatedWorkExperienceList.length > 0;
+      setIsFirstSaveSuccessful(isCompleted);
+      if (updateCompletionStatus) {
+        updateCompletionStatus("Work Experience", isCompleted);
       }
-    } catch (error) {
-      console.error("Error updating work experience:", error.response?.data || error.message);
-      let errorMessage = error.message;
-      if (error.response?.status === 404) {
-        errorMessage = "API endpoint not found. Please contact support.";
-      } else if (error.response?.status === 401) {
-        errorMessage = "Authentication failed. Please log in again.";
-      }
-      setError(errorMessage);
-      toast.error(errorMessage, { position: "top-right", autoClose: 5000 });
-      setTimeout(() => setError(""), 5000);
+      toast.success(
+        editingIndex !== null
+          ? "Work experience updated successfully!"
+          : "Work experience saved successfully!",
+        { position: "top-right", autoClose: 3000 }
+      );
+    } catch (err) {
+      console.error("Failed to save work experience:", err);
+      toast.error(err.message || "Failed to save work experience. Please try again.", {
+        position: "top-right",
+        autoClose: 5000,
+      });
     } finally {
       setIsProcessing(false);
     }
@@ -612,38 +561,28 @@ const WorkExperience = ({ userData, updateCompletionStatus }) => {
 
   const handleEdit = (index) => {
     const work = workExperienceList[index];
-    const designation = designations.find(
-      (d) => d.id === work.designation4
-    ) || { id: "", name: "" };
     setFormData({
-      designation4: { id: designation.id, name: designation.name },
-      organisation4: work.organisation4 || "",
-      employmenttype4: work.employmenttype4 || "",
-      gotFromInternph4: work.gotFromInternph4 || false,
-      startdate4: work.startdate4 || "",
+      designation4: {
+        id: work.designation4,
+        name: getDesignationNameById(work.designation4),
+      },
+      organisation4: work.organisation4,
+      employmenttype4: work.employmenttype4,
+      gotFromInternph4: work.gotFromInternph4,
+      startdate4: work.startdate4,
       enddate4: work.enddate4 || "",
-      currentlyworking4: work.currentlyworking4 || false,
-      location4: work.location4 || "",
-      remote4: work.remote4 || false,
-      skills4: work.skills4.map((skillId) => {
-        const skill = allSkills.find((s) => s.id === skillId) || {
-          id: skillId,
-          name: "Unknown Skill",
-        };
-        return { id: skill.id, name: skill.name };
-      }),
-      description4: work.description4 || "",
-      files4: work.files4 || "",
+      currentlyworking4: work.currentlyworking4,
+      location4: work.location4,
+      remote4: work.remote4,
+      skills4: work.skills4,
+      description4: work.description4,
+      files4: work.files4,
     });
-    setInstituteInput(work.organisation4 || "");
-    setEditingIndex(index);
     setShowForm(true);
-    setSelectedFile(null);
+    setEditingIndex(index);
   };
 
   const handleRemove = async (index) => {
-    if (isProcessing) return;
-
     try {
       setIsProcessing(true);
       const userString = localStorage.getItem("user");
@@ -653,142 +592,153 @@ const WorkExperience = ({ userData, updateCompletionStatus }) => {
       const user = JSON.parse(userString);
       const userId = user.userid;
 
-      const updatedList = [...workExperienceList];
-      updatedList.splice(index, 1);
-
-      const response = await mUpdate({
+      const updatedList = workExperienceList.filter((_, i) => i !== index);
+      await mUpdate({
         appName: "app8657281202648",
-        dbName: "internph",
         collectionName: "appuser",
         query: { _id: userId },
         update: {
-          $set: { "sectionData.appuser.workexperience2": updatedList },
+          $set: {
+            "sectionData.appuser.workexperience2": updatedList,
+            editedAt: new Date().toISOString(),
+          },
         },
         options: { upsert: false },
       });
 
-      if (
-        response &&
-        (response.success ||
-          response.modifiedCount > 0 ||
-          response.matchedCount > 0)
-      ) {
-        if (response.matchedCount === 0) {
-          throw new Error("Failed to update user data: User not found.");
-        }
-        toast.success("Work experience removed successfully!", {
-          position: "top-right",
-          autoClose: 3000,
-        });
-        setWorkExperienceList(updatedList);
-        setEditingIndex(null);
-        setShowForm(updatedList.length === 0);
-        setFormData({
-          designation4: { id: "", name: "" },
-          organisation4: "",
-          employmenttype4: "",
-          gotFromInternph4: false,
-          startdate4: "",
-          enddate4: "",
-          currentlyworking4: false,
-          location4: "",
-          remote4: false,
-          skills4: [],
-          description4: "",
-          files4: "",
-        });
-        setInstituteInput("");
-        setSelectedFile(null);
-        const isCompleted = updatedList.length > 0;
-        setIsFirstSaveSuccessful(isCompleted);
-        if (updateCompletionStatus) {
-          updateCompletionStatus("Work Experience", isCompleted);
-          console.log("Updated completion status for Work Experience:", isCompleted);
-        }
-      } else {
-        throw new Error("Failed to remove work experience from database.");
+      setWorkExperienceList(updatedList);
+      const isCompleted = updatedList.length > 0;
+      setIsFirstSaveSuccessful(isCompleted);
+      if (updateCompletionStatus) {
+        updateCompletionStatus("Work Experience", isCompleted);
       }
-    } catch (error) {
-      console.error("Failed to remove work experience:", error.response?.data || error.message);
-      let errorMessage = error.message;
-      if (error.response?.status === 404) {
-        errorMessage = "API endpoint not found. Please contact support.";
-      } else if (error.response?.status === 401) {
-        errorMessage = "Authentication failed. Please log in again.";
-      }
-      setError(errorMessage);
-      toast.error(errorMessage, { position: "top-right", autoClose: 5000 });
-      setTimeout(() => setError(""), 5000);
+      toast.success("Work experience removed successfully!", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+    } catch (err) {
+      console.error("Failed to remove work experience:", err);
+      toast.error(err.message || "Failed to remove work experience. Please try again.", {
+        position: "top-right",
+        autoClose: 5000,
+      });
     } finally {
       setIsProcessing(false);
     }
   };
 
   const handleDeleteFile = async (index) => {
-    if (isProcessing) return;
-
     try {
       setIsProcessing(true);
       const userString = localStorage.getItem("user");
       if (!userString) {
-        throw new Error("Please log in to remove file.");
+        throw new Error("Please log in to delete file.");
       }
       const user = JSON.parse(userString);
       const userId = user.userid;
 
       const updatedList = [...workExperienceList];
-      updatedList[index] = { ...updatedList[index], files4: "" };
-
-      const response = await mUpdate({
+      updatedList[index].files4 = "";
+      await mUpdate({
         appName: "app8657281202648",
-        dbName: "internph",
         collectionName: "appuser",
         query: { _id: userId },
         update: {
-          $set: { [`sectionData.appuser.workexperience2.${index}.files4`]: "" },
+          $set: {
+            "sectionData.appuser.workexperience2": updatedList,
+            editedAt: new Date().toISOString(),
+          },
         },
         options: { upsert: false },
       });
 
-      if (
-        response &&
-        (response.success ||
-          response.modifiedCount > 0 ||
-          response.matchedCount > 0)
-      ) {
-        if (response.matchedCount === 0) {
-          throw new Error("Failed to update user data: User not found.");
-        }
-        toast.success("File removed successfully!", {
-          position: "top-right",
-          autoClose: 3000,
-        });
-        setWorkExperienceList(updatedList);
-        if (editingIndex === index) {
-          setFormData({ ...formData, files4: "" });
-          setSelectedFile(null);
-        }
-      } else {
-        throw new Error("Failed to remove file from database.");
-      }
-    } catch (error) {
-      console.error("Failed to remove file:", error.response?.data || error.message);
-      let errorMessage = error.message;
-      if (error.response?.status === 404) {
-        errorMessage = "API endpoint not found. Please contact support.";
-      } else if (error.response?.status === 401) {
-        errorMessage = "Authentication failed. Please log in again.";
-      }
-      setError(errorMessage);
-      toast.error(errorMessage, { position: "top-right", autoClose: 5000 });
-      setTimeout(() => setError(""), 5000);
+      setWorkExperienceList(updatedList);
+      toast.success("File deleted successfully!", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+    } catch (err) {
+      console.error("File deletion error:", err);
+      toast.error(err.message || "Failed to delete file.", {
+        position: "top-right",
+        autoClose: 3000,
+      });
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const handleAddNew = () => {
-    setShowForm(true);
+  const handleRemoveFileFromForm = () => {
+    setFormData((prev) => ({ ...prev, files4: "" }));
+    toast.info("File removed from form.", {
+      position: "top-right",
+      autoClose: 3000,
+    });
+  };
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const validTypes = [
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ];
+    if (!validTypes.includes(file.type)) {
+      toast.error("Please upload a PDF or Word file.", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("File size exceeds 5MB limit.", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      const userString = localStorage.getItem("user");
+      if (!userString) {
+        throw new Error("Please log in to upload files.");
+      }
+      const user = JSON.parse(userString);
+      const userId = user.userid;
+
+      const response = await uploadAndStoreFile({
+        appName: "app8657281202648",
+        moduleName: "appuser",
+        file,
+        userId,
+      });
+
+      if (!response || !response.filePath) {
+        throw new Error("Failed to upload file: No file path returned.");
+      }
+
+      setFormData((prev) => ({ ...prev, files4: response.filePath }));
+      toast.success("File uploaded successfully!", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+    } catch (err) {
+      console.error("File upload error:", err);
+      toast.error(err.message || "Failed to upload file.", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+    } finally {
+      setIsProcessing(false);
+      e.target.value = null;
+    }
+  };
+
+  const resetForm = () => {
     setFormData({
       designation4: { id: "", name: "" },
       organisation4: "",
@@ -803,570 +753,338 @@ const WorkExperience = ({ userData, updateCompletionStatus }) => {
       description4: "",
       files4: "",
     });
-    setInstituteInput("");
     setSkillInput("");
-    setEditingIndex(null);
+    setInstituteInput("");
+    setFilteredSkills([]);
+    setFilteredNames([]);
+    setIsSkillsDropdownOpen(false);
+    setIsInstitutesDropdownOpen(false);
+    setShowDropdown(false);
     setSelectedFile(null);
   };
 
-  const employmentTypes = ["Full-time", "Part-time", "Internship", "Freelance"];
-
   const getDesignationNameById = (id) => {
-    const designation = designations.find((d) => d.id === id || d.name === id);
-    return designation ? designation.name : id || "Unknown Designation";
+    const designation = designations.find((d) => d.id === id);
+    return designation ? designation.name : "";
   };
 
   const getSkillNameById = (id) => {
     const skill = allSkills.find((s) => s.id === id);
-    return skill ? skill.name : "Unknown Skill";
+    return skill ? skill.name : "";
   };
-
-  const renderSelect = (label, field, options, required = false) => (
-    <div className="mb-4">
-      <p className="text-sm font-medium text-gray-700 mb-1">
-        {label} {required && <span className="text-red-500">*</span>}
-      </p>
-      <div className="relative">
-        <select
-          value={
-            field === "designation4"
-              ? formData[field]?.name || ""
-              : formData[field] || ""
-          }
-          onChange={(e) => {
-            if (field === "designation4") {
-              const selectedDesignation = options.find(
-                (d) => d.name === e.target.value
-              ) || { id: "", name: "" };
-              handleDesignationSelect(selectedDesignation);
-            } else {
-              handleChange(field, e.target.value);
-            }
-          }}
-          className="w-full border rounded-lg p-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none"
-          disabled={isProcessing}
-        >
-          <option value="" aria-label={`Select ${label}`}>
-            Select {label}
-          </option>
-          {options.map((opt) => (
-            <option key={opt.id || opt} value={opt.name || opt}>
-              {opt.name || opt}
-            </option>
-          ))}
-        </select>
-        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
-      </div>
-    </div>
-  );
-
-  const renderInput = (label, field, type = "text", required = false) => (
-    <div className="mb-4">
-      <p className="text-sm font-medium text-gray-700 mb-1">
-        {label} {required && <span className="text-red-500">*</span>}
-      </p>
-      <input
-        type={type}
-        placeholder={label}
-        value={formData[field]}
-        onChange={(e) => handleChange(field, e.target.value)}
-        className="w-full border rounded-lg p-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        disabled={isProcessing}
-      />
-    </div>
-  );
-
-  const renderInstituteInput = () => (
-    <div className="mb-4">
-      <p className="text-sm font-medium text-gray-700 mb-1">
-        Organisation <span className="text-red-500">*</span>
-      </p>
-      <div className="relative">
-        <input
-          ref={instituteInputRef}
-          type="text"
-          placeholder="Search organisation..."
-          value={instituteInput}
-          onChange={(e) => handleInstituteInputChange(e.target.value)}
-          onFocus={() =>
-            instituteInput.trim() &&
-            filteredInstituteNames.length > 0 &&
-            setIsInstitutesDropdownOpen(true)
-          }
-          className="w-full border rounded-lg p-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          disabled={isProcessing}
-        />
-        {isInstitutesDropdownOpen && filteredInstituteNames.length > 0 && (
-          <div
-            ref={instituteDropdownRef}
-            className="absolute z-10 w-full bg-white border border-gray-200 rounded-lg shadow-lg mt-1 max-h-40 overflow-y-auto"
-          >
-            {filteredInstituteNames.map((institute, index) => (
-              <button
-                key={index}
-                className="w-full text-left px-3 py-2 text-gray-700 hover:bg-gray-100 transition"
-                onClick={() => handleInstituteSelect(institute)}
-                disabled={isProcessing}
-              >
-                {institute}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-
-  const renderSkillsInput = () => (
-    <div className="mb-4">
-      <p className="text-sm font-medium text-gray-700 mb-1">Skills</p>
-      <div className="flex flex-wrap gap-2 mb-2">
-        {formData.skills4.map((skill) => (
-          <button
-            key={skill.id}
-            onClick={() => handleSkillRemove(skill.id)}
-            className="px-3 py-1 bg-blue-100 text-blue-600 rounded-full flex items-center gap-1"
-            disabled={isProcessing}
-          >
-            {skill.name}
-            <span className="text-sm">✕</span>
-          </button>
-        ))}
-      </div>
-      <div className="relative">
-        <input
-          ref={skillInputRef}
-          type="text"
-          placeholder="Search skills..."
-          value={skillInput}
-          onChange={(e) => handleSkillInputChange(e.target.value)}
-          onFocus={() =>
-            skillInput.trim() &&
-            filteredSkills.length > 0 &&
-            setIsSkillsDropdownOpen(true)
-          }
-          className="w-full border rounded-lg p-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          disabled={isProcessing}
-        />
-        {isSkillsDropdownOpen && filteredSkills.length > 0 && (
-          <div
-            ref={skillDropdownRef}
-            className="absolute z-10 w-full bg-white border border-gray-200 rounded-lg shadow-lg mt-1 max-h-40 overflow-y-auto"
-          >
-            {filteredSkills.map((skill) => (
-              <button
-                key={skill.id}
-                className="w-full text-left px-3 py-2 text-gray-700 hover:bg-gray-100 transition"
-                onClick={() => handleSkillSelect(skill)}
-                disabled={isProcessing}
-              >
-                {skill.name}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-
-  const renderSkeletonCard = () => (
-    <div
-      className="border border-gray-200 rounded-lg p-3 bg-white shadow-sm w-full animate-pulse"
-      aria-hidden="true"
-    >
-      <div className="flex items-start gap-3">
-        <div className="flex-shrink-0 w-8 h-8 bg-gray-200 rounded"></div>
-        <div className="flex-1 space-y-2">
-          <div className="h-3 bg-gray-200 rounded w-1/3"></div>
-          <div className="h-2 bg-gray-200 rounded w-2/3"></div>
-          <div className="h-2 bg-gray-200 rounded w-1/2"></div>
-          <div className="h-4 bg-gray-200 rounded w-full mt-2"></div>
-          <div className="flex gap-2 mt-2">
-            <div className="w-4 h-4 bg-gray-200 rounded-full"></div>
-            <div className="w-4 h-4 bg-gray-200 rounded-full"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderSkeletonForm = () => (
-    <div className="space-y-4 animate-pulse">
-      <div className="mb-4">
-        <div className="h-4 bg-gray-200 rounded w-1/4 mb-2"></div>
-        <div className="h-10 bg-gray-200 rounded w-full"></div>
-      </div>
-      <div className="mb-4">
-        <div className="h-4 bg-gray-200 rounded w-1/4 mb-2"></div>
-        <div className="h-10 bg-gray-200 rounded w-full"></div>
-      </div>
-      <div className="grid md:grid-cols-2 gap-4">
-        <div>
-          <div className="h-4 bg-gray-200 rounded w-1/4 mb-2"></div>
-          <div className="h-10 bg-gray-200 rounded w-full"></div>
-        </div>
-        <div>
-          <div className="h-4 bg-gray-200 rounded w-1/4 mb-2"></div>
-          <div className="h-10 bg-gray-200 rounded w-full"></div>
-        </div>
-      </div>
-      <div className="mb-4">
-        <div className="h-4 bg-gray-200 rounded w-1/4 mb-2"></div>
-        <div className="h-10 bg-gray-200 rounded w-full"></div>
-      </div>
-      <div className="mb-4">
-        <div className="h-4 bg-gray-200 rounded w-1/4 mb-2"></div>
-        <div className="h-24 bg-gray-200 rounded w-full"></div>
-      </div>
-      <div className="mb-4">
-        <div className="h-4 bg-gray-200 rounded w-1/4 mb-2"></div>
-        <div className="h-20 bg-gray-200 rounded w-full border-dashed"></div>
-      </div>
-      <div className="flex justify-end">
-        <div className="h-10 bg-gray-200 rounded-full w-32"></div>
-      </div>
-    </div>
-  );
-
-  const renderDurationSection = () => (
-    <div className="mb-4">
-      <div className="flex justify-between items-center mb-2">
-        <p className="text-sm font-medium text-gray-700">
-          Duration <span className="text-red-500">*</span>
-        </p>
-        <label className="flex items-center gap-2 text-sm text-gray-700">
-          <input
-            type="checkbox"
-            checked={formData.currentlyworking4}
-            onChange={(e) =>
-              handleChange("currentlyworking4", e.target.checked)
-            }
-            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-            disabled={isProcessing}
-          />
-          Currently working in this role
-        </label>
-      </div>
-      <div className="grid md:grid-cols-2 gap-4">
-        <div>
-          <input
-            type="date"
-            value={formData.startdate4}
-            onChange={(e) => handleChange("startdate4", e.target.value)}
-            max={today}
-            className="w-full border rounded-lg p-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            disabled={isProcessing}
-          />
-        </div>
-        <div>
-          <input
-            type="date"
-            value={formData.enddate4}
-            onChange={(e) => handleChange("enddate4", e.target.value)}
-            min={formData.startdate4 || undefined}
-            max={today}
-            disabled={formData.currentlyworking4 || isProcessing}
-            className="w-full border rounded-lg p-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-      </div>
-    </div>
-  );
-
-  console.log("Rendering with isFirstSaveSuccessful:", isFirstSaveSuccessful);
 
   return (
     <div className="bg-white rounded-xl shadow-md">
-      <style>{`
-        @keyframes shimmer {
-          0% { background-position: -468px 0; }
-          100% { background-position: 468px 0; }
-        }
-        .animate-pulse {
-          animation: shimmer 1.5s infinite;
-          background: linear-gradient(
-            to right,
-            #f6f7f8 8%,
-            #edeef1 18%,
-            #f6f7f8 33%
-          );
-          background-size: 800px 104px;
-        }
-        .pac-container { z-index: 10000 !important; }
-      `}</style>
-      <ToastContainer
-        position="top-right"
-        autoClose={5000}
-        hideProgressBar={false}
-        newestOnTop
-        closeOnClick
-        pauseOnHover
-        draggable
-      />
+      <ToastContainer />
+      {error && (
+        <div
+          className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative m-4"
+          role="alert"
+        >
+          <span>{error}</span>
+        </div>
+      )}
+
       <div className="sticky top-0 bg-white z-10 px-4 py-4 shadow-sm flex justify-between items-center border-b border-gray-200">
         <div className="flex items-center gap-2 text-gray-700 text-lg font-medium">
           {isFirstSaveSuccessful ? (
             <FaCheckCircle className="text-green-500" />
           ) : (
-            <BiTime className="text-xl" />
+            <BiTime className="text-gray-400 text-xl" />
           )}
           <span>Work Experience</span>
         </div>
-        <div className="flex items-center gap-4 text-gray-600 text-xl">
+        {!showForm && (
           <button
-            onClick={handleAddNew}
-            className="text-green-600 hover:text-green-700 cursor-pointer"
-            title="Add New Work Experience"
-            aria-label="Add New Work Experience"
+            onClick={() => {
+              resetForm();
+              setShowForm(true);
+              setEditingIndex(null);
+            }}
+            className="flex items-center gap-2 text-blue-600 hover:text-blue-800"
             disabled={isProcessing}
           >
-            <Plus className="text-xl" />
+            <Plus size={16} />
+            Add Work Experience
           </button>
-        </div>
+        )}
       </div>
 
       <div className="p-6 space-y-6">
-        {error && <div className="text-red-500 text-sm mb-4">{error}</div>}
-        {isProcessing ? (
-          showForm ? (
-            renderSkeletonForm()
-          ) : (
-            <div className="space-y-4">
-              {[...Array(2)].map((_, i) => (
-                <div key={i}>{renderSkeletonCard()}</div>
-              ))}
-            </div>
-          )
+        {isProcessing && !showForm ? (
+          <p className="text-gray-500">Loading work experience...</p>
         ) : showForm ? (
-          <div className="space-y-6">
-            <label className="flex items-center gap-2 text-sm text-gray-700 mb-4">
+          <div className="space-y-4">
+            <div className="relative" ref={dropdownRef}>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Designation <span className="text-red-500">*</span>
+              </label>
+              <div
+                className="border rounded-md px-3 py-2 flex items-center justify-between cursor-pointer"
+                onClick={() => !isProcessing && setShowDropdown(!showDropdown)}
+              >
+                <span>
+                  {formData.designation4.name || "Select Designation"}
+                </span>
+                <ChevronDown size={16} />
+              </div>
+              {showDropdown && (
+                <div className="absolute z-10 w-full bg-white border border-gray-200 rounded-md shadow-lg mt-1 max-h-40 overflow-y-auto">
+                  {designations.map((designation) => (
+                    <button
+                      key={designation.id}
+                      className="w-full text-left px-3 py-2 hover:bg-gray-100"
+                      onClick={() => {
+                        handleChange("designation4", designation);
+                        setShowDropdown(false);
+                      }}
+                      disabled={isProcessing}
+                    >
+                      {designation.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="relative">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Organisation <span className="text-red-500">*</span>
+              </label>
+              <input
+                ref={instituteInputRef}
+                type="text"
+                placeholder="Organisation"
+                value={instituteInput}
+                onChange={(e) => handleInstituteInputChange(e.target.value)}
+                onFocus={() =>
+                  instituteInput.trim() &&
+                  filteredInstituteNames.length > 0 &&
+                  setIsInstitutesDropdownOpen(true)
+                }
+                className="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring focus:ring-blue-200"
+                disabled={isProcessing}
+              />
+              {isInstitutesDropdownOpen && filteredInstituteNames.length > 0 && (
+                <div
+                  ref={instituteDropdownRef}
+                  className="absolute z-10 w-full bg-white border border-gray-200 rounded-md shadow-lg mt-1 max-h-40 overflow-y-auto"
+                >
+                  {filteredInstituteNames.map((name) => (
+                    <button
+                      key={name}
+                      className="w-full text-left px-3 py-2 hover:bg-gray-100"
+                      onClick={() => handleInstituteSelect(name)}
+                      disabled={isProcessing}
+                    >
+                      {name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Employment Type <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={formData.employmenttype4}
+                onChange={(e) => handleChange("employmenttype4", e.target.value)}
+                className="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring focus:ring-blue-200"
+                disabled={isProcessing}
+              >
+                <option value="">Select Employment Type</option>
+                <option value="Full Time">Full Time</option>
+                <option value="Part Time">Part Time</option>
+                <option value="Contract">Contract</option>
+                <option value="Internship">Internship</option>
+              </select>
+            </div>
+
+            <label className="flex items-center gap-2 text-sm text-gray-600">
               <input
                 type="checkbox"
                 checked={formData.gotFromInternph4}
-                onChange={(e) =>
-                  handleChange("gotFromInternph4", e.target.checked)
-                }
+                onChange={() => handleCheckboxChange("gotFromInternph4")}
                 className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 disabled={isProcessing}
               />
-              Got this job from InternPH
+              Got this job from Internshp
             </label>
 
-            {renderSelect("Designation", "designation4", designations, true)}
-            {renderInstituteInput()}
-            {renderSelect(
-              "Employment Type",
-              "employmenttype4",
-              employmentTypes,
-              true
-            )}
-
-            {renderDurationSection()}
-
-            <div className="mb-4">
-              <div className="flex justify-between items-center mb-2">
-                <p className="text-sm font-medium text-gray-700">
-                  Location{" "}
-                  {formData.remote4 ? (
-                    ""
-                  ) : (
-                    <span className="text-red-500">*</span>
-                  )}
-                </p>
-                <label className="flex items-center gap-2 text-sm text-gray-700">
-                  <input
-                    type="checkbox"
-                    checked={formData.remote4}
-                    onChange={(e) => handleChange("remote4", e.target.checked)}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    disabled={isProcessing}
-                  />
-                  Remote
-                </label>
-              </div>
-              <div className="relative">
-                <input
-                  type="text"
-                  value={formData.location4}
-                  onChange={(e) => handleChange("location4", e.target.value)}
-                  ref={locationInputRef}
-                  placeholder="Enter Location"
-                  className={`w-full border rounded-lg p-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    formData.remote4 ? "bg-gray-100 cursor-not-allowed" : ""
-                  }`}
-                  disabled={formData.remote4 || isProcessing}
-                />
-              </div>
-            </div>
-
-            {renderSkillsInput()}
-
-            <div className="mb-4">
-              <p className="text-sm font-medium text-gray-700 mb-1">
-                Description
-              </p>
-              <textarea
-                placeholder="Describe your role here..."
-                value={formData.description4}
-                onChange={(e) => handleChange("description4", e.target.value)}
-                rows={5}
-                className="w-full border rounded-lg p-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Start Date <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="date"
+                value={formData.startdate4}
+                onChange={(e) => handleChange("startdate4", e.target.value)}
+                min={minDate}
+                max={today}
+                className="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring focus:ring-blue-200"
                 disabled={isProcessing}
               />
             </div>
 
-            <div className="mb-4">
+            <label className="flex items-center gap-2 text-sm text-gray-600">
+              <input
+                type="checkbox"
+                checked={formData.currentlyworking4}
+                onChange={() => handleCheckboxChange("currentlyworking4")}
+                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                disabled={isProcessing}
+              />
+              Currently Working
+            </label>
+
+            {!formData.currentlyworking4 && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  End Date <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  value={formData.enddate4}
+                  onChange={(e) => handleChange("enddate4", e.target.value)}
+                  min={formData.startdate4 || minDate}
+                  max={today}
+                  className="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring focus:ring-blue-200"
+                  disabled={isProcessing}
+                />
+              </div>
+            )}
+
+            <div className="relative">
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Attachments
+                Location <span className="text-red-500">*</span>
               </label>
-              {formData.files4 || selectedFile ? (
-                <div className="flex items-center justify-between border border-gray-300 rounded-md p-2 mb-2">
-                  <div className="flex items-center space-x-2">
-                    <AiFillFilePdf
-                      className="text-gray-500 text-lg"
-                      aria-label="PDF file icon"
-                    />
-                    {formData.files4 ? (
-                      <a
-                        href={formData.files4}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm text-gray-600 truncate max-w-[200px]"
-                      >
-                        {formData.files4.split("/").pop()}
-                      </a>
-                    ) : (
-                      <p className="text-sm text-gray-600 truncate max-w-[200px]">
-                        {selectedFile.name}
-                      </p>
-                    )}
-                  </div>
-                  <div className="relative" ref={dropdownRef}>
+              <input
+                ref={locationInputRef}
+                type="text"
+                placeholder="Location"
+                value={formData.location4}
+                onChange={(e) => handleChange("location4", e.target.value)}
+                className="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring focus:ring-blue-200"
+                disabled={isProcessing}
+              />
+            </div>
+
+            <label className="flex items-center gap-2 text-sm text-gray-600">
+              <input
+                type="checkbox"
+                checked={formData.remote4}
+                onChange={() => handleCheckboxChange("remote4")}
+                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                disabled={isProcessing}
+              />
+              Remote
+            </label>
+
+            <div className="relative">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Skills
+              </label>
+              <div className="flex flex-wrap gap-2 mb-2">
+                {formData.skills4.map((skillId) => {
+                  const skill = allSkills.find((s) => s.id === skillId);
+                  return skill ? (
                     <button
-                      className="text-gray-500 hover:text-gray-700 focus:outline-none"
-                      onClick={() => setShowDropdown(!showDropdown)}
-                      aria-label="More options"
+                      key={skillId}
+                      onClick={() => !isProcessing && handleSkillRemove(skillId)}
+                      className="px-3 py-1 bg-blue-100 text-blue-600 rounded-full flex items-center gap-1 text-sm"
+                      disabled={isProcessing}
                     >
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
-                        />
-                      </svg>
+                      {skill.name}
+                      <span>✕</span>
                     </button>
-                    {showDropdown && (
-                      <div className="absolute right-0 mt-2 w-32 bg-white border border-gray-300 rounded-md shadow-lg z-10">
-                        {formData.files4 && (
-                          <a
-                            href={formData.files4}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
-                          >
-                            <svg
-                              className="w-4 h-4 mr-2"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                              xmlns="http://www.w3.org/2000/svg"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                              />
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                              />
-                            </svg>
-                            Preview
-                          </a>
-                        )}
-                        <label
-                          htmlFor="workFileUpload"
-                          className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer flex items-center"
-                        >
-                          <svg
-                            className="w-4 h-4 mr-2"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                            xmlns="http://www.w3.org/2000/svg"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth="2"
-                              d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                            />
-                          </svg>
-                          Edit
-                          <input
-                            type="file"
-                            id="workFileUpload"
-                            className="hidden"
-                            accept=".doc,.docx,.pdf"
-                            onChange={(e) => {
-                              handleFileUpload(e);
-                              setShowDropdown(false);
-                            }}
-                            disabled={isProcessing}
-                          />
-                        </label>
-                        <button
-                          onClick={() => {
-                            if (editingIndex !== null) {
-                              handleDeleteFile(editingIndex);
-                            } else {
-                              handleRemoveFileFromForm();
-                            }
-                            setShowDropdown(false);
-                          }}
-                          className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 flex items-center"
-                        >
-                          <svg
-                            className="w-4 h-4 mr-2"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                            xmlns="http://www.w3.org/2000/svg"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth="2"
-                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-4h4M5 7h14M5 7l1-4h6l1 4"
-                            />
-                          </svg>
-                          Delete
-                        </button>
-                      </div>
-                    )}
+                  ) : null;
+                })}
+              </div>
+              <input
+                ref={skillInputRef}
+                type="text"
+                placeholder="Search skills to add..."
+                value={skillInput}
+                onChange={(e) => handleSkillInputChange(e.target.value)}
+                onFocus={() =>
+                  skillInput.trim() &&
+                  filteredSkills.length > 0 &&
+                  setIsSkillsDropdownOpen(true)
+                }
+                className="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring focus:ring-blue-200"
+                disabled={isProcessing}
+              />
+              {isSkillsDropdownOpen && filteredSkills.length > 0 && (
+                <div
+                  ref={skillDropdownRef}
+                  className="absolute z-10 w-full bg-white border border-gray-200 rounded-md shadow-lg mt-1 max-h-40 overflow-y-auto"
+                >
+                  {filteredSkills.map((skill) => (
+                    <button
+                      key={skill.id}
+                      className="w-full text-left px-3 py-2 text-gray-700 hover:bg-gray-100 transition text-sm"
+                      onClick={() => !isProcessing && handleSkillSelect(skill)}
+                      disabled={isProcessing}
+                    >
+                      {skill.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Description
+              </label>
+              <textarea
+                placeholder="Description"
+                value={formData.description4}
+                onChange={(e) => handleChange("description4", e.target.value)}
+                className="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring focus:ring-blue-200"
+                rows={5}
+                disabled={isProcessing}
+              />
+            </div>
+
+            <div>
+              {formData.files4 ? (
+                <div className="border rounded-md p-2 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <AiFillFilePdf className="text-red-500 text-lg" />
+                    <a
+                      href={formData.files4}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline truncate max-w-[80%]"
+                    >
+                      {formData.files4.split("/").pop()}
+                    </a>
                   </div>
+                  <button
+                    onClick={() => !isProcessing && handleRemoveFileFromForm()}
+                    className="text-red-600 hover:text-red-800"
+                    disabled={isProcessing}
+                  >
+                    <MdDelete />
+                  </button>
                 </div>
               ) : (
-                <label htmlFor="workFileId" className="cursor-pointer block">
+                <label htmlFor="workFileUpload" className="cursor-pointer block">
                   <div className="border-dashed border-2 border-gray-300 rounded-md px-4 py-6 text-center text-gray-600">
                     <span className="text-xl">+</span> Attachments
                   </div>
                   <input
                     type="file"
-                    id="workFileId"
+                    id="workFileUpload"
                     className="hidden"
                     accept=".doc,.docx,.pdf"
-                    onChange={handleFileUpload}
+                    onChange={(e) => {
+                      handleFileUpload(e);
+                      setShowDropdown(false);
+                    }}
                     disabled={isProcessing}
                   />
                 </label>
@@ -1383,19 +1101,26 @@ const WorkExperience = ({ userData, updateCompletionStatus }) => {
 
             <div className="sticky bottom-0 bg-white border-t p-4">
               <div className="flex justify-end">
-                <button
-                  onClick={handleSave}
-                  className="bg-blue-600 text-white px-6 py-2 rounded-full flex items-center gap-2 text-sm font-medium hover:bg-blue-700 transition disabled:opacity-50"
-                  disabled={isProcessing}
+                <div
+                  className={`bg-blue-600 text-white px-6 py-2 rounded-full flex items-center gap-2 text-sm font-medium hover:bg-blue-700 transition ${
+                    isProcessing ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+                  }`}
+                  onClick={() => !isProcessing && handleSave()}
                   aria-label={
                     editingIndex !== null
                       ? "Update Work Experience"
                       : "Save Work Experience"
                   }
                 >
-                  <span className="text-lg">✓</span>{" "}
-                  {editingIndex !== null ? "Update" : "Save"}
-                </button>
+                  <span className="text-lg">✓</span>
+                  <span>
+                    {isProcessing
+                      ? "Saving..."
+                      : editingIndex !== null
+                      ? "Update"
+                      : "Save"}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -1432,7 +1157,7 @@ const WorkExperience = ({ userData, updateCompletionStatus }) => {
                           </p>
                           {work.gotFromInternph4 && (
                             <p className="text-sm text-gray-600">
-                              Got this job from InternPH
+                              Got this job from Internshp
                             </p>
                           )}
                           <div className="flex items-center space-x-2 mt-1">
@@ -1482,9 +1207,10 @@ const WorkExperience = ({ userData, updateCompletionStatus }) => {
                               </a>
                               <MdDelete
                                 className="text-red-500 text-lg cursor-pointer hover:text-red-700"
-                                onClick={() => handleDeleteFile(index)}
+                                onClick={() => !isProcessing && handleDeleteFile(index)}
                                 title="Delete File"
                                 aria-label="Delete File"
+                                disabled={isProcessing}
                               />
                             </div>
                           )}
@@ -1493,17 +1219,17 @@ const WorkExperience = ({ userData, updateCompletionStatus }) => {
                       <div className="flex items-center space-x-2">
                         <MdEdit
                           className="text-blue-600 text-xl cursor-pointer hover:text-blue-800"
-                          onClick={() => handleEdit(index)}
+                          onClick={() => !isProcessing && handleEdit(index)}
                           disabled={isProcessing}
                           aria-label="Edit Work Experience"
                         />
                         <MdDelete
                           className="text-red-500 text-xl cursor-pointer hover:text-red-700"
-                          onClick={() => handleRemove(index)}
+                          onClick={() => !isProcessing && handleRemove(index)}
                           disabled={isProcessing}
                           aria-label="Delete Work Experience"
                         />
-                      </div>
+                        </div>
                     </div>
                   </div>
                 ))}
