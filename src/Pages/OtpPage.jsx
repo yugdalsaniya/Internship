@@ -20,6 +20,8 @@ const OtpVerification = () => {
   const location = useLocation();
   const formRef = useRef(null);
 
+  const inputRefs = [useRef(null), useRef(null), useRef(null), useRef(null)];
+
   const roleNames = {
     1747825619417: "student",
     1747723485001: "company",
@@ -63,13 +65,31 @@ const OtpVerification = () => {
     return `${minutes}:${secs < 10 ? "0" : ""}${secs}`;
   };
 
+  // Only this function is changed for continuous removal/backspace
   const handleChange = (index, value) => {
     if (/^\d?$/.test(value)) {
       const newOtp = [...otp];
       newOtp[index] = value;
       setOtp(newOtp);
       if (value && index < 3) {
-        document.getElementById(`otp-${index + 1}`).focus();
+        inputRefs[index + 1].current.focus();
+      }
+    }
+  };
+
+  const handleKeyDown = (index, e) => {
+    if (e.key === "Backspace") {
+      if (otp[index]) {
+        // If current box has value, just clear it
+        const newOtp = [...otp];
+        newOtp[index] = "";
+        setOtp(newOtp);
+      } else if (index > 0) {
+        // If current box is empty, move to previous box and clear it
+        inputRefs[index - 1].current.focus();
+        const newOtp = [...otp];
+        newOtp[index - 1] = "";
+        setOtp(newOtp);
       }
     }
   };
@@ -411,6 +431,8 @@ const OtpVerification = () => {
                       maxLength="1"
                       value={digit}
                       onChange={(e) => handleChange(index, e.target.value)}
+                      onKeyDown={(e) => handleKeyDown(index, e)}
+                      ref={inputRefs[index]}
                       className="w-10 h-10 xs:w-12 xs:h-12 border rounded-md text-center text-sm xs:text-base outline-none focus:ring-2 focus:ring-[#3D7EFF]"
                       aria-label={`OTP digit ${index + 1}`}
                     />

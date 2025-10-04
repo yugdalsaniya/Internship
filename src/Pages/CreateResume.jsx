@@ -3,7 +3,17 @@ import { useNavigate } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import alex from "../assets/Hero/alex-resume.jpg";
-import { User, Phone, Mail, MapPin, Briefcase, BookOpen, Star, Award, Printer } from "lucide-react";
+import {
+  User,
+  Phone,
+  Mail,
+  MapPin,
+  Briefcase,
+  BookOpen,
+  Star,
+  Award,
+  Printer,
+} from "lucide-react";
 import { fetchSectionData } from "../Utils/api";
 
 export default function App({ userData }) {
@@ -34,8 +44,10 @@ export default function App({ userData }) {
     mobile: "",
     address: "",
     location: "",
+    profile: "",
     designation: "",
   });
+  const [designationName, setDesignationName] = useState(""); // Main designation name for header
 
   // Fetch userId from localStorage and validate
   useEffect(() => {
@@ -48,7 +60,7 @@ export default function App({ userData }) {
         position: "top-right",
         autoClose: 5000,
       });
-      navigate("/ph/login");
+      navigate("/login");
       return;
     }
 
@@ -58,7 +70,7 @@ export default function App({ userData }) {
         position: "top-right",
         autoClose: 5000,
       });
-      navigate("/ph/login");
+      navigate("/login");
       return;
     }
 
@@ -75,11 +87,11 @@ export default function App({ userData }) {
         position: "top-right",
         autoClose: 5000,
       });
-      navigate("/ph/login");
+      navigate("/login");
     }
   }, [navigate]);
 
-  // Fetch "About", "Education", "Work Experience", "Skills", and "Certificates" data from DB
+  // Fetch main user data, including designation name and profile image
   useEffect(() => {
     if (!userId) return;
 
@@ -88,6 +100,7 @@ export default function App({ userData }) {
         setIsLoading(true);
         setError("");
 
+        // Fetch user data with designation lookup for header (main designation)
         const response = await fetchSectionData({
           dbName: "internph",
           collectionName: "appuser",
@@ -95,6 +108,14 @@ export default function App({ userData }) {
           lookups: [
             {
               $match: { _id: userId },
+            },
+            {
+              $lookup: {
+                from: "designation",
+                localField: "sectionData.appuser.designation",
+                foreignField: "_id",
+                as: "mainDesignationInfo",
+              },
             },
             {
               $lookup: {
@@ -130,8 +151,16 @@ export default function App({ userData }) {
             },
             {
               $set: {
+                // Set main designation as string from designation collection
+                "sectionData.appuser.designation":
+                  { $ifNull: [
+                    { $arrayElemAt: ["$mainDesignationInfo.sectionData.designation.name", 0] },
+                    ""
+                  ] },
+                // Skills
                 "sectionData.appuser.skills":
                   "$skillsInfo.sectionData.skills.name",
+                // Education with specialization
                 "sectionData.appuser.education": {
                   $map: {
                     input: "$sectionData.appuser.education",
@@ -156,6 +185,7 @@ export default function App({ userData }) {
                     },
                   },
                 },
+                // Work experience with designation and work skills
                 "sectionData.appuser.workexperience2": {
                   $map: {
                     input: "$sectionData.appuser.workexperience2",
@@ -208,54 +238,38 @@ export default function App({ userData }) {
           ],
         });
 
-
         const user = response?.[0];
         if (!user || !user.sectionData?.appuser) {
           throw new Error("No user data found.");
         }
 
-        const fetchedAbout = user.sectionData.appuser.about || "";
-        const fetchedEducation = user.sectionData.appuser.education || [];
-        const fetchedWorkExperience =
-          user.sectionData.appuser.workexperience2 || [];
-        const fetchedSkills = user.sectionData.appuser.skills || [];
-        const fetchedCertificates =
-          user.sectionData.appuser.certificatesdetails || [];
+        const appuser = user.sectionData.appuser;
 
         // Set only non-empty user details
         const userDetailsData = {};
-        if (user.sectionData.appuser.legalname) {
-          userDetailsData.name = user.sectionData.appuser.legalname;
-        }
-        if (user.sectionData.appuser.email) {
-          userDetailsData.email = user.sectionData.appuser.email;
-        }
-        if (user.sectionData.appuser.mobile) {
-          userDetailsData.mobile = user.sectionData.appuser.mobile;
-        }
-        if (user.sectionData.appuser.addressline1) {
-          userDetailsData.address = user.sectionData.appuser.addressline1;
-        }
-        if (user.sectionData.appuser.location) {
-          userDetailsData.location = user.sectionData.appuser.location;
-        }
-        if (
-          user.sectionData.appuser.course ||
-          user.sectionData.appuser.designation ||
-          user.sectionData.appuser.stream
-        ) {
-          userDetailsData.designation =
-            user.sectionData.appuser.course ||
-            user.sectionData.appuser.designation ||
-            user.sectionData.appuser.stream;
-        }
+        if (appuser.legalname) userDetailsData.name = appuser.legalname;
+        if (appuser.email) userDetailsData.email = appuser.email;
+        if (appuser.mobile) userDetailsData.mobile = appuser.mobile;
+        if (appuser.addressline1) userDetailsData.address = appuser.addressline1;
+        if (appuser.location) userDetailsData.location = appuser.location;
+        // Profile image - use db image if present, else default
+        userDetailsData.profile =
+          (appuser.profile && typeof appuser.profile === "string" && appuser.profile.trim() !== "")
+            ? appuser.profile
+            : alex;
 
-        setAbout(fetchedAbout);
-        setEducationList(fetchedEducation);
-        setWorkExperienceList(fetchedWorkExperience);
-        setSkills(fetchedSkills);
-        setCertificates(fetchedCertificates);
+        // Use looked-up designation name for header if present
+        userDetailsData.designation = appuser.designation || "";
+
         setUserDetails(userDetailsData);
+        setDesignationName(appuser.designation || ""); // for header
+
+        // About, Education, Work, Skills, Certificates
+        setAbout(appuser.about || "");
+        setEducationList(appuser.education || []);
+        setWorkExperienceList(appuser.workexperience2 || []);
+        setSkills(appuser.skills || []);
+        setCertificates(appuser.certificatesdetails || []);
       } catch (err) {
         console.error("Failed to load user data:", err);
         setError("Failed to load profile data: " + err.message);
@@ -309,60 +323,65 @@ export default function App({ userData }) {
       {/* Resume Content to Print */}
       <div ref={resumeRef} className="shadow-lg print:shadow-none">
         {/* HEADER */}
-        <div className="bg-white flex flex-col sm:flex-row items-center border-[3px] border-gray-500 px-8 py-6">
-          {/* LEFT SIDE: Name + Contact */}
-          <div className="flex flex-col sm:flex-row items-center justify-between w-full sm:w-9/12">
-            <div className="text-center sm:text-left">
+        <div className="bg-white border-[3px] border-gray-500 px-8 py-6">
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-start">
+            {/* LEFT SIDE: Name */}
+            <div className="sm:col-span-5 text-center sm:text-left">
               {userDetails.name && (
-                <h1 className="text-4xl font-bold uppercase tracking-wide leading-tight">
+                <h1 className="text-4xl font-bold uppercase tracking-wide break-words">
                   {userDetails.name.toUpperCase()}
                 </h1>
               )}
-              {userDetails.designation && (
-                <p className="text-base tracking-wide text-gray-500">
-                  {userDetails.designation}
+              {designationName && (
+                <p className="text-base tracking-wide text-gray-500 mt-1">
+                  {designationName}
                 </p>
               )}
             </div>
-
-            {/* Contact Info */}
-            {(userDetails.mobile ||
-              userDetails.email ||
-              userDetails.location) && (
-              <div className="flex flex-col items-center sm:items-start mt-4 sm:mt-0">
-                <div className="w-[3px] h-8 bg-gray-500 hidden sm:block"></div>
-                <div className="flex flex-col gap-2 mt-2 mb-2">
-                  {userDetails.mobile && (
-                    <div className="flex items-center gap-2 text-gray-600 hover:text-blue-600">
-                      <Phone className="w-5 h-5" />
-                      <span>{userDetails.mobile}</span>
-                    </div>
-                  )}
-                  {userDetails.email && (
-                    <div className="flex items-center gap-2 text-gray-600 hover:text-blue-600">
-                      <Mail className="w-5 h-5" />
-                      <span>{userDetails.email}</span>
-                    </div>
-                  )}
-                  {userDetails.location && (
-                    <div className="flex items-center gap-2 text-gray-600 hover:text-blue-600">
-                      <MapPin className="w-5 h-5" />
-                      <span>{userDetails.location}</span>
-                    </div>
-                  )}
+            
+            {/* MIDDLE: Contact Info */}
+            <div className="sm:col-span-4 flex flex-col items-center sm:items-start">
+              {(userDetails.mobile || userDetails.email || userDetails.location) && (
+                <div className="flex flex-col items-center sm:items-start w-full">
+                  <div className="w-[3px] h-8 bg-gray-500 hidden sm:block"></div>
+                  <div className="flex flex-col gap-2 mt-2 mb-2 w-full">
+                    {userDetails.mobile && (
+                      <div className="flex items-center gap-2 text-gray-600 hover:text-blue-600">
+                        <Phone className="w-5 h-5 flex-shrink-0" />
+                        <span className="break-all">{userDetails.mobile}</span>
+                      </div>
+                    )}
+                    {userDetails.email && (
+                      <div className="flex items-center gap-2 text-gray-600 hover:text-blue-600">
+                        <Mail className="w-5 h-5 flex-shrink-0" />
+                        <span className="break-all">{userDetails.email}</span>
+                      </div>
+                    )}
+                    {userDetails.location && (
+                      <div className="flex items-center gap-2 text-gray-600 hover:text-blue-600">
+                        <MapPin className="w-5 h-5 flex-shrink-0" />
+                        <span className="break-all">{userDetails.location}</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="w-[3px] h-8 bg-gray-500 hidden sm:block"></div>
                 </div>
-                <div className="w-[3px] h-8 bg-gray-500 hidden sm:block"></div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
 
-          {/* RIGHT SIDE: IMAGE */}
-          <div className="w-full sm:w-3/12 flex justify-center mt-4 sm:mt-0">
-            <img
-              src={alex}
-              alt="Profile"
-              className="w-32 h-32 object-cover rounded-full overflow-hidden"
-            />
+            {/* RIGHT SIDE: IMAGE */}
+            <div className="sm:col-span-3 flex justify-center">
+              <img
+                src={userDetails.profile || alex}
+                alt="Profile"
+                className="w-32 h-32 object-cover rounded-full overflow-hidden"
+                onError={(e) => {
+                  // fallback to default if image fails to load
+                  e.target.onerror = null;
+                  e.target.src = alex;
+                }}
+              />
+            </div>
           </div>
         </div>
 
@@ -370,24 +389,24 @@ export default function App({ userData }) {
         <div className="bg-white px-8 py-8 space-y-8">
           {/* PERSONAL PROFILE (Dynamic from DB) */}
           <section className="border-b-[3px] border-gray-500 pb-6 sm:pb-10 w-full">
-  <h2 className="text-base sm:text-lg font-bold tracking-wide pb-1 flex items-center gap-2">
-    <User className="w-4 h-4 sm:w-5 sm:h-5" /> PERSONAL PROFILE
-  </h2>
-  {isLoading ? (
-    <div className="animate-pulse">
-      <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
-      <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-    </div>
-  ) : error ? (
-    <p className="text-sm mt-3 leading-relaxed text-red-500">
-      {error}
-    </p>
-  ) : (
-    <p className="text-xs sm:text-sm mt-3 leading-relaxed whitespace-normal break-words">
-      {about || "No personal profile provided. Please update your profile."}
-    </p>
-  )}
-</section>
+            <h2 className="text-base sm:text-lg font-bold tracking-wide pb-1 flex items-center gap-2">
+              <User className="w-4 h-4 sm:w-5 sm:h-5" /> PERSONAL PROFILE
+            </h2>
+            {isLoading ? (
+              <div className="animate-pulse">
+                <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
+                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+              </div>
+            ) : error ? (
+              <p className="text-sm mt-3 leading-relaxed text-red-500">
+                {error}
+              </p>
+            ) : (
+              <p className="text-xs sm:text-sm mt-3 leading-relaxed whitespace-normal break-words">
+                {about || "No personal profile provided. Please update your profile."}
+              </p>
+            )}
+          </section>
 
           {/* WORK EXPERIENCE (Dynamic from DB) */}
           <section className="border-b-[3px] border-gray-500 pb-10">
@@ -410,11 +429,7 @@ export default function App({ userData }) {
             ) : (
               <div className="space-y-6 mt-3">
                 {workExperienceList.map((exp, index) => {
-                  const hasDetails =
-                    exp.organisation4 ||
-                    exp.location4 ||
-                    (exp.startdate4 && exp.enddate4);
-
+                  // exp.designation4 is already mapped to designation name by lookup
                   return (
                     <div key={index} className="space-y-1">
                       <h3 className="font-bold text-sm uppercase">

@@ -2,12 +2,24 @@ import React, { useState, useEffect, useRef } from "react";
 import Hero from "../Components/home/Hero";
 import bannerImage from "../assets/Hero/banner4.png";
 import { FaPhoneAlt, FaEnvelope, FaClock, FaMapMarkerAlt } from "react-icons/fa";
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import { sendEmailTemplate, sendRawEmail, addGeneralData } from '../Utils/api';
 
 export default function ContactUsPage() {
   const [mapCenter, setMapCenter] = useState(null);
   const [address, setAddress] = useState("iSquare Building, 15 Meralco Ave, Ortigas Center, Pasig, 1600 Metro Manila, Philippines");
   const mapRef = useRef(null);
   const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "AIzaSyCu9YGSvrE22iUL4Xhe3ISk-B0r8FTW9jI"; // Replace with your actual API key or use env variable
+  
+  // Contact form state
+  const [formData, setFormData] = useState({
+    FirstName: '',
+    LastName: '',
+    EmailAddress: '',
+    Message: ''
+  });
+  const [loading, setLoading] = useState(false);
 
   // Load Google Maps script and geocode the address
   useEffect(() => {
@@ -73,8 +85,99 @@ export default function ContactUsPage() {
     }
   }, [mapCenter]);
 
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      // Store data in contactus collection
+      await addGeneralData({
+        dbName: 'internph',
+        collectionName: 'contactus',
+        data: {
+          sectionData: {
+            contactus: {
+              name: `${formData.FirstName} ${formData.LastName}`,
+              email: formData.EmailAddress,
+              massage: formData.Message
+            }
+          }
+        }
+      });
+
+      // Prepare email data for template
+      const emailData = {
+        FirstName: formData.FirstName,
+        LastName: formData.LastName,
+        EmailAddress: formData.EmailAddress,
+        Message: formData.Message,
+        support_email: 'support@inturnshp.com',
+        CompanyName: 'Inturnshp',
+        your_portal_url: 'https://inturnshp.com/ph',
+        SocialMediaLinks: '<a href="https://twitter.com/inturnsph">Twitter</a> | <a href="https://linkedin.com/company/inturnsph">LinkedIn</a> | <a href="https://facebook.com/inturnsph">Facebook</a>',
+        Year: new Date().getFullYear().toString(),
+        YourPortalName: 'Inturnshp'
+      };  
+
+      // Send email using template
+      await sendEmailTemplate(
+        {
+          appName: 'app8657281202648',
+          email: 'info@inturnshp.com',
+          templateId: '1758704011530',
+          smtpId: '1750933648545',
+          data: emailData,
+          category: 'primary',
+          subject: 'contact'
+        },
+        { success: () => {}, error: () => {} }
+      );
+
+      toast.success('Message sent successfully! We will get back to you soon.', {
+        position: 'top-right',
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        theme: 'light',
+      });
+
+      // Reset form
+      setFormData({
+        FirstName: '',
+        LastName: '',
+        EmailAddress: '',
+        Message: ''
+      });
+
+    } catch (error) {
+      console.error('Error processing contact form:', error);
+      toast.error('Failed to send message. Please try again.', {
+        position: 'top-right',
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        theme: 'light',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="bg-white text-[#0B0B0B]">
+      <ToastContainer />
       {/* Hero Section */}
       <Hero
         title="Contact Us"
@@ -141,22 +244,30 @@ export default function ContactUsPage() {
         {/* Right: Contact Form */}
         <div className="bg-gradient-to-b from-[#fff0f5] via-[#fdf5f5] to-white rounded-xl shadow p-6 w-full">
           <h3 className="text-xl font-bold mb-4 text-center">Contact Info</h3>
-          <form className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-semibold mb-1">First Name</label>
                 <input
                   type="text"
+                  name="FirstName"
+                  value={formData.FirstName}
+                  onChange={handleChange}
                   placeholder="Your name"
                   className="w-full border rounded-md px-4 py-2 text-sm"
+                  required
                 />
               </div>
               <div>
                 <label className="block text-sm font-semibold mb-1">Last Name</label>
                 <input
                   type="text"
+                  name="LastName"
+                  value={formData.LastName}
+                  onChange={handleChange}
                   placeholder="Your last name"
                   className="w-full border rounded-md px-4 py-2 text-sm"
+                  required
                 />
               </div>
             </div>
@@ -164,23 +275,32 @@ export default function ContactUsPage() {
               <label className="block text-sm font-semibold mb-1">Email Address</label>
               <input
                 type="email"
+                name="EmailAddress"
+                value={formData.EmailAddress}
+                onChange={handleChange}
                 placeholder="Your E-mail address"
                 className="w-full border rounded-md px-4 py-2 text-sm"
+                required
               />
             </div>
             <div>
               <label className="block text-sm font-semibold mb-1">Message</label>
               <textarea
                 rows="4"
+                name="Message"
+                value={formData.Message}
+                onChange={handleChange}
                 placeholder="Your message..."
                 className="w-full border rounded-md px-4 py-2 text-sm"
+                required
               />
             </div>
             <button
               type="submit"
-              className="w-full bg-gradient-to-r from-[#5F6FFF] to-[#4D38E8] text-white py-2 rounded-md font-semibold"
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-[#5F6FFF] to-[#4D38E8] text-white py-2 rounded-md font-semibold disabled:opacity-50"
             >
-              Send Message
+              {loading ? 'Sending...' : 'Send Message'}
             </button>
           </form>
         </div>

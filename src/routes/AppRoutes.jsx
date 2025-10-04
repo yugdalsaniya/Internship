@@ -3,6 +3,7 @@ import {
   BrowserRouter as Router,
   Routes,
   Route,
+  Navigate,
   useLocation,
 } from "react-router-dom";
 import { useDocumentTitle } from "../Utils/useDocumentTitle";
@@ -36,6 +37,7 @@ import NewsAndBlogPage from "../Pages/student/NewsAndBlogPage";
 import AllEmployers from "../Components/home/AllEmployers";
 import AllAcademies from "../Components/home/AllAcademies";
 import AcademyProfilePage from "../Pages/Academy/AcademyProfilePage";
+import AcademyMOAPage from "../Pages/Academy/AcademyMOAPage";
 import AllNewsAndBlogs from "../Components/home/AllNewsAndBlogs";
 import SidebarItem from "../Components/profile/SidebarItem";
 import EditInternship from "../Pages/company/EditInternship"; // Import the EditInternship component
@@ -44,6 +46,7 @@ import SubscriptionPlans from "../Pages/company/SubscriptionPlans"; // Import Su
 import MentorProfilePage from "../Pages/Mentor/MentorProfilePage";
 import AllMentors from "../Components/home/AllMentors";
 import CreateResume from "../Pages/CreateResume.jsx";
+import CreateMentorResume from "../Pages/CreateMentorResume.jsx";
 import PostMentorship from "../Pages/Mentor/PostMentorship.jsx";
 import PostMentorshipForm from "../Pages/Mentor/PostMentorshipForm.jsx";
 import ManageMentorships from "../Pages/Mentor/ManageMentorships.jsx";
@@ -112,7 +115,10 @@ function AppRoutesInner() {
         <Route path="/all-academies" element={<AllAcademies />} />
         <Route path="/all-mentors" element={<AllMentors />} />
         <Route path="/editprofile/create-resume" element={<CreateResume />} />
+        <Route path="/editprofile/create-mentor-resume" element={<CreateMentorResume />} />
         <Route path="/academy/:slug/:id" element={<AcademyProfilePage />} />
+        <Route path="/academy-moa" element={<AcademyMOAPage />} />
+        <Route path="/academy-moa-list" element={<Navigate to="/academy-moa" replace />} />
         <Route path="/mentor/:slug/:id" element={<MentorProfilePage />} />
         <Route path="/news-and-blog" element={<AllNewsAndBlogs />} />
         <Route path="/subscription-plans" element={<SubscriptionPlans />} />

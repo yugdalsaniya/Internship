@@ -17,9 +17,11 @@ import MentorBasicDetails from "../Components/profile/MentorBasicDetails";
 import MentorProfessionalDetails from "../Components/profile/MentorProfessionalDetails";
 import MentorAvailability from "../Components/profile/MentorAvailability";
 import CreateResume from "./CreateResume.jsx";
+import CreateMentorResume from "./CreateMentorResume.jsx";
 import { fetchSectionData } from "../Utils/api";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import Preference from "../Components/profile/Preference.jsx";
 
 const ProfileEditPage = () => {
   const [activeSection, setActiveSection] = useState("Personal Details");
@@ -31,7 +33,33 @@ const ProfileEditPage = () => {
   const user = JSON.parse(localStorage.getItem("user")) || {};
   const pendingUser = JSON.parse(localStorage.getItem("pendingUser")) || {};
   const allowedRoles = ["company", "academy"];
-  const mentorRoleId = "1747902955524";
+  const mentorRoleId = "1747902955524";  
+
+  const [preferredRegion, setPreferredRegion] = useState('');
+  const [locationjson, setLocation] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+
+
+// Custom select styles
+  const customSelectStyles = {
+    control: (provided) => ({
+      ...provided,
+      minHeight: '40px',
+      border: '1px solid #d1d5db',
+      borderRadius: '8px',
+      '&:hover': {
+        border: '1px solid #3b82f6'
+      }
+    }),
+    option: (provided, state) => ({
+      ...provided,
+      backgroundColor: state.isFocused ? '#e3f2fd' : 'white',
+      color: '#333',
+      '&:hover': {
+        backgroundColor: '#e3f2fd'
+      }
+    })
+  };
 
   const userData = {
     ...pendingUser,
@@ -176,6 +204,7 @@ const ProfileEditPage = () => {
     "mentor-basic-details": "Basic Details",
     resume: "Resume",
     "create-resume": "Create Resume",
+    "create-mentor-resume": "Create Resume",
     about: "About",
     skills: "Skills",
     education: "Education",
@@ -187,6 +216,7 @@ const ProfileEditPage = () => {
     "organization-details": "Organization Details",
     "mentor-professional-details": "Professional Details",
     "mentor-availability": "Availability",
+    preference: "Preference",
   };
 
   useEffect(() => {
@@ -362,6 +392,7 @@ const ProfileEditPage = () => {
             !!apiData.projectdetails?.length ||
             !!apiData.achievementsdetails?.length ||
             !!apiData.responsibilitydetails?.length,
+             "Preference": !!apiData.preferredregion && !!apiData.preferredlocation,
         };
 
         if (userData.roleId === mentorRoleId) {
@@ -504,6 +535,11 @@ const ProfileEditPage = () => {
         path: "social-links",
         completed: completionStatus["Social Links"] || false,
         required: false,
+      },{
+        label: "Preference",
+        path: "preference",
+        completed: completionStatus["Preference"] || false,
+        required: false,
       },
     ];
   }
@@ -525,30 +561,56 @@ className={`w-full md:w-[320px] border-r bg-white fixed top-16 left-0 h-[calc(10
             </button>
           </div>
           <div className="p-4 space-y-4">
-            {!allowedRoles.includes(userData.role) &&
-              userData.roleId !== mentorRoleId && (
-                <>
-                  <div className="flex items-center justify-center">
-                    <Link to="/editprofile/create-resume">
-                      <button className="bg-[#0073e6] text-white font-semibold px-14 py-2 rounded flex items-center gap-2 hover:bg-[#005bb5] transition-colors">
-                        <FaFileMedical className="text-white text-lg" />
-                        Create your Resume
+            {!allowedRoles.includes(userData.role) && (
+              <>
+                {userData.roleId !== mentorRoleId ? (
+                  <>
+                    <div className="flex items-center justify-center">
+                      <Link to="/editprofile/create-resume">
+                        <button className="bg-[#0073e6] text-white font-semibold px-14 py-2 rounded flex items-center gap-2 hover:bg-[#005bb5] transition-colors">
+                          <FaFileMedical className="text-white text-lg" />
+                          Create your Resume
+                        </button>
+                      </Link>
+                    </div>
+                    
+                    {/* Share Profile Button */}
+                    <div className="flex items-center justify-center">
+                      <button 
+                        onClick={() => setShowShareModal(true)}
+                        className="bg-green-600 text-white font-semibold px-14 py-2 rounded flex items-center gap-2 hover:bg-green-700 transition-colors w-full justify-center"
+                      >
+                        <FaShare className="text-white text-lg" />
+                        Share Profile
                       </button>
-                    </Link>
-                  </div>
-                  
-                  {/* Share Profile Button */}
-                  <div className="flex items-center justify-center">
-                    <button 
-                      onClick={() => setShowShareModal(true)}
-                      className="bg-green-600 text-white font-semibold px-14 py-2 rounded flex items-center gap-2 hover:bg-green-700 transition-colors w-full justify-center"
-                    >
-                      <FaShare className="text-white text-lg" />
-                      Share Profile
-                    </button>
-                  </div>
-                </>
-              )}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {/* Mentor Create Resume Button */}
+                    <div className="flex items-center justify-center">
+                      <Link to="/editprofile/create-mentor-resume">
+                        <button className="bg-[#0073e6] text-white font-semibold px-14 py-2 rounded flex items-center gap-2 hover:bg-[#005bb5] transition-colors">
+                          <FaFileMedical className="text-white text-lg" />
+                          Create your Resume
+                        </button>
+                      </Link>
+                    </div>
+                    
+                    {/* Share Profile Button */}
+                    <div className="flex items-center justify-center">
+                      <button 
+                        onClick={() => setShowShareModal(true)}
+                        className="bg-green-600 text-white font-semibold px-14 py-2 rounded flex items-center gap-2 hover:bg-green-700 transition-colors w-full justify-center"
+                      >
+                        <FaShare className="text-white text-lg" />
+                        Share Profile
+                      </button>
+                    </div>
+                  </>
+                )}
+              </>
+            )}
             <div className="bg-gray-100 p-4 rounded-lg">
               <h3 className="font-semibold text-sm">Enhance your Profile</h3>
               <p className="text-xs text-gray-500 mt-1">
@@ -647,7 +709,7 @@ className={`w-full md:w-[320px] border-r bg-white fixed top-16 left-0 h-[calc(10
                 <Route
                   path="*"
                   element={
-                    <Navigate to="/ph/editprofile/company-details" replace />
+                    <Navigate to="/editprofile/company-details" replace />
                   }
                 />
               </>
@@ -689,6 +751,7 @@ className={`w-full md:w-[320px] border-r bg-white fixed top-16 left-0 h-[calc(10
                     />
                   }
                 />
+                <Route path="create-mentor-resume" element={<CreateMentorResume userData={userData} />} />
                 <Route
                   path="*"
                   element={
@@ -778,10 +841,27 @@ className={`w-full md:w-[320px] border-r bg-white fixed top-16 left-0 h-[calc(10
                     />
                   }
                 />
+<Route
+  path="preference"
+  element={
+    <Preference
+      userData={userData}
+      updateCompletionStatus={updateCompletionStatus}
+      preferredRegion={preferredRegion}
+        setPreferredRegion={setPreferredRegion}
+        locationjson={locationjson}
+        setLocation={setLocation}
+        isProcessing={isProcessing}
+        customSelectStyles={customSelectStyles}
+    />
+  }
+/>
+
                 <Route
                   path="*"
                   element={<BasicDetails userData={userData} />}
                 />
+                
               </>
             )}
           </Routes>

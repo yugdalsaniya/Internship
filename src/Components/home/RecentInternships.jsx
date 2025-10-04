@@ -11,7 +11,61 @@ export default function RecentInternship() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isFetching, setIsFetching] = useState(false); // Track fetching state
+  // New state for user preferences
+  const [userPreferences, setUserPreferences] = useState({
+    preferredRegion: "",
+    preferredLocation: ""
+  });
   const maxInternships = 4;
+
+  // Fetch user preferences
+  useEffect(() => {
+    const fetchUserPreferences = async () => {
+      try {
+        const userString = localStorage.getItem("user");
+        if (!userString) {
+          console.log("No user logged in");
+          return;
+        }
+
+        let userId;
+        try {
+          const user = JSON.parse(userString);
+          userId = user.userid;
+        } catch (parseError) {
+          console.error("Parse error:", parseError);
+          return;
+        }
+
+        if (!userId) {
+          console.log("No user ID found");
+          return;
+        }
+
+        const userDataResponse = await fetchSectionData({
+          dbName: "internph",
+          collectionName: "appuser",
+          query: { _id: userId },
+        });
+
+        if (
+          userDataResponse &&
+          Array.isArray(userDataResponse) &&
+          userDataResponse.length > 0
+        ) {
+          const userData = userDataResponse[0]?.sectionData?.appuser || {};
+          setUserPreferences({
+            preferredRegion: userData.preferredregion || "",
+            preferredLocation: userData.preferredlocation || ""
+          });
+        }
+      } catch (err) {
+        console.error("Error fetching user preferences:", err);
+      }
+    };
+
+    fetchUserPreferences();
+  }, []);
 
   useEffect(() => {
     let intervalId = null;
@@ -53,8 +107,26 @@ export default function RecentInternship() {
     };
   }, []); // Empty dependency array to run only on mount
 
-  const processedInternships = useMemo(() => {
+  // Helper function to check if internship location matches user preferences
+  const isPreferredLocation = (internshipLocation) => {
+    if (!userPreferences.preferredLocation || !internshipLocation) return false;
+    
+    const userLocation = userPreferences.preferredLocation.toLowerCase();
+    const jobLocation = internshipLocation.toLowerCase();
+    
+    // Extract city and province from user preference (format: "City, Province, Philippines")
+    const userLocationParts = userLocation.split(',').map(part => part.trim());
+    const userCity = userLocationParts[0] || '';
+    const userProvince = userLocationParts[1] || '';
+    
+    // Check if job location contains any part of user's preferred location
+    return jobLocation.includes(userCity) || 
+           jobLocation.includes(userProvince) ||
+           userCity.includes(jobLocation) ||
+           userProvince.includes(jobLocation);
+  };
 
+  const processedInternships = useMemo(() => {
     return recentInternships
       .filter((job) => {
         const isInternship = job.sectionData?.jobpost?.type === "Internship";
@@ -85,6 +157,8 @@ export default function RecentInternship() {
           job._id
         );
 
+        const isPreferred = isPreferredLocation(job.sectionData?.jobpost?.location);
+
         return {
           id: job._id,
           role: job.sectionData?.jobpost?.title || "Unknown Role",
@@ -104,9 +178,15 @@ export default function RecentInternship() {
               : "https://placehold.co/40x40",
           createdDate: job.createdDate,
           slug: slug,
+          isPreferred: isPreferred,
         };
       })
       .sort((a, b) => {
+        // Always prioritize preferred locations first
+        if (a.isPreferred && !b.isPreferred) return -1;
+        if (!a.isPreferred && b.isPreferred) return 1;
+        
+        // Then sort by date (most recent first)
         try {
           const dateA = parse(
             a.createdDate,
@@ -125,7 +205,7 @@ export default function RecentInternship() {
         }
       })
       .slice(0, maxInternships);
-  }, [recentInternships]);
+  }, [recentInternships, userPreferences]);
 
   if (loading)
     return (
@@ -198,8 +278,17 @@ export default function RecentInternship() {
           {processedInternships.map((internship) => (
             <div
               key={internship.id}
-              className="flex flex-col bg-white rounded-lg md:rounded-lg shadow-sm md:shadow-md p-4 md:p-4 min-h-[140px] md:min-h-[150px]"
+              className={`flex flex-col bg-white rounded-lg md:rounded-lg shadow-sm md:shadow-md p-4 md:p-4 min-h-[140px] md:min-h-[150px] ${
+                internship.isPreferred ? 'border-l-4 border-blue-500 bg-blue-50' : ''
+              }`}
             >
+              {internship.isPreferred && (
+                <div className="mb-2">
+                  <span className="inline-block bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full">
+                    ⭐ Preferred Location
+                  </span>
+                </div>
+              )}
               <div className="flex justify-between items-center mb-2">
                 <span className="bg-gray-100 md:bg-gray-200 text-gray-700 md:text-gray-800 text-xs font-medium px-2 py-1 md:py-0.5 rounded-full">
                   {internship.time}

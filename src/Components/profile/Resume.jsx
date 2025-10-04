@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { FaCloudUploadAlt, FaCheckCircle } from 'react-icons/fa';
 import { BsEye } from 'react-icons/bs';
 import { BiTime } from 'react-icons/bi';
@@ -296,14 +296,23 @@ function Resume({ userData, updateCompletionStatus }) {
       </div>
       <div className="p-6">
         <div className="mb-4">
-          {/* <p className="text-sm font-medium text-gray-700 mb-1">
+          <p className="text-sm font-medium text-gray-700 mb-1">
             Resume<span className="text-red-500 ml-1">*</span>
-            <a href="#" className="text-blue-600 text-sm float-right hover:underline">
-              Create
-            </a>
-          </p> */}
+            {userData.roleId === "1747902955524" ? (
+              <Link to="/editprofile/create-mentor-resume" className="text-blue-600 text-sm float-right hover:underline">
+                Create
+              </Link>
+            ) : (
+              <Link to="/editprofile/create-resume" className="text-blue-600 text-sm float-right hover:underline">
+                Create
+              </Link>
+            )}
+          </p>
           <p className="text-gray-500 text-sm mb-4">
-            Remember that one-pager that highlights how amazing you are? Time to let employers notice your potential through it.
+            {userData.roleId === "1747902955524" 
+              ? "Create a professional mentor resume that showcases your expertise and mentoring capabilities."
+              : "Remember that one-pager that highlights how amazing you are? Time to let employers notice your potential through it."
+            }
           </p>
         </div>
         {resumeUrl ? (
