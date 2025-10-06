@@ -250,6 +250,13 @@ const Navbar = () => {
                       >
                         Requested Internships
                       </Link>
+                      <Link
+                        to="/student-moa"
+                        onClick={() => setUserDropdownOpen(false)}
+                        className="block px-4 py-2 text-xs sm:text-sm text-gray-800 hover:bg-gray-100"
+                      >
+                        My MOA Agreements
+                      </Link>
                     </>
                   )}
                   {role === "academy" && (

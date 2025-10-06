@@ -21,6 +21,7 @@ const AcademyMOAPage = () => {
   const [viewMOA, setViewMOA] = useState(null);
   const [academyData, setAcademyData] = useState({});
   const sigCanvas = useRef(null);
+  const moaPrintRef = useRef(null);
   
   const user = JSON.parse(localStorage.getItem("user")) || {};
 
@@ -120,6 +121,27 @@ const AcademyMOAPage = () => {
 
         const company = companyData[0]?.sectionData?.Company || {};
 
+        // Fetch company representative data
+        const companyRepResponse = await fetchSectionData({
+          dbName: "internph",
+          collectionName: "appuser",
+          query: { 
+            companyId: jobPost.createdBy,
+            "sectionData.appuser.module": "company"
+          },
+          projection: { sectionData: 1 },
+        });
+
+        let companyRep = "Company Representative";
+        let companyRepPosition = "Representative";
+        let companyAddress = company.organizationcity || "Company Address";
+        
+        if (companyRepResponse.length > 0) {
+          const repData = companyRepResponse[0].sectionData.appuser || {};
+          companyRep = repData.legalname || "Company Representative";
+          companyRepPosition = repData.cdesignation ? repData.cdesignation.replace(/&amp;quot;/g, '"').replace(/&quot;/g, '"').replace(/&amp;/g, '&') : "Representative";
+        }
+
         for (const applicant of selectedApplicants) {
           const student = students.find(s => s._id === applicant.text);
           
@@ -129,6 +151,9 @@ const AcademyMOAPage = () => {
             studentId: applicant.text,
             studentName: applicant.name || student?.sectionData?.appuser?.legalname || "Unknown",
             companyName: company.organizationName || "Unknown Company",
+            companyAddress: companyAddress,
+            companyRep: companyRep,
+            companyRepPosition: companyRepPosition,
             internshipTitle: jobPost.sectionData.jobpost.title || "Internship",
             startDate: applicant.startdate || "",
             endDate: applicant.enddate || "",
@@ -201,6 +226,91 @@ const AcademyMOAPage = () => {
   const handleViewMOA = (moa) => {
     setViewMOA(moa);
     setIsViewModalOpen(true);
+  };
+
+  const handlePrintMOA = () => {
+    const printContent = moaPrintRef.current;
+    if (!printContent) return;
+
+    const printWindow = window.open('', '_blank');
+    
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Memorandum of Agreement</title>
+        <style>
+          @media print {
+            @page {
+              size: A4;
+              margin: 15mm 10mm;
+            }
+            
+            body {
+              font-size: 12pt;
+              line-height: 1.5;
+              color: #000;
+              background: #fff;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+            }
+            
+            h1 {
+              font-size: 18pt;
+              font-weight: bold;
+              margin-bottom: 20px;
+              text-align: center;
+            }
+            
+            h3 {
+              font-size: 14pt;
+              margin-top: 20px;
+              margin-bottom: 10px;
+            }
+            
+            p, li {
+              margin-bottom: 10px;
+              text-align: justify;
+            }
+          }
+          
+          body {
+            font-family: 'Arial', 'Helvetica', sans-serif;
+            font-size: 12pt;
+            line-height: 1.5;
+            color: #000;
+            background: #fff;
+            padding: 20px;
+            max-width: 210mm;
+            margin: 0 auto;
+          }
+          
+          h1 {
+            font-size: 18pt;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-align: center;
+          }
+          
+          h3 {
+            font-size: 14pt;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 5px;
+          }
+        </style>
+      </head>
+      <body>
+        ${printContent.innerHTML}
+        <script>
+          window.onload = function() { window.print(); }
+        </script>
+      </body>
+      </html>
+    `);
+    
+    printWindow.document.close();
   };
 
   const clearSignature = () => {
@@ -323,16 +433,43 @@ const AcademyMOAPage = () => {
 
 
 
+
+
+  const [academyRepPosition, setAcademyRepPosition] = useState("Academy Position");
+
+  useEffect(() => {
+    const fetchAcademyRepPosition = async () => {
+      try {
+        if (user.post) {
+          const postResponse = await fetchSectionData({
+            dbName: "internph",
+            collectionName: "post",
+            query: { _id: user.post },
+            projection: { sectionData: 1 },
+          });
+          
+          if (postResponse.length > 0) {
+            setAcademyRepPosition(postResponse[0].sectionData?.post?.name || "Academy Position");
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching academy rep position:", err);
+      }
+    };
+    
+    fetchAcademyRepPosition();
+  }, [user.post]);
+
   const generateMOAContent = (moa) => {
     return {
       companyName: moa.companyName,
-      companyAddress: "Company Address", // You might want to fetch this
-      companyRep: "Company Representative",
-      companyRepPosition: "Position",
+      companyAddress: moa.companyAddress,
+      companyRep: moa.companyRep,
+      companyRepPosition: moa.companyRepPosition,
       schoolName: academyData.institutionname || "Academy Name",
       schoolAddress: `${academyData.municipalitycity || ""}, ${academyData.province || ""}`.trim() || "Academy Address",
       schoolRep: user.legalname || "Academy Representative",
-      schoolRepPosition: "Academy Position",
+      schoolRepPosition: academyRepPosition,
       startDate: moa.startDate,
       endDate: moa.endDate,
       internshipHours: `${moa.totalHours} hours`,
@@ -512,13 +649,28 @@ const AcademyMOAPage = () => {
         }}
       >
         {viewMOA && (
-          <MOAViewer
-            moaData={generateMOAContent(viewMOA)}
-            companySignature={viewMOA.companySignature}
-            academySignature={viewMOA.academySignature}
-            companySignedDate={viewMOA.companySignedDate}
-            academySignedDate={viewMOA.signedDate}
-          />
+          <div>
+            <div ref={moaPrintRef}>
+              <MOAViewer
+                moaData={generateMOAContent(viewMOA)}
+                companySignature={viewMOA.companySignature}
+                academySignature={viewMOA.academySignature}
+                companySignedDate={viewMOA.companySignedDate}
+                academySignedDate={viewMOA.signedDate}
+              />
+            </div>
+            <div className="flex justify-end p-4 bg-gray-50 border-t">
+              <button
+                onClick={handlePrintMOA}
+                className="bg-blue-500 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-600 transition-all flex items-center gap-2"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2z" />
+                </svg>
+                Print MOA
+              </button>
+            </div>
+          </div>
         )}
       </Modal>
 
