@@ -52,6 +52,7 @@ import PostMentorshipForm from "../Pages/Mentor/PostMentorshipForm.jsx";
 import ManageMentorships from "../Pages/Mentor/ManageMentorships.jsx";
 import AllMentorships from "../Pages/Mentor/AllMentorships.jsx";
 import StudentProfile from "../Pages/student/StudentProfile.jsx";
+import StudentMOAPage from "../Pages/student/StudentMOAPage.jsx";
 
 function AppRoutesInner() {
   const location = useLocation();
@@ -130,6 +131,7 @@ function AppRoutesInner() {
         />
         <Route path="/manage-mentorship" element={<ManageMentorships />} />
         <Route path="/allmentorships" element={<AllMentorships />} />
+        <Route path="/student-moa" element={<StudentMOAPage />} />
                 <Route path="/profile/share" element={<StudentProfile />} />
 
       </Route>
